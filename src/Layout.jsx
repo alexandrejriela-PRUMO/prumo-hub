@@ -14,7 +14,6 @@ import {
   Menu,
   X,
   LogOut,
-  Leaf,
   ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -69,9 +68,11 @@ export default function Layout({ children, currentPageName }) {
           <Menu className="w-6 h-6 text-emerald-900" />
         </button>
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 flex items-center justify-center">
-            <Leaf className="w-4 h-4 text-white" />
-          </div>
+          <img 
+            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/b78b381e7_MARCADGUASANTARUTE.png" 
+            alt="Santa Rute" 
+            className="h-8 w-auto object-contain"
+          />
           <span className="font-semibold text-emerald-900">Santa Rute</span>
         </div>
         <div className="w-10" />
@@ -98,9 +99,11 @@ export default function Layout({ children, currentPageName }) {
           <div className="p-6 border-b border-emerald-800/50">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
-                  <Leaf className="w-6 h-6 text-white" />
-                </div>
+                <img 
+                  src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/b78b381e7_MARCADGUASANTARUTE.png" 
+                  alt="Santa Rute" 
+                  className="h-12 w-auto object-contain"
+                />
                 <div>
                   <h1 className="font-bold text-white text-lg leading-tight">Santa Rute</h1>
                   <p className="text-emerald-400 text-xs">Engenharia Rural</p>

@@ -12,7 +12,17 @@ export default function CommodityPrices() {
     const fetchPrices = async () => {
       try {
         const result = await base44.integrations.Core.InvokeLLM({
-          prompt: `Busque os preços atuais das seguintes commodities agrícolas no Brasil em Reais por saca de 60kg: soja, milho, arroz e trigo. Use fontes oficiais como CEPEA/ESALQ (https://www.cepea.esalq.usp.br/br), B3 (https://www.b3.com.br) ou Conab (https://www.conab.gov.br). Para cada commodity, retorne o nome da fonte oficial e a URL COMPLETA E VÁLIDA da página principal dessa fonte (não páginas internas que possam não existir). IMPORTANTE: use apenas URLs que você verificou que existem e estão acessíveis. Retorne os valores atualizados.`,
+          prompt: `Busque os preços ATUAIS e REAIS das commodities agrícolas no RIO GRANDE DO SUL, Brasil, em Reais por saca de 60kg para: soja, milho, trigo. Para arroz, use saca de 50kg. 
+
+IMPORTANTE: Use APENAS o indicador CEPEA/ESALQ como fonte oficial (https://www.cepea.esalq.usp.br/br). Busque os valores mais recentes disponíveis do indicador CEPEA. Os preços devem refletir o mercado do Rio Grande do Sul especificamente.
+
+Valores de referência esperados (verifique se estão próximos):
+- Soja: ~R$ 127/saca 60kg
+- Milho: ~R$ 69/saca 60kg  
+- Trigo: ~R$ 63-64/saca 60kg
+- Arroz: até R$ 80/saca 50kg
+
+Retorne APENAS preços verificados e atualizados do CEPEA/ESALQ. Use a URL: https://www.cepea.esalq.usp.br/br como source_url para todas as commodities.`,
           add_context_from_internet: true,
           response_json_schema: {
             type: "object",

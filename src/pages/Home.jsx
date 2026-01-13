@@ -6,9 +6,12 @@ import QuickActions from '../components/dashboard/QuickActions';
 import LicenseAlerts from '../components/dashboard/LicenseAlerts';
 import InvoicesSummary from '../components/dashboard/InvoicesSummary';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MapPin } from 'lucide-react';
 
 export default function Home() {
   const [user, setUser] = useState(null);
+  const [selectedPropertyId, setSelectedPropertyId] = useState(null);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -45,6 +48,15 @@ export default function Home() {
 
   const isLoading = loadingProperties || loadingLicenses || loadingInvoices;
 
+  // Auto-select first property when properties load
+  useEffect(() => {
+    if (properties.length > 0 && !selectedPropertyId) {
+      setSelectedPropertyId(properties[0].id);
+    }
+  }, [properties, selectedPropertyId]);
+
+  const selectedProperty = properties.find(p => p.id === selectedPropertyId) || properties[0];
+
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       {/* Header */}
@@ -55,11 +67,31 @@ export default function Home() {
         <p className="text-gray-500 mt-1">Bem-vindo à sua área do cliente Santa Rute Engenharia Rural</p>
       </div>
 
+      {/* Property Selector */}
+      {!isLoading && properties.length > 1 && (
+        <div className="flex items-center gap-3 p-4 bg-white rounded-xl border border-emerald-100 shadow-sm">
+          <MapPin className="w-5 h-5 text-emerald-600" />
+          <span className="text-gray-700 font-medium">Selecionar Propriedade:</span>
+          <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
+            <SelectTrigger className="w-72 bg-emerald-50 border-emerald-200">
+              <SelectValue placeholder="Selecione uma propriedade" />
+            </SelectTrigger>
+            <SelectContent>
+              {properties.map((prop) => (
+                <SelectItem key={prop.id} value={prop.id}>
+                  {prop.property_name} - {prop.city}/{prop.state}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {/* Property Card */}
       {isLoading ? (
         <Skeleton className="h-64 w-full rounded-2xl" />
       ) : (
-        <PropertyCard property={properties[0]} />
+        <PropertyCard property={selectedProperty} />
       )}
 
       {/* Quick Actions */}

@@ -7,6 +7,7 @@ import Licenses from './pages/Licenses';
 import Requests from './pages/Requests';
 import Support from './pages/Support';
 import EbookReader from './pages/EbookReader';
+import Processes from './pages/Processes';
 import __Layout from './Layout.jsx';
 
 
@@ -20,6 +21,7 @@ export const PAGES = {
     "Requests": Requests,
     "Support": Support,
     "EbookReader": EbookReader,
+    "Processes": Processes,
 }
 
 export const pagesConfig = {

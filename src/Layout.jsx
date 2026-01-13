@@ -23,6 +23,7 @@ const navItems = [
   { name: 'Licenças Ambientais', page: 'Licenses', icon: FileCheck },
   { name: 'CAR + CCIR', page: 'Documents', icon: FileText },
   { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
+  { name: 'E-book Grátis', page: 'EbookReader', icon: FileText },
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
   { name: 'Suporte', page: 'Support', icon: Headphones },
   { name: 'Boletos', page: 'Invoices', icon: CreditCard },

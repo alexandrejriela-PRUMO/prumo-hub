@@ -6,6 +6,7 @@ import QuickActions from '../components/dashboard/QuickActions';
 import LicenseAlerts from '../components/dashboard/LicenseAlerts';
 import InvoicesSummary from '../components/dashboard/InvoicesSummary';
 import CommodityPrices from '../components/dashboard/CommodityPrices';
+import CommodityHistory from '../components/dashboard/CommodityHistory';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MapPin } from 'lucide-react';

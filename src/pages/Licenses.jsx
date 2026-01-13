@@ -1,0 +1,358 @@
+import React, { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { 
+  FileCheck, 
+  Plus, 
+  Calendar, 
+  AlertTriangle, 
+  CheckCircle, 
+  Clock, 
+  ExternalLink,
+  FileText,
+  Upload,
+  Trash2
+} from 'lucide-react';
+import { format, parseISO, differenceInDays } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const licenseTypes = ['LP', 'LI', 'LO', 'LAU', 'Dispensa', 'Outorga', 'Outro'];
+
+export default function Licenses() {
+  const [user, setUser] = useState(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedLicense, setSelectedLicense] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [formData, setFormData] = useState({
+    license_type: '',
+    license_number: '',
+    issue_date: '',
+    expiry_date: '',
+    conditions: [],
+    file_url: '',
+  });
+  const [newCondition, setNewCondition] = useState('');
+
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const userData = await base44.auth.me();
+        setUser(userData);
+      } catch (e) {
+        console.log('User not logged in');
+      }
+    };
+    loadUser();
+  }, []);
+
+  const { data: licenses, isLoading } = useQuery({
+    queryKey: ['licenses', user?.email],
+    queryFn: () => base44.entities.License.filter({ owner_email: user.email }),
+    enabled: !!user?.email,
+    initialData: [],
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data) => base44.entities.License.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['licenses']);
+      setDialogOpen(false);
+      resetForm();
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.License.delete(id),
+    onSuccess: () => queryClient.invalidateQueries(['licenses']),
+  });
+
+  const resetForm = () => {
+    setFormData({
+      license_type: '',
+      license_number: '',
+      issue_date: '',
+      expiry_date: '',
+      conditions: [],
+      file_url: '',
+    });
+    setNewCondition('');
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploading(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setFormData({ ...formData, file_url });
+    setUploading(false);
+  };
+
+  const addCondition = () => {
+    if (newCondition.trim()) {
+      setFormData({
+        ...formData,
+        conditions: [...formData.conditions, newCondition.trim()],
+      });
+      setNewCondition('');
+    }
+  };
+
+  const removeCondition = (index) => {
+    setFormData({
+      ...formData,
+      conditions: formData.conditions.filter((_, i) => i !== index),
+    });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    createMutation.mutate({
+      ...formData,
+      owner_email: user.email,
+    });
+  };
+
+  const getLicenseStatus = (license) => {
+    if (!license.expiry_date) return { status: 'unknown', label: 'Sem data', color: 'bg-gray-100 text-gray-700' };
+    
+    const expiryDate = parseISO(license.expiry_date);
+    const daysUntilExpiry = differenceInDays(expiryDate, new Date());
+
+    if (daysUntilExpiry < 0) {
+      return { status: 'expired', label: 'Vencida', color: 'bg-red-100 text-red-700', icon: AlertTriangle };
+    } else if (daysUntilExpiry <= 30) {
+      return { status: 'warning', label: `${daysUntilExpiry}d`, color: 'bg-amber-100 text-amber-700', icon: Clock };
+    } else if (daysUntilExpiry <= 90) {
+      return { status: 'attention', label: `${daysUntilExpiry}d`, color: 'bg-yellow-100 text-yellow-700', icon: Clock };
+    }
+    return { status: 'ok', label: 'Vigente', color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle };
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Licenças Ambientais</h1>
+          <p className="text-gray-500 mt-1">Gerencie suas licenças e condicionantes</p>
+        </div>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-emerald-600 hover:bg-emerald-700">
+              <Plus className="w-4 h-4 mr-2" />
+              Nova Licença
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Adicionar Licença</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Tipo de Licença</Label>
+                  <Select
+                    value={formData.license_type}
+                    onValueChange={(v) => setFormData({ ...formData, license_type: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {licenseTypes.map((type) => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Número da Licença</Label>
+                  <Input
+                    value={formData.license_number}
+                    onChange={(e) => setFormData({ ...formData, license_number: e.target.value })}
+                    placeholder="Ex: 001/2024"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Data de Emissão</Label>
+                  <Input
+                    type="date"
+                    value={formData.issue_date}
+                    onChange={(e) => setFormData({ ...formData, issue_date: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Data de Validade</Label>
+                  <Input
+                    type="date"
+                    value={formData.expiry_date}
+                    onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Condicionantes</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={newCondition}
+                    onChange={(e) => setNewCondition(e.target.value)}
+                    placeholder="Adicionar condicionante"
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCondition())}
+                  />
+                  <Button type="button" variant="outline" onClick={addCondition}>
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+                {formData.conditions.length > 0 && (
+                  <div className="space-y-2 mt-2">
+                    {formData.conditions.map((cond, idx) => (
+                      <div key={idx} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                        <span className="flex-1 text-sm">{cond}</span>
+                        <button type="button" onClick={() => removeCondition(idx)} className="text-red-500 hover:text-red-700">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Documento (PDF)</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={handleFileUpload}
+                    className="flex-1"
+                  />
+                  {uploading && <span className="text-sm text-gray-500">Enviando...</span>}
+                </div>
+                {formData.file_url && (
+                  <a href={formData.file_url} target="_blank" rel="noopener noreferrer" className="text-sm text-emerald-600 flex items-center gap-1">
+                    <FileText className="w-4 h-4" /> Ver documento
+                  </a>
+                )}
+              </div>
+
+              <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={createMutation.isPending}>
+                {createMutation.isPending ? 'Salvando...' : 'Salvar Licença'}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Licenses Grid */}
+      {isLoading ? (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-48 rounded-xl" />
+          ))}
+        </div>
+      ) : licenses.length === 0 ? (
+        <Card className="border-dashed border-2 border-emerald-200">
+          <CardContent className="py-16 text-center">
+            <FileCheck className="w-16 h-16 mx-auto text-emerald-300 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900">Nenhuma licença cadastrada</h3>
+            <p className="text-gray-500 mt-2">Clique em "Nova Licença" para adicionar</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {licenses.map((license) => {
+            const statusInfo = getLicenseStatus(license);
+            const StatusIcon = statusInfo.icon || Clock;
+            return (
+              <Card key={license.id} className="hover:shadow-lg transition-shadow border-emerald-100">
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                        statusInfo.status === 'expired' ? 'bg-red-100' :
+                        statusInfo.status === 'warning' ? 'bg-amber-100' : 'bg-emerald-100'
+                      }`}>
+                        <FileCheck className={`w-6 h-6 ${
+                          statusInfo.status === 'expired' ? 'text-red-600' :
+                          statusInfo.status === 'warning' ? 'text-amber-600' : 'text-emerald-600'
+                        }`} />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">{license.license_type}</CardTitle>
+                        <p className="text-sm text-gray-500">{license.license_number || 'Sem número'}</p>
+                      </div>
+                    </div>
+                    <Badge className={statusInfo.color}>
+                      <StatusIcon className="w-3 h-3 mr-1" />
+                      {statusInfo.label}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Calendar className="w-4 h-4" />
+                      <span>Validade: {license.expiry_date ? format(parseISO(license.expiry_date), "dd/MM/yyyy") : 'Não informada'}</span>
+                    </div>
+
+                    {license.conditions && license.conditions.length > 0 && (
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Condicionantes:</p>
+                        <div className="space-y-1">
+                          {license.conditions.slice(0, 2).map((cond, idx) => (
+                            <p key={idx} className="text-xs text-gray-600 bg-gray-50 p-2 rounded">• {cond}</p>
+                          ))}
+                          {license.conditions.length > 2 && (
+                            <p className="text-xs text-emerald-600">+{license.conditions.length - 2} mais</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex gap-2 pt-2">
+                      {license.file_url && (
+                        <a
+                          href={license.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors text-sm"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                          Ver Documento
+                        </a>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => deleteMutation.mutate(license.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

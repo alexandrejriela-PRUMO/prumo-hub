@@ -27,6 +27,7 @@ const navItems = [
   { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
   { name: 'Processos', page: 'Processes', icon: Scale },
   { name: 'E-book Grátis', page: 'EbookReader', icon: FileText },
+  { name: 'Santa Blog', page: 'Blog', icon: Newspaper },
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
   { name: 'Suporte', page: 'Support', icon: Headphones },
   { name: 'Boletos', page: 'Invoices', icon: CreditCard },

@@ -99,7 +99,7 @@ export default function Layout({ children, currentPageName }) {
                 <img 
                   src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/b78b381e7_MARCADGUASANTARUTE.png" 
                   alt="Santa Rute" 
-                  className="h-12 w-auto object-contain"
+                  className="h-20 w-auto object-contain"
                 />
               </div>
               <button

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { TrendingUp, TrendingDown, Minus, Loader2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Loader2, ExternalLink } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 
 export default function CommodityPrices() {
@@ -12,7 +12,7 @@ export default function CommodityPrices() {
     const fetchPrices = async () => {
       try {
         const result = await base44.integrations.Core.InvokeLLM({
-          prompt: `Busque os preços atuais das seguintes commodities agrícolas no Brasil em Reais por saca de 60kg: soja, milho, arroz e trigo. Use fontes oficiais como CEPEA/ESALQ, B3 ou Conab. Retorne os valores atualizados com a data de referência.`,
+          prompt: `Busque os preços atuais das seguintes commodities agrícolas no Brasil em Reais por saca de 60kg: soja, milho, arroz e trigo. Use fontes oficiais como CEPEA/ESALQ, B3 ou Conab. Para cada commodity, retorne o nome da fonte oficial (ex: "CEPEA/ESALQ", "B3") e a URL direta dessa fonte. Retorne os valores atualizados com a data de referência.`,
           add_context_from_internet: true,
           response_json_schema: {
             type: "object",
@@ -26,7 +26,9 @@ export default function CommodityPrices() {
                     price: { type: "number" },
                     unit: { type: "string" },
                     trend: { type: "string" },
-                    change_percent: { type: "number" }
+                    change_percent: { type: "number" },
+                    source_name: { type: "string" },
+                    source_url: { type: "string" }
                   }
                 }
               },
@@ -100,6 +102,19 @@ export default function CommodityPrices() {
             </div>
           )}
         </div>
+
+        {/* Fonte dos dados */}
+        {current.source_name && current.source_url && (
+          <a
+            href={current.source_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-emerald-100 hover:text-white transition-colors text-xs"
+          >
+            <span className="font-medium">{current.source_name}</span>
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        )}
         
         {/* Indicadores de navegação */}
         <div className="flex gap-1">

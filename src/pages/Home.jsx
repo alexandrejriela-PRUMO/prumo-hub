@@ -66,24 +66,22 @@ export default function Home() {
     <div className="max-w-7xl mx-auto space-y-8">
       {/* Header with Commodity Prices */}
       <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-        <div className="flex items-start gap-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Olá, {user?.full_name?.split(' ')[0] || 'Cliente'}! 👋
-            </h1>
-            <p className="text-gray-500 mt-1">Bem-vindo à sua área do cliente Santa Rute - Engenharia Rural</p>
-          </div>
-          <Link to={createPageUrl('Blog')} className="flex flex-col items-center gap-1 group">
-            <div className="p-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 transition-all hover:scale-105 shadow-lg">
-              <Newspaper className="w-6 h-6 text-white" />
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Olá, {user?.full_name?.split(' ')[0] || 'Cliente'}! 👋
+          </h1>
+          <p className="text-gray-500 mt-1">Bem-vindo à sua área do cliente Santa Rute - Engenharia Rural</p>
+        </div>
+        <div className="flex flex-col gap-2 lg:min-w-[320px]">
+          <CommodityPrices />
+          <Link to={createPageUrl('Blog')} className="flex items-center justify-center gap-2 group">
+            <div className="p-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 transition-all hover:scale-105 shadow-md">
+              <Newspaper className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xs text-gray-600 group-hover:text-emerald-700 font-medium text-center">
-              Acesse o<br />Santa Blog aqui
+            <span className="text-xs text-gray-600 group-hover:text-emerald-700 font-medium">
+              Acesse o Santa Blog AQUI
             </span>
           </Link>
-        </div>
-        <div className="lg:min-w-[320px]">
-          <CommodityPrices />
         </div>
       </div>
 

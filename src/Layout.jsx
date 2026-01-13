@@ -76,11 +76,7 @@ export default function Layout({ children, currentPageName }) {
           alt="Santa Rute" 
           className="h-16 w-auto object-contain"
         />
-        <Link to={createPageUrl('Blog')}>
-          <button className="p-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 transition-colors">
-            <Newspaper className="w-5 h-5 text-white" />
-          </button>
-        </Link>
+        <div className="w-10" />
       </div>
 
       {/* Mobile Overlay */}

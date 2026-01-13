@@ -29,21 +29,21 @@ export default function Home() {
     queryKey: ['properties', user?.email],
     queryFn: () => base44.entities.Property.filter({ owner_email: user.email }),
     enabled: !!user?.email,
-    initialData: [],
+    initialData: []
   });
 
   const { data: licenses, isLoading: loadingLicenses } = useQuery({
     queryKey: ['licenses', user?.email],
     queryFn: () => base44.entities.License.filter({ owner_email: user.email }),
     enabled: !!user?.email,
-    initialData: [],
+    initialData: []
   });
 
   const { data: invoices, isLoading: loadingInvoices } = useQuery({
     queryKey: ['invoices', user?.email],
     queryFn: () => base44.entities.Invoice.filter({ client_email: user.email }),
     enabled: !!user?.email,
-    initialData: [],
+    initialData: []
   });
 
   const isLoading = loadingProperties || loadingLicenses || loadingInvoices;
@@ -55,7 +55,7 @@ export default function Home() {
     }
   }, [properties, selectedPropertyId]);
 
-  const selectedProperty = properties.find(p => p.id === selectedPropertyId) || properties[0];
+  const selectedProperty = properties.find((p) => p.id === selectedPropertyId) || properties[0];
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -64,12 +64,12 @@ export default function Home() {
         <h1 className="text-3xl font-bold text-gray-900">
           Olá, {user?.full_name?.split(' ')[0] || 'Cliente'}! 👋
         </h1>
-        <p className="text-gray-500 mt-1">Bem-vindo à sua área do cliente Santa Rute Engenharia Rural</p>
+        <p className="text-gray-500 mt-1">Bem-vindo à sua área do cliente Santa Rute - Engenharia Rural</p>
       </div>
 
       {/* Property Selector */}
-      {!isLoading && properties.length > 1 && (
-        <div className="flex items-center gap-3 p-4 bg-white rounded-xl border border-emerald-100 shadow-sm">
+      {!isLoading && properties.length > 1 &&
+      <div className="flex items-center gap-3 p-4 bg-white rounded-xl border border-emerald-100 shadow-sm">
           <MapPin className="w-5 h-5 text-emerald-600" />
           <span className="text-gray-700 font-medium">Selecionar Propriedade:</span>
           <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
@@ -77,40 +77,40 @@ export default function Home() {
               <SelectValue placeholder="Selecione uma propriedade" />
             </SelectTrigger>
             <SelectContent>
-              {properties.map((prop) => (
-                <SelectItem key={prop.id} value={prop.id}>
+              {properties.map((prop) =>
+            <SelectItem key={prop.id} value={prop.id}>
                   {prop.property_name} - {prop.city}/{prop.state}
                 </SelectItem>
-              ))}
+            )}
             </SelectContent>
           </Select>
         </div>
-      )}
+      }
 
       {/* Property Card */}
-      {isLoading ? (
-        <Skeleton className="h-64 w-full rounded-2xl" />
-      ) : (
-        <PropertyCard property={selectedProperty} />
-      )}
+      {isLoading ?
+      <Skeleton className="h-64 w-full rounded-2xl" /> :
+
+      <PropertyCard property={selectedProperty} />
+      }
 
       {/* Quick Actions */}
       <QuickActions />
 
       {/* Two Column Layout */}
       <div className="grid lg:grid-cols-2 gap-6">
-        {isLoading ? (
-          <>
+        {isLoading ?
+        <>
             <Skeleton className="h-80 rounded-xl" />
             <Skeleton className="h-80 rounded-xl" />
-          </>
-        ) : (
-          <>
+          </> :
+
+        <>
             <LicenseAlerts licenses={licenses} />
             <InvoicesSummary invoices={invoices} />
           </>
-        )}
+        }
       </div>
-    </div>
-  );
+    </div>);
+
 }

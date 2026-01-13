@@ -5,6 +5,7 @@ import PropertyCard from '../components/dashboard/PropertyCard';
 import QuickActions from '../components/dashboard/QuickActions';
 import LicenseAlerts from '../components/dashboard/LicenseAlerts';
 import InvoicesSummary from '../components/dashboard/InvoicesSummary';
+import CommodityPrices from '../components/dashboard/CommodityPrices';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MapPin } from 'lucide-react';
@@ -59,12 +60,17 @@ export default function Home() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Olá, {user?.full_name?.split(' ')[0] || 'Cliente'}! 👋
-        </h1>
-        <p className="text-gray-500 mt-1">Bem-vindo à sua área do cliente Santa Rute - Engenharia Rural</p>
+      {/* Header with Commodity Prices */}
+      <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Olá, {user?.full_name?.split(' ')[0] || 'Cliente'}! 👋
+          </h1>
+          <p className="text-gray-500 mt-1">Bem-vindo à sua área do cliente Santa Rute - Engenharia Rural</p>
+        </div>
+        <div className="lg:min-w-[320px]">
+          <CommodityPrices />
+        </div>
       </div>
 
       {/* Property Selector */}

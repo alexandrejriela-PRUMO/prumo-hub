@@ -8,6 +8,7 @@ import Requests from './pages/Requests';
 import Support from './pages/Support';
 import EbookReader from './pages/EbookReader';
 import Processes from './pages/Processes';
+import Blog from './pages/Blog';
 import __Layout from './Layout.jsx';
 
 
@@ -22,6 +23,7 @@ export const PAGES = {
     "Support": Support,
     "EbookReader": EbookReader,
     "Processes": Processes,
+    "Blog": Blog,
 }
 
 export const pagesConfig = {

@@ -12,7 +12,7 @@ export default function CommodityPrices() {
     const fetchPrices = async () => {
       try {
         const result = await base44.integrations.Core.InvokeLLM({
-          prompt: `Busque os preços atuais das seguintes commodities agrícolas no Brasil em Reais por saca de 60kg: soja, milho, arroz e trigo. Use fontes oficiais como CEPEA/ESALQ, B3 ou Conab. Para cada commodity, retorne o nome da fonte oficial (ex: "CEPEA/ESALQ", "B3") e a URL direta dessa fonte. Retorne os valores atualizados com a data de referência.`,
+          prompt: `Busque os preços atuais das seguintes commodities agrícolas no Brasil em Reais por saca de 60kg: soja, milho, arroz e trigo. Use fontes oficiais como CEPEA/ESALQ (https://www.cepea.esalq.usp.br/br), B3 (https://www.b3.com.br) ou Conab (https://www.conab.gov.br). Para cada commodity, retorne o nome da fonte oficial e a URL COMPLETA E VÁLIDA da página principal dessa fonte (não páginas internas que possam não existir). IMPORTANTE: use apenas URLs que você verificou que existem e estão acessíveis. Retorne os valores atualizados.`,
           add_context_from_internet: true,
           response_json_schema: {
             type: "object",

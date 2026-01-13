@@ -105,7 +105,6 @@ export default function Layout({ children, currentPageName }) {
                   className="h-12 w-auto object-contain"
                 />
                 <div>
-                  <h1 className="font-bold text-white text-lg leading-tight">Santa Rute</h1>
                   <p className="text-emerald-400 text-xs">Engenharia Rural</p>
                 </div>
               </div>

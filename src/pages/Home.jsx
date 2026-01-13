@@ -118,6 +118,9 @@ export default function Home() {
           </>
         }
       </div>
+
+      {/* Commodity History */}
+      <CommodityHistory />
     </div>);
 
 }

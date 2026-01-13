@@ -1,0 +1,177 @@
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from './utils';
+import { base44 } from '@/api/base44Client';
+import {
+  LayoutDashboard,
+  FileCheck,
+  FileText,
+  MapPin,
+  MessageCircle,
+  Headphones,
+  CreditCard,
+  FileQuestion,
+  Menu,
+  X,
+  LogOut,
+  Leaf,
+  ChevronRight
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const navItems = [
+  { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
+  { name: 'Licenças Ambientais', page: 'Licenses', icon: FileCheck },
+  { name: 'CAR + CCIR', page: 'Documents', icon: FileText },
+  { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
+  { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
+  { name: 'Suporte', page: 'Support', icon: Headphones },
+  { name: 'Boletos', page: 'Invoices', icon: CreditCard },
+  { name: 'Requerimentos', page: 'Requests', icon: FileQuestion },
+];
+
+export default function Layout({ children, currentPageName }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const userData = await base44.auth.me();
+        setUser(userData);
+      } catch (e) {
+        console.log('User not logged in');
+      }
+    };
+    loadUser();
+  }, []);
+
+  const handleLogout = () => {
+    base44.auth.logout();
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-white to-emerald-50/30">
+      <style>{`
+        :root {
+          --color-primary: #1B4332;
+          --color-primary-light: #40916C;
+          --color-accent: #C9A227;
+        }
+      `}</style>
+
+      {/* Mobile Header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-xl border-b border-emerald-100 z-50 flex items-center justify-between px-4">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="p-2 rounded-xl hover:bg-emerald-50 transition-colors"
+        >
+          <Menu className="w-6 h-6 text-emerald-900" />
+        </button>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 flex items-center justify-center">
+            <Leaf className="w-4 h-4 text-white" />
+          </div>
+          <span className="font-semibold text-emerald-900">Santa Rute</span>
+        </div>
+        <div className="w-10" />
+      </div>
+
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={cn(
+          "fixed top-0 left-0 h-full w-72 bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 z-50 transition-transform duration-300 ease-out",
+          "lg:translate-x-0",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        <div className="flex flex-col h-full">
+          {/* Logo */}
+          <div className="p-6 border-b border-emerald-800/50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                  <Leaf className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="font-bold text-white text-lg leading-tight">Santa Rute</h1>
+                  <p className="text-emerald-400 text-xs">Engenharia Rural</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="lg:hidden p-2 rounded-xl hover:bg-emerald-800/50 transition-colors"
+              >
+                <X className="w-5 h-5 text-emerald-400" />
+              </button>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+            {navItems.map((item) => {
+              const isActive = currentPageName === item.page;
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.page}
+                  to={createPageUrl(item.page)}
+                  onClick={() => setSidebarOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
+                    isActive
+                      ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30"
+                      : "text-emerald-200 hover:bg-emerald-800/50 hover:text-white"
+                  )}
+                >
+                  <Icon className={cn("w-5 h-5", isActive ? "text-white" : "text-emerald-400 group-hover:text-amber-400")} />
+                  <span className="font-medium text-sm">{item.name}</span>
+                  {isActive && <ChevronRight className="w-4 h-4 ml-auto" />}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* User Info */}
+          {user && (
+            <div className="p-4 border-t border-emerald-800/50">
+              <div className="bg-emerald-800/30 rounded-xl p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-semibold">
+                    {user.full_name?.charAt(0) || user.email?.charAt(0)?.toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-medium text-sm truncate">{user.full_name || 'Cliente'}</p>
+                    <p className="text-emerald-400 text-xs truncate">{user.email}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-emerald-700/50 hover:bg-emerald-700 text-emerald-200 hover:text-white transition-colors text-sm"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sair
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="lg:ml-72 pt-16 lg:pt-0 min-h-screen">
+        <div className="p-4 lg:p-8">
+          {children}
+        </div>
+      </main>
+    </div>
+  );
+}

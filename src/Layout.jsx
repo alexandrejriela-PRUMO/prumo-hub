@@ -60,7 +60,7 @@ export default function Layout({ children, currentPageName }) {
       `}</style>
 
       {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-xl border-b border-emerald-100 z-50 flex items-center justify-between px-4">
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-20 bg-white/80 backdrop-blur-xl border-b border-emerald-100 z-50 flex items-center justify-between px-4">
         <button
           onClick={() => setSidebarOpen(true)}
           className="p-2 rounded-xl hover:bg-emerald-50 transition-colors"
@@ -70,7 +70,7 @@ export default function Layout({ children, currentPageName }) {
         <img 
           src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/b78b381e7_MARCADGUASANTARUTE.png" 
           alt="Santa Rute" 
-          className="h-12 w-auto object-contain"
+          className="h-16 w-auto object-contain"
         />
         <div className="w-10" />
       </div>
@@ -163,7 +163,7 @@ export default function Layout({ children, currentPageName }) {
       </aside>
 
       {/* Main Content */}
-      <main className="lg:ml-72 pt-16 lg:pt-0 min-h-screen">
+      <main className="lg:ml-72 pt-20 lg:pt-0 min-h-screen">
         <div className="p-4 lg:p-8">
           {children}
         </div>

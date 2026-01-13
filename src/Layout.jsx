@@ -104,9 +104,6 @@ export default function Layout({ children, currentPageName }) {
                   alt="Santa Rute" 
                   className="h-12 w-auto object-contain"
                 />
-                <div>
-                  <p className="text-emerald-400 text-xs">Engenharia Rural</p>
-                </div>
               </div>
               <button
                 onClick={() => setSidebarOpen(false)}

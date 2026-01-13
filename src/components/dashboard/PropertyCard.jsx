@@ -1,6 +1,37 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { MapPin, Trees, Leaf, Activity } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix for default marker icon
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+// Parse coordinates from string like "-16.6869° S, -49.2648° W"
+const parseCoordinates = (coordString) => {
+  if (!coordString) return null;
+  try {
+    const parts = coordString.split(',');
+    if (parts.length !== 2) return null;
+    
+    let lat = parseFloat(parts[0].replace(/[°\s]/g, '').replace('S', '').replace('N', ''));
+    let lng = parseFloat(parts[1].replace(/[°\s]/g, '').replace('W', '').replace('E', ''));
+    
+    if (coordString.includes('S')) lat = -Math.abs(lat);
+    if (coordString.includes('W')) lng = -Math.abs(lng);
+    
+    if (isNaN(lat) || isNaN(lng)) return null;
+    return [lat, lng];
+  } catch {
+    return null;
+  }
+};
 
 export default function PropertyCard({ property }) {
   if (!property) {
@@ -16,6 +47,8 @@ export default function PropertyCard({ property }) {
       </Card>
     );
   }
+
+  const coordinates = parseCoordinates(property.coordinates);
 
   const stats = [
     { 
@@ -98,6 +131,40 @@ export default function PropertyCard({ property }) {
                   {activity}
                 </span>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Map */}
+        {coordinates && (
+          <div className="mt-6 pt-6 border-t border-emerald-800/50">
+            <p className="text-emerald-400 text-sm mb-3 flex items-center gap-2">
+              <MapPin className="w-4 h-4" /> Localização no Mapa
+            </p>
+            <div className="rounded-xl overflow-hidden border-2 border-emerald-700/50 h-64">
+              <MapContainer 
+                center={coordinates} 
+                zoom={13} 
+                style={{ height: '100%', width: '100%' }}
+                scrollWheelZoom={false}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                />
+                <TileLayer
+                  url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
+                />
+                <Marker position={coordinates}>
+                  <Popup>
+                    <div className="text-center">
+                      <strong>{property.property_name}</strong><br />
+                      {property.total_hectares} hectares<br />
+                      {property.city}, {property.state}
+                    </div>
+                  </Popup>
+                </Marker>
+              </MapContainer>
             </div>
           </div>
         )}

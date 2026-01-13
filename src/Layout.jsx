@@ -172,16 +172,6 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Main Content */}
       <main className="lg:ml-72 pt-20 lg:pt-0 min-h-screen">
-        {/* Desktop Blog Button */}
-        <div className="hidden lg:block fixed top-6 right-6 z-40">
-          <Link to={createPageUrl('Blog')}>
-            <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg transition-all hover:scale-105">
-              <Newspaper className="w-5 h-5" />
-              <span className="font-medium">Santa Blog</span>
-            </button>
-          </Link>
-        </div>
-
         <div className="p-4 lg:p-8">
           {children}
         </div>

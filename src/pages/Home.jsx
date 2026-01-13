@@ -10,7 +10,9 @@ import CommodityHistory from '../components/dashboard/CommodityHistory';
 import BlogPreview from '../components/dashboard/BlogPreview';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MapPin } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
+import { MapPin, Newspaper } from 'lucide-react';
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -64,11 +66,21 @@ export default function Home() {
     <div className="max-w-7xl mx-auto space-y-8">
       {/* Header with Commodity Prices */}
       <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Olá, {user?.full_name?.split(' ')[0] || 'Cliente'}! 👋
-          </h1>
-          <p className="text-gray-500 mt-1">Bem-vindo à sua área do cliente Santa Rute - Engenharia Rural</p>
+        <div className="flex items-start gap-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Olá, {user?.full_name?.split(' ')[0] || 'Cliente'}! 👋
+            </h1>
+            <p className="text-gray-500 mt-1">Bem-vindo à sua área do cliente Santa Rute - Engenharia Rural</p>
+          </div>
+          <Link to={createPageUrl('Blog')} className="flex flex-col items-center gap-1 group">
+            <div className="p-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 transition-all hover:scale-105 shadow-lg">
+              <Newspaper className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-xs text-gray-600 group-hover:text-emerald-700 font-medium text-center">
+              Acesse o<br />Santa Blog aqui
+            </span>
+          </Link>
         </div>
         <div className="lg:min-w-[320px]">
           <CommodityPrices />

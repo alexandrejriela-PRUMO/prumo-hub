@@ -29,6 +29,8 @@ export default function ESGAgro() {
   const [generatedReport, setGeneratedReport] = useState(null);
   const [selectedMetrics, setSelectedMetrics] = useState(null);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [showLoanWizard, setShowLoanWizard] = useState(false);
+  const [showIncentiveWizard, setShowIncentiveWizard] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -57,6 +59,12 @@ export default function ESGAgro() {
   const { data: certifications = [] } = useQuery({
     queryKey: ['certifications', user?.email],
     queryFn: () => base44.entities.Certification.filter({ applicant_email: user.email }),
+    enabled: !!user?.email
+  });
+
+  const { data: properties = [] } = useQuery({
+    queryKey: ['properties', user?.email],
+    queryFn: () => base44.entities.Property.filter({ owner_email: user.email }),
     enabled: !!user?.email
   });
 
@@ -248,9 +256,9 @@ export default function ESGAgro() {
           />
         </div>
 
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Recomendações de Melhoria</h2>
-          {user && (
+        {user && properties.length > 0 && (
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Recomendações de Melhoria</h2>
             <ESGRecommendations
               userEmail={user.email}
               properties={properties}
@@ -258,8 +266,8 @@ export default function ESGAgro() {
               taxIncentives={taxIncentives}
               certifications={certifications}
             />
-          )}
-        </div>
+          </div>
+        )}
 
         <div>
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Métricas Detalhadas</h2>
@@ -323,6 +331,23 @@ export default function ESGAgro() {
         </CardContent>
       </Card>
 
+      {/* Wizards */}
+      {showLoanWizard && user && properties.length > 0 && (
+        <GreenLoanWizard
+          user={user}
+          properties={properties}
+          onClose={() => setShowLoanWizard(false)}
+        />
+      )}
+
+      {showIncentiveWizard && user && properties.length > 0 && (
+        <TaxIncentiveWizard
+          user={user}
+          properties={properties}
+          onClose={() => setShowIncentiveWizard(false)}
+        />
+      )}
+
       {/* Modules */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Ferramentas ESG</h2>
@@ -349,12 +374,32 @@ export default function ESGAgro() {
                       </li>
                     ))}
                   </ul>
-                  <Link to={createPageUrl(module.link)}>
-                    <Button className={`w-full ${colorClasses[module.color]}`}>
-                      Acessar
-                      <ChevronRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  </Link>
+                  <div className="space-y-2">
+                    <Link to={createPageUrl(module.link)}>
+                      <Button className={`w-full ${colorClasses[module.color]}`}>
+                        Acessar
+                        <ChevronRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </Link>
+                    {properties.length > 0 && module.link === 'GreenLoans' && (
+                      <Button
+                        onClick={() => setShowLoanWizard(true)}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700"
+                      >
+                        <Sprout className="w-4 h-4 mr-2" />
+                        Novo Empréstimo
+                      </Button>
+                    )}
+                    {properties.length > 0 && module.link === 'TaxIncentives' && (
+                      <Button
+                        onClick={() => setShowIncentiveWizard(true)}
+                        className="w-full bg-yellow-600 hover:bg-yellow-700"
+                      >
+                        <TrendingUp className="w-4 h-4 mr-2" />
+                        Novo Incentivo
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             );

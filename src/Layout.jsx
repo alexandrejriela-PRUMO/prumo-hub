@@ -35,8 +35,9 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
   { name: 'Propriedades', page: 'Properties', icon: Building2 },
+  { name: 'Documentos', page: 'DocumentsHub', icon: FileText },
   { name: 'Licenças Ambientais', page: 'Licenses', icon: FileCheck },
-  { name: 'CAR + CCIR', page: 'Documents', icon: FileText },
+  { name: 'CAR + CCIR', page: 'Documents', icon: FileCheck },
   { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
   { name: 'Processos', page: 'Processes', icon: Scale },
   { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: FileCheck },

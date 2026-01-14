@@ -5,6 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import ErrorBoundary from './components/ErrorBoundary';
 import NotificationCenter from './components/notifications/NotificationCenter';
+import RealtimeNotificationCenter from './components/notifications/RealtimeNotificationCenter';
 import { Badge } from '@/components/ui/badge';
 import {
         LayoutDashboard,
@@ -52,7 +53,8 @@ const navItems = [
   { name: 'Relatórios', page: 'Reports', icon: FileText },
   { name: 'Configurar Alertas', page: 'AlertSettings', icon: Settings, adminOnly: true },
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
-  { name: 'Gerenciador de Documentos', page: 'DocumentsManager', icon: FileText },
+    { name: 'Notificações em Tempo Real', page: 'RealtimeNotificationSettings', icon: Bell },
+    { name: 'Gerenciador de Documentos', page: 'DocumentsManager', icon: FileText },
   { name: 'Relatórios ESG Consolidados', page: 'ConsolidatedReports', icon: FileText },
   { name: 'E-book Grátis', page: 'EbookReader', icon: FileText },
   { name: 'Análise de Commodities', page: 'CommodityAnalysis', icon: BarChart3 },
@@ -134,11 +136,11 @@ export default function Layout({ children, currentPageName }) {
       </div>
 
       {/* Notification Center */}
-      <NotificationCenter 
-        user={user}
-        isOpen={notificationOpen}
-        onClose={() => setNotificationOpen(false)}
-      />
+            <RealtimeNotificationCenter 
+              user={user}
+              isOpen={notificationOpen}
+              onClose={() => setNotificationOpen(false)}
+            />
 
       {/* Mobile Overlay */}
       {sidebarOpen && (

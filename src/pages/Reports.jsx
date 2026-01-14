@@ -10,6 +10,7 @@ export default function Reports() {
   const [reportConfig, setReportConfig] = useState(null);
   const [reportData, setReportData] = useState(null);
   const [activeTab, setActiveTab] = useState('builder');
+  const [editingReport, setEditingReport] = useState(null);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -22,6 +23,15 @@ export default function Reports() {
     };
     loadUser();
   }, []);
+
+  const handleLoadReport = (config) => {
+    generateReport(config);
+  };
+
+  const handleEditReport = (report) => {
+    setEditingReport(report);
+    setActiveTab('builder');
+  };
 
   const generateReport = async (config) => {
     const data = {
@@ -177,6 +187,8 @@ export default function Reports() {
             <ReportBuilder
               user={user}
               onGenerate={generateReport}
+              editingReport={editingReport}
+              onCancelEdit={() => setEditingReport(null)}
             />
 
             {reportData && reportConfig && (
@@ -190,7 +202,11 @@ export default function Reports() {
         )}
 
         {activeTab === 'saved' && (
-          <SavedReports user={user} />
+          <SavedReports 
+            user={user}
+            onLoadReport={handleLoadReport}
+            onEditReport={handleEditReport}
+          />
         )}
       </div>
     </div>

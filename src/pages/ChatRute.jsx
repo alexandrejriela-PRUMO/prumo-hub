@@ -127,10 +127,8 @@ Pergunta do cliente: ${userMessage}`,
                     className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
                     {message.role === 'assistant' && (
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center flex-shrink-0">
-                        <Leaf className="w-4 h-4 text-white" />
-                      </div>
-                    )}
+                       <RuteAvatar size="sm" />
+                     )}
                     <div
                       className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                         message.role === 'user'

@@ -9,6 +9,7 @@ import CommodityPrices from '../components/dashboard/CommodityPrices';
 import CommodityHistory from '../components/dashboard/CommodityHistory';
 import BlogPreview from '../components/dashboard/BlogPreview';
 import RegularityThermometer from '../components/dashboard/RegularityThermometer';
+import EnvironmentalAlerts from '../components/dashboard/EnvironmentalAlerts';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Link } from 'react-router-dom';
@@ -66,7 +67,14 @@ export default function Home() {
     initialData: []
   });
 
-  const isLoading = loadingProperties || loadingLicenses || loadingInvoices || loadingDocuments || loadingProcesses;
+  const { data: environmentalAlerts, isLoading: loadingAlerts } = useQuery({
+    queryKey: ['environmental-alerts'],
+    queryFn: () => base44.entities.EnvironmentalAlert.list(),
+    enabled: true,
+    initialData: []
+  });
+
+  const isLoading = loadingProperties || loadingLicenses || loadingInvoices || loadingDocuments || loadingProcesses || loadingAlerts;
 
   // Auto-select first property when properties load
   useEffect(() => {
@@ -78,6 +86,7 @@ export default function Home() {
   const selectedProperty = properties.find((p) => p.id === selectedPropertyId) || properties[0];
   const propertyLicenses = licenses.filter(l => l.property_id === selectedPropertyId);
   const propertyDocuments = documents.filter(d => d.property_id === selectedPropertyId);
+  const propertyAlerts = environmentalAlerts.filter(a => a.property_id === selectedPropertyId);
 
   return (
   <div className="max-w-7xl mx-auto space-y-8">
@@ -156,6 +165,11 @@ export default function Home() {
           </>
         }
       </div>
+
+      {/* Environmental Alerts */}
+      {!isLoading && (
+        <EnvironmentalAlerts alerts={propertyAlerts} />
+      )}
 
       {/* Commodity History */}
       <CommodityHistory />

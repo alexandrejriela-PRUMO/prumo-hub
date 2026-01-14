@@ -16,7 +16,8 @@ import {
   Menu,
   X,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  AlertTriangle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +27,7 @@ const navItems = [
   { name: 'CAR + CCIR', page: 'Documents', icon: FileText },
   { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
   { name: 'Processos', page: 'Processes', icon: Scale },
+  { name: 'Alertas Ambientais', page: 'EnvironmentalAlerts', icon: AlertTriangle },
   { name: 'E-book Grátis', page: 'EbookReader', icon: FileText },
   { name: 'Santa Blog', page: 'Blog', icon: Newspaper },
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },

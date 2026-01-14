@@ -10,6 +10,7 @@ import Processes from './pages/Processes';
 import Requests from './pages/Requests';
 import Support from './pages/Support';
 import RegularityReport from './pages/RegularityReport';
+import EnvironmentalAlerts from './pages/EnvironmentalAlerts';
 import __Layout from './Layout.jsx';
 
 
@@ -26,6 +27,7 @@ export const PAGES = {
     "Requests": Requests,
     "Support": Support,
     "RegularityReport": RegularityReport,
+    "EnvironmentalAlerts": EnvironmentalAlerts,
 }
 
 export const pagesConfig = {

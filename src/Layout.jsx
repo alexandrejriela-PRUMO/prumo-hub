@@ -38,6 +38,7 @@ const navItems = [
   { name: 'Processos', page: 'Processes', icon: Scale },
   { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: FileCheck },
   { name: 'Alertas Ambientais', page: 'EnvironmentalAlerts', icon: AlertTriangle },
+  { name: 'Relatórios', page: 'Reports', icon: FileText },
   { name: 'Configurar Alertas', page: 'AlertSettings', icon: Settings, adminOnly: true },
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
   { name: 'E-book Grátis', page: 'EbookReader', icon: FileText },

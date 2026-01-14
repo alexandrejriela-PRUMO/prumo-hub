@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Award, DollarSign, CheckCircle, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 import TaxIncentiveForm from './TaxIncentiveForm';
+import { checkAndSendNotifications } from '../../functions/notificationMonitor';
 
 export default function TaxIncentives() {
   const [user, setUser] = useState(null);
@@ -31,6 +32,12 @@ export default function TaxIncentives() {
     queryFn: () => base44.entities.Property.filter({ owner_email: user.email }),
     enabled: !!user?.email
   });
+
+  useEffect(() => {
+    if (user?.email) {
+      checkAndSendNotifications(user.email);
+    }
+  }, [user?.email]);
   const [eligibilityData, setEligibilityData] = useState({
     area_hectares: '',
     has_car: false,

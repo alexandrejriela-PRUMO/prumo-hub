@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Award, ExternalLink, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import CertificationForm from './CertificationForm';
+import { checkAndSendNotifications } from '../../functions/notificationMonitor';
 
 export default function SustainableCertifications() {
   const [user, setUser] = useState(null);
@@ -28,6 +29,12 @@ export default function SustainableCertifications() {
     queryFn: () => base44.entities.Property.filter({ owner_email: user.email }),
     enabled: !!user?.email
   });
+
+  useEffect(() => {
+    if (user?.email) {
+      checkAndSendNotifications(user.email);
+    }
+  }, [user?.email]);
   const certifications = [
     {
       name: 'Orgânico Brasil',

@@ -17,6 +17,7 @@ import {
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
+import { useRealtimeNotifications } from './useRealtimeNotifications';
 
 const severityConfig = {
   info: { icon: Info, color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-200' },
@@ -27,52 +28,28 @@ const severityConfig = {
 
 export default function NotificationCenter({ user, isOpen, onClose }) {
   const queryClient = useQueryClient();
-
-  const { data: notifications = [] } = useQuery({
-    queryKey: ['inAppNotifications', user?.email],
-    queryFn: () => base44.entities.InAppNotification.filter(
-      { user_email: user.email },
-      '-created_date',
-      50
-    ),
-    enabled: !!user?.email && isOpen,
-    refetchInterval: 30000 // Refresh every 30 seconds
-  });
+  const { notifications, markAsRead, markAllAsRead, deleteNotification } = useRealtimeNotifications(user?.email);
 
   const markAsReadMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.InAppNotification.update(id, data),
+    mutationFn: (notificationId) => markAsRead(notificationId),
     onSuccess: () => {
-      queryClient.invalidateQueries(['inAppNotifications']);
+      queryClient.invalidateQueries({ queryKey: ['inAppNotifications'] });
     }
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.InAppNotification.delete(id),
+  const deleteNotificationMutation = useMutation({
+    mutationFn: (notificationId) => deleteNotification(notificationId),
     onSuccess: () => {
-      queryClient.invalidateQueries(['inAppNotifications']);
+      queryClient.invalidateQueries({ queryKey: ['inAppNotifications'] });
     }
   });
 
-  const markAsRead = (notification) => {
-    if (!notification.read) {
-      markAsReadMutation.mutate({
-        id: notification.id,
-        data: { ...notification, read: true }
-      });
+  const markAllAsReadMutation = useMutation({
+    mutationFn: () => markAllAsRead(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inAppNotifications'] });
     }
-  };
-
-  const markAllAsRead = async () => {
-    const unreadNotifications = notifications.filter(n => !n.read);
-    await Promise.all(
-      unreadNotifications.map(n =>
-        markAsReadMutation.mutateAsync({
-          id: n.id,
-          data: { ...n, read: true }
-        })
-      )
-    );
-  };
+  });
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -111,7 +88,8 @@ export default function NotificationCenter({ user, isOpen, onClose }) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={markAllAsRead}
+                onClick={() => markAllAsReadMutation.mutate()}
+                disabled={markAllAsReadMutation.isPending}
                 className="text-white hover:bg-emerald-800 text-xs"
               >
                 <Check className="w-3 h-3 mr-1" />
@@ -154,13 +132,14 @@ export default function NotificationCenter({ user, isOpen, onClose }) {
                               {notification.title}
                             </h4>
                             <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 text-gray-400 hover:text-red-600"
-                              onClick={() => deleteMutation.mutate(notification.id)}
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
+                               variant="ghost"
+                               size="icon"
+                               className="h-6 w-6 text-gray-400 hover:text-red-600"
+                               onClick={() => deleteNotificationMutation.mutate(notification.id)}
+                               disabled={deleteNotificationMutation.isPending}
+                             >
+                               <Trash2 className="w-3 h-3" />
+                             </Button>
                           </div>
                           
                           <p className="text-sm text-gray-600 mb-2">
@@ -182,7 +161,9 @@ export default function NotificationCenter({ user, isOpen, onClose }) {
                             <Link 
                               to={notification.link}
                               onClick={() => {
-                                markAsRead(notification);
+                                if (!notification.read) {
+                                  markAsReadMutation.mutate(notification.id);
+                                }
                                 onClose();
                               }}
                             >

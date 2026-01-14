@@ -97,48 +97,49 @@ Retorne APENAS preços verificados e atualizados do CEPEA/ESALQ. Use a URL: http
     <div className="flex items-center gap-2">
       <Card className="bg-gradient-to-r from-emerald-600 to-emerald-700 border-0 shadow-lg overflow-hidden flex-1">
         <div className="px-4 py-2.5 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-          <span className="text-white font-semibold text-sm">{current.name}</span>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <span className="text-white font-bold text-lg">
-            R$ {current.price.toFixed(2)}
-          </span>
-          <span className="text-emerald-100 text-xs">/{current.unit}</span>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+            <span className="text-white font-semibold text-sm">{current.name}</span>
+          </div>
           
-          {current.change_percent !== undefined && (
-            <div className={`flex items-center gap-1 ${trendColor}`}>
-              <TrendIcon className="w-4 h-4" />
-              <span className="text-xs font-medium">{Math.abs(current.change_percent).toFixed(1)}%</span>
-            </div>
-          )}
-        </div>
+          <div className="flex items-center gap-2">
+            <span className="text-white font-bold text-lg">
+              R$ {current.price.toFixed(2)}
+            </span>
+            <span className="text-emerald-100 text-xs">/{current.unit}</span>
+            
+            {current.change_percent !== undefined && (
+              <div className={`flex items-center gap-1 ${trendColor}`}>
+                <TrendIcon className="w-4 h-4" />
+                <span className="text-xs font-medium">{Math.abs(current.change_percent).toFixed(1)}%</span>
+              </div>
+            )}
+          </div>
 
-        {/* Fonte dos dados */}
-        {current.source_name && current.source_url && (
-          <a
-            href={current.source_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 text-emerald-100 hover:text-white transition-colors text-xs"
-          >
-            <span className="font-medium">{current.source_name}</span>
-            <ExternalLink className="w-3 h-3" />
-          </a>
-        )}
-        
-        {/* Indicadores de navegação */}
-        <div className="flex gap-1">
-          {commodities.map((_, idx) => (
-            <div
-              key={idx}
-              className={`w-1.5 h-1.5 rounded-full transition-all ${
-                idx === currentIndex ? 'bg-white w-4' : 'bg-white/40'
-              }`}
-            />
-          ))}
+          {/* Fonte dos dados */}
+          {current.source_name && current.source_url && (
+            <a
+              href={current.source_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-emerald-100 hover:text-white transition-colors text-xs"
+            >
+              <span className="font-medium">{current.source_name}</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
+          
+          {/* Indicadores de navegação */}
+          <div className="flex gap-1">
+            {commodities.map((_, idx) => (
+              <div
+                key={idx}
+                className={`w-1.5 h-1.5 rounded-full transition-all ${
+                  idx === currentIndex ? 'bg-white w-4' : 'bg-white/40'
+                }`}
+              />
+            ))}
+          </div>
         </div>
       </Card>
       

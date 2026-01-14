@@ -1,10 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { MapContainer, TileLayer, Polygon, FeatureGroup } from 'react-leaflet';
-import { EditControl } from 'react-leaflet-draw';
+import React, { useState, useRef } from 'react';
+import { MapContainer, TileLayer, Polygon, useMapEvents } from 'react-leaflet';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Trash2 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import 'leaflet-draw/dist/leaflet.draw.css';
 
 // Fix Leaflet default marker icon
 delete L.Icon.Default.prototype._getIconUrl;
@@ -14,9 +14,19 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
+function PolygonDrawer({ positions, setPositions }) {
+  useMapEvents({
+    click(e) {
+      setPositions([...positions, [e.latlng.lat, e.latlng.lng]]);
+    },
+  });
+  return null;
+}
+
 export default function PropertyMap({ property, onSave, onCancel }) {
-  const [drawnItems, setDrawnItems] = useState(null);
-  const mapRef = useRef(null);
+  const [positions, setPositions] = useState([]);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [manualCoords, setManualCoords] = useState('');
 
   const parseCoordinates = (coordString) => {
     if (!coordString) return null;
@@ -33,97 +43,99 @@ export default function PropertyMap({ property, onSave, onCancel }) {
 
   const center = parseCoordinates(property?.coordinates) || [-15.7939, -47.8828];
 
-  const handleCreated = (e) => {
-    const layer = e.layer;
-    const geoJSON = layer.toGeoJSON();
-    setDrawnItems(geoJSON.geometry);
-  };
-
-  const handleEdited = (e) => {
-    const layers = e.layers;
-    layers.eachLayer((layer) => {
-      const geoJSON = layer.toGeoJSON();
-      setDrawnItems(geoJSON.geometry);
-    });
-  };
-
-  const handleDeleted = () => {
-    setDrawnItems(null);
-  };
-
   const handleSave = () => {
-    if (drawnItems) {
-      onSave(drawnItems);
-    } else if (property?.boundaries) {
-      onSave(null); // Remove boundaries if deleted
+    if (positions.length >= 3) {
+      const closedPositions = [...positions, positions[0]];
+      const geoJSON = {
+        type: 'Polygon',
+        coordinates: [closedPositions.map(pos => [pos[1], pos[0]])]
+      };
+      onSave(geoJSON);
+    } else if (positions.length === 0 && property?.boundaries) {
+      onSave(null);
     }
   };
 
-  useEffect(() => {
-    if (property?.boundaries) {
-      setDrawnItems(property.boundaries);
+  const clearPolygon = () => {
+    setPositions([]);
+    setIsDrawing(false);
+  };
+
+  const addManualPoint = () => {
+    const coords = parseCoordinates(manualCoords);
+    if (coords) {
+      setPositions([...positions, coords]);
+      setManualCoords('');
+    }
+  };
+
+  React.useEffect(() => {
+    if (property?.boundaries && positions.length === 0) {
+      const coords = property.boundaries.coordinates[0].map(coord => [coord[1], coord[0]]);
+      coords.pop();
+      setPositions(coords);
     }
   }, [property]);
 
   return (
     <div className="space-y-4">
+      <div className="flex gap-2 mb-2">
+        <Button
+          type="button"
+          onClick={() => setIsDrawing(!isDrawing)}
+          className={isDrawing ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-600 hover:bg-gray-700'}
+        >
+          {isDrawing ? 'Desenhando... (clique no mapa)' : 'Iniciar Desenho'}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={clearPolygon}
+          disabled={positions.length === 0}
+        >
+          <Trash2 className="w-4 h-4 mr-2" />
+          Limpar ({positions.length} pontos)
+        </Button>
+      </div>
+
+      <div className="flex gap-2">
+        <Input
+          placeholder="Adicionar ponto manual: -30.034, -51.217"
+          value={manualCoords}
+          onChange={(e) => setManualCoords(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && addManualPoint()}
+        />
+        <Button type="button" variant="outline" onClick={addManualPoint}>
+          Adicionar
+        </Button>
+      </div>
+
       <div className="h-[500px] rounded-lg overflow-hidden border-2 border-gray-200">
         <MapContainer
           center={center}
           zoom={13}
           style={{ height: '100%', width: '100%' }}
-          ref={mapRef}
         >
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           />
           
-          <FeatureGroup>
-            <EditControl
-              position="topright"
-              onCreated={handleCreated}
-              onEdited={handleEdited}
-              onDeleted={handleDeleted}
-              draw={{
-                rectangle: false,
-                circle: false,
-                circlemarker: false,
-                marker: false,
-                polyline: false,
-                polygon: {
-                  allowIntersection: false,
-                  drawError: {
-                    color: '#e74c3c',
-                    message: '<strong>Erro!</strong> As bordas não podem se cruzar.'
-                  },
-                  shapeOptions: {
-                    color: '#16a34a',
-                    fillOpacity: 0.3
-                  }
-                }
-              }}
-              edit={{
-                featureGroup: mapRef.current,
-                edit: true,
-                remove: true
-              }}
+          {isDrawing && <PolygonDrawer positions={positions} setPositions={setPositions} />}
+          
+          {positions.length >= 3 && (
+            <Polygon
+              positions={positions}
+              pathOptions={{ color: '#16a34a', fillOpacity: 0.3 }}
             />
-            
-            {property?.boundaries && !drawnItems && (
-              <Polygon
-                positions={property.boundaries.coordinates[0].map(coord => [coord[1], coord[0]])}
-                pathOptions={{ color: '#16a34a', fillOpacity: 0.3 }}
-              />
-            )}
-          </FeatureGroup>
+          )}
         </MapContainer>
       </div>
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <p className="text-sm text-blue-800">
-          <strong>Como usar:</strong> Use o ícone de polígono (▢) no canto superior direito do mapa para desenhar os limites da propriedade. 
-          Clique nos pontos do mapa para definir os vértices. Você pode editar ou deletar polígonos existentes usando os ícones de edição.
+          <strong>Como usar:</strong> Clique em "Iniciar Desenho" e depois clique no mapa para adicionar pontos. 
+          Você precisa de no mínimo 3 pontos para criar um polígono. Também pode adicionar pontos manualmente digitando as coordenadas.
         </p>
       </div>
 
@@ -134,9 +146,10 @@ export default function PropertyMap({ property, onSave, onCancel }) {
         <Button 
           type="button" 
           onClick={handleSave}
+          disabled={positions.length < 3}
           className="bg-emerald-600 hover:bg-emerald-700"
         >
-          Salvar Limites
+          Salvar Limites {positions.length >= 3 && `(${positions.length} pontos)`}
         </Button>
       </div>
     </div>

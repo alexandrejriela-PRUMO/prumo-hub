@@ -1,13 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar, FileText, AlertTriangle, FileCheck, Scale, CreditCard, Building2 } from 'lucide-react';
+import { FileText, AlertTriangle, FileCheck, Scale, CreditCard, Building2 } from 'lucide-react';
 
 const dataSourceOptions = [
   { value: 'properties', label: 'Propriedades', icon: Building2 },
@@ -52,22 +46,24 @@ export default function ReportBuilder({ user, onGenerate }) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Configurar Relatório</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <div className="bg-white rounded-xl border shadow-sm">
+      <div className="p-6 border-b">
+        <h2 className="text-xl font-semibold">Configurar Relatório</h2>
+      </div>
+      <div className="p-6 space-y-6">
         <div className="space-y-2">
-          <Label>Título do Relatório</Label>
-          <Input
+          <label className="text-sm font-medium">Título do Relatório</label>
+          <input
+            type="text"
             value={config.title}
             onChange={(e) => setConfig({ ...config, title: e.target.value })}
             placeholder="Ex: Relatório Ambiental Mensal"
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
         </div>
 
         <div className="space-y-3">
-          <Label>Fontes de Dados</Label>
+          <label className="text-sm font-medium">Fontes de Dados</label>
           <div className="grid md:grid-cols-2 gap-3">
             {dataSourceOptions.map((option) => {
               const Icon = option.icon;
@@ -81,9 +77,11 @@ export default function ReportBuilder({ user, onGenerate }) {
                   }`}
                   onClick={() => toggleDataSource(option.value)}
                 >
-                  <Checkbox
+                  <input
+                    type="checkbox"
                     checked={config.dataSources.includes(option.value)}
-                    onCheckedChange={() => toggleDataSource(option.value)}
+                    onChange={() => toggleDataSource(option.value)}
+                    className="w-4 h-4 text-emerald-600 rounded"
                   />
                   <Icon className="w-5 h-5 text-gray-600" />
                   <span className="font-medium text-sm">{option.label}</span>

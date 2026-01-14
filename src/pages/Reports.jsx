@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Download, Filter, BarChart3 } from 'lucide-react';
+import { FileText, BarChart3 } from 'lucide-react';
 import ReportBuilder from '../components/reports/ReportBuilder';
 import ReportPreview from '../components/reports/ReportPreview';
 import SavedReports from '../components/reports/SavedReports';
@@ -13,6 +9,7 @@ export default function Reports() {
   const [user, setUser] = useState(null);
   const [reportConfig, setReportConfig] = useState(null);
   const [reportData, setReportData] = useState(null);
+  const [activeTab, setActiveTab] = useState('builder');
 
   useEffect(() => {
     const loadUser = async () => {
@@ -145,45 +142,57 @@ export default function Reports() {
           <h1 className="text-3xl font-bold text-gray-900">Relatórios</h1>
           <p className="text-gray-500 mt-1">Gere relatórios personalizados e exporte seus dados</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <Filter className="w-4 h-4 mr-2" />
-            Filtros Salvos
-          </Button>
-        </div>
       </div>
 
-      <Tabs defaultValue="builder" className="space-y-6">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="builder">
-            <BarChart3 className="w-4 h-4 mr-2" />
-            Criar Relatório
-          </TabsTrigger>
-          <TabsTrigger value="saved">
-            <FileText className="w-4 h-4 mr-2" />
-            Relatórios Salvos
-          </TabsTrigger>
-        </TabsList>
+      <div className="space-y-6">
+        <div className="border-b">
+          <div className="flex gap-4">
+            <button
+              onClick={() => setActiveTab('builder')}
+              className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+                activeTab === 'builder'
+                  ? 'border-emerald-600 text-emerald-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4 inline mr-2" />
+              Criar Relatório
+            </button>
+            <button
+              onClick={() => setActiveTab('saved')}
+              className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+                activeTab === 'saved'
+                  ? 'border-emerald-600 text-emerald-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <FileText className="w-4 h-4 inline mr-2" />
+              Relatórios Salvos
+            </button>
+          </div>
+        </div>
 
-        <TabsContent value="builder" className="space-y-6">
-          <ReportBuilder
-            user={user}
-            onGenerate={generateReport}
-          />
-
-          {reportData && reportConfig && (
-            <ReportPreview
-              data={reportData}
-              config={reportConfig}
+        {activeTab === 'builder' && (
+          <div className="space-y-6">
+            <ReportBuilder
               user={user}
+              onGenerate={generateReport}
             />
-          )}
-        </TabsContent>
 
-        <TabsContent value="saved">
+            {reportData && reportConfig && (
+              <ReportPreview
+                data={reportData}
+                config={reportConfig}
+                user={user}
+              />
+            )}
+          </div>
+        )}
+
+        {activeTab === 'saved' && (
           <SavedReports user={user} />
-        </TabsContent>
-      </Tabs>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,7 +1,4 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Download, FileText, Table as TableIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -40,64 +37,62 @@ export default function ReportPreview({ data, config, user }) {
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <div className="bg-white rounded-xl border shadow-sm">
+      <div className="p-6 border-b">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>
+            <h2 className="text-xl font-semibold">
               {config.title || 'Relatório Personalizado'}
-            </CardTitle>
+            </h2>
             <p className="text-sm text-gray-500 mt-1">
               Gerado em {format(new Date(), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleExportCSV}>
-              <TableIcon className="w-4 h-4 mr-2" />
+            <button
+              onClick={handleExportCSV}
+              className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-2"
+            >
+              <TableIcon className="w-4 h-4" />
               Exportar CSV
-            </Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={handleExportPDF}>
-              <Download className="w-4 h-4 mr-2" />
+            </button>
+            <button
+              onClick={handleExportPDF}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
               Exportar PDF
-            </Button>
+            </button>
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
+      </div>
+      <div className="p-6 space-y-6">
         {/* Summary */}
         <div className="grid md:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-            <CardContent className="p-4">
-              <p className="text-sm text-blue-700 font-medium">Total de Registros</p>
-              <p className="text-3xl font-bold text-blue-900 mt-1">{getTotalCount()}</p>
-            </CardContent>
-          </Card>
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4">
+            <p className="text-sm text-blue-700 font-medium">Total de Registros</p>
+            <p className="text-3xl font-bold text-blue-900 mt-1">{getTotalCount()}</p>
+          </div>
           
           {data.properties.length > 0 && (
-            <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-              <CardContent className="p-4">
-                <p className="text-sm text-green-700 font-medium">Propriedades</p>
-                <p className="text-3xl font-bold text-green-900 mt-1">{data.properties.length}</p>
-              </CardContent>
-            </Card>
+            <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-lg p-4">
+              <p className="text-sm text-green-700 font-medium">Propriedades</p>
+              <p className="text-3xl font-bold text-green-900 mt-1">{data.properties.length}</p>
+            </div>
           )}
           
           {data.alerts.length > 0 && (
-            <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
-              <CardContent className="p-4">
-                <p className="text-sm text-red-700 font-medium">Alertas</p>
-                <p className="text-3xl font-bold text-red-900 mt-1">{data.alerts.length}</p>
-              </CardContent>
-            </Card>
+            <div className="bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-lg p-4">
+              <p className="text-sm text-red-700 font-medium">Alertas</p>
+              <p className="text-3xl font-bold text-red-900 mt-1">{data.alerts.length}</p>
+            </div>
           )}
           
           {data.licenses.length > 0 && (
-            <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
-              <CardContent className="p-4">
-                <p className="text-sm text-purple-700 font-medium">Licenças</p>
-                <p className="text-3xl font-bold text-purple-900 mt-1">{data.licenses.length}</p>
-              </CardContent>
-            </Card>
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-lg p-4">
+              <p className="text-sm text-purple-700 font-medium">Licenças</p>
+              <p className="text-3xl font-bold text-purple-900 mt-1">{data.licenses.length}</p>
+            </div>
           )}
         </div>
 
@@ -156,9 +151,11 @@ export default function ReportPreview({ data, config, user }) {
                         {license.expiry_date ? format(new Date(license.expiry_date), 'dd/MM/yyyy') : '-'}
                       </td>
                       <td className="p-3 text-sm">
-                        <Badge variant={license.status === 'Vigente' ? 'default' : 'destructive'}>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          license.status === 'Vigente' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
                           {license.status}
-                        </Badge>
+                        </span>
                       </td>
                     </tr>
                   ))}
@@ -188,22 +185,24 @@ export default function ReportPreview({ data, config, user }) {
                       <td className="p-3 text-sm">{alert.title}</td>
                       <td className="p-3 text-sm">{alert.alert_type}</td>
                       <td className="p-3 text-sm">
-                        <Badge className={
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           alert.severity === 'Crítica' ? 'bg-red-100 text-red-700' :
                           alert.severity === 'Alta' ? 'bg-orange-100 text-orange-700' :
                           alert.severity === 'Média' ? 'bg-yellow-100 text-yellow-700' :
                           'bg-blue-100 text-blue-700'
-                        }>
+                        }`}>
                           {alert.severity}
-                        </Badge>
+                        </span>
                       </td>
                       <td className="p-3 text-sm">
                         {format(new Date(alert.detection_date), 'dd/MM/yyyy')}
                       </td>
                       <td className="p-3 text-sm">
-                        <Badge variant={alert.status === 'Resolvido' ? 'default' : 'outline'}>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          alert.status === 'Resolvido' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                        }`}>
                           {alert.status}
-                        </Badge>
+                        </span>
                       </td>
                     </tr>
                   ))}
@@ -238,7 +237,7 @@ export default function ReportPreview({ data, config, user }) {
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

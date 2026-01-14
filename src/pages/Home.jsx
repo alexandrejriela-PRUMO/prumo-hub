@@ -208,11 +208,13 @@ export default function Home() {
 
       {/* Property Selector */}
       {!isLoading && properties.length > 1 &&
-      <div className="flex items-center gap-3 p-4 bg-white rounded-xl border border-emerald-100 shadow-sm">
-          <MapPin className="w-5 h-5 text-emerald-600" />
-          <span className="text-gray-700 font-medium">Selecionar Propriedade:</span>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-white rounded-xl border border-emerald-100 shadow-sm">
+          <div className="flex items-center gap-3 min-w-0">
+            <MapPin className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+            <span className="text-gray-700 font-medium text-sm sm:text-base whitespace-nowrap">Propriedade:</span>
+          </div>
           <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
-            <SelectTrigger className="w-72 bg-emerald-50 border-emerald-200">
+            <SelectTrigger className="w-full sm:w-72 bg-emerald-50 border-emerald-200 text-sm">
               <SelectValue placeholder="Selecione uma propriedade" />
             </SelectTrigger>
             <SelectContent>

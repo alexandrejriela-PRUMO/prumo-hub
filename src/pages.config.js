@@ -1,4 +1,5 @@
 import AlertSettings from './pages/AlertSettings';
+import AlertsReports from './pages/AlertsReports';
 import Blog from './pages/Blog';
 import CarbonCredits from './pages/CarbonCredits';
 import Certifications from './pages/Certifications';
@@ -28,12 +29,12 @@ import Reports from './pages/Reports';
 import Requests from './pages/Requests';
 import Support from './pages/Support';
 import TaxIncentives from './pages/TaxIncentives';
-import AlertsReports from './pages/AlertsReports';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "AlertSettings": AlertSettings,
+    "AlertsReports": AlertsReports,
     "Blog": Blog,
     "CarbonCredits": CarbonCredits,
     "Certifications": Certifications,
@@ -63,7 +64,6 @@ export const PAGES = {
     "Requests": Requests,
     "Support": Support,
     "TaxIncentives": TaxIncentives,
-    "AlertsReports": AlertsReports,
 }
 
 export const pagesConfig = {

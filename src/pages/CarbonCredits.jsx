@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import CarbonCreditForm from '../components/carbon/CarbonCreditForm';
 import CarbonCreditDetails from '../components/carbon/CarbonCreditDetails';
 import CarbonMarketNews from '../components/carbon/CarbonMarketNews';
+import CarbonReports from '../components/carbon/CarbonReports';
 
 export default function CarbonCreditsPage() {
   const [user, setUser] = useState(null);
@@ -266,9 +267,10 @@ export default function CarbonCreditsPage() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="projects">Projetos</TabsTrigger>
+          <TabsTrigger value="reports">Relatórios</TabsTrigger>
           <TabsTrigger value="market">Mercado</TabsTrigger>
         </TabsList>
 
@@ -511,6 +513,10 @@ export default function CarbonCreditsPage() {
               })}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="reports">
+          <CarbonReports credits={filteredCredits} properties={properties} />
         </TabsContent>
 
         <TabsContent value="market">

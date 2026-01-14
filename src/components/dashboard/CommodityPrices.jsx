@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { TrendingUp, TrendingDown, Minus, Loader2, ExternalLink } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Loader2, ExternalLink, BarChart3 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
 
 export default function CommodityPrices() {
   const [commodities, setCommodities] = useState([]);
@@ -92,8 +94,9 @@ Retorne APENAS preços verificados e atualizados do CEPEA/ESALQ. Use a URL: http
                       current.trend === 'down' ? 'text-red-300' : 'text-yellow-300';
 
   return (
-    <Card className="bg-gradient-to-r from-emerald-600 to-emerald-700 border-0 shadow-lg overflow-hidden">
-      <div className="px-4 py-2.5 flex items-center justify-between gap-3">
+    <div className="flex items-center gap-2">
+      <Card className="bg-gradient-to-r from-emerald-600 to-emerald-700 border-0 shadow-lg overflow-hidden flex-1">
+        <div className="px-4 py-2.5 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
           <span className="text-white font-semibold text-sm">{current.name}</span>
@@ -137,7 +140,15 @@ Retorne APENAS preços verificados e atualizados do CEPEA/ESALQ. Use a URL: http
             />
           ))}
         </div>
-      </div>
-    </Card>
+      </Card>
+      
+      <Link 
+        to={createPageUrl('CommodityAnalysis')} 
+        className="p-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 transition-all hover:scale-105 shadow-lg"
+        title="Análise de Commodities"
+      >
+        <BarChart3 className="w-5 h-5 text-white" />
+      </Link>
+    </div>
   );
 }

@@ -19,7 +19,8 @@ import {
   LogOut,
   ChevronRight,
   AlertTriangle,
-  Settings
+  Settings,
+  BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -33,6 +34,7 @@ const navItems = [
   { name: 'Alertas Ambientais', page: 'EnvironmentalAlerts', icon: AlertTriangle },
   { name: 'Configurar Alertas', page: 'AlertSettings', icon: Settings, adminOnly: true },
   { name: 'E-book Grátis', page: 'EbookReader', icon: FileText },
+  { name: 'Análise de Commodities', page: 'CommodityAnalysis', icon: BarChart3 },
   { name: 'Santa Blog', page: 'Blog', icon: Newspaper },
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
   { name: 'Suporte', page: 'Support', icon: Headphones },

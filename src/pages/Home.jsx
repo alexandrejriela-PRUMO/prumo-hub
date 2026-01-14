@@ -8,6 +8,7 @@ import InvoicesSummary from '../components/dashboard/InvoicesSummary';
 import CommodityPrices from '../components/dashboard/CommodityPrices';
 import CommodityHistory from '../components/dashboard/CommodityHistory';
 import BlogPreview from '../components/dashboard/BlogPreview';
+import RegularityThermometer from '../components/dashboard/RegularityThermometer';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Link } from 'react-router-dom';
@@ -51,7 +52,21 @@ export default function Home() {
     initialData: []
   });
 
-  const isLoading = loadingProperties || loadingLicenses || loadingInvoices;
+  const { data: documents, isLoading: loadingDocuments } = useQuery({
+    queryKey: ['documents', user?.email],
+    queryFn: () => base44.entities.Document.filter({ owner_email: user.email }),
+    enabled: !!user?.email,
+    initialData: []
+  });
+
+  const { data: processes, isLoading: loadingProcesses } = useQuery({
+    queryKey: ['processes', user?.email],
+    queryFn: () => base44.entities.Process.filter({ client_email: user.email }),
+    enabled: !!user?.email,
+    initialData: []
+  });
+
+  const isLoading = loadingProperties || loadingLicenses || loadingInvoices || loadingDocuments || loadingProcesses;
 
   // Auto-select first property when properties load
   useEffect(() => {
@@ -61,9 +76,11 @@ export default function Home() {
   }, [properties, selectedPropertyId]);
 
   const selectedProperty = properties.find((p) => p.id === selectedPropertyId) || properties[0];
+  const propertyLicenses = licenses.filter(l => l.property_id === selectedPropertyId);
+  const propertyDocuments = documents.filter(d => d.property_id === selectedPropertyId);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
+  <div className="max-w-7xl mx-auto space-y-8">
       {/* Header with Commodity Prices */}
       <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
         <div>
@@ -114,6 +131,16 @@ export default function Home() {
 
       {/* Quick Actions */}
       <QuickActions />
+
+      {/* Termômetro de Regularidade */}
+      {!isLoading && selectedProperty && (
+        <RegularityThermometer 
+          property={selectedProperty}
+          licenses={propertyLicenses}
+          documents={propertyDocuments}
+          processes={processes}
+        />
+      )}
 
       {/* Two Column Layout */}
       <div className="grid lg:grid-cols-2 gap-6">

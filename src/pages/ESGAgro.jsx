@@ -13,7 +13,7 @@ import {
   ChevronRight,
   Sprout
 } from 'lucide-react';
-import { createPageUrl } from './utils';
+import { createPageUrl } from '../utils';
 import { Link } from 'react-router-dom';
 
 export default function ESGAgro() {

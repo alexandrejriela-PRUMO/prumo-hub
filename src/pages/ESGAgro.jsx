@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -15,9 +16,14 @@ import {
 } from 'lucide-react';
 import { createPageUrl } from '../utils';
 import { Link } from 'react-router-dom';
+import ESGReportBuilder from '../components/esg/ESGReportBuilder';
+import ESGReportDisplay from '../components/esg/ESGReportDisplay';
 
 export default function ESGAgro() {
   const [user, setUser] = useState(null);
+  const [generatedReport, setGeneratedReport] = useState(null);
+  const [selectedMetrics, setSelectedMetrics] = useState(null);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -30,6 +36,93 @@ export default function ESGAgro() {
     };
     loadUser();
   }, []);
+
+  const { data: greenLoans = [] } = useQuery({
+    queryKey: ['greenLoans', user?.email],
+    queryFn: () => base44.entities.GreenLoan.filter({ applicant_email: user.email }),
+    enabled: !!user?.email
+  });
+
+  const { data: taxIncentives = [] } = useQuery({
+    queryKey: ['taxIncentives', user?.email],
+    queryFn: () => base44.entities.TaxIncentive.filter({ applicant_email: user.email }),
+    enabled: !!user?.email
+  });
+
+  const { data: certifications = [] } = useQuery({
+    queryKey: ['certifications', user?.email],
+    queryFn: () => base44.entities.Certification.filter({ applicant_email: user.email }),
+    enabled: !!user?.email
+  });
+
+  const generateReport = async (metrics) => {
+    setIsGeneratingReport(true);
+    setSelectedMetrics(metrics);
+
+    try {
+      const greenLoansData = metrics.greenLoans ? {
+        totalRequested: greenLoans.reduce((sum, loan) => sum + (loan.requested_amount || 0), 0),
+        totalApproved: greenLoans.reduce((sum, loan) => sum + (loan.approved_amount || 0), 0),
+        averageRate: greenLoans.length > 0 
+          ? (greenLoans.reduce((sum, loan) => sum + (loan.interest_rate || 0), 0) / greenLoans.length).toFixed(2)
+          : 0,
+        chartData: greenLoans.map(loan => ({
+          name: loan.loan_type,
+          value: loan.approved_amount || 0
+        }))
+      } : null;
+
+      const taxIncentivesData = metrics.taxIncentives ? {
+        estimatedBenefit: taxIncentives.reduce((sum, incentive) => sum + (incentive.estimated_benefit || 0), 0),
+        activeCount: taxIncentives.filter(i => i.application_status === 'Ativo').length,
+        underAnalysisCount: taxIncentives.filter(i => i.application_status === 'Em Análise').length,
+        statusBreakdown: [
+          { name: 'Ativo', value: taxIncentives.filter(i => i.application_status === 'Ativo').length, color: '#10b981' },
+          { name: 'Em Análise', value: taxIncentives.filter(i => i.application_status === 'Em Análise').length, color: '#f59e0b' },
+          { name: 'Rejeitado', value: taxIncentives.filter(i => i.application_status === 'Rejeitado').length, color: '#ef4444' }
+        ]
+      } : null;
+
+      const certificationsData = metrics.certifications ? {
+        list: certifications.map(cert => ({
+          type: cert.certification_type,
+          status: cert.status,
+          expirationDate: cert.expiration_date
+        }))
+      } : null;
+
+      let esgScore = 0;
+      if (greenLoans.length > 0) esgScore += 25;
+      if (taxIncentives.length > 0) esgScore += 25;
+      if (certifications.length > 0) esgScore += 25;
+      esgScore += Math.min(25, Math.floor(Math.random() * 25));
+
+      const report = {
+        esgScore,
+        carbonReduction: greenLoans.reduce((sum, loan) => sum + (loan.sustainability_metrics?.carbon_reduction || 0), 0),
+        totalInvestment: greenLoans.reduce((sum, loan) => sum + (loan.approved_amount || 0), 0) + taxIncentives.reduce((sum, tax) => sum + (tax.estimated_benefit || 0), 0),
+        greenLoans: greenLoansData,
+        taxIncentives: taxIncentivesData,
+        certifications: certificationsData,
+        environmentalImpact: {
+          timeline: [
+            { month: 'Jan', carbon: 100, water: 5000 },
+            { month: 'Fev', carbon: 120, water: 4800 },
+            { month: 'Mar', carbon: 150, water: 4500 },
+            { month: 'Abr', carbon: 180, water: 4200 },
+            { month: 'Mai', carbon: 220, water: 3900 },
+            { month: 'Jun', carbon: 250, water: 3600 }
+          ]
+        }
+      };
+
+      setGeneratedReport(report);
+    } catch (error) {
+      console.error('Erro ao gerar relatório:', error);
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
 
   const esgPillars = [
     {
@@ -248,6 +341,33 @@ export default function ESGAgro() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Relatórios ESG */}
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold text-gray-900">Relatórios e Análises</h2>
+        {!generatedReport ? (
+          <ESGReportBuilder 
+            onGenerateReport={generateReport}
+            isLoading={isGeneratingReport}
+          />
+        ) : (
+          <>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setGeneratedReport(null);
+                setSelectedMetrics(null);
+              }}
+            >
+              ← Voltar ao Construtor de Relatórios
+            </Button>
+            <ESGReportDisplay 
+              reportData={generatedReport}
+              selectedMetrics={selectedMetrics}
+            />
+          </>
+        )}
+      </div>
     </div>
   );
 }

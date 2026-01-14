@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
+
+const ITEMS_PER_PAGE = 10;
 
 export default function AlertsReportsTable({ alerts }) {
   const [sortConfig, setSortConfig] = useState({ key: 'alertDate', direction: 'desc' });
+  const [currentPage, setCurrentPage] = useState(1);
 
   const sortedAlerts = React.useMemo(() => {
     const sorted = [...alerts];
@@ -20,6 +24,12 @@ export default function AlertsReportsTable({ alerts }) {
     }
     return sorted;
   }, [alerts, sortConfig]);
+
+  const totalPages = Math.ceil(sortedAlerts.length / ITEMS_PER_PAGE);
+  const paginatedAlerts = sortedAlerts.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const handleSort = (key) => {
     setSortConfig({
@@ -118,7 +128,7 @@ export default function AlertsReportsTable({ alerts }) {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {sortedAlerts.map((alert) => (
+              {paginatedAlerts.map((alert) => (
                 <tr key={alert.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
                     {new Date(alert.alertDate).toLocaleDateString('pt-BR')}
@@ -152,6 +162,53 @@ export default function AlertsReportsTable({ alerts }) {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-6 pt-4 border-t">
+            <div className="text-sm text-gray-600">
+              Mostrando {(currentPage - 1) * ITEMS_PER_PAGE + 1} de {sortedAlerts.length} alertas
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+
+              {/* Page numbers */}
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setCurrentPage(page)}
+                    className="min-w-10"
+                  >
+                    {page}
+                  </Button>
+                ))}
+              </div>
+
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="text-sm text-gray-600">
+              Página {currentPage} de {totalPages}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

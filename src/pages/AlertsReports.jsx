@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Download, FileText, Table2, BarChart3, Calendar, Filter } from 'lucide-react';
+import { Download, FileText, Table2, BarChart3, Calendar, Filter, Save } from 'lucide-react';
 import AlertsReportsFilters from '@/components/reports/AlertsReportsFilters';
 import AlertsReportsTable from '@/components/reports/AlertsReportsTable';
+import SavedFiltersManager from '@/components/reports/SavedFiltersManager';
 import { exportToCSV, exportToPDF } from '@/functions/alertsReportsExport';
 
 const COLORS = ['#1B4332', '#40916C', '#52B788', '#D6CDA4', '#E63946'];
@@ -15,6 +16,7 @@ const COLORS = ['#1B4332', '#40916C', '#52B788', '#D6CDA4', '#E63946'];
 export default function AlertsReports() {
   const [user, setUser] = useState(null);
   const [viewMode, setViewMode] = useState('table');
+  const [showSavedFilters, setShowSavedFilters] = useState(false);
   const [filters, setFilters] = useState({
     alertType: 'all',
     severity: 'all',
@@ -221,7 +223,7 @@ export default function AlertsReports() {
       </div>
 
       {/* View Toggle */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <Button
           variant={viewMode === 'table' ? 'default' : 'outline'}
           onClick={() => setViewMode('table')}
@@ -239,6 +241,13 @@ export default function AlertsReports() {
           Gráficos
         </Button>
         <div className="flex-1" />
+        <Button
+          onClick={() => setShowSavedFilters(true)}
+          variant="outline"
+          className="gap-2"
+        >
+          Filtros Salvos
+        </Button>
         <Button onClick={handleExportCSV} variant="outline" className="gap-2">
           <Download className="w-4 h-4" />
           CSV
@@ -248,6 +257,15 @@ export default function AlertsReports() {
           PDF
         </Button>
       </div>
+
+      {/* Saved Filters Manager */}
+      <SavedFiltersManager
+        user={user}
+        currentFilters={filters}
+        onLoadFilter={setFilters}
+        isOpen={showSavedFilters}
+        onClose={() => setShowSavedFilters(false)}
+      />
 
       {/* Content */}
       {viewMode === 'table' ? (

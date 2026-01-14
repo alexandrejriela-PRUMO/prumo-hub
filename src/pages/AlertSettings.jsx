@@ -129,6 +129,29 @@ export default function AlertSettings() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      {/* Info Card */}
+      <Card className="bg-amber-50 border-amber-200">
+        <CardContent className="pt-6">
+          <div className="space-y-3">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <h3 className="font-semibold text-amber-900">Configurar Alertas - Uso Futuro</h3>
+              </div>
+            </div>
+            <p className="text-amber-800 text-sm">
+              <strong>Objetivo Atual:</strong> Esta seção permite que administradores pre-configurem limiares e regras que serão usados quando a integração com sistemas de detecção automática estiver disponível.
+            </p>
+            <p className="text-amber-800 text-sm">
+              <strong>Funcionalidade Futura:</strong> Quando integradas plataformas como PRODES, DETER, MapBiomas e outros sensores geoespaciais, os alertas será automaticamente disparados com base nesses limiares configurados aqui, gerando notificações em tempo real.
+            </p>
+            <p className="text-amber-800 text-sm">
+              <strong>Agora:</strong> Configure seus limiares antecipadamente para estar pronto quando a automação for ativada.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -140,11 +163,6 @@ export default function AlertSettings() {
             <Badge className="bg-blue-100 text-blue-700 border border-blue-300">Em Breve</Badge>
           </div>
           <p className="text-gray-500">Defina limiares customizados para alertas de NDVI, desmatamento e mudanças no uso da terra</p>
-          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg max-w-3xl">
-            <p className="text-sm text-blue-800">
-              ℹ️ Configure os limiares agora. A análise automática de dados geoespaciais e envio de notificações será ativada em breve.
-            </p>
-          </div>
         </div>
         <Button onClick={() => { setShowForm(true); setEditingThreshold(null); }} className="bg-emerald-600 hover:bg-emerald-700">
           <Plus className="w-4 h-4 mr-2" />

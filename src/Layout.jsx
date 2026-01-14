@@ -56,7 +56,7 @@ const navItems = [
   { name: 'Relatórios ESG Consolidados', page: 'ConsolidatedReports', icon: FileText },
   { name: 'Configurar Alertas', page: 'AlertSettings', icon: Settings, adminOnly: true },
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
-  { name: 'Notificações em Tempo Real', page: 'RealtimeNotificationSettings', icon: Bell },
+  { name: 'Notificações em Tempo Real', page: 'RealtimeNotificationSettings', icon: Bell, parent: 'NotificationSettings' },
   { name: 'E-book Grátis', page: 'EbookReader', icon: FileText },
   { name: 'Análise de Commodities', page: 'CommodityAnalysis', icon: BarChart3 },
   { name: 'Santa Blog', page: 'Blog', icon: Newspaper },

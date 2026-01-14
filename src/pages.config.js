@@ -24,6 +24,7 @@ import ESGAgro from './pages/ESGAgro';
 import GreenLoans from './pages/GreenLoans';
 import TaxIncentives from './pages/TaxIncentives';
 import Certifications from './pages/Certifications';
+import DocumentsManager from './pages/DocumentsManager';
 import __Layout from './Layout.jsx';
 
 
@@ -54,6 +55,7 @@ export const PAGES = {
     "GreenLoans": GreenLoans,
     "TaxIncentives": TaxIncentives,
     "Certifications": Certifications,
+    "DocumentsManager": DocumentsManager,
 }
 
 export const pagesConfig = {

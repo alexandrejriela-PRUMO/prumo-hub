@@ -28,7 +28,8 @@ import {
         Building2,
         Leaf,
         Droplets,
-        Shield
+        Shield,
+        TrendingUp
       } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

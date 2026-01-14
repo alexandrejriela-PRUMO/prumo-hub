@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function DashboardCharts({ licenses, processes, alerts }) {
   // License status data
@@ -24,10 +24,10 @@ export default function DashboardCharts({ licenses, processes, alerts }) {
 
   // Process status data
   const processData = [
-    { name: 'Em Andamento', value: processes.filter(p => p.status === 'Em Andamento').length },
-    { name: 'Suspenso', value: processes.filter(p => p.status === 'Suspenso').length },
-    { name: 'Arquivado', value: processes.filter(p => p.status === 'Arquivado').length },
-    { name: 'Finalizado', value: processes.filter(p => p.status === 'Finalizado').length }
+    { name: 'Em Andamento', value: processes.filter(p => p.status === 'Em Andamento').length, color: '#f59e0b' },
+    { name: 'Suspenso', value: processes.filter(p => p.status === 'Suspenso').length, color: '#6b7280' },
+    { name: 'Arquivado', value: processes.filter(p => p.status === 'Arquivado').length, color: '#3b82f6' },
+    { name: 'Finalizado', value: processes.filter(p => p.status === 'Finalizado').length, color: '#10b981' }
   ];
 
   // Alert severity data
@@ -77,10 +77,10 @@ export default function DashboardCharts({ licenses, processes, alerts }) {
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={licenseTypeData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
               <YAxis allowDecimals={false} />
               <Tooltip />
-              <Bar dataKey="quantidade" fill="#10b981" />
+              <Bar dataKey="quantidade" fill="#10b981" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -95,10 +95,14 @@ export default function DashboardCharts({ licenses, processes, alerts }) {
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={processData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
               <YAxis allowDecimals={false} />
               <Tooltip />
-              <Bar dataKey="value" fill="#f59e0b" />
+              <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                {processData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>

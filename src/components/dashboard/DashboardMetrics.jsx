@@ -6,9 +6,7 @@ import {
   Scale, 
   AlertTriangle,
   TrendingUp,
-  TrendingDown,
-  CheckCircle2,
-  XCircle
+  TrendingDown
 } from 'lucide-react';
 
 export default function DashboardMetrics({ licenses, documents, processes, alerts }) {

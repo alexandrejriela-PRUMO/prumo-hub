@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -144,12 +143,112 @@ export default function ExportPDF({ user, property, licenses, documents, process
         pdf.setTextColor(0, 0, 0);
       }
 
-      // Footer
-      const footerY = pageHeight - 15;
-      pdf.setFontSize(8);
-      pdf.setTextColor(150, 150, 150);
-      pdf.text('Santa Rute Engenharia Rural - Relatório gerado automaticamente', margin, footerY);
-      pdf.text(`Página 1 de ${pdf.internal.pages.length - 1}`, pageWidth - margin - 30, footerY);
+      // Processes Section
+      if (processes.length > 0) {
+        if (yPos > pageHeight - 40) {
+          pdf.addPage();
+          yPos = 20;
+        }
+
+        yPos += 10;
+        pdf.setFontSize(14);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(0, 0, 0);
+        pdf.text('Processos', margin, yPos);
+        yPos += 8;
+
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'normal');
+        
+        processes.slice(0, 5).forEach((process, idx) => {
+          if (yPos > pageHeight - 30) {
+            pdf.addPage();
+            yPos = 20;
+          }
+          
+          pdf.text(`${idx + 1}. ${process.process_type} - ${process.status}`, margin, yPos);
+          yPos += 5;
+          if (process.subject) {
+            pdf.setFontSize(8);
+            pdf.setTextColor(100, 100, 100);
+            pdf.text(`   Assunto: ${process.subject.substring(0, 60)}${process.subject.length > 60 ? '...' : ''}`, margin, yPos);
+            pdf.setTextColor(0, 0, 0);
+            pdf.setFontSize(9);
+            yPos += 6;
+          }
+        });
+
+        if (processes.length > 5) {
+          yPos += 5;
+          pdf.setTextColor(100, 100, 100);
+          pdf.text(`... e mais ${processes.length - 5} processos`, margin, yPos);
+          pdf.setTextColor(0, 0, 0);
+        }
+      }
+
+      // Alerts Section
+      if (alerts.length > 0) {
+        if (yPos > pageHeight - 40) {
+          pdf.addPage();
+          yPos = 20;
+        }
+
+        yPos += 10;
+        pdf.setFontSize(14);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(0, 0, 0);
+        pdf.text('Alertas Ambientais', margin, yPos);
+        yPos += 8;
+
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'normal');
+        
+        const activeAlertsData = alerts.filter(a => a.status === 'Ativo').slice(0, 5);
+        activeAlertsData.forEach((alert, idx) => {
+          if (yPos > pageHeight - 30) {
+            pdf.addPage();
+            yPos = 20;
+          }
+          
+          const severityColor = {
+            'Crítica': [220, 38, 38],
+            'Alta': [245, 158, 11],
+            'Média': [234, 179, 8],
+            'Baixa': [16, 185, 129]
+          }[alert.severity] || [100, 100, 100];
+          
+          pdf.setTextColor(...severityColor);
+          pdf.text(`${idx + 1}. [${alert.severity}] ${alert.alert_type}`, margin, yPos);
+          pdf.setTextColor(0, 0, 0);
+          yPos += 5;
+          if (alert.title) {
+            pdf.setFontSize(8);
+            pdf.setTextColor(100, 100, 100);
+            pdf.text(`   ${alert.title.substring(0, 60)}${alert.title.length > 60 ? '...' : ''}`, margin, yPos);
+            pdf.setTextColor(0, 0, 0);
+            pdf.setFontSize(9);
+            yPos += 6;
+          }
+        });
+
+        if (alerts.filter(a => a.status === 'Ativo').length > 5) {
+          yPos += 5;
+          pdf.setTextColor(100, 100, 100);
+          pdf.text(`... e mais ${alerts.filter(a => a.status === 'Ativo').length - 5} alertas ativos`, margin, yPos);
+          pdf.setTextColor(0, 0, 0);
+        }
+      }
+
+      // Footer on all pages
+      const totalPages = pdf.internal.pages.length - 1;
+      for (let i = 1; i <= totalPages; i++) {
+        pdf.setPage(i);
+        const footerY = pageHeight - 15;
+        pdf.setFontSize(8);
+        pdf.setTextColor(150, 150, 150);
+        pdf.text('Santa Rute Engenharia Rural - Relatório gerado automaticamente', margin, footerY);
+        pdf.text(`Página ${i} de ${totalPages}`, pageWidth - margin - 30, footerY);
+      }
 
       // Save PDF
       const fileName = `Dashboard_${property?.property_name || 'SantaRute'}_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
@@ -172,12 +271,12 @@ export default function ExportPDF({ user, property, licenses, documents, process
       {exporting ? (
         <>
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          Gerando PDF...
+          Gerando...
         </>
       ) : (
         <>
           <Download className="w-4 h-4 mr-2" />
-          Exportar Dashboard (PDF)
+          Exportar PDF
         </>
       )}
     </Button>

@@ -29,8 +29,9 @@ import {
         Leaf,
         Droplets,
         Shield,
-        TrendingUp
-      } from 'lucide-react';
+        TrendingUp,
+        Cloud
+              } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -47,6 +48,7 @@ const navItems = [
   { name: 'PSA - Serviços Ambientais', page: 'PSAContracts', icon: Droplets },
   { name: 'Servidão Ambiental', page: 'EnvironmentalEasements', icon: Shield },
   { name: 'ESG para o Agro', page: 'ESGAgro', icon: TrendingUp },
+  { name: 'Monitoramento Climático', page: 'ClimateMonitoring', icon: Cloud },
   { name: 'Relatórios', page: 'Reports', icon: FileText },
   { name: 'Configurar Alertas', page: 'AlertSettings', icon: Settings, adminOnly: true },
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },

@@ -20,6 +20,9 @@ import ESGReportBuilder from '../components/esg/ESGReportBuilder';
 import ESGReportDisplay from '../components/esg/ESGReportDisplay';
 import ESGScoreCard from '../components/esg/ESGScoreCard';
 import ESGDashboard from '../components/esg/ESGDashboard';
+import ESGRecommendations from '../components/esg/ESGRecommendations';
+import GreenLoanWizard from '../components/esg/GreenLoanWizard';
+import TaxIncentiveWizard from '../components/esg/TaxIncentiveWizard';
 
 export default function ESGAgro() {
   const [user, setUser] = useState(null);
@@ -243,6 +246,19 @@ export default function ESGAgro() {
             taxIncentives={taxIncentives.length}
             certifications={certifications.length}
           />
+        </div>
+
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Recomendações de Melhoria</h2>
+          {user && (
+            <ESGRecommendations
+              userEmail={user.email}
+              properties={properties}
+              greenLoans={greenLoans}
+              taxIncentives={taxIncentives}
+              certifications={certifications}
+            />
+          )}
         </div>
 
         <div>

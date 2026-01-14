@@ -296,6 +296,29 @@ export default function EnvironmentalAlerts() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      {/* Info Card */}
+      <Card className="bg-orange-50 border-orange-200">
+        <CardContent className="pt-6">
+          <div className="space-y-3">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <h3 className="font-semibold text-orange-900">Sistema de Alertas Ambientais</h3>
+              </div>
+            </div>
+            <p className="text-orange-800 text-sm">
+              <strong>Alertas Manuais:</strong> Sistema atual baseado no registro manual de alertas detectados por você ou sua equipe. Você pode criar, acompanhar e resolver alertas ambientais (desmatamento, mudança de uso da terra, APP, Reserva Legal, etc.).
+            </p>
+            <p className="text-orange-800 text-sm">
+              <strong>⚠️ Integração Automatizada:</strong> Integração com sistemas de detecção automática (PRODES, DETER, MapBiomas) ainda não está disponível. Esta será uma funcionalidade futura que trará alertas automatizados em tempo real.
+            </p>
+            <p className="text-orange-800 text-sm">
+              Use este módulo para documentar alertas conhecidos e gerenciar as ações de resolução necessárias.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

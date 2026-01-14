@@ -170,6 +170,24 @@ export default function CarbonCreditsPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      {/* Info Card */}
+      <Card className="bg-green-50 border-green-200">
+        <CardContent className="pt-6">
+          <div className="space-y-3">
+            <h3 className="font-semibold text-green-900">O que são Créditos de Carbono?</h3>
+            <p className="text-green-800 text-sm">
+              <strong>Créditos de Carbono:</strong> Certificados que representam a redução ou sequestro de uma tonelada de CO₂ (ou equivalente). Gerados por projetos que diminuem emissões ou removem carbono da atmosfera (reflorestamento, conservação florestal, manejo sustentável).
+            </p>
+            <p className="text-green-800 text-sm">
+              <strong>Padrões de Certificação:</strong> VCS, Gold Standard, REDD+ e outros padrões validam e certificam os créditos para comercialização em mercados regulado ou voluntário.
+            </p>
+            <p className="text-green-800 text-sm">
+              <strong>Monetização:</strong> Venda de créditos a empresas que buscam neutralizar suas emissões, gerando receita adicional para sua propriedade.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

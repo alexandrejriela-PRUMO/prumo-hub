@@ -164,6 +164,24 @@ export default function EnvironmentalEasementsPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      {/* Info Card */}
+      <Card className="bg-teal-50 border-teal-200">
+        <CardContent className="pt-6">
+          <div className="space-y-3">
+            <h3 className="font-semibold text-teal-900">O que é Servidão Ambiental?</h3>
+            <p className="text-teal-800 text-sm">
+              <strong>Servidão Ambiental:</strong> Obrigação real voluntária, registrada em cartório, que impõe restrições ao uso da terra para fins de conservação ambiental. Pode ser permanente ou temporária, beneficiando pessoa física, jurídica ou entidade pública.
+            </p>
+            <p className="text-teal-800 text-sm">
+              <strong>Características:</strong> Ônus registrado na matrícula do imóvel que corre com o bem. Transfere-se com a propriedade para novos proprietários. Proteção legal de áreas com ecossistemas frágeis ou serviços ambientais críticos.
+            </p>
+            <p className="text-teal-800 text-sm">
+              <strong>Benefícios Fiscais:</strong> Potencial para redução de ITR, incentivos de IPTU rural, reconhecimento ambiental e, em alguns casos, acesso a programas de PSA e créditos de carbono.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

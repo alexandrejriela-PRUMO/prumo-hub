@@ -344,7 +344,25 @@ export default function Processes() {
     processes.filter(p => p.process_type === type);
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto space-y-6">
+      {/* Info Card */}
+      <Card className="bg-purple-50 border-purple-200">
+        <CardContent className="pt-6">
+          <div className="space-y-3">
+            <h3 className="font-semibold text-purple-900">O que é Tríplice Responsabilidade Ambiental?</h3>
+            <p className="text-purple-800 text-sm">
+              <strong>Responsabilidade Administrativa:</strong> Infrações e autuações por órgãos ambientais (IBAMA, OEMA) que resultam em multas e embargo de atividades.
+            </p>
+            <p className="text-purple-800 text-sm">
+              <strong>Responsabilidade Civil:</strong> Ações judiciais por reparação de danos ambientais, podendo ser movidas pelo Ministério Público ou terceiros interessados.
+            </p>
+            <p className="text-purple-800 text-sm">
+              <strong>Responsabilidade Criminal:</strong> Processos penais por crimes ambientais, com possibilidade de penas de multa e privação de liberdade para pessoa física ou jurídica responsável.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">

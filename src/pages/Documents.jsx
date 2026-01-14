@@ -245,6 +245,21 @@ export default function Documents() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
+      {/* Info Card */}
+      <Card className="bg-emerald-50 border-emerald-200">
+        <CardContent className="pt-6">
+          <div className="space-y-3">
+            <h3 className="font-semibold text-emerald-900">O que é CAR + CCIR?</h3>
+            <p className="text-emerald-800 text-sm">
+              <strong>CAR (Cadastro Ambiental Rural):</strong> Registro obrigatório de propriedades e posses rurais que integra informações ambientais da propriedade, incluindo localização, limites, APP, Reserva Legal e áreas sob uso antrópico.
+            </p>
+            <p className="text-emerald-800 text-sm">
+              <strong>CCIR (Certificado de Cadastro de Imóvel Rural):</strong> Documento emitido pela Receita Federal que certifica o registro do imóvel no SNCR (Sistema Nacional de Cadastro Rural). Essencial para operações de crédito, venda e cumprimento de obrigações legais.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>

@@ -166,6 +166,24 @@ export default function PSAContractsPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      {/* Info Card */}
+      <Card className="bg-blue-50 border-blue-200">
+        <CardContent className="pt-6">
+          <div className="space-y-3">
+            <h3 className="font-semibold text-blue-900">O que é PSA (Pagamento por Serviços Ambientais)?</h3>
+            <p className="text-blue-800 text-sm">
+              <strong>PSA:</strong> Mecanismo de compensação financeira que remunera proprietários rurais pela prestação de serviços ambientais, como proteção de recursos hídricos, conservação de biodiversidade, sequestro de carbono e manutenção de corredores ecológicos.
+            </p>
+            <p className="text-blue-800 text-sm">
+              <strong>Operacionalização:</strong> Contrato entre proprietário (beneficiário) e pagador (instituição, empresa ou governo) que define: serviços ambientais, área envolvida, obrigações, monitoramento e valores de pagamento periódico.
+            </p>
+            <p className="text-blue-800 text-sm">
+              <strong>Benefícios:</strong> Renda adicional, reconhecimento ambiental e potencial para créditos de carbono ou certificações que agregam valor ao imóvel.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

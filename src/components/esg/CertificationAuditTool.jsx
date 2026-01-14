@@ -5,14 +5,17 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { FileUp, Download, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { FileUp, Download, CheckCircle, AlertCircle, Loader2, Link } from 'lucide-react';
 import { toast } from 'sonner';
+import DocumentLinkWidget from '../documents/DocumentLinkWidget';
 
-export default function CertificationAuditTool({ certification, onClose }) {
+export default function CertificationAuditTool({ certification, userEmail, onClose }) {
   const [checklist, setChecklist] = useState({});
   const [uploadedFiles, setUploadedFiles] = useState({});
   const [loading, setLoading] = useState(false);
   const [generatingReport, setGeneratingReport] = useState(false);
+  const [linkedDocs, setLinkedDocs] = useState({});
+  const [showDocLink, setShowDocLink] = useState(null);
 
   // Checklists por tipo de certificação
   const auditChecklists = {
@@ -78,6 +81,15 @@ export default function CertificationAuditTool({ certification, onClose }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDocumentsLinked = (itemId, documents) => {
+    setLinkedDocs(prev => ({
+      ...prev,
+      [itemId]: documents
+    }));
+    setShowDocLink(null);
+    toast.success(`${documents.length} documento(s) vinculado(s)`);
   };
 
   const generateAuditReport = async () => {
@@ -220,11 +232,30 @@ RESUMO
                         />
                       </label>
 
+                      {userEmail && (
+                        <Button
+                          onClick={() => setShowDocLink(item.id)}
+                          variant="outline"
+                          size="sm"
+                          className="text-xs h-9"
+                          title="Vincular documentos existentes"
+                        >
+                          <Link className="w-3 h-3 mr-1" />
+                          Vincular
+                        </Button>
+                      )}
+
                       {uploadedFiles[item.id] && (
                         <div className="flex items-center gap-2 text-green-600 text-sm">
                           <CheckCircle className="w-4 h-4" />
-                          Documento enviado
+                          Arquivo enviado
                         </div>
+                      )}
+
+                      {linkedDocs[item.id]?.length > 0 && (
+                        <Badge className="bg-blue-100 text-blue-700">
+                          {linkedDocs[item.id].length} doc(s)
+                        </Badge>
                       )}
                     </div>
                   </div>

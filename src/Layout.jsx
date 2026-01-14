@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
 import ErrorBoundary from './components/ErrorBoundary';
+import NotificationCenter from './components/notifications/NotificationCenter';
+import { Badge } from '@/components/ui/badge';
 import {
   LayoutDashboard,
   FileCheck,
@@ -20,12 +23,15 @@ import {
   ChevronRight,
   AlertTriangle,
   Settings,
-  BarChart3
+  BarChart3,
+  Bell,
+  Building2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
+  { name: 'Propriedades', page: 'Properties', icon: Building2 },
   { name: 'Licenças Ambientais', page: 'Licenses', icon: FileCheck },
   { name: 'CAR + CCIR', page: 'Documents', icon: FileText },
   { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
@@ -33,6 +39,7 @@ const navItems = [
   { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: FileCheck },
   { name: 'Alertas Ambientais', page: 'EnvironmentalAlerts', icon: AlertTriangle },
   { name: 'Configurar Alertas', page: 'AlertSettings', icon: Settings, adminOnly: true },
+  { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
   { name: 'E-book Grátis', page: 'EbookReader', icon: FileText },
   { name: 'Análise de Commodities', page: 'CommodityAnalysis', icon: BarChart3 },
   { name: 'Santa Blog', page: 'Blog', icon: Newspaper },
@@ -44,6 +51,7 @@ const navItems = [
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -57,6 +65,19 @@ export default function Layout({ children, currentPageName }) {
     };
     loadUser();
   }, []);
+
+  const { data: notifications = [] } = useQuery({
+    queryKey: ['inAppNotifications', user?.email],
+    queryFn: () => base44.entities.InAppNotification.filter(
+      { user_email: user.email },
+      '-created_date',
+      50
+    ),
+    enabled: !!user?.email,
+    refetchInterval: 30000
+  });
+
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   const handleLogout = () => {
     base44.auth.logout();
@@ -85,8 +106,25 @@ export default function Layout({ children, currentPageName }) {
           alt="Santa Rute" 
           className="h-16 w-auto object-contain"
         />
-        <div className="w-10" />
+        <button
+          onClick={() => setNotificationOpen(true)}
+          className="relative p-2 rounded-xl hover:bg-emerald-50 transition-colors"
+        >
+          <Bell className="w-6 h-6 text-emerald-900" />
+          {unreadCount > 0 && (
+            <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </Badge>
+          )}
+        </button>
       </div>
+
+      {/* Notification Center */}
+      <NotificationCenter 
+        user={user}
+        isOpen={notificationOpen}
+        onClose={() => setNotificationOpen(false)}
+      />
 
       {/* Mobile Overlay */}
       {sidebarOpen && (

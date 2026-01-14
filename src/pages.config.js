@@ -14,6 +14,7 @@ import Requests from './pages/Requests';
 import Support from './pages/Support';
 import CommodityAnalysis from './pages/CommodityAnalysis';
 import Properties from './pages/Properties';
+import NotificationSettings from './pages/NotificationSettings';
 import __Layout from './Layout.jsx';
 
 
@@ -34,6 +35,7 @@ export const PAGES = {
     "Support": Support,
     "CommodityAnalysis": CommodityAnalysis,
     "Properties": Properties,
+    "NotificationSettings": NotificationSettings,
 }
 
 export const pagesConfig = {

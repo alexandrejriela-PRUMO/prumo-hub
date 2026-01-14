@@ -27,6 +27,7 @@ import Certifications from './pages/Certifications';
 import DocumentsManager from './pages/DocumentsManager';
 import ConsolidatedReports from './pages/ConsolidatedReports';
 import ClimateMonitoring from './pages/ClimateMonitoring';
+import RealtimeNotificationSettings from './pages/RealtimeNotificationSettings';
 import __Layout from './Layout.jsx';
 
 
@@ -60,6 +61,7 @@ export const PAGES = {
     "DocumentsManager": DocumentsManager,
     "ConsolidatedReports": ConsolidatedReports,
     "ClimateMonitoring": ClimateMonitoring,
+    "RealtimeNotificationSettings": RealtimeNotificationSettings,
 }
 
 export const pagesConfig = {

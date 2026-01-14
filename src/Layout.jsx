@@ -7,26 +7,27 @@ import ErrorBoundary from './components/ErrorBoundary';
 import NotificationCenter from './components/notifications/NotificationCenter';
 import { Badge } from '@/components/ui/badge';
 import {
-  LayoutDashboard,
-  FileCheck,
-  FileText,
-  MapPin,
-  MessageCircle,
-  Headphones,
-  CreditCard,
-  FileQuestion,
-  Scale,
-  Newspaper,
-  Menu,
-  X,
-  LogOut,
-  ChevronRight,
-  AlertTriangle,
-  Settings,
-  BarChart3,
-  Bell,
-  Building2
-} from 'lucide-react';
+        LayoutDashboard,
+        FileCheck,
+        FileText,
+        MapPin,
+        MessageCircle,
+        Headphones,
+        CreditCard,
+        FileQuestion,
+        Scale,
+        Newspaper,
+        Menu,
+        X,
+        LogOut,
+        ChevronRight,
+        AlertTriangle,
+        Settings,
+        BarChart3,
+        Bell,
+        Building2,
+        Leaf
+      } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -38,6 +39,7 @@ const navItems = [
   { name: 'Processos', page: 'Processes', icon: Scale },
   { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: FileCheck },
   { name: 'Alertas Ambientais', page: 'EnvironmentalAlerts', icon: AlertTriangle },
+  { name: 'Créditos de Carbono', page: 'CarbonCredits', icon: Leaf },
   { name: 'Relatórios', page: 'Reports', icon: FileText },
   { name: 'Configurar Alertas', page: 'AlertSettings', icon: Settings, adminOnly: true },
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },

@@ -95,8 +95,8 @@ Pergunta do cliente: ${userMessage}`,
         <ScrollArea ref={scrollRef} className="flex-1 p-6">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-100 to-emerald-200 flex items-center justify-center mb-6">
-                <Leaf className="w-10 h-10 text-emerald-600" />
+              <div className="mb-6">
+                <RuteAvatar size="md" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Olá! Sou a RUTE 👋</h3>
               <p className="text-gray-500 max-w-md mb-8">

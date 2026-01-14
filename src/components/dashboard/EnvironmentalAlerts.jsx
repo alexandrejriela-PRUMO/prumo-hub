@@ -33,10 +33,13 @@ export default function EnvironmentalAlerts({ alerts = [] }) {
     <Card className="border-2 border-emerald-100 shadow-lg">
       <CardHeader className="bg-gradient-to-r from-emerald-50 to-green-50 border-b border-emerald-100">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <AlertTriangle className="w-6 h-6 text-emerald-600" />
-            Alertas Ambientais
-          </CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <AlertTriangle className="w-6 h-6 text-emerald-600" />
+              Alertas Ambientais
+            </CardTitle>
+            <Badge className="bg-blue-100 text-blue-700 border border-blue-300 text-xs">Em Breve</Badge>
+          </div>
           {(totalCritical > 0 || totalHigh > 0) && (
             <div className="flex gap-2">
               {totalCritical > 0 && (

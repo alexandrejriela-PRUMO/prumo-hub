@@ -132,11 +132,19 @@ export default function AlertSettings() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <Settings className="w-8 h-8 text-emerald-600" />
-            Configurações de Alertas Ambientais
-          </h1>
-          <p className="text-gray-500 mt-1">Defina limiares customizados para alertas de NDVI, desmatamento e mudanças no uso da terra</p>
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+              <Settings className="w-8 h-8 text-emerald-600" />
+              Configurações de Alertas Ambientais
+            </h1>
+            <Badge className="bg-blue-100 text-blue-700 border border-blue-300">Em Breve</Badge>
+          </div>
+          <p className="text-gray-500">Defina limiares customizados para alertas de NDVI, desmatamento e mudanças no uso da terra</p>
+          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg max-w-3xl">
+            <p className="text-sm text-blue-800">
+              ℹ️ Configure os limiares agora. A análise automática de dados geoespaciais e envio de notificações será ativada em breve.
+            </p>
+          </div>
         </div>
         <Button onClick={() => { setShowForm(true); setEditingThreshold(null); }} className="bg-emerald-600 hover:bg-emerald-700">
           <Plus className="w-4 h-4 mr-2" />

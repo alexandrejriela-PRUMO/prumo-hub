@@ -175,11 +175,19 @@ export default function EnvironmentalAlerts() {
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-          <AlertTriangle className="w-8 h-8 text-emerald-600" />
-          Alertas Ambientais
-        </h1>
-        <p className="text-gray-500 mt-1">Monitoramento de desmatamento, mudanças no uso da terra e índices de vegetação</p>
+        <div className="flex items-center gap-3 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <AlertTriangle className="w-8 h-8 text-emerald-600" />
+            Alertas Ambientais
+          </h1>
+          <Badge className="bg-blue-100 text-blue-700 border border-blue-300">Em Breve</Badge>
+        </div>
+        <p className="text-gray-500">Monitoramento de desmatamento, mudanças no uso da terra e índices de vegetação</p>
+        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800">
+            ℹ️ A integração completa com dados geoespaciais (PRODES, DETER, MapBiomas, Google Earth Engine) e notificações automáticas estará disponível em breve.
+          </p>
+        </div>
       </div>
 
       {/* Property Selector */}

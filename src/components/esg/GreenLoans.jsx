@@ -1,12 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, Calculator, FileText, CheckCircle } from 'lucide-react';
+import GreenLoanForm from './GreenLoanForm';
 
 export default function GreenLoans() {
+  const [user, setUser] = useState(null);
+  const [selectedLoan, setSelectedLoan] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const userData = await base44.auth.me();
+        setUser(userData);
+      } catch (e) {
+        console.log('User not logged in');
+      }
+    };
+    loadUser();
+  }, []);
+
+  const { data: properties = [] } = useQuery({
+    queryKey: ['properties', user?.email],
+    queryFn: () => base44.entities.Property.filter({ owner_email: user.email }),
+    enabled: !!user?.email
+  });
   const [simulator, setSimulator] = useState({
     amount: '',
     term: '12',
@@ -214,7 +238,13 @@ export default function GreenLoans() {
                 </div>
               </div>
 
-              <Button className="w-full bg-green-600 hover:bg-green-700">
+              <Button 
+                className="w-full bg-green-600 hover:bg-green-700"
+                onClick={() => {
+                  setSelectedLoan(loan);
+                  setShowForm(true);
+                }}
+              >
                 <FileText className="w-4 h-4 mr-2" />
                 Solicitar Financiamento
               </Button>
@@ -222,6 +252,22 @@ export default function GreenLoans() {
           </Card>
         ))}
       </div>
+
+      {/* Loan Application Form */}
+      {showForm && (
+        <GreenLoanForm
+          loan={selectedLoan}
+          property={properties[0]}
+          onClose={() => {
+            setShowForm(false);
+            setSelectedLoan(null);
+          }}
+          onSuccess={() => {
+            setShowForm(false);
+            setSelectedLoan(null);
+          }}
+        />
+      )}
     </div>
   );
 }

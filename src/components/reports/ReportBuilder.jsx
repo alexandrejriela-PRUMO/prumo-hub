@@ -93,102 +93,91 @@ export default function ReportBuilder({ user, onGenerate }) {
 
         <div className="grid md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>Filtrar por Propriedade</Label>
-            <Select
+            <label className="text-sm font-medium">Filtrar por Propriedade</label>
+            <select
               value={config.propertyId}
-              onValueChange={(v) => setConfig({ ...config, propertyId: v })}
+              onChange={(e) => setConfig({ ...config, propertyId: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Todas as propriedades" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={null}>Todas as propriedades</SelectItem>
-                {properties.map((property) => (
-                  <SelectItem key={property.id} value={property.id}>
-                    {property.property_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <option value="">Todas as propriedades</option>
+              {properties.map((property) => (
+                <option key={property.id} value={property.id}>
+                  {property.property_name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-2">
-            <Label>Status</Label>
-            <Select
+            <label className="text-sm font-medium">Status</label>
+            <select
               value={config.status}
-              onValueChange={(v) => setConfig({ ...config, status: v })}
+              onChange={(e) => setConfig({ ...config, status: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Todos os status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={null}>Todos os status</SelectItem>
-                <SelectItem value="Aberto">Aberto</SelectItem>
-                <SelectItem value="Em Andamento">Em Andamento</SelectItem>
-                <SelectItem value="Resolvido">Resolvido</SelectItem>
-                <SelectItem value="Vigente">Vigente</SelectItem>
-                <SelectItem value="Vencida">Vencida</SelectItem>
-                <SelectItem value="Pendente">Pendente</SelectItem>
-                <SelectItem value="Pago">Pago</SelectItem>
-              </SelectContent>
-            </Select>
+              <option value="">Todos os status</option>
+              <option value="Aberto">Aberto</option>
+              <option value="Em Andamento">Em Andamento</option>
+              <option value="Resolvido">Resolvido</option>
+              <option value="Vigente">Vigente</option>
+              <option value="Vencida">Vencida</option>
+              <option value="Pendente">Pendente</option>
+              <option value="Pago">Pago</option>
+            </select>
           </div>
 
           <div className="space-y-2">
-            <Label>Data Inicial</Label>
-            <Input
+            <label className="text-sm font-medium">Data Inicial</label>
+            <input
               type="date"
               value={config.dateRange.start}
               onChange={(e) => setConfig({
                 ...config,
                 dateRange: { ...config.dateRange, start: e.target.value }
               })}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Data Final</Label>
-            <Input
+            <label className="text-sm font-medium">Data Final</label>
+            <input
               type="date"
               value={config.dateRange.end}
               onChange={(e) => setConfig({
                 ...config,
                 dateRange: { ...config.dateRange, end: e.target.value }
               })}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
           </div>
         </div>
 
         {config.dataSources.includes('alerts') && (
           <div className="space-y-2">
-            <Label>Gravidade (Alertas)</Label>
-            <Select
+            <label className="text-sm font-medium">Gravidade (Alertas)</label>
+            <select
               value={config.severity}
-              onValueChange={(v) => setConfig({ ...config, severity: v })}
+              onChange={(e) => setConfig({ ...config, severity: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Todas as gravidades" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={null}>Todas as gravidades</SelectItem>
-                <SelectItem value="Baixa">Baixa</SelectItem>
-                <SelectItem value="Média">Média</SelectItem>
-                <SelectItem value="Alta">Alta</SelectItem>
-                <SelectItem value="Crítica">Crítica</SelectItem>
-              </SelectContent>
-            </Select>
+              <option value="">Todas as gravidades</option>
+              <option value="Baixa">Baixa</option>
+              <option value="Média">Média</option>
+              <option value="Alta">Alta</option>
+              <option value="Crítica">Crítica</option>
+            </select>
           </div>
         )}
 
-        <Button
+        <button
           onClick={handleGenerate}
-          className="w-full bg-emerald-600 hover:bg-emerald-700"
-          size="lg"
+          className="w-full px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
         >
-          <FileText className="w-4 h-4 mr-2" />
+          <FileText className="w-4 h-4" />
           Gerar Relatório
-        </Button>
-      </CardContent>
-    </Card>
+        </button>
+      </div>
+    </div>
   );
 }

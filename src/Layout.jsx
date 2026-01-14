@@ -27,7 +27,8 @@ import {
         Bell,
         Building2,
         Leaf,
-        Droplets
+        Droplets,
+        Shield
       } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -42,6 +43,7 @@ const navItems = [
   { name: 'Alertas Ambientais', page: 'EnvironmentalAlerts', icon: AlertTriangle },
   { name: 'Créditos de Carbono', page: 'CarbonCredits', icon: Leaf },
   { name: 'PSA - Serviços Ambientais', page: 'PSAContracts', icon: Droplets },
+  { name: 'Servidão Ambiental', page: 'EnvironmentalEasements', icon: Shield },
   { name: 'Relatórios', page: 'Reports', icon: FileText },
   { name: 'Configurar Alertas', page: 'AlertSettings', icon: Settings, adminOnly: true },
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },

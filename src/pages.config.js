@@ -20,6 +20,7 @@ import Support from './pages/Support';
 import PSAContracts from './pages/PSAContracts';
 import EnvironmentalEasements from './pages/EnvironmentalEasements';
 import DocumentsHub from './pages/DocumentsHub';
+import ESGAgro from './pages/ESGAgro';
 import __Layout from './Layout.jsx';
 
 
@@ -46,6 +47,7 @@ export const PAGES = {
     "PSAContracts": PSAContracts,
     "EnvironmentalEasements": EnvironmentalEasements,
     "DocumentsHub": DocumentsHub,
+    "ESGAgro": ESGAgro,
 }
 
 export const pagesConfig = {

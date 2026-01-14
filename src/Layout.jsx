@@ -45,6 +45,7 @@ const navItems = [
   { name: 'Créditos de Carbono', page: 'CarbonCredits', icon: Leaf },
   { name: 'PSA - Serviços Ambientais', page: 'PSAContracts', icon: Droplets },
   { name: 'Servidão Ambiental', page: 'EnvironmentalEasements', icon: Shield },
+  { name: 'ESG para o Agro', page: 'ESGAgro', icon: TrendingUp },
   { name: 'Relatórios', page: 'Reports', icon: FileText },
   { name: 'Configurar Alertas', page: 'AlertSettings', icon: Settings, adminOnly: true },
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },

@@ -45,7 +45,7 @@ const navItems = [
   { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
   { name: 'Processos', page: 'Processes', icon: Scale },
   { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: FileCheck },
-  { name: 'Alertas Ambientais', page: 'EnvironmentalAlerts', icon: AlertTriangle },
+  { name: 'Alertas de Infrações', page: 'EnvironmentalAlerts', icon: AlertTriangle },
   { name: 'Configurar Alertas', page: 'AlertSettings', icon: Settings, adminOnly: true, parent: 'EnvironmentalAlerts' },
   { name: 'Relatórios de Alertas', page: 'AlertsReports', icon: BarChart3 },
   { name: 'Créditos de Carbono', page: 'CarbonCredits', icon: Leaf },

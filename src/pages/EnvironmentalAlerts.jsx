@@ -93,9 +93,9 @@ export default function EnvironmentalAlerts() {
         try {
           await base44.integrations.Core.SendEmail({
             to: newAlert.responsible_email,
-            subject: `🚨 Novo Alerta Ambiental: ${newAlert.title}`,
+            subject: `🚨 Nova Infração Registrada: ${newAlert.title}`,
             body: `
-              Um novo alerta ambiental foi criado:
+              Uma nova infração foi registrada:
               
               Título: ${newAlert.title}
               Tipo: ${newAlert.alert_type}
@@ -129,9 +129,9 @@ export default function EnvironmentalAlerts() {
         try {
           await base44.integrations.Core.SendEmail({
             to: updatedAlert.responsible_email,
-            subject: `📋 Alerta Atualizado: ${updatedAlert.title}`,
+            subject: `📋 Infração Atualizada: ${updatedAlert.title}`,
             body: `
-              O alerta ambiental foi atualizado:
+              A infração foi atualizada:
               
               Título: ${updatedAlert.title}
               Novo Status: ${updatedAlert.status}
@@ -303,11 +303,11 @@ export default function EnvironmentalAlerts() {
             <div className="flex items-start gap-2">
               <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
               <div>
-                <h3 className="font-semibold text-orange-900">Sistema de Alertas Ambientais</h3>
+                <h3 className="font-semibold text-orange-900">Sistema de Alertas de Infrações</h3>
               </div>
             </div>
             <p className="text-orange-800 text-sm">
-              <strong>Alertas Manuais:</strong> Sistema atual baseado no registro manual de alertas detectados por você ou sua equipe. Você pode criar, acompanhar e resolver alertas ambientais (desmatamento, mudança de uso da terra, APP, Reserva Legal, etc.).
+              <strong>Alertas Manuais:</strong> Sistema atual baseado no registro manual de alertas de infrações detectadas por você ou sua equipe. Você pode criar, acompanhar e resolver alertas (desmatamento, mudança de uso da terra, APP, Reserva Legal, etc.).
             </p>
             <p className="text-orange-800 text-sm">
               <strong>⚠️ Integração Automatizada:</strong> Integração com sistemas de detecção automática (PRODES, DETER, MapBiomas) ainda não está disponível. Esta será uma funcionalidade futura que trará alertas automatizados em tempo real.
@@ -324,9 +324,9 @@ export default function EnvironmentalAlerts() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
             <AlertTriangle className="w-8 h-8 text-emerald-600" />
-            Alertas Ambientais
+            Alertas de Infrações
           </h1>
-          <p className="text-gray-500 mt-1">Monitoramento e gestão de alertas ambientais</p>
+          <p className="text-gray-500 mt-1">Monitoramento e gestão de alertas de infrações</p>
         </div>
         <Button 
           onClick={() => {
@@ -336,7 +336,7 @@ export default function EnvironmentalAlerts() {
           className="bg-emerald-600 hover:bg-emerald-700"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Novo Alerta
+          Nova Infração
         </Button>
       </div>
 
@@ -367,10 +367,10 @@ export default function EnvironmentalAlerts() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
-          { label: 'Alertas Ativos', count: activeAlerts.length, color: 'red', icon: AlertTriangle },
-          { label: 'Críticos', count: activeAlerts.filter(a => a.severity === 'Crítica').length, color: 'red', icon: AlertTriangle },
-          { label: 'Resolvidos', count: resolvedAlerts.length, color: 'green', icon: CheckCircle2 },
-          { label: 'Monitorados', count: propertyAlerts.length, color: 'blue', icon: Eye }
+          { label: 'Infrações Ativas', count: activeAlerts.length, color: 'red', icon: AlertTriangle },
+          { label: 'Críticas', count: activeAlerts.filter(a => a.severity === 'Crítica').length, color: 'red', icon: AlertTriangle },
+          { label: 'Resolvidas', count: resolvedAlerts.length, color: 'green', icon: CheckCircle2 },
+          { label: 'Monitoradas', count: propertyAlerts.length, color: 'blue', icon: Eye }
         ].map((stat, idx) => {
           const Icon = stat.icon;
           return (
@@ -626,7 +626,7 @@ export default function EnvironmentalAlerts() {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingAlert ? 'Editar Alerta Ambiental' : 'Novo Alerta Ambiental'}
+              {editingAlert ? 'Editar Infração' : 'Nova Infração'}
             </DialogTitle>
           </DialogHeader>
           <AlertForm

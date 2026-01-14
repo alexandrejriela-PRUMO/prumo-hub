@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
+import RuteAvatar from '../components/RuteAvatar';
 
 const suggestedQuestions = [
   { text: "O que é APP e qual sua importância?", icon: TreeDeciduous },

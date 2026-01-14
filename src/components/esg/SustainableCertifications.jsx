@@ -1,10 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Award, ExternalLink, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import CertificationForm from './CertificationForm';
 
 export default function SustainableCertifications() {
+  const [user, setUser] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const userData = await base44.auth.me();
+        setUser(userData);
+      } catch (e) {
+        console.log('User not logged in');
+      }
+    };
+    loadUser();
+  }, []);
+
+  const { data: properties = [] } = useQuery({
+    queryKey: ['properties', user?.email],
+    queryFn: () => base44.entities.Property.filter({ owner_email: user.email }),
+    enabled: !!user?.email
+  });
   const certifications = [
     {
       name: 'Orgânico Brasil',
@@ -233,7 +256,10 @@ export default function SustainableCertifications() {
                 <div className="flex gap-2 pt-2">
                   <Button 
                     className="flex-1 bg-green-600 hover:bg-green-700"
-                    onClick={() => setSelectedCert(cert)}
+                    onClick={() => {
+                      setSelectedCert(cert);
+                      setShowForm(true);
+                    }}
                   >
                     Solicitar Certificação
                   </Button>
@@ -247,43 +273,20 @@ export default function SustainableCertifications() {
         })}
       </div>
 
-      {/* Request Modal */}
-      {selectedCert && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-2xl">
-            <CardHeader>
-              <CardTitle>Solicitar Certificação: {selectedCert.name}</CardTitle>
-              <CardDescription>Preencha os dados para iniciar o processo</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-semibold text-gray-900 mb-2">Requisitos:</h3>
-                <div className="space-y-1">
-                  {selectedCert.requirements.map((req, i) => (
-                    <div key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                      <div className="w-1 h-1 rounded-full bg-gray-400 mt-2" />
-                      <span>{req}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <p className="text-sm text-gray-600">
-                Nossa equipe entrará em contato para orientá-lo sobre o processo de certificação e 
-                conectá-lo com as certificadoras credenciadas.
-              </p>
-
-              <div className="flex gap-3">
-                <Button onClick={() => setSelectedCert(null)} variant="outline" className="flex-1">
-                  Cancelar
-                </Button>
-                <Button className="flex-1 bg-green-600 hover:bg-green-700">
-                  Confirmar Solicitação
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      {/* Certification Application Form */}
+      {selectedCert && showForm && (
+        <CertificationForm
+          certification={selectedCert}
+          property={properties[0]}
+          onClose={() => {
+            setShowForm(false);
+            setSelectedCert(null);
+          }}
+          onSuccess={() => {
+            setShowForm(false);
+            setSelectedCert(null);
+          }}
+        />
       )}
     </div>
   );

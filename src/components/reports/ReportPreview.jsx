@@ -5,8 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Download, FileText, Table as TableIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { exportToPDF } from '../../utils/exportPDF';
-import { exportToCSV } from '../../utils/exportCSV';
+import { exportToPDF } from './exportPDF';
+import { exportToCSV } from './exportCSV';
 import { toast } from 'sonner';
 
 export default function ReportPreview({ data, config, user }) {

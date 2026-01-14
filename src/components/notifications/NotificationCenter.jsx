@@ -28,7 +28,7 @@ const severityConfig = {
 
 export default function NotificationCenter({ user, isOpen, onClose }) {
   const queryClient = useQueryClient();
-  const { notifications, markAsRead, markAllAsRead, deleteNotification } = useRealtimeNotifications(user?.email);
+  const { notifications = [], markAsRead, markAllAsRead, deleteNotification } = useRealtimeNotifications(user?.email) || {};
 
   const markAsReadMutation = useMutation({
     mutationFn: (notificationId) => markAsRead(notificationId),
@@ -131,15 +131,13 @@ export default function NotificationCenter({ user, isOpen, onClose }) {
                             <h4 className={`font-semibold text-sm ${!notification.read ? 'text-gray-900' : 'text-gray-700'}`}>
                               {notification.title}
                             </h4>
-                            <Button
-                               variant="ghost"
-                               size="icon"
-                               className="h-6 w-6 text-gray-400 hover:text-red-600"
+                            <button
+                               className="h-6 w-6 text-gray-400 hover:text-red-600 transition-colors"
                                onClick={() => deleteNotificationMutation.mutate(notification.id)}
                                disabled={deleteNotificationMutation.isPending}
                              >
                                <Trash2 className="w-3 h-3" />
-                             </Button>
+                             </button>
                           </div>
                           
                           <p className="text-sm text-gray-600 mb-2">
@@ -161,7 +159,7 @@ export default function NotificationCenter({ user, isOpen, onClose }) {
                             <Link 
                               to={notification.link}
                               onClick={() => {
-                                if (!notification.read) {
+                                if (!notification.read && markAsReadMutation) {
                                   markAsReadMutation.mutate(notification.id);
                                 }
                                 onClose();

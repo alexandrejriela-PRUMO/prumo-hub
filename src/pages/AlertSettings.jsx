@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Settings, Plus, Trash2, Save, Bell, Shield } from 'lucide-react';
+import { Settings, Plus, Trash2, Save, Bell, Shield, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import TooltipInfo from '../components/ui/tooltip-info';
 
 export default function AlertSettings() {
   const [user, setUser] = useState(null);
@@ -67,16 +68,35 @@ export default function AlertSettings() {
   const handleSubmit = (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
+    
+    const thresholdValue = parseFloat(formData.get('threshold_value'));
+    
+    // Validações
+    if (!formData.get('alert_type')) {
+      toast.error('Selecione o tipo de alerta');
+      return;
+    }
+    
+    if (!formData.get('parameter_name')?.trim()) {
+      toast.error('Digite o nome do parâmetro');
+      return;
+    }
+    
+    if (isNaN(thresholdValue)) {
+      toast.error('Digite um valor numérico válido para o limiar');
+      return;
+    }
+    
     const data = {
       alert_type: formData.get('alert_type'),
-      parameter_name: formData.get('parameter_name'),
-      threshold_value: parseFloat(formData.get('threshold_value')),
+      parameter_name: formData.get('parameter_name').trim(),
+      threshold_value: thresholdValue,
       comparison_operator: formData.get('comparison_operator'),
       severity: formData.get('severity'),
-      description: formData.get('description'),
+      description: formData.get('description')?.trim() || '',
       active: formData.get('active') === 'on',
       notification_enabled: formData.get('notification_enabled') === 'on',
-      notification_channels: ['email', 'push'].filter(ch => formData.get(`channel_${ch}`) === 'on')
+      notification_channels: ['email', 'push', 'sms'].filter(ch => formData.get(`channel_${ch}`) === 'on')
     };
 
     if (editingThreshold) {
@@ -135,7 +155,10 @@ export default function AlertSettings() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Tipo de Alerta *</Label>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Label>Tipo de Alerta *</Label>
+                    <TooltipInfo content="Selecione o tipo de monitoramento ambiental que este limiar irá controlar" />
+                  </div>
                   <Select name="alert_type" defaultValue={editingThreshold?.alert_type} required>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione..." />
@@ -151,17 +174,26 @@ export default function AlertSettings() {
                 </div>
 
                 <div>
-                  <Label>Nome do Parâmetro *</Label>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Label>Nome do Parâmetro *</Label>
+                    <TooltipInfo content="Nome descritivo do parâmetro que será monitorado. Ex: 'NDVI Médio', 'Área Desmatada'" />
+                  </div>
                   <Input name="parameter_name" defaultValue={editingThreshold?.parameter_name} placeholder="Ex: NDVI, Área Desmatada (ha)" required />
                 </div>
 
                 <div>
-                  <Label>Valor Limite *</Label>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Label>Valor Limite *</Label>
+                    <TooltipInfo content="Valor numérico que, quando atingido, irá disparar o alerta. Ex: 0.3 para NDVI, 5.0 para hectares" />
+                  </div>
                   <Input name="threshold_value" type="number" step="0.01" defaultValue={editingThreshold?.threshold_value} placeholder="Ex: 0.3, 5.0" required />
                 </div>
 
                 <div>
-                  <Label>Operador de Comparação *</Label>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Label>Operador de Comparação *</Label>
+                    <TooltipInfo content="Define como o valor será comparado. Ex: 'menor que 0.3' para NDVI baixo" />
+                  </div>
                   <Select name="comparison_operator" defaultValue={editingThreshold?.comparison_operator} required>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione..." />
@@ -176,7 +208,10 @@ export default function AlertSettings() {
                 </div>
 
                 <div>
-                  <Label>Gravidade do Alerta *</Label>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Label>Gravidade do Alerta *</Label>
+                    <TooltipInfo content="Nível de severidade que será atribuído ao alerta quando disparado" />
+                  </div>
                   <Select name="severity" defaultValue={editingThreshold?.severity} required>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione..." />
@@ -306,20 +341,38 @@ export default function AlertSettings() {
         )}
       </div>
 
-      {/* Info Card */}
-      <Card className="border-2 border-blue-200 bg-blue-50">
-        <CardContent className="p-4">
-          <div className="flex gap-3">
-            <Bell className="w-5 h-5 text-blue-600 mt-0.5" />
-            <div>
-              <h4 className="font-semibold text-blue-900 mb-1">Sobre Notificações</h4>
-              <p className="text-sm text-blue-800">
-                As notificações push e SMS requerem backend habilitado. Configure os limiares agora e as notificações serão ativadas automaticamente quando o backend for habilitado.
-              </p>
+      {/* Info Cards */}
+      <div className="grid md:grid-cols-2 gap-4">
+        <Card className="border-2 border-blue-200 bg-blue-50">
+          <CardContent className="p-4">
+            <div className="flex gap-3">
+              <Bell className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <h4 className="font-semibold text-blue-900 mb-1">Sobre Notificações</h4>
+                <p className="text-sm text-blue-800">
+                  As notificações push e SMS requerem backend habilitado. Configure os limiares agora e as notificações serão ativadas automaticamente quando o backend for habilitado.
+                </p>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        <Card className="border-2 border-amber-200 bg-amber-50">
+          <CardContent className="p-4">
+            <div className="flex gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <h4 className="font-semibold text-amber-900 mb-1">Exemplos de Limiares</h4>
+                <ul className="text-sm text-amber-800 space-y-1">
+                  <li>• NDVI &lt; 0.3 = Vegetação degradada (Alta)</li>
+                  <li>• Área Desmatada &gt; 2ha = Desmatamento (Crítica)</li>
+                  <li>• Mudança de uso &gt; 1ha = Monitoramento (Média)</li>
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

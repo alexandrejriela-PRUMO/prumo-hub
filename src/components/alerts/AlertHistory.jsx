@@ -32,23 +32,28 @@ export default function AlertHistory({ alert }) {
       return;
     }
 
-    const user = await base44.auth.me();
-    const history = alert.history || [];
-    
-    const newEntry = {
-      date: new Date().toISOString(),
-      action: newAction,
-      user: user.email,
-      notes: newNotes
-    };
+    try {
+      const user = await base44.auth.me();
+      const history = alert.history || [];
+      
+      const newEntry = {
+        date: new Date().toISOString(),
+        action: newAction,
+        user: user.email,
+        notes: newNotes
+      };
 
-    updateMutation.mutate({
-      id: alert.id,
-      data: {
-        ...alert,
-        history: [...history, newEntry]
-      }
-    });
+      updateMutation.mutate({
+        id: alert.id,
+        data: {
+          ...alert,
+          history: [...history, newEntry]
+        }
+      });
+    } catch (error) {
+      toast.error('Erro ao adicionar ação. Tente novamente.');
+      console.error(error);
+    }
   };
 
   const historyItems = alert.history || [];

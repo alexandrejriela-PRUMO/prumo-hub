@@ -26,6 +26,7 @@ import L from 'leaflet';
 import moment from 'moment';
 import AlertHistory from '../components/alerts/AlertHistory';
 import MapLayers from '../components/alerts/MapLayers';
+import MapLegend from '../components/alerts/MapLegend';
 
 // Fix Leaflet default marker icon
 delete L.Icon.Default.prototype._getIconUrl;
@@ -390,13 +391,14 @@ export default function EnvironmentalAlerts() {
               {(selectedAlert.coordinates || selectedProperty.coordinates) && (
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2">Localização e Camadas Geoespaciais</h3>
-                  <div className="h-96 rounded-lg overflow-hidden border-2 border-gray-200">
+                  <div className="h-96 rounded-lg overflow-hidden border-2 border-gray-200 relative">
                     <MapContainer
                       center={parseCoordinates(selectedAlert.coordinates || selectedProperty.coordinates) || [-15.7939, -47.8828]}
                       zoom={13}
                       style={{ height: '100%', width: '100%' }}
                     >
                       <MapLayers alerts={[selectedAlert]} />
+                      <MapLegend />
                       {parseCoordinates(selectedAlert.coordinates || selectedProperty.coordinates) && (
                         <>
                           <Marker position={parseCoordinates(selectedAlert.coordinates || selectedProperty.coordinates)}>

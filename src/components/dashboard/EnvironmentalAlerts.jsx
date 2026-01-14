@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { AlertTriangle, TreePine, MapPin, Leaf, ChevronRight, Calendar } from 'lucide-react';
+import { AlertTriangle, TreePine, MapPin, Leaf, ChevronRight, Calendar, TrendingUp } from 'lucide-react';
 import moment from 'moment';
 
 export default function EnvironmentalAlerts({ alerts = [] }) {
@@ -27,6 +27,7 @@ export default function EnvironmentalAlerts({ alerts = [] }) {
 
   const totalCritical = alerts.filter(a => a.severity === 'Crítica' && a.status === 'Ativo').length;
   const totalHigh = alerts.filter(a => a.severity === 'Alta' && a.status === 'Ativo').length;
+  const totalActive = alerts.filter(a => a.status === 'Ativo').length;
 
   return (
     <Card className="border-2 border-emerald-100 shadow-lg">
@@ -54,6 +55,29 @@ export default function EnvironmentalAlerts({ alerts = [] }) {
       </CardHeader>
 
       <CardContent className="pt-6">
+        {/* Summary Stats */}
+        {totalActive > 0 && (
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+              <p className="text-xs text-gray-600 mb-1">Total Ativo</p>
+              <p className="text-2xl font-bold text-red-700">{totalActive}</p>
+            </div>
+            <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
+              <p className="text-xs text-gray-600 mb-1">Alta/Crítica</p>
+              <p className="text-2xl font-bold text-orange-700">{totalCritical + totalHigh}</p>
+            </div>
+            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-xs text-gray-600 mb-1">Últimos 7 dias</p>
+              <p className="text-2xl font-bold text-blue-700">
+                {alerts.filter(a => {
+                  const daysDiff = moment().diff(moment(a.detection_date), 'days');
+                  return daysDiff <= 7;
+                }).length}
+              </p>
+            </div>
+          </div>
+        )}
+
         {activeAlerts.length === 0 ? (
           <div className="text-center py-8">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">

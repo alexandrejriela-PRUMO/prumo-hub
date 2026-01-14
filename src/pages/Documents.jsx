@@ -16,20 +16,30 @@ import {
   Upload,
   Trash2,
   Map,
-  FileCheck
+  FileCheck,
+  History,
+  RefreshCw
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import VersionHistory from '../components/documents/VersionHistory';
 
 const documentTypes = ['CAR', 'CCIR'];
 
 export default function Documents() {
   const [user, setUser] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [versionDialogOpen, setVersionDialogOpen] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     document_type: 'CAR',
     document_name: '',
+    file_url: '',
+    notes: '',
+  });
+  const [newVersionData, setNewVersionData] = useState({
     file_url: '',
     notes: '',
   });
@@ -69,6 +79,15 @@ export default function Documents() {
     onSuccess: () => queryClient.invalidateQueries(['documents']),
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Document.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['documents']);
+      setVersionDialogOpen(false);
+      setNewVersionData({ file_url: '', notes: '' });
+    },
+  });
+
   const resetForm = () => {
     setFormData({
       document_type: 'CAR',
@@ -90,9 +109,64 @@ export default function Documents() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    createMutation.mutate({
+    const newDoc = {
       ...formData,
       owner_email: user.email,
+      current_version: 1,
+      versions: [{
+        version_number: 1,
+        file_url: formData.file_url,
+        uploaded_date: new Date().toISOString(),
+        uploaded_by: user.email,
+        notes: formData.notes || 'Versão inicial'
+      }]
+    };
+    createMutation.mutate(newDoc);
+  };
+
+  const handleNewVersionUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploading(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setNewVersionData({ ...newVersionData, file_url });
+    setUploading(false);
+  };
+
+  const handleAddVersion = () => {
+    if (!newVersionData.file_url || !selectedDocument) return;
+
+    const currentVersions = selectedDocument.versions || [];
+    const newVersionNumber = (selectedDocument.current_version || 1) + 1;
+    
+    const newVersion = {
+      version_number: newVersionNumber,
+      file_url: newVersionData.file_url,
+      uploaded_date: new Date().toISOString(),
+      uploaded_by: user.email,
+      notes: newVersionData.notes || `Atualização v${newVersionNumber}`
+    };
+
+    updateMutation.mutate({
+      id: selectedDocument.id,
+      data: {
+        file_url: newVersionData.file_url,
+        current_version: newVersionNumber,
+        versions: [...currentVersions, newVersion]
+      }
+    });
+  };
+
+  const handleRestoreVersion = (version) => {
+    if (!selectedDocument) return;
+
+    updateMutation.mutate({
+      id: selectedDocument.id,
+      data: {
+        file_url: version.file_url,
+        current_version: version.version_number
+      }
     });
   };
 
@@ -107,12 +181,19 @@ export default function Documents() {
             <FileCheck className="w-7 h-7 text-emerald-700" />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-gray-900">{doc.document_name || doc.document_type}</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-gray-900">{doc.document_name || doc.document_type}</h3>
+              {doc.current_version > 1 && (
+                <Badge variant="outline" className="text-xs">v{doc.current_version}</Badge>
+              )}
+            </div>
             <p className="text-sm text-gray-500 mt-1">
               Adicionado em {format(parseISO(doc.created_date), 'dd/MM/yyyy')}
             </p>
-            {doc.notes && (
-              <p className="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded">{doc.notes}</p>
+            {doc.versions && doc.versions.length > 0 && (
+              <p className="text-xs text-emerald-600 mt-1">
+                {doc.versions.length} {doc.versions.length === 1 ? 'versão' : 'versões'}
+              </p>
             )}
           </div>
         </div>
@@ -128,6 +209,17 @@ export default function Documents() {
               Visualizar
             </a>
           )}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => {
+              setSelectedDocument(doc);
+              setVersionDialogOpen(true);
+            }}
+            title="Gerenciar versões"
+          >
+            <History className="w-4 h-4" />
+          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -229,6 +321,72 @@ export default function Documents() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Version Management Dialog */}
+      <Dialog open={versionDialogOpen} onOpenChange={setVersionDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Versões: {selectedDocument?.document_name || selectedDocument?.document_type}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6 mt-4">
+            {/* Add New Version */}
+            <div className="border-b pb-4">
+              <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <RefreshCw className="w-4 h-4" />
+                Adicionar Nova Versão
+              </h3>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label>Arquivo</Label>
+                  <Input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={handleNewVersionUpload}
+                  />
+                  {uploading && <span className="text-sm text-gray-500">Enviando...</span>}
+                  {newVersionData.file_url && (
+                    <a href={newVersionData.file_url} target="_blank" rel="noopener noreferrer" className="text-sm text-emerald-600 flex items-center gap-1">
+                      <FileText className="w-4 h-4" /> Arquivo carregado
+                    </a>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label>Observações sobre esta versão</Label>
+                  <Textarea
+                    value={newVersionData.notes}
+                    onChange={(e) => setNewVersionData({ ...newVersionData, notes: e.target.value })}
+                    placeholder="O que mudou nesta versão?"
+                    rows={2}
+                  />
+                </div>
+                <Button 
+                  onClick={handleAddVersion}
+                  disabled={!newVersionData.file_url || updateMutation.isPending}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700"
+                >
+                  {updateMutation.isPending ? 'Salvando...' : 'Salvar Nova Versão'}
+                </Button>
+              </div>
+            </div>
+
+            {/* Version History */}
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <History className="w-4 h-4" />
+                Histórico de Versões
+              </h3>
+              <VersionHistory 
+                versions={selectedDocument?.versions || []}
+                currentVersion={selectedDocument?.current_version}
+                onRestore={handleRestoreVersion}
+              />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Tabs */}
       <Tabs defaultValue="car" className="w-full">

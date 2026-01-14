@@ -1,12 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Award, DollarSign, CheckCircle, Bell } from 'lucide-react';
 import { toast } from 'sonner';
+import TaxIncentiveForm from './TaxIncentiveForm';
 
 export default function TaxIncentives() {
+  const [user, setUser] = useState(null);
+  const [selectedIncentive, setSelectedIncentive] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const userData = await base44.auth.me();
+        setUser(userData);
+      } catch (e) {
+        console.log('User not logged in');
+      }
+    };
+    loadUser();
+  }, []);
+
+  const { data: properties = [] } = useQuery({
+    queryKey: ['properties', user?.email],
+    queryFn: () => base44.entities.Property.filter({ owner_email: user.email }),
+    enabled: !!user?.email
+  });
   const [eligibilityData, setEligibilityData] = useState({
     area_hectares: '',
     has_car: false,
@@ -213,7 +237,13 @@ export default function TaxIncentives() {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button className="flex-1 bg-blue-600 hover:bg-blue-700">
+                  <Button 
+                    className="flex-1 bg-blue-600 hover:bg-blue-700"
+                    onClick={() => {
+                      setSelectedIncentive(incentive);
+                      setShowForm(true);
+                    }}
+                  >
                     Solicitar
                   </Button>
                   <Button variant="outline" size="icon">
@@ -225,6 +255,22 @@ export default function TaxIncentives() {
           );
         })}
       </div>
+
+      {/* Tax Incentive Application Form */}
+      {showForm && (
+        <TaxIncentiveForm
+          incentive={selectedIncentive}
+          property={properties[0]}
+          onClose={() => {
+            setShowForm(false);
+            setSelectedIncentive(null);
+          }}
+          onSuccess={() => {
+            setShowForm(false);
+            setSelectedIncentive(null);
+          }}
+        />
+      )}
     </div>
   );
 }

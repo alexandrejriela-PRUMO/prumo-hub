@@ -45,6 +45,7 @@ const navItems = [
   { name: 'Processos', page: 'Processes', icon: Scale },
   { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: FileCheck },
   { name: 'Alertas Ambientais', page: 'EnvironmentalAlerts', icon: AlertTriangle },
+  { name: 'Relatórios de Alertas', page: 'AlertsReports', icon: BarChart3 },
   { name: 'Créditos de Carbono', page: 'CarbonCredits', icon: Leaf },
   { name: 'PSA - Serviços Ambientais', page: 'PSAContracts', icon: Droplets },
   { name: 'Servidão Ambiental', page: 'EnvironmentalEasements', icon: Shield },

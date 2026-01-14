@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { base44 } from '@/api/base44Client';
+import ErrorBoundary from './components/ErrorBoundary';
 import {
   LayoutDashboard,
   FileCheck,
@@ -177,7 +178,9 @@ export default function Layout({ children, currentPageName }) {
       {/* Main Content */}
       <main className="lg:ml-72 pt-20 lg:pt-0 min-h-screen">
         <div className="p-4 lg:p-8">
-          {children}
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
         </div>
       </main>
     </div>

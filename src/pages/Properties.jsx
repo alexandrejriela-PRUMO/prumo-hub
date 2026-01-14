@@ -1,0 +1,285 @@
+import React, { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { 
+  MapPin, 
+  Plus, 
+  Edit, 
+  Trash2, 
+  Users, 
+  Map as MapIcon,
+  TreePine,
+  Briefcase
+} from 'lucide-react';
+import { toast } from 'sonner';
+import PropertyForm from '../components/properties/PropertyForm';
+import PropertyMap from '../components/properties/PropertyMap';
+import PropertyUsers from '../components/properties/PropertyUsers';
+
+export default function Properties() {
+  const [user, setUser] = useState(null);
+  const [formDialogOpen, setFormDialogOpen] = useState(false);
+  const [mapDialogOpen, setMapDialogOpen] = useState(false);
+  const [usersDialogOpen, setUsersDialogOpen] = useState(false);
+  const [editingProperty, setEditingProperty] = useState(null);
+  const [selectedProperty, setSelectedProperty] = useState(null);
+  
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const userData = await base44.auth.me();
+        setUser(userData);
+      } catch (e) {
+        console.log('User not logged in');
+      }
+    };
+    loadUser();
+  }, []);
+
+  const { data: properties = [], isLoading } = useQuery({
+    queryKey: ['properties', user?.email],
+    queryFn: () => base44.entities.Property.filter({ owner_email: user.email }),
+    enabled: !!user?.email
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data) => base44.entities.Property.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['properties']);
+      setFormDialogOpen(false);
+      setEditingProperty(null);
+      toast.success('Propriedade criada com sucesso!');
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Property.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['properties']);
+      setFormDialogOpen(false);
+      setMapDialogOpen(false);
+      setUsersDialogOpen(false);
+      setEditingProperty(null);
+      setSelectedProperty(null);
+      toast.success('Propriedade atualizada com sucesso!');
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.Property.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['properties']);
+      toast.success('Propriedade removida com sucesso!');
+    }
+  });
+
+  const PropertyCard = ({ property }) => (
+    <Card className="hover:shadow-lg transition-shadow">
+      <CardContent className="p-6">
+        <div className="flex items-start gap-4">
+          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-200 flex items-center justify-center">
+            <MapPin className="w-7 h-7 text-emerald-700" />
+          </div>
+          
+          <div className="flex-1">
+            <h3 className="font-bold text-gray-900 text-lg">{property.property_name}</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              {property.city}, {property.state}
+            </p>
+            
+            <div className="flex flex-wrap gap-2 mt-3">
+              {property.total_hectares && (
+                <Badge variant="outline" className="text-xs">
+                  <TreePine className="w-3 h-3 mr-1" />
+                  {property.total_hectares} ha
+                </Badge>
+              )}
+              {property.main_activity && (
+                <Badge variant="outline" className="text-xs">
+                  <Briefcase className="w-3 h-3 mr-1" />
+                  {property.main_activity}
+                </Badge>
+              )}
+              {property.boundaries && (
+                <Badge className="bg-emerald-100 text-emerald-700 text-xs">
+                  Limites Definidos
+                </Badge>
+              )}
+              {property.authorized_users?.length > 0 && (
+                <Badge variant="outline" className="text-xs">
+                  <Users className="w-3 h-3 mr-1" />
+                  {property.authorized_users.length + 1} usuário(s)
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSelectedProperty(property);
+                setMapDialogOpen(true);
+              }}
+              title="Definir limites no mapa"
+            >
+              <MapIcon className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSelectedProperty(property);
+                setUsersDialogOpen(true);
+              }}
+              title="Gerenciar usuários"
+            >
+              <Users className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setEditingProperty(property);
+                setFormDialogOpen(true);
+              }}
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (confirm('Deseja realmente excluir esta propriedade?')) {
+                  deleteMutation.mutate(property.id);
+                }
+              }}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Propriedades</h1>
+          <p className="text-gray-500 mt-1">Gerencie suas propriedades rurais</p>
+        </div>
+        <Button 
+          onClick={() => {
+            setEditingProperty(null);
+            setFormDialogOpen(true);
+          }}
+          className="bg-emerald-600 hover:bg-emerald-700"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Nova Propriedade
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-gray-500">Carregando...</p>
+          </CardContent>
+        </Card>
+      ) : properties.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <MapPin className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+            <h3 className="text-lg font-semibold text-gray-900">Nenhuma propriedade cadastrada</h3>
+            <p className="text-gray-500 mt-1">Clique em "Nova Propriedade" para começar</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4">
+          {properties.map(property => (
+            <PropertyCard key={property.id} property={property} />
+          ))}
+        </div>
+      )}
+
+      {/* Form Dialog */}
+      <Dialog open={formDialogOpen} onOpenChange={setFormDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingProperty ? 'Editar Propriedade' : 'Nova Propriedade'}
+            </DialogTitle>
+          </DialogHeader>
+          <PropertyForm
+            property={editingProperty}
+            user={user}
+            onSubmit={(data) => {
+              if (editingProperty) {
+                updateMutation.mutate({ id: editingProperty.id, data });
+              } else {
+                createMutation.mutate(data);
+              }
+            }}
+            onCancel={() => {
+              setFormDialogOpen(false);
+              setEditingProperty(null);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Map Dialog */}
+      <Dialog open={mapDialogOpen} onOpenChange={setMapDialogOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>
+              Definir Limites Geográficos - {selectedProperty?.property_name}
+            </DialogTitle>
+          </DialogHeader>
+          <PropertyMap
+            property={selectedProperty}
+            onSave={(boundaries) => {
+              updateMutation.mutate({
+                id: selectedProperty.id,
+                data: { ...selectedProperty, boundaries }
+              });
+            }}
+            onCancel={() => setMapDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Users Dialog */}
+      <Dialog open={usersDialogOpen} onOpenChange={setUsersDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Gerenciar Usuários - {selectedProperty?.property_name}
+            </DialogTitle>
+          </DialogHeader>
+          <PropertyUsers
+            property={selectedProperty}
+            currentUser={user}
+            onSave={(authorizedUsers) => {
+              updateMutation.mutate({
+                id: selectedProperty.id,
+                data: { ...selectedProperty, authorized_users: authorizedUsers }
+              });
+            }}
+            onCancel={() => setUsersDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

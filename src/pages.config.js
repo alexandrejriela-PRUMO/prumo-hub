@@ -13,6 +13,7 @@ import RegularityReport from './pages/RegularityReport';
 import Requests from './pages/Requests';
 import Support from './pages/Support';
 import CommodityAnalysis from './pages/CommodityAnalysis';
+import Properties from './pages/Properties';
 import __Layout from './Layout.jsx';
 
 
@@ -32,6 +33,7 @@ export const PAGES = {
     "Requests": Requests,
     "Support": Support,
     "CommodityAnalysis": CommodityAnalysis,
+    "Properties": Properties,
 }
 
 export const pagesConfig = {

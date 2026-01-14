@@ -34,7 +34,7 @@ export default function ESGConsolidatedReport({ userEmail, property }) {
     { id: 'resolvedAlerts', label: 'Alertas Resolvidos', icon: '✅' },
     { id: 'processes', label: 'Processos Ambientais', icon: '⚖️' },
     { id: 'easements', label: 'Servidões Ambientais', icon: '🛡️' }
-  };
+  ];
 
   const toggleMetric = (metricId) => {
     setSelectedMetrics(prev => ({

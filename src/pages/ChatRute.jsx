@@ -158,9 +158,7 @@ Pergunta do cliente: ${userMessage}`,
                   animate={{ opacity: 1 }}
                   className="flex gap-3"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center">
-                    <Leaf className="w-4 h-4 text-white" />
-                  </div>
+                  <RuteAvatar size="sm" />
                   <div className="bg-gray-100 rounded-2xl px-4 py-3 flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
                     <span className="text-gray-500 text-sm">RUTE está digitando...</span>

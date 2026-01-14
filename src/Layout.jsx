@@ -29,6 +29,7 @@ const navItems = [
   { name: 'CAR + CCIR', page: 'Documents', icon: FileText },
   { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
   { name: 'Processos', page: 'Processes', icon: Scale },
+  { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: FileCheck },
   { name: 'Alertas Ambientais', page: 'EnvironmentalAlerts', icon: AlertTriangle },
   { name: 'Configurar Alertas', page: 'AlertSettings', icon: Settings, adminOnly: true },
   { name: 'E-book Grátis', page: 'EbookReader', icon: FileText },

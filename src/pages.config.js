@@ -21,6 +21,9 @@ import PSAContracts from './pages/PSAContracts';
 import EnvironmentalEasements from './pages/EnvironmentalEasements';
 import DocumentsHub from './pages/DocumentsHub';
 import ESGAgro from './pages/ESGAgro';
+import GreenLoans from './pages/GreenLoans';
+import TaxIncentives from './pages/TaxIncentives';
+import Certifications from './pages/Certifications';
 import __Layout from './Layout.jsx';
 
 
@@ -48,6 +51,9 @@ export const PAGES = {
     "EnvironmentalEasements": EnvironmentalEasements,
     "DocumentsHub": DocumentsHub,
     "ESGAgro": ESGAgro,
+    "GreenLoans": GreenLoans,
+    "TaxIncentives": TaxIncentives,
+    "Certifications": Certifications,
 }
 
 export const pagesConfig = {

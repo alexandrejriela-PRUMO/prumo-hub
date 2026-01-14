@@ -24,6 +24,8 @@ import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import moment from 'moment';
+import AlertHistory from '../components/alerts/AlertHistory';
+import MapLayers from '../components/alerts/MapLayers';
 
 // Fix Leaflet default marker icon
 delete L.Icon.Default.prototype._getIconUrl;
@@ -387,14 +389,14 @@ export default function EnvironmentalAlerts() {
               {/* Map */}
               {(selectedAlert.coordinates || selectedProperty.coordinates) && (
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Localização</h3>
+                  <h3 className="font-semibold text-gray-900 mb-2">Localização e Camadas Geoespaciais</h3>
                   <div className="h-96 rounded-lg overflow-hidden border-2 border-gray-200">
                     <MapContainer
                       center={parseCoordinates(selectedAlert.coordinates || selectedProperty.coordinates) || [-15.7939, -47.8828]}
                       zoom={13}
                       style={{ height: '100%', width: '100%' }}
                     >
-                      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                      <MapLayers alerts={[selectedAlert]} />
                       {parseCoordinates(selectedAlert.coordinates || selectedProperty.coordinates) && (
                         <>
                           <Marker position={parseCoordinates(selectedAlert.coordinates || selectedProperty.coordinates)}>
@@ -411,8 +413,14 @@ export default function EnvironmentalAlerts() {
                       )}
                     </MapContainer>
                   </div>
+                  <p className="text-xs text-gray-600 mt-2">
+                    💡 Use o controle de camadas no canto superior direito para alternar entre mapas base e overlays de dados geoespaciais (PRODES, MapBiomas, DETER)
+                  </p>
                 </div>
               )}
+
+              {/* History */}
+              <AlertHistory alert={selectedAlert} />
             </CardContent>
           </Card>
         </div>

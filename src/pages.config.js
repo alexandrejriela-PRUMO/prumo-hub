@@ -11,6 +11,7 @@ import Requests from './pages/Requests';
 import Support from './pages/Support';
 import RegularityReport from './pages/RegularityReport';
 import EnvironmentalAlerts from './pages/EnvironmentalAlerts';
+import AlertSettings from './pages/AlertSettings';
 import __Layout from './Layout.jsx';
 
 
@@ -28,6 +29,7 @@ export const PAGES = {
     "Support": Support,
     "RegularityReport": RegularityReport,
     "EnvironmentalAlerts": EnvironmentalAlerts,
+    "AlertSettings": AlertSettings,
 }
 
 export const pagesConfig = {

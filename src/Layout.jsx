@@ -17,7 +17,8 @@ import {
   X,
   LogOut,
   ChevronRight,
-  AlertTriangle
+  AlertTriangle,
+  Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -28,6 +29,7 @@ const navItems = [
   { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
   { name: 'Processos', page: 'Processes', icon: Scale },
   { name: 'Alertas Ambientais', page: 'EnvironmentalAlerts', icon: AlertTriangle },
+  { name: 'Configurar Alertas', page: 'AlertSettings', icon: Settings, adminOnly: true },
   { name: 'E-book Grátis', page: 'EbookReader', icon: FileText },
   { name: 'Santa Blog', page: 'Blog', icon: Newspaper },
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
@@ -121,6 +123,9 @@ export default function Layout({ children, currentPageName }) {
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             {navItems.map((item) => {
+              // Hide admin-only items for non-admin users
+              if (item.adminOnly && user?.role !== 'admin') return null;
+
               const isActive = currentPageName === item.page;
               const Icon = item.icon;
               return (

@@ -18,6 +18,8 @@ import { createPageUrl } from '../utils';
 import { Link } from 'react-router-dom';
 import ESGReportBuilder from '../components/esg/ESGReportBuilder';
 import ESGReportDisplay from '../components/esg/ESGReportDisplay';
+import ESGScoreCard from '../components/esg/ESGScoreCard';
+import ESGDashboard from '../components/esg/ESGDashboard';
 
 export default function ESGAgro() {
   const [user, setUser] = useState(null);
@@ -222,6 +224,35 @@ export default function ESGAgro() {
         <p className="text-lg text-gray-600 max-w-3xl mx-auto">
           Práticas sustentáveis que geram valor econômico, ambiental e social para sua propriedade rural
         </p>
+      </div>
+
+      {/* Dashboards Interativos */}
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Seu Perfil ESG</h2>
+          <ESGScoreCard
+            score={(() => {
+              let score = 0;
+              if (greenLoans.length > 0) score += 25;
+              if (taxIncentives.length > 0) score += 25;
+              if (certifications.length > 0) score += 25;
+              score += Math.min(25, greenLoans.length * 5 + taxIncentives.length * 3 + certifications.length * 4);
+              return Math.min(100, score);
+            })()}
+            greenLoans={greenLoans.length}
+            taxIncentives={taxIncentives.length}
+            certifications={certifications.length}
+          />
+        </div>
+
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Métricas Detalhadas</h2>
+          <ESGDashboard
+            greenLoans={greenLoans}
+            taxIncentives={taxIncentives}
+            certifications={certifications}
+          />
+        </div>
       </div>
 
       {/* What is ESG */}

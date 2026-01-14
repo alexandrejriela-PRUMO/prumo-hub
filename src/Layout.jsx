@@ -97,8 +97,8 @@ export default function Layout({ children, currentPageName }) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 h-full w-72 bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 z-50 transition-transform duration-300 ease-out",
-          "lg:translate-x-0",
+          "fixed top-0 left-0 h-full w-[80vw] max-w-xs bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 z-50 transition-transform duration-300 ease-out",
+          "lg:w-72 lg:translate-x-0",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -178,7 +178,7 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Main Content */}
       <main className="lg:ml-72 pt-20 lg:pt-0 min-h-screen">
-        <div className="p-4 lg:p-8">
+        <div className="p-3 sm:p-4 lg:p-8">
           <ErrorBoundary>
             {children}
           </ErrorBoundary>

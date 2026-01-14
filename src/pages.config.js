@@ -16,6 +16,7 @@ import CommodityAnalysis from './pages/CommodityAnalysis';
 import Properties from './pages/Properties';
 import NotificationSettings from './pages/NotificationSettings';
 import Reports from './pages/Reports';
+import CarbonCredits from './pages/CarbonCredits';
 import __Layout from './Layout.jsx';
 
 
@@ -38,6 +39,7 @@ export const PAGES = {
     "Properties": Properties,
     "NotificationSettings": NotificationSettings,
     "Reports": Reports,
+    "CarbonCredits": CarbonCredits,
 }
 
 export const pagesConfig = {

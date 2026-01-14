@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import PropertyCard from '../components/dashboard/PropertyCard';
@@ -10,15 +10,29 @@ import CommodityHistory from '../components/dashboard/CommodityHistory';
 import BlogPreview from '../components/dashboard/BlogPreview';
 import RegularityThermometer from '../components/dashboard/RegularityThermometer';
 import EnvironmentalAlerts from '../components/dashboard/EnvironmentalAlerts';
+import DashboardMetrics from '../components/dashboard/DashboardMetrics';
+import DashboardCharts from '../components/dashboard/DashboardCharts';
+import DashboardFilters from '../components/dashboard/DashboardFilters';
+import ExportPDF from '../components/dashboard/ExportPDF';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { MapPin, Newspaper } from 'lucide-react';
+import { MapPin, Newspaper, BarChart3 } from 'lucide-react';
+import { subDays, isAfter, isBefore } from 'date-fns';
 
 export default function Home() {
   const [user, setUser] = useState(null);
   const [selectedPropertyId, setSelectedPropertyId] = useState(null);
+  const [filters, setFilters] = useState({
+    period: 'all',
+    licenseStatus: 'all',
+    alertSeverity: 'all',
+    processStatus: 'all',
+    startDate: null,
+    endDate: null
+  });
 
   useEffect(() => {
     const loadUser = async () => {
@@ -84,13 +98,81 @@ export default function Home() {
   }, [properties, selectedPropertyId]);
 
   const selectedProperty = properties.find((p) => p.id === selectedPropertyId) || properties[0];
-  const propertyLicenses = licenses.filter(l => l.property_id === selectedPropertyId);
-  const propertyDocuments = documents.filter(d => d.property_id === selectedPropertyId);
-  const propertyAlerts = environmentalAlerts.filter(a => a.property_id === selectedPropertyId);
+  
+  // Apply filters
+  const filteredData = useMemo(() => {
+    let filteredLicenses = licenses.filter(l => l.property_id === selectedPropertyId);
+    let filteredDocuments = documents.filter(d => d.property_id === selectedPropertyId);
+    let filteredAlerts = environmentalAlerts.filter(a => a.property_id === selectedPropertyId);
+    let filteredProcesses = [...processes];
+
+    // Date filter
+    if (filters.period !== 'all') {
+      const now = new Date();
+      let startDate = null;
+
+      if (filters.period === '7days') startDate = subDays(now, 7);
+      else if (filters.period === '30days') startDate = subDays(now, 30);
+      else if (filters.period === '90days') startDate = subDays(now, 90);
+      else if (filters.period === 'year') startDate = subDays(now, 365);
+      else if (filters.period === 'custom' && filters.startDate && filters.endDate) {
+        filteredLicenses = filteredLicenses.filter(l => {
+          const date = new Date(l.created_date || l.issue_date);
+          return isAfter(date, filters.startDate) && isBefore(date, filters.endDate);
+        });
+        filteredAlerts = filteredAlerts.filter(a => {
+          const date = new Date(a.detection_date);
+          return isAfter(date, filters.startDate) && isBefore(date, filters.endDate);
+        });
+      }
+
+      if (startDate) {
+        filteredLicenses = filteredLicenses.filter(l => {
+          const date = new Date(l.created_date || l.issue_date);
+          return isAfter(date, startDate);
+        });
+        filteredAlerts = filteredAlerts.filter(a => {
+          const date = new Date(a.detection_date);
+          return isAfter(date, startDate);
+        });
+      }
+    }
+
+    // Status filters
+    if (filters.licenseStatus !== 'all') {
+      filteredLicenses = filteredLicenses.filter(l => l.status === filters.licenseStatus);
+    }
+
+    if (filters.alertSeverity !== 'all') {
+      filteredAlerts = filteredAlerts.filter(a => a.severity === filters.alertSeverity);
+    }
+
+    if (filters.processStatus !== 'all') {
+      filteredProcesses = filteredProcesses.filter(p => p.status === filters.processStatus);
+    }
+
+    return {
+      licenses: filteredLicenses,
+      documents: filteredDocuments,
+      alerts: filteredAlerts,
+      processes: filteredProcesses
+    };
+  }, [licenses, documents, environmentalAlerts, processes, selectedPropertyId, filters]);
+
+  const handleResetFilters = () => {
+    setFilters({
+      period: 'all',
+      licenseStatus: 'all',
+      alertSeverity: 'all',
+      processStatus: 'all',
+      startDate: null,
+      endDate: null
+    });
+  };
 
   return (
   <div className="max-w-7xl mx-auto space-y-8">
-      {/* Header with Commodity Prices */}
+      {/* Header with Commodity Prices and Export */}
       <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
@@ -100,14 +182,26 @@ export default function Home() {
         </div>
         <div className="flex flex-col gap-2 lg:min-w-[320px]">
           <CommodityPrices />
-          <Link to={createPageUrl('Blog')} className="flex items-center justify-center gap-2 group">
-            <div className="p-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 transition-all hover:scale-105 shadow-md">
-              <Newspaper className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xs text-gray-600 group-hover:text-emerald-700 font-medium">
-              Acesse o Santa Blog AQUI
-            </span>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link to={createPageUrl('Blog')} className="flex items-center justify-center gap-2 group flex-1">
+              <div className="p-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 transition-all hover:scale-105 shadow-md">
+                <Newspaper className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xs text-gray-600 group-hover:text-emerald-700 font-medium">
+                Santa Blog
+              </span>
+            </Link>
+            {!isLoading && (
+              <ExportPDF
+                user={user}
+                property={selectedProperty}
+                licenses={filteredData.licenses}
+                documents={filteredData.documents}
+                processes={filteredData.processes}
+                alerts={filteredData.alerts}
+              />
+            )}
+          </div>
         </div>
       </div>
 
@@ -141,41 +235,98 @@ export default function Home() {
       {/* Quick Actions */}
       <QuickActions />
 
-      {/* Termômetro de Regularidade */}
-      {!isLoading && selectedProperty && (
-        <RegularityThermometer 
-          property={selectedProperty}
-          licenses={propertyLicenses}
-          documents={propertyDocuments}
-          processes={processes}
-        />
-      )}
+      {/* Tabs for Overview and Analytics */}
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="grid w-full max-w-md grid-cols-2 mx-auto">
+          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" />
+            Análises
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Two Column Layout */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {isLoading ?
-        <>
-            <Skeleton className="h-80 rounded-xl" />
-            <Skeleton className="h-80 rounded-xl" />
-          </> :
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-8">
+          {/* Termômetro de Regularidade */}
+          {!isLoading && selectedProperty && (
+            <RegularityThermometer 
+              property={selectedProperty}
+              licenses={filteredData.licenses}
+              documents={filteredData.documents}
+              processes={filteredData.processes}
+            />
+          )}
 
-        <>
-            <LicenseAlerts licenses={licenses} />
-            <InvoicesSummary invoices={invoices} />
-          </>
-        }
-      </div>
+          {/* Two Column Layout */}
+          <div className="grid lg:grid-cols-2 gap-6">
+            {isLoading ? (
+              <>
+                <Skeleton className="h-80 rounded-xl" />
+                <Skeleton className="h-80 rounded-xl" />
+              </>
+            ) : (
+              <>
+                <LicenseAlerts licenses={licenses} />
+                <InvoicesSummary invoices={invoices} />
+              </>
+            )}
+          </div>
 
-      {/* Environmental Alerts */}
-      {!isLoading && (
-        <EnvironmentalAlerts alerts={propertyAlerts} />
-      )}
+          {/* Environmental Alerts */}
+          {!isLoading && (
+            <EnvironmentalAlerts alerts={filteredData.alerts} />
+          )}
 
-      {/* Commodity History */}
-      <CommodityHistory />
+          {/* Commodity History */}
+          <CommodityHistory />
 
-      {/* Blog Preview */}
-      <BlogPreview />
+          {/* Blog Preview */}
+          <BlogPreview />
+        </TabsContent>
+
+        {/* Analytics Tab */}
+        <TabsContent value="analytics" className="space-y-8">
+          {/* Advanced Filters */}
+          {!isLoading && (
+            <DashboardFilters 
+              filters={filters}
+              onFiltersChange={setFilters}
+              onReset={handleResetFilters}
+            />
+          )}
+
+          {/* Dashboard Metrics */}
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Skeleton className="h-32 rounded-xl" />
+              <Skeleton className="h-32 rounded-xl" />
+              <Skeleton className="h-32 rounded-xl" />
+              <Skeleton className="h-32 rounded-xl" />
+            </div>
+          ) : (
+            <DashboardMetrics
+              licenses={filteredData.licenses}
+              documents={filteredData.documents}
+              processes={filteredData.processes}
+              alerts={filteredData.alerts}
+            />
+          )}
+
+          {/* Dashboard Charts */}
+          {isLoading ? (
+            <div className="grid lg:grid-cols-2 gap-6">
+              <Skeleton className="h-80 rounded-xl" />
+              <Skeleton className="h-80 rounded-xl" />
+            </div>
+          ) : (
+            <DashboardCharts
+              licenses={filteredData.licenses}
+              processes={filteredData.processes}
+              alerts={filteredData.alerts}
+            />
+          )}
+        </TabsContent>
+      </Tabs>
       </div>);
 
       }

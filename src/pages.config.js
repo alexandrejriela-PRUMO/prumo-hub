@@ -26,6 +26,7 @@ import TaxIncentives from './pages/TaxIncentives';
 import Certifications from './pages/Certifications';
 import DocumentsManager from './pages/DocumentsManager';
 import ConsolidatedReports from './pages/ConsolidatedReports';
+import ClimateMonitoring from './pages/ClimateMonitoring';
 import __Layout from './Layout.jsx';
 
 
@@ -58,6 +59,7 @@ export const PAGES = {
     "Certifications": Certifications,
     "DocumentsManager": DocumentsManager,
     "ConsolidatedReports": ConsolidatedReports,
+    "ClimateMonitoring": ClimateMonitoring,
 }
 
 export const pagesConfig = {

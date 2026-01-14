@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Award, ExternalLink, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import CertificationForm from './CertificationForm';
+import CertificationAuditTool from './CertificationAuditTool';
 import { checkAndSendNotifications } from '../../functions/notificationMonitor';
 
 export default function SustainableCertifications() {

@@ -226,11 +226,17 @@ export default function Home() {
         </div>
       }
 
-      {/* Property Card */}
+      {/* Property Card and Weather */}
       {isLoading ?
-      <Skeleton className="h-64 w-full rounded-2xl" /> :
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Skeleton className="h-64 rounded-2xl" />
+        <Skeleton className="h-64 rounded-2xl" />
+      </div> :
 
-      <PropertyCard property={selectedProperty} />
+      <div className="grid lg:grid-cols-2 gap-6">
+        <PropertyCard property={selectedProperty} />
+        <WeatherPreview propertyId={selectedProperty?.id} />
+      </div>
       }
 
       {/* Quick Actions */}

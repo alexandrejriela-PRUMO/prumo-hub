@@ -448,7 +448,3 @@ export default function Processes() {
     </div>
   );
 }
-      </Tabs>
-    </div>
-  );
-}

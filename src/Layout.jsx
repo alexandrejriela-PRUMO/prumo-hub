@@ -22,6 +22,7 @@ import {
         X,
         LogOut,
         ChevronRight,
+        ChevronDown,
         AlertTriangle,
         Settings,
         BarChart3,
@@ -46,10 +47,16 @@ const navItems = [
   { name: 'Consultoria e Requerimentos', page: 'Requests', icon: Users },
   { name: 'Monitoramento Climático', page: 'ClimateMonitoring', icon: Cloud },
   { name: 'Análise de Commodities', page: 'CommodityAnalysis', icon: BarChart3 },
-  { name: 'Créditos de Carbono', page: 'CarbonCredits', icon: Leaf },
-  { name: 'PSA - Serviços Ambientais', page: 'PSAContracts', icon: Droplets },
-  { name: 'Servidão Ambiental', page: 'EnvironmentalEasements', icon: Shield },
-  { name: 'ESG para o Agro', page: 'ESGAgro', icon: TrendingUp },
+  { 
+    name: 'Agro 4.0 - Ambiental', 
+    icon: TrendingUp,
+    children: [
+      { name: 'Créditos de Carbono', page: 'CarbonCredits', icon: Leaf },
+      { name: 'PSA - Serviços Ambientais', page: 'PSAContracts', icon: Droplets },
+      { name: 'Servidão Ambiental', page: 'EnvironmentalEasements', icon: Shield },
+      { name: 'ESG para o Agro', page: 'ESGAgro', icon: TrendingUp },
+    ]
+  },
   { name: 'Relatórios', page: 'Reports', icon: FileText },
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
   { name: 'E-book Grátis', page: 'EbookReader', icon: FileText },
@@ -63,6 +70,7 @@ export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [user, setUser] = useState(null);
+  const [expandedMenus, setExpandedMenus] = useState({});
 
   useEffect(() => {
     const loadUser = async () => {
@@ -174,10 +182,62 @@ export default function Layout({ children, currentPageName }) {
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-            {navItems.map((item) => {
+            {navItems.map((item, index) => {
               // Hide admin-only items for non-admin users
               if (item.adminOnly && user?.role !== 'admin') return null;
 
+              // Menu com submenus
+              if (item.children) {
+                const isExpanded = expandedMenus[item.name];
+                const hasActiveChild = item.children.some(child => child.page === currentPageName);
+                const Icon = item.icon;
+
+                return (
+                  <div key={item.name}>
+                    <button
+                      onClick={() => setExpandedMenus(prev => ({ ...prev, [item.name]: !prev[item.name] }))}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
+                        hasActiveChild
+                          ? "bg-emerald-800/50 text-white"
+                          : "text-emerald-200 hover:bg-emerald-800/50 hover:text-white"
+                      )}
+                    >
+                      <Icon className={cn("w-5 h-5", hasActiveChild ? "text-amber-400" : "text-emerald-400 group-hover:text-amber-400")} />
+                      <span className="font-medium text-sm">{item.name}</span>
+                      <ChevronDown className={cn("w-4 h-4 ml-auto transition-transform", isExpanded && "rotate-180")} />
+                    </button>
+
+                    {isExpanded && (
+                      <div className="ml-4 mt-1 space-y-1">
+                        {item.children.map((child) => {
+                          const isActive = currentPageName === child.page;
+                          const ChildIcon = child.icon;
+                          return (
+                            <Link
+                              key={child.page}
+                              to={createPageUrl(child.page)}
+                              onClick={() => setSidebarOpen(false)}
+                              className={cn(
+                                "flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 group",
+                                isActive
+                                  ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30"
+                                  : "text-emerald-200 hover:bg-emerald-800/30 hover:text-white"
+                              )}
+                            >
+                              <ChildIcon className={cn("w-4 h-4", isActive ? "text-white" : "text-emerald-400 group-hover:text-amber-400")} />
+                              <span className="font-medium text-xs">{child.name}</span>
+                              {isActive && <ChevronRight className="w-3 h-3 ml-auto" />}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              // Menu simples
               const isActive = currentPageName === item.page;
               const Icon = item.icon;
               return (

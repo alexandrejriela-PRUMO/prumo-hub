@@ -5,8 +5,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { 
   FileCheck, 
   MessageCircle, 
-  FileQuestion, 
-  CreditCard,
+  Users, 
+  Gauge,
   ArrowRight
 } from 'lucide-react';
 
@@ -26,18 +26,18 @@ const actions = [
     color: 'from-amber-500 to-amber-600'
   },
   {
-    title: 'Requerimentos',
-    description: 'Dúvidas jurídicas',
-    icon: FileQuestion,
+    title: 'Consultoria e Requerimentos',
+    description: 'Acesso direto à equipe',
+    icon: Users,
     page: 'Requests',
     color: 'from-teal-500 to-teal-600'
   },
   {
-    title: 'Boletos',
-    description: 'Pagamentos pendentes',
-    icon: CreditCard,
-    page: 'Invoices',
-    color: 'from-green-500 to-green-600'
+    title: 'Termômetro de Regularidade',
+    description: 'Confira sua situação',
+    icon: Gauge,
+    page: 'RegularityReport',
+    color: 'from-blue-500 to-blue-600'
   },
 ];
 

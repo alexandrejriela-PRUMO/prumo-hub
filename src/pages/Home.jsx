@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import PropertyCard from '../components/dashboard/PropertyCard';
-import WeatherPreview from '../components/dashboard/WeatherPreview';
 import QuickActions from '../components/dashboard/QuickActions';
 import LicenseAlerts from '../components/dashboard/LicenseAlerts';
 import InvoicesSummary from '../components/dashboard/InvoicesSummary';
@@ -228,17 +227,10 @@ export default function Home() {
         </div>
       }
 
-      {/* Property Card and Weather */}
+      {/* Property Card */}
       {isLoading ?
-      <div className="grid lg:grid-cols-2 gap-6">
-        <Skeleton className="h-64 rounded-2xl" />
-        <Skeleton className="h-64 rounded-2xl" />
-      </div> :
-
-      <div className="grid lg:grid-cols-2 gap-6">
-        <PropertyCard property={selectedProperty} />
-        <WeatherPreview propertyId={selectedProperty?.id} />
-      </div>
+      <Skeleton className="h-64 rounded-2xl" /> :
+      <PropertyCard property={selectedProperty} />
       }
 
       {/* Quick Actions */}
@@ -256,6 +248,23 @@ export default function Home() {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-8">
+          {/* Licenças Ambientais */}
+          {isLoading ? (
+            <Skeleton className="h-80 rounded-xl" />
+          ) : (
+            <LicenseAlerts licenses={licenses} />
+          )}
+
+          {/* Processos e Alertas de Infrações */}
+          <div className="grid lg:grid-cols-2 gap-6">
+            {!isLoading && (
+              <>
+                <EnvironmentalAlerts alerts={filteredData.alerts} />
+                {/* Processos count placeholder - pode adicionar componente específico */}
+              </>
+            )}
+          </div>
+
           {/* Termômetro de Regularidade */}
           {!isLoading && selectedProperty && (
             <RegularityThermometer 
@@ -266,24 +275,11 @@ export default function Home() {
             />
           )}
 
-          {/* Two Column Layout */}
-          <div className="grid lg:grid-cols-2 gap-6">
-            {isLoading ? (
-              <>
-                <Skeleton className="h-80 rounded-xl" />
-                <Skeleton className="h-80 rounded-xl" />
-              </>
-            ) : (
-              <>
-                <LicenseAlerts licenses={licenses} />
-                <InvoicesSummary invoices={invoices} />
-              </>
-            )}
-          </div>
-
-          {/* Environmental Alerts */}
-          {!isLoading && (
-            <EnvironmentalAlerts alerts={filteredData.alerts} />
+          {/* Faturas/Boletos */}
+          {isLoading ? (
+            <Skeleton className="h-80 rounded-xl" />
+          ) : (
+            <InvoicesSummary invoices={invoices} />
           )}
 
           {/* Blog Preview */}

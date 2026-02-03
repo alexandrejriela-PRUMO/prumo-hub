@@ -45,8 +45,14 @@ const navItems = [
   { name: 'Alertas de Infrações', page: 'EnvironmentalAlerts', icon: AlertTriangle },
   { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: FileCheck },
   { name: 'Consultoria e Requerimentos', page: 'Requests', icon: Users },
-  { name: 'Monitoramento Climático', page: 'ClimateMonitoring', icon: Cloud },
-  { name: 'Análise de Commodities', page: 'CommodityAnalysis', icon: BarChart3 },
+  { 
+    name: 'Agricultura de Precisão Plus', 
+    icon: Cloud,
+    children: [
+      { name: 'Monitoramento Climático', page: 'ClimateMonitoring', icon: Cloud },
+      { name: 'Análise de Commodities', page: 'CommodityAnalysis', icon: BarChart3 },
+    ]
+  },
   { 
     name: 'Agro 4.0 - Ambiental', 
     icon: TrendingUp,

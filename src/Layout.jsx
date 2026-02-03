@@ -43,7 +43,7 @@ const navItems = [
   { name: 'Processos', page: 'Processes', icon: Scale },
   { name: 'Alertas de Infrações', page: 'EnvironmentalAlerts', icon: AlertTriangle },
   { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: FileCheck },
-  { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
+  { name: 'Consultoria e Requerimentos', page: 'Requests', icon: FileQuestion },
   { name: 'Monitoramento Climático', page: 'ClimateMonitoring', icon: Cloud },
   { name: 'Análise de Commodities', page: 'CommodityAnalysis', icon: BarChart3 },
   { name: 'Créditos de Carbono', page: 'CarbonCredits', icon: Leaf },
@@ -57,7 +57,6 @@ const navItems = [
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
   { name: 'Suporte', page: 'Support', icon: Headphones },
   { name: 'Boletos', page: 'Invoices', icon: CreditCard },
-  { name: 'Requerimentos', page: 'Requests', icon: FileQuestion },
 ];
 
 export default function Layout({ children, currentPageName }) {

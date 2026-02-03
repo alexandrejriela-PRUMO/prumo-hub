@@ -27,6 +27,7 @@ import { ptBR } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import LicenseFlowchart from '../components/license/LicenseFlowchart';
 import LicenseHistory from '../components/history/LicenseHistory';
+import LicenseDocuments from '../components/license/LicenseDocuments';
 
 const licenseTypes = ['LP', 'LI', 'LO', 'LAU', 'Dispensa', 'Outorga', 'Outro'];
 
@@ -43,9 +44,11 @@ export default function Licenses() {
     issue_date: '',
     expiry_date: '',
     conditions: [],
-    file_url: '',
+    documents: [],
   });
   const [newCondition, setNewCondition] = useState('');
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [docType, setDocType] = useState('Licença Principal');
 
   const queryClient = useQueryClient();
 
@@ -96,19 +99,41 @@ export default function Licenses() {
       issue_date: '',
       expiry_date: '',
       conditions: [],
-      file_url: '',
+      documents: [],
     });
     setNewCondition('');
+    setDocType('Licença Principal');
   };
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    setFormData({ ...formData, file_url });
-    setUploading(false);
+    setUploadingDoc(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const newDoc = {
+        name: file.name,
+        url: file_url,
+        type: docType,
+        uploaded_by: user.email,
+        uploaded_date: new Date().toISOString()
+      };
+      setFormData({
+        ...formData,
+        documents: [...formData.documents, newDoc]
+      });
+    } catch (error) {
+      alert('Erro ao fazer upload do arquivo');
+    }
+    setUploadingDoc(false);
+  };
+
+  const removeDocument = (index) => {
+    setFormData({
+      ...formData,
+      documents: formData.documents.filter((_, i) => i !== index)
+    });
   };
 
   const addCondition = () => {
@@ -246,20 +271,49 @@ export default function Licenses() {
               </div>
 
               <div className="space-y-2">
-                <Label>Documento (PDF)</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={handleFileUpload}
-                    className="flex-1"
-                  />
-                  {uploading && <span className="text-sm text-gray-500">Enviando...</span>}
+                <Label>Documentos da Licença</Label>
+                <div className="space-y-2">
+                  <Select value={docType} onValueChange={setDocType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Licença Principal">Licença Principal</SelectItem>
+                      <SelectItem value="Documento Complementar">Documento Complementar</SelectItem>
+                      <SelectItem value="Comprovante">Comprovante</SelectItem>
+                      <SelectItem value="Outro">Outro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={handleFileUpload}
+                      className="flex-1"
+                    />
+                    {uploadingDoc && <span className="text-sm text-gray-500">Enviando...</span>}
+                  </div>
                 </div>
-                {formData.file_url && (
-                  <a href={formData.file_url} target="_blank" rel="noopener noreferrer" className="text-sm text-emerald-600 flex items-center gap-1">
-                    <FileText className="w-4 h-4" /> Ver documento
-                  </a>
+                {formData.documents.length > 0 && (
+                  <div className="space-y-2 mt-3">
+                    <p className="text-sm font-medium text-gray-700">Documentos adicionados:</p>
+                    {formData.documents.map((doc, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg border">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900">{doc.name}</p>
+                          <p className="text-xs text-gray-600">{doc.type}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:text-emerald-700">
+                            <FileText className="w-4 h-4" />
+                          </a>
+                          <button type="button" onClick={() => removeDocument(idx)} className="text-red-500 hover:text-red-700">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
 
@@ -337,6 +391,29 @@ export default function Licenses() {
                       </div>
                     )}
 
+                    {license.documents && license.documents.length > 0 && (
+                      <div className="mb-3">
+                        <p className="text-xs text-gray-500 mb-2">Documentos ({license.documents.length}):</p>
+                        <div className="space-y-1">
+                          {license.documents.slice(0, 2).map((doc, idx) => (
+                            <a
+                              key={idx}
+                              href={doc.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 p-2 bg-gray-50 rounded text-xs hover:bg-gray-100 transition-colors"
+                            >
+                              <FileText className="w-3 h-3 text-emerald-600" />
+                              <span className="flex-1 truncate">{doc.name}</span>
+                            </a>
+                          ))}
+                          {license.documents.length > 2 && (
+                            <p className="text-xs text-emerald-600 pl-2">+{license.documents.length - 2} mais</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex gap-2 pt-2">
                       <Button
                         variant="outline"
@@ -362,17 +439,6 @@ export default function Licenses() {
                         <Sparkles className="w-4 h-4 mr-1" />
                         Análise
                       </Button>
-                      {license.file_url && (
-                        <a
-                          href={license.file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors text-sm"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                          Ver
-                        </a>
-                      )}
                       <Button
                         variant="ghost"
                         size="icon"
@@ -396,20 +462,29 @@ export default function Licenses() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Clock className="w-5 h-5 text-blue-600" />
-              Histórico - {selectedLicense?.license_type} {selectedLicense?.license_number}
+              {selectedLicense?.license_type} {selectedLicense?.license_number}
             </DialogTitle>
           </DialogHeader>
           {selectedLicense && (
-            <LicenseHistory 
-              license={selectedLicense}
-              onAddUpdate={(update) => {
-                const updatedLicense = {
-                  ...selectedLicense,
-                  updates: [...(selectedLicense.updates || []), update]
-                };
-                updateMutation.mutate({ id: selectedLicense.id, data: updatedLicense });
-              }}
-            />
+            <div className="space-y-4">
+              <LicenseDocuments 
+                license={selectedLicense}
+                onUpdate={(updatedLicense) => {
+                  updateMutation.mutate({ id: selectedLicense.id, data: updatedLicense });
+                  setSelectedLicense(updatedLicense);
+                }}
+              />
+              <LicenseHistory 
+                license={selectedLicense}
+                onAddUpdate={(update) => {
+                  const updatedLicense = {
+                    ...selectedLicense,
+                    updates: [...(selectedLicense.updates || []), update]
+                  };
+                  updateMutation.mutate({ id: selectedLicense.id, data: updatedLicense });
+                }}
+              />
+            </div>
           )}
         </DialogContent>
       </Dialog>

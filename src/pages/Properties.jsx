@@ -111,10 +111,10 @@ export default function Properties() {
                   Limites Definidos
                 </Badge>
               )}
-              {property.authorized_users?.length > 0 && (
+              {property.authorized_users && (
                 <Badge variant="outline" className="text-xs">
                   <Users className="w-3 h-3 mr-1" />
-                  {property.authorized_users.length + 1} usuário(s)
+                  {(typeof property.authorized_users === 'string' ? (property.authorized_users ? 1 : 0) : property.authorized_users.length) + 1} usuário(s)
                 </Badge>
               )}
             </div>

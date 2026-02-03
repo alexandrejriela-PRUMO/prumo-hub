@@ -73,7 +73,8 @@ const navItems = [
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
   { name: 'Suporte', page: 'Support', icon: Headphones },
   { name: 'Boletos', page: 'Invoices', icon: CreditCard },
-];
+  { name: 'Gerenciar Usuários', page: 'UserManagement', icon: Users, adminOnly: true },
+  ];
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);

@@ -3,20 +3,20 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
-  FileCheck, 
+  FileText, 
   MessageCircle, 
   Users, 
-  Gauge,
+  Scale,
   ArrowRight
 } from 'lucide-react';
 
 const actions = [
   {
-    title: 'Licenças',
-    description: 'Ver licenças ambientais',
-    icon: FileCheck,
-    page: 'Licenses',
-    color: 'from-emerald-500 to-emerald-600'
+    title: 'Consultoria e Requerimentos',
+    description: 'Acesso direto à equipe',
+    icon: Users,
+    page: 'Requests',
+    color: 'from-teal-500 to-teal-600'
   },
   {
     title: 'Chat IA Rute',
@@ -26,17 +26,17 @@ const actions = [
     color: 'from-amber-500 to-amber-600'
   },
   {
-    title: 'Consultoria e Requerimentos',
-    description: 'Acesso direto à equipe',
-    icon: Users,
-    page: 'Requests',
-    color: 'from-teal-500 to-teal-600'
+    title: 'Documentos',
+    description: 'Gerencie seus documentos',
+    icon: FileText,
+    page: 'DocumentsHub',
+    color: 'from-emerald-500 to-emerald-600'
   },
   {
-    title: 'Termômetro de Regularidade',
-    description: 'Confira sua situação',
-    icon: Gauge,
-    page: 'RegularityReport',
+    title: 'Processos',
+    description: 'Acompanhe processos',
+    icon: Scale,
+    page: 'Processes',
     color: 'from-blue-500 to-blue-600'
   },
 ];

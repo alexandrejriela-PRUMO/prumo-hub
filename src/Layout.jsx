@@ -33,7 +33,8 @@ import {
               Shield,
               TrendingUp,
               Cloud,
-              Sparkles
+              Sparkles,
+              Map
                     } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -52,6 +53,7 @@ const navItems = [
     children: [
       { name: 'Monitoramento Climático', page: 'ClimateMonitoring', icon: Cloud },
       { name: 'Análise de Commodities', page: 'CommodityAnalysis', icon: BarChart3 },
+      { name: 'Mapeamentos', page: 'Mappings', icon: Map },
     ]
   },
   { 

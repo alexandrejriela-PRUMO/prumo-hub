@@ -48,7 +48,7 @@ const navItems = [
   { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: FileCheck },
   { name: 'Consultoria e Requerimentos', page: 'Requests', icon: Users },
   { 
-    name: 'Agricultura de Precisão', 
+    name: 'Agricultura de precisão', 
     icon: Sparkles,
     children: [
       { name: 'Monitoramento Climático', page: 'ClimateMonitoring', icon: Cloud },

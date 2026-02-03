@@ -122,11 +122,11 @@ export default function PropertyCard({ property }) {
         </div>
 
         {/* Activities */}
-        {property.activities && property.activities.length > 0 && (
+        {property.activities && (
           <div className="mt-6 pt-6 border-t border-emerald-800/50">
             <p className="text-emerald-400 text-sm mb-3">Atividades:</p>
             <div className="flex flex-wrap gap-2">
-              {property.activities.map((activity, index) => (
+              {(typeof property.activities === 'string' ? property.activities.split(',').map(a => a.trim()) : property.activities).map((activity, index) => (
                 <span key={index} className="px-3 py-1 rounded-full bg-emerald-800/50 text-emerald-200 text-sm">
                   {activity}
                 </span>

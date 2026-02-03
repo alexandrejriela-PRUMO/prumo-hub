@@ -50,7 +50,6 @@ const navItems = [
   { name: 'ESG para o Agro', page: 'ESGAgro', icon: TrendingUp },
   { name: 'Monitoramento Climático', page: 'ClimateMonitoring', icon: Cloud },
   { name: 'Relatórios', page: 'Reports', icon: FileText },
-  { name: 'Relatórios ESG Consolidados', page: 'ConsolidatedReports', icon: FileText },
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
   { name: 'E-book Grátis', page: 'EbookReader', icon: FileText },
   { name: 'Análise de Commodities', page: 'CommodityAnalysis', icon: BarChart3 },

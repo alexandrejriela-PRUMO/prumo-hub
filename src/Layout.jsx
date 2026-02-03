@@ -218,7 +218,7 @@ export default function Layout({ children, currentPageName }) {
                     </button>
 
                     {isExpanded && (
-                      <div className="ml-4 mt-1 space-y-1">
+                      <div className="mt-1 space-y-1">
                         {item.children.map((child) => {
                           const isActive = currentPageName === child.page;
                           const ChildIcon = child.icon;

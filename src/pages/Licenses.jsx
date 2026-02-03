@@ -26,6 +26,7 @@ import { format, parseISO, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import LicenseFlowchart from '../components/license/LicenseFlowchart';
+import LicenseHistory from '../components/history/LicenseHistory';
 
 const licenseTypes = ['LP', 'LI', 'LO', 'LAU', 'Dispensa', 'Outorga', 'Outro'];
 
@@ -34,6 +35,7 @@ export default function Licenses() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedLicense, setSelectedLicense] = useState(null);
   const [showFlowchart, setShowFlowchart] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     license_type: '',
@@ -72,6 +74,13 @@ export default function Licenses() {
       queryClient.invalidateQueries(['licenses']);
       setDialogOpen(false);
       resetForm();
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.License.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['licenses']);
     },
   });
 
@@ -334,6 +343,18 @@ export default function Licenses() {
                         size="sm"
                         onClick={() => {
                           setSelectedLicense(license);
+                          setShowHistory(true);
+                        }}
+                        className="flex-1 border-blue-300 text-blue-700 hover:bg-blue-50"
+                      >
+                        <Clock className="w-4 h-4 mr-1" />
+                        Histórico
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedLicense(license);
                           setShowFlowchart(true);
                         }}
                         className="flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
@@ -368,6 +389,30 @@ export default function Licenses() {
           })}
         </div>
       )}
+
+      {/* Dialog de Histórico */}
+      <Dialog open={showHistory} onOpenChange={setShowHistory}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-blue-600" />
+              Histórico - {selectedLicense?.license_type} {selectedLicense?.license_number}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedLicense && (
+            <LicenseHistory 
+              license={selectedLicense}
+              onAddUpdate={(update) => {
+                const updatedLicense = {
+                  ...selectedLicense,
+                  updates: [...(selectedLicense.updates || []), update]
+                };
+                updateMutation.mutate({ id: selectedLicense.id, data: updatedLicense });
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog de Fluxograma */}
       <Dialog open={showFlowchart} onOpenChange={setShowFlowchart}>

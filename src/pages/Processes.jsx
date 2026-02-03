@@ -27,6 +27,7 @@ import {
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import ProcessFlowchart from '../components/process/ProcessFlowchart';
+import ProcessHistory from '../components/history/ProcessHistory';
 
 export default function Processes() {
   const [user, setUser] = useState(null);
@@ -144,6 +145,7 @@ export default function Processes() {
 
   const [selectedProcess, setSelectedProcess] = useState(null);
   const [showFlowchart, setShowFlowchart] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   const ProcessCard = ({ process }) => {
     const StatusIcon = statusConfig[process.status]?.icon || AlertCircle;
@@ -167,6 +169,18 @@ export default function Processes() {
               </CardTitle>
             </div>
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedProcess(process);
+                  setShowHistory(true);
+                }}
+                className="border-blue-300 text-blue-700 hover:bg-blue-50"
+              >
+                <Clock className="w-4 h-4 mr-1" />
+                Histórico
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -432,6 +446,30 @@ export default function Processes() {
           </TabsContent>
         ))}
       </Tabs>
+
+      {/* Dialog de Histórico */}
+      <Dialog open={showHistory} onOpenChange={setShowHistory}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-blue-600" />
+              Histórico - {selectedProcess?.process_number}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedProcess && (
+            <ProcessHistory 
+              process={selectedProcess}
+              onAddUpdate={(update) => {
+                const updatedProcess = {
+                  ...selectedProcess,
+                  updates: [...(selectedProcess.updates || []), update]
+                };
+                updateMutation.mutate({ id: selectedProcess.id, data: updatedProcess });
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog de Fluxograma */}
       <Dialog open={showFlowchart} onOpenChange={setShowFlowchart}>

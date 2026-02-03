@@ -19,7 +19,10 @@ export default function LicenseDocuments({ license, onUpdate }) {
 
   const handleUpload = async (e) => {
     e.preventDefault();
-    if (!selectedFile) return;
+    if (!selectedFile) {
+      toast.error('Por favor, selecione um arquivo');
+      return;
+    }
 
     setUploading(true);
     try {
@@ -81,7 +84,7 @@ export default function LicenseDocuments({ license, onUpdate }) {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Upload de Documento</DialogTitle>
+                <DialogTitle>Adicionar Documento</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleUpload} className="space-y-4">
                 <div>
@@ -99,13 +102,29 @@ export default function LicenseDocuments({ license, onUpdate }) {
                   </Select>
                 </div>
                 <div>
-                  <Label>Arquivo (PDF, JPG, PNG)</Label>
-                  <Input
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => setSelectedFile(e.target.files[0])}
-                    required
-                  />
+                  <Label htmlFor="file-upload">Selecionar Arquivo do Computador</Label>
+                  <div className="mt-2">
+                    <label 
+                      htmlFor="file-upload"
+                      className="flex items-center justify-center gap-2 w-full p-4 border-2 border-dashed border-emerald-300 rounded-lg cursor-pointer hover:bg-emerald-50 transition-colors"
+                    >
+                      <Upload className="w-5 h-5 text-emerald-600" />
+                      <span className="text-sm font-medium text-emerald-700">
+                        {selectedFile ? selectedFile.name : 'Clique aqui para buscar arquivo (PDF, JPG, PNG)'}
+                      </span>
+                    </label>
+                    <Input
+                      id="file-upload"
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => setSelectedFile(e.target.files[0])}
+                      className="hidden"
+                      required
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Formatos aceitos: PDF, JPG, PNG (máx. 10MB)
+                  </p>
                 </div>
                 <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={uploading}>
                   {uploading ? 'Enviando...' : 'Fazer Upload'}

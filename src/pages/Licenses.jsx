@@ -28,6 +28,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import LicenseFlowchart from '../components/license/LicenseFlowchart';
 import LicenseHistory from '../components/history/LicenseHistory';
 import LicenseDocuments from '../components/license/LicenseDocuments';
+import { toast } from 'sonner';
 
 const licenseTypes = ['LP', 'LI', 'LO', 'LAU', 'Dispensa', 'Outorga', 'Outro'];
 
@@ -77,6 +78,7 @@ export default function Licenses() {
       queryClient.invalidateQueries(['licenses']);
       setDialogOpen(false);
       resetForm();
+      toast.success('Licença criada com sucesso!');
     },
   });
 
@@ -89,7 +91,10 @@ export default function Licenses() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.License.delete(id),
-    onSuccess: () => queryClient.invalidateQueries(['licenses']),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['licenses']);
+      toast.success('Licença removida com sucesso!');
+    },
   });
 
   const resetForm = () => {
@@ -123,8 +128,11 @@ export default function Licenses() {
         ...formData,
         documents: [...formData.documents, newDoc]
       });
+      toast.success('Documento adicionado!');
+      // Reset file input
+      e.target.value = null;
     } catch (error) {
-      alert('Erro ao fazer upload do arquivo');
+      toast.error('Erro ao fazer upload do arquivo');
     }
     setUploadingDoc(false);
   };
@@ -272,7 +280,7 @@ export default function Licenses() {
 
               <div className="space-y-2">
                 <Label>Documentos da Licença</Label>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Select value={docType} onValueChange={setDocType}>
                     <SelectTrigger>
                       <SelectValue />
@@ -284,14 +292,28 @@ export default function Licenses() {
                       <SelectItem value="Outro">Outro</SelectItem>
                     </SelectContent>
                   </Select>
-                  <div className="flex items-center gap-2">
+                  
+                  <div>
+                    <label 
+                      htmlFor="file-upload-form"
+                      className="flex items-center justify-center gap-2 w-full p-4 border-2 border-dashed border-emerald-300 rounded-lg cursor-pointer hover:bg-emerald-50 transition-colors"
+                    >
+                      <Upload className="w-5 h-5 text-emerald-600" />
+                      <span className="text-sm font-medium text-emerald-700">
+                        {uploadingDoc ? 'Enviando...' : 'Clique para buscar arquivo do computador'}
+                      </span>
+                    </label>
                     <Input
+                      id="file-upload-form"
                       type="file"
                       accept=".pdf,.jpg,.jpeg,.png"
                       onChange={handleFileUpload}
-                      className="flex-1"
+                      className="hidden"
+                      disabled={uploadingDoc}
                     />
-                    {uploadingDoc && <span className="text-sm text-gray-500">Enviando...</span>}
+                    <p className="text-xs text-gray-500 mt-2">
+                      Formatos aceitos: PDF, JPG, PNG
+                    </p>
                   </div>
                 </div>
                 {formData.documents.length > 0 && (
@@ -443,7 +465,11 @@ export default function Licenses() {
                         variant="ghost"
                         size="icon"
                         className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => deleteMutation.mutate(license.id)}
+                        onClick={() => {
+                          if (window.confirm('Deseja realmente excluir esta licença?')) {
+                            deleteMutation.mutate(license.id);
+                          }
+                        }}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>

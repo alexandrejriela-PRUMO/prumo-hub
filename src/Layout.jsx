@@ -8,32 +8,33 @@ import NotificationCenter from './components/notifications/NotificationCenter';
 import RealtimeNotificationCenter from './components/notifications/RealtimeNotificationCenter';
 import { Badge } from '@/components/ui/badge';
 import {
-        LayoutDashboard,
-        FileCheck,
-        FileText,
-        MapPin,
-        MessageCircle,
-        Headphones,
-        CreditCard,
-        Users,
-        Scale,
-        Newspaper,
-        Menu,
-        X,
-        LogOut,
-        ChevronRight,
-        ChevronDown,
-        AlertTriangle,
-        Settings,
-        BarChart3,
-        Bell,
-        Building2,
-        Leaf,
-        Droplets,
-        Shield,
-        TrendingUp,
-        Cloud
-              } from 'lucide-react';
+              LayoutDashboard,
+              FileCheck,
+              FileText,
+              MapPin,
+              MessageCircle,
+              Headphones,
+              CreditCard,
+              Users,
+              Scale,
+              Newspaper,
+              Menu,
+              X,
+              LogOut,
+              ChevronRight,
+              ChevronDown,
+              AlertTriangle,
+              Settings,
+              BarChart3,
+              Bell,
+              Building2,
+              Leaf,
+              Droplets,
+              Shield,
+              TrendingUp,
+              Cloud,
+              Sparkles
+                    } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -46,8 +47,8 @@ const navItems = [
   { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: FileCheck },
   { name: 'Consultoria e Requerimentos', page: 'Requests', icon: Users },
   { 
-    name: 'Agricultura de Precisão Plus', 
-    icon: Cloud,
+    name: 'Agricultura de Precisão', 
+    icon: Sparkles,
     children: [
       { name: 'Monitoramento Climático', page: 'ClimateMonitoring', icon: Cloud },
       { name: 'Análise de Commodities', page: 'CommodityAnalysis', icon: BarChart3 },

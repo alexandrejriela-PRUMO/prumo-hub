@@ -19,11 +19,13 @@ import {
   ExternalLink,
   FileText,
   Upload,
-  Trash2
+  Trash2,
+  Sparkles
 } from 'lucide-react';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
+import LicenseFlowchart from '../components/license/LicenseFlowchart';
 
 const licenseTypes = ['LP', 'LI', 'LO', 'LAU', 'Dispensa', 'Outorga', 'Outro'];
 
@@ -31,6 +33,7 @@ export default function Licenses() {
   const [user, setUser] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedLicense, setSelectedLicense] = useState(null);
+  const [showFlowchart, setShowFlowchart] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     license_type: '',
@@ -326,6 +329,18 @@ export default function Licenses() {
                     )}
 
                     <div className="flex gap-2 pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedLicense(license);
+                          setShowFlowchart(true);
+                        }}
+                        className="flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                      >
+                        <Sparkles className="w-4 h-4 mr-1" />
+                        Análise
+                      </Button>
                       {license.file_url && (
                         <a
                           href={license.file_url}
@@ -334,7 +349,7 @@ export default function Licenses() {
                           className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors text-sm"
                         >
                           <ExternalLink className="w-4 h-4" />
-                          Ver Documento
+                          Ver
                         </a>
                       )}
                       <Button
@@ -353,6 +368,19 @@ export default function Licenses() {
           })}
         </div>
       )}
+
+      {/* Dialog de Fluxograma */}
+      <Dialog open={showFlowchart} onOpenChange={setShowFlowchart}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-emerald-600" />
+              Análise de Licenciamento - {selectedLicense?.license_type} {selectedLicense?.license_number}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedLicense && <LicenseFlowchart license={selectedLicense} />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

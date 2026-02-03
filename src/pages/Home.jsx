@@ -16,9 +16,7 @@ import ExportPDF from '../components/dashboard/ExportPDF';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
-import { MapPin, Newspaper, BarChart3 } from 'lucide-react';
+import { MapPin, BarChart3 } from 'lucide-react';
 import { subDays, isAfter, isBefore } from 'date-fns';
 
 export default function Home() {
@@ -179,26 +177,16 @@ export default function Home() {
           </h1>
           <p className="text-gray-500 mt-1">Bem-vindo à sua área do cliente Santa Rute - Engenharia Rural</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Link to={createPageUrl('Blog')} className="flex items-center justify-center gap-2 group">
-            <div className="p-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 transition-all hover:scale-105 shadow-md">
-              <Newspaper className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xs text-gray-600 group-hover:text-emerald-700 font-medium">
-              Santa Blog
-            </span>
-          </Link>
-          {!isLoading && (
-            <ExportPDF
-              user={user}
-              property={selectedProperty}
-              licenses={filteredData.licenses}
-              documents={filteredData.documents}
-              processes={filteredData.processes}
-              alerts={filteredData.alerts}
-            />
-          )}
-        </div>
+        {!isLoading && (
+          <ExportPDF
+            user={user}
+            property={selectedProperty}
+            licenses={filteredData.licenses}
+            documents={filteredData.documents}
+            processes={filteredData.processes}
+            alerts={filteredData.alerts}
+          />
+        )}
       </div>
 
       {/* Property Selector */}

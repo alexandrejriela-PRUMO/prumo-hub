@@ -22,7 +22,14 @@ const commonActivities = [
 ];
 
 export default function PropertyForm({ property, user, onSubmit, onCancel }) {
-  const [formData, setFormData] = useState(property || {
+  const initialActivities = property?.activities 
+    ? (typeof property.activities === 'string' ? property.activities.split(',').map(a => a.trim()) : property.activities)
+    : [];
+  
+  const [formData, setFormData] = useState(property ? {
+    ...property,
+    activities: initialActivities
+  } : {
     property_name: '',
     location: '',
     city: '',
@@ -64,6 +71,7 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
       total_hectares: formData.total_hectares ? parseFloat(formData.total_hectares) : undefined,
       app_hectares: formData.app_hectares ? parseFloat(formData.app_hectares) : undefined,
       legal_reserve_hectares: formData.legal_reserve_hectares ? parseFloat(formData.legal_reserve_hectares) : undefined,
+      activities: formData.activities.length > 0 ? formData.activities.join(', ') : '',
     };
     
     onSubmit(submitData);

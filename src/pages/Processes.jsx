@@ -21,10 +21,12 @@ import {
   CheckCircle,
   Pause,
   Archive,
-  Trash2
+  Trash2,
+  Sparkles
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import ProcessFlowchart from '../components/process/ProcessFlowchart';
 
 export default function Processes() {
   const [user, setUser] = useState(null);
@@ -140,6 +142,9 @@ export default function Processes() {
     'Criminal': { color: 'bg-red-100 text-red-700 border-red-200' }
   };
 
+  const [selectedProcess, setSelectedProcess] = useState(null);
+  const [showFlowchart, setShowFlowchart] = useState(false);
+
   const ProcessCard = ({ process }) => {
     const StatusIcon = statusConfig[process.status]?.icon || AlertCircle;
     
@@ -162,6 +167,18 @@ export default function Processes() {
               </CardTitle>
             </div>
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedProcess(process);
+                  setShowFlowchart(true);
+                }}
+                className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+              >
+                <Sparkles className="w-4 h-4 mr-1" />
+                Fluxograma
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -414,6 +431,23 @@ export default function Processes() {
             )}
           </TabsContent>
         ))}
+      </Tabs>
+
+      {/* Dialog de Fluxograma */}
+      <Dialog open={showFlowchart} onOpenChange={setShowFlowchart}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-emerald-600" />
+              Análise Processual - {selectedProcess?.process_number}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedProcess && <ProcessFlowchart process={selectedProcess} />}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
       </Tabs>
     </div>
   );

@@ -68,6 +68,7 @@ import GreenLoans from './pages/GreenLoans';
 import Home from './pages/Home';
 import Invoices from './pages/Invoices';
 import Licenses from './pages/Licenses';
+import Mappings from './pages/Mappings';
 import NotificationSettings from './pages/NotificationSettings';
 import PSAContracts from './pages/PSAContracts';
 import Processes from './pages/Processes';
@@ -78,7 +79,6 @@ import Reports from './pages/Reports';
 import Requests from './pages/Requests';
 import Support from './pages/Support';
 import TaxIncentives from './pages/TaxIncentives';
-import Mappings from './pages/Mappings';
 import __Layout from './Layout.jsx';
 
 
@@ -104,6 +104,7 @@ export const PAGES = {
     "Home": Home,
     "Invoices": Invoices,
     "Licenses": Licenses,
+    "Mappings": Mappings,
     "NotificationSettings": NotificationSettings,
     "PSAContracts": PSAContracts,
     "Processes": Processes,
@@ -114,7 +115,6 @@ export const PAGES = {
     "Requests": Requests,
     "Support": Support,
     "TaxIncentives": TaxIncentives,
-    "Mappings": Mappings,
 }
 
 export const pagesConfig = {

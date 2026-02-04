@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Clock, Plus, User, FileCheck, Calendar, Building, Upload, FileText, Download, Edit2, History, AlertCircle } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -23,7 +24,8 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
     description: '',
     file_url: null,
     file_name: null,
-    deadline: null
+    deadline: null,
+    deadline_responsible: null
   });
   const [editUpdate, setEditUpdate] = useState({
     date: '',
@@ -32,6 +34,7 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
     file_url: null,
     file_name: null,
     deadline: null,
+    deadline_responsible: null,
     edit_reason: ''
   });
 
@@ -85,7 +88,8 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
       description: '',
       file_url: null,
       file_name: null,
-      deadline: null
+      deadline: null,
+      deadline_responsible: null
     });
     setDialogOpen(false);
   };
@@ -100,6 +104,7 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
       file_url: update.file_url || null,
       file_name: update.file_name || null,
       deadline: update.deadline || null,
+      deadline_responsible: update.deadline_responsible || null,
       edit_reason: ''
     });
     setEditDialogOpen(true);
@@ -125,7 +130,8 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
             description: originalUpdate.description,
             file_url: originalUpdate.file_url,
             file_name: originalUpdate.file_name,
-            deadline: originalUpdate.deadline
+            deadline: originalUpdate.deadline,
+            deadline_responsible: originalUpdate.deadline_responsible
           }
         }
       ]
@@ -301,6 +307,25 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
                   />
                   <p className="text-xs text-gray-500 mt-1">Se houver prazo para cumprimento de obrigação ou condicionante</p>
                 </div>
+                {newUpdate.deadline && (
+                  <div>
+                    <Label>Responsável pelo Cumprimento do Prazo</Label>
+                    <Select
+                      value={newUpdate.deadline_responsible || ''}
+                      onValueChange={(value) => setNewUpdate({ ...newUpdate, deadline_responsible: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o responsável" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Órgão Licenciador">Órgão Licenciador</SelectItem>
+                        <SelectItem value="Técnico">Técnico</SelectItem>
+                        <SelectItem value="Advogado">Advogado</SelectItem>
+                        <SelectItem value="Empreendedor">Empreendedor</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={uploading}>
                   Adicionar Andamento
                 </Button>
@@ -370,6 +395,25 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
                   />
                   <p className="text-xs text-gray-500 mt-1">Se houver prazo para cumprimento de obrigação ou condicionante</p>
                 </div>
+                {editUpdate.deadline && (
+                  <div>
+                    <Label>Responsável pelo Cumprimento do Prazo</Label>
+                    <Select
+                      value={editUpdate.deadline_responsible || ''}
+                      onValueChange={(value) => setEditUpdate({ ...editUpdate, deadline_responsible: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o responsável" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Órgão Licenciador">Órgão Licenciador</SelectItem>
+                        <SelectItem value="Técnico">Técnico</SelectItem>
+                        <SelectItem value="Advogado">Advogado</SelectItem>
+                        <SelectItem value="Empreendedor">Empreendedor</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div>
                   <Label>Motivo da Alteração *</Label>
                   <Textarea
@@ -466,14 +510,21 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
                           {(() => {
                             const deadlineInfo = getDeadlineStatus(update.deadline);
                             return (
-                              <Badge className={`${deadlineInfo.color} flex items-center gap-1 w-fit`}>
-                                <AlertCircle className="w-3 h-3" />
-                                <span className="font-medium">Prazo: {format(parseISO(update.deadline), "dd/MM/yyyy", { locale: ptBR })}</span>
-                                {deadlineInfo.status === 'vencido' && <span className="ml-1">• Vencido há {deadlineInfo.days} {deadlineInfo.days === 1 ? 'dia' : 'dias'}</span>}
-                                {deadlineInfo.status === 'urgente' && <span className="ml-1">• Vence em {deadlineInfo.days} {deadlineInfo.days === 1 ? 'dia' : 'dias'}!</span>}
-                                {deadlineInfo.status === 'atencao' && <span className="ml-1">• Vence em {deadlineInfo.days} dias</span>}
-                                {deadlineInfo.status === 'ok' && <span className="ml-1">• {deadlineInfo.days} dias restantes</span>}
-                              </Badge>
+                              <div className="flex flex-col gap-1">
+                                <Badge className={`${deadlineInfo.color} flex items-center gap-1 w-fit`}>
+                                  <AlertCircle className="w-3 h-3" />
+                                  <span className="font-medium">Prazo: {format(parseISO(update.deadline), "dd/MM/yyyy", { locale: ptBR })}</span>
+                                  {deadlineInfo.status === 'vencido' && <span className="ml-1">• Vencido há {deadlineInfo.days} {deadlineInfo.days === 1 ? 'dia' : 'dias'}</span>}
+                                  {deadlineInfo.status === 'urgente' && <span className="ml-1">• Vence em {deadlineInfo.days} {deadlineInfo.days === 1 ? 'dia' : 'dias'}!</span>}
+                                  {deadlineInfo.status === 'atencao' && <span className="ml-1">• Vence em {deadlineInfo.days} dias</span>}
+                                  {deadlineInfo.status === 'ok' && <span className="ml-1">• {deadlineInfo.days} dias restantes</span>}
+                                </Badge>
+                                {update.deadline_responsible && (
+                                  <span className="text-xs text-gray-600">
+                                    Responsável: <span className="font-medium">{update.deadline_responsible}</span>
+                                  </span>
+                                )}
+                              </div>
                             );
                           })()}
                         </div>

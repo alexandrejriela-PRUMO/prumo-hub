@@ -46,7 +46,12 @@ export default function NotificationPreferences({ userEmail }) {
     { key: 'expiring_certification', label: 'Certificação Vencendo', icon: '⏰' },
     { key: 'expiring_incentive', label: 'Prazo de Incentivo Vencendo', icon: '⏰' },
     { key: 'document_vencendo', label: 'Documento Vencendo', icon: '📄' },
-    { key: 'licenca_vencida', label: 'Licença Vencida', icon: '⚠️' }
+    { key: 'licenca_vencida', label: 'Licença Vencida', icon: '⚠️' },
+    { key: 'novo_andamento_licenca', label: 'Novo Andamento em Licença', icon: '📋' },
+    { key: 'novo_andamento_processo', label: 'Novo Andamento em Processo', icon: '⚖️' },
+    { key: 'novo_documento', label: 'Novo Documento Adicionado', icon: '📄' },
+    { key: 'prazo_vencendo_licenca', label: 'Prazo Vencendo (Licença)', icon: '⏰' },
+    { key: 'prazo_vencendo_processo', label: 'Prazo Vencendo (Processo)', icon: '⏰' }
   ];
 
   const toggleNotification = (eventType, channel) => {

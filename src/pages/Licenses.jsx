@@ -38,6 +38,7 @@ export default function Licenses() {
   const [showHistory, setShowHistory] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
+    property_id: '',
     license_type: '',
     license_number: '',
     issue_date: '',
@@ -70,6 +71,12 @@ export default function Licenses() {
     initialData: [],
   });
 
+  const { data: properties = [] } = useQuery({
+    queryKey: ['properties', user?.email],
+    queryFn: () => base44.entities.Property.filter({ owner_email: user.email }),
+    enabled: !!user?.email
+  });
+
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.License.create(data),
     onSuccess: () => {
@@ -97,6 +104,7 @@ export default function Licenses() {
 
   const resetForm = () => {
     setFormData({
+      property_id: properties.length > 0 ? properties[0].id : '',
       license_type: '',
       license_number: '',
       issue_date: '',
@@ -111,6 +119,7 @@ export default function Licenses() {
   const openEditDialog = (license) => {
     setSelectedLicense(license);
     setFormData({
+      property_id: license.property_id || '',
       license_type: license.license_type || '',
       license_number: license.license_number || '',
       issue_date: license.issue_date || '',
@@ -227,6 +236,26 @@ export default function Licenses() {
               <DialogTitle>Adicionar Licença</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label>Propriedade *</Label>
+                <Select
+                  value={formData.property_id}
+                  onValueChange={(v) => setFormData({ ...formData, property_id: v })}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma propriedade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {properties.map(prop => (
+                      <SelectItem key={prop.id} value={prop.id}>
+                        {prop.property_name} - {prop.city || 'N/A'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Tipo de Licença</Label>
@@ -513,6 +542,26 @@ export default function Licenses() {
             <DialogTitle>Editar Licença</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleUpdate} className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label>Propriedade *</Label>
+              <Select
+                value={formData.property_id}
+                onValueChange={(v) => setFormData({ ...formData, property_id: v })}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma propriedade" />
+                </SelectTrigger>
+                <SelectContent>
+                  {properties.map(prop => (
+                    <SelectItem key={prop.id} value={prop.id}>
+                      {prop.property_name} - {prop.city || 'N/A'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Tipo de Licença</Label>

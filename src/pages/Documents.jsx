@@ -34,6 +34,7 @@ export default function Documents() {
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
+    property_id: '',
     document_type: 'CAR',
     document_name: '',
     file_url: '',
@@ -65,6 +66,12 @@ export default function Documents() {
     initialData: [],
   });
 
+  const { data: properties = [] } = useQuery({
+    queryKey: ['properties', user?.email],
+    queryFn: () => base44.entities.Property.filter({ owner_email: user.email }),
+    enabled: !!user?.email
+  });
+
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Document.create(data),
     onSuccess: () => {
@@ -90,6 +97,7 @@ export default function Documents() {
 
   const resetForm = () => {
     setFormData({
+      property_id: properties.length > 0 ? properties[0].id : '',
       document_type: 'CAR',
       document_name: '',
       file_url: '',
@@ -278,6 +286,26 @@ export default function Documents() {
               <DialogTitle>Adicionar Documento</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label>Propriedade *</Label>
+                <Select
+                  value={formData.property_id}
+                  onValueChange={(v) => setFormData({ ...formData, property_id: v })}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma propriedade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {properties.map(prop => (
+                      <SelectItem key={prop.id} value={prop.id}>
+                        {prop.property_name} - {prop.city || 'N/A'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2">
                 <Label>Tipo de Documento</Label>
                 <Select

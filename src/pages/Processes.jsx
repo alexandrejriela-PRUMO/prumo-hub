@@ -32,6 +32,7 @@ export default function Processes() {
   const [showDialog, setShowDialog] = useState(false);
   const [editingProcess, setEditingProcess] = useState(null);
   const [formData, setFormData] = useState({
+    property_id: '',
     process_type: 'Administrativo',
     process_number: '',
     parties: '',
@@ -63,6 +64,12 @@ export default function Processes() {
     initialData: []
   });
 
+  const { data: properties = [] } = useQuery({
+    queryKey: ['properties', user?.email],
+    queryFn: () => base44.entities.Property.filter({ owner_email: user.email }),
+    enabled: !!user?.email
+  });
+
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Process.create(data),
     onSuccess: () => {
@@ -90,6 +97,7 @@ export default function Processes() {
 
   const resetForm = () => {
     setFormData({
+      property_id: properties.length > 0 ? properties[0].id : '',
       process_type: 'Administrativo',
       process_number: '',
       parties: '',
@@ -116,6 +124,7 @@ export default function Processes() {
   const handleEdit = (process) => {
     setEditingProcess(process);
     setFormData({
+      property_id: process.property_id || '',
       process_type: process.process_type,
       process_number: process.process_number,
       parties: process.parties || '',
@@ -255,6 +264,26 @@ export default function Processes() {
 
   const ProcessForm = () => (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <Label>Propriedade *</Label>
+        <Select
+          value={formData.property_id}
+          onValueChange={(value) => setFormData({ ...formData, property_id: value })}
+          required
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione uma propriedade" />
+          </SelectTrigger>
+          <SelectContent>
+            {properties.map(prop => (
+              <SelectItem key={prop.id} value={prop.id}>
+                {prop.property_name} - {prop.city || 'N/A'}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <div>
         <Label>Tipo de Processo *</Label>
         <Select

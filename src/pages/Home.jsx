@@ -12,7 +12,6 @@ import EnvironmentalAlerts from '../components/dashboard/EnvironmentalAlerts';
 import DashboardMetrics from '../components/dashboard/DashboardMetrics';
 import DashboardCharts from '../components/dashboard/DashboardCharts';
 import DashboardFilters from '../components/dashboard/DashboardFilters';
-import ExportPDF from '../components/dashboard/ExportPDF';
 import DashboardFullExport from '../components/dashboard/DashboardFullExport';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -178,16 +177,6 @@ export default function Home() {
           </h1>
           <p className="text-gray-500 mt-1">Bem-vindo à sua área do cliente Santa Rute - Engenharia Rural</p>
         </div>
-        {!isLoading && (
-          <ExportPDF
-            user={user}
-            property={selectedProperty}
-            licenses={filteredData.licenses}
-            documents={filteredData.documents}
-            processes={filteredData.processes}
-            alerts={filteredData.alerts}
-          />
-        )}
       </div>
 
       {/* Property Selector */}

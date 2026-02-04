@@ -157,7 +157,7 @@ export default function SubscriptionStatus() {
                 <div className="space-y-2">
                   <div className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-sm text-gray-700">Monitoramento em tempo real</span>
+                    <span className="text-sm text-gray-700">Monitoramento Ambiental Contínuo</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />

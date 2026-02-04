@@ -734,6 +734,27 @@ export default function Licenses() {
                     updates: [...(selectedLicense.updates || []), update]
                   };
                   updateMutation.mutate({ id: selectedLicense.id, data: updatedLicense });
+                  setSelectedLicense(updatedLicense);
+                }}
+                onEditUpdate={(index, editedUpdate) => {
+                  const newUpdates = [...(selectedLicense.updates || [])];
+                  newUpdates[index] = editedUpdate;
+                  const updatedLicense = {
+                    ...selectedLicense,
+                    updates: newUpdates
+                  };
+                  updateMutation.mutate({ id: selectedLicense.id, data: updatedLicense });
+                  setSelectedLicense(updatedLicense);
+                }}
+                onDeleteUpdate={(index, deletedUpdate) => {
+                  const newUpdates = [...(selectedLicense.updates || [])];
+                  newUpdates[index] = deletedUpdate;
+                  const updatedLicense = {
+                    ...selectedLicense,
+                    updates: newUpdates
+                  };
+                  updateMutation.mutate({ id: selectedLicense.id, data: updatedLicense });
+                  setSelectedLicense(updatedLicense);
                 }}
               />
             </div>

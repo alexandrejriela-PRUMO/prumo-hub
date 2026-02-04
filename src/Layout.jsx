@@ -41,13 +41,13 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
   { name: 'Propriedades', page: 'Properties', icon: Building2 },
-  { name: 'PRAD - Recuperação de Área', page: 'PRAD', icon: Leaf },
   { name: 'Documentos', page: 'DocumentsHub', icon: FileText },
   { name: 'Licenças Ambientais', page: 'Licenses', icon: FileCheck },
   { name: 'Processos', page: 'Processes', icon: Scale },
   { name: 'Alertas de Infrações', page: 'EnvironmentalAlerts', icon: AlertTriangle },
   { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: FileCheck },
   { name: 'Consultoria e Requerimentos', page: 'Requests', icon: Users },
+  { name: 'PRAD - Recuperação de Área', page: 'PRAD', icon: Leaf },
   { 
     name: 'Agricultura de Precisão', 
     icon: Sparkles,

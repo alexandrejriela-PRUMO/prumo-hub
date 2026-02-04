@@ -79,6 +79,7 @@ import Reports from './pages/Reports';
 import Requests from './pages/Requests';
 import Support from './pages/Support';
 import TaxIncentives from './pages/TaxIncentives';
+import PRAD from './pages/PRAD';
 import __Layout from './Layout.jsx';
 
 
@@ -115,6 +116,7 @@ export const PAGES = {
     "Requests": Requests,
     "Support": Support,
     "TaxIncentives": TaxIncentives,
+    "PRAD": PRAD,
 }
 
 export const pagesConfig = {

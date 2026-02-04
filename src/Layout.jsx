@@ -41,6 +41,7 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
   { name: 'Propriedades', page: 'Properties', icon: Building2 },
+  { name: 'PRAD - Recuperação de Área', page: 'PRAD', icon: Leaf },
   { name: 'Documentos', page: 'DocumentsHub', icon: FileText },
   { name: 'Licenças Ambientais', page: 'Licenses', icon: FileCheck },
   { name: 'Processos', page: 'Processes', icon: Scale },

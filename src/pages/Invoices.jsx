@@ -18,6 +18,7 @@ import {
 import { format, parseISO, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
+import SubscriptionStatus from '../components/subscriptions/SubscriptionStatus';
 
 const statusConfig = {
   'Pendente': { color: 'bg-amber-100 text-amber-700 border-amber-200', icon: Clock },
@@ -124,40 +125,50 @@ export default function Invoices() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Boletos e Pagamentos</h1>
-        <p className="text-gray-500 mt-1">Gerencie seus pagamentos e mensalidades</p>
+        <h1 className="text-3xl font-bold text-gray-900">Assinatura e Boletos</h1>
+        <p className="text-gray-500 mt-1">Gerencie sua assinatura, planos e pagamentos</p>
       </div>
 
-      {/* Summary */}
-      {pendingInvoices.length > 0 && (
-        <Card className="bg-gradient-to-r from-amber-500 to-orange-500 border-0 text-white">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center">
-                  <AlertTriangle className="w-7 h-7" />
-                </div>
-                <div>
-                  <p className="text-amber-100">Pagamentos Pendentes</p>
-                  <p className="text-3xl font-bold">
-                    R$ {totalPending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-amber-100">{pendingInvoices.length}</p>
-                <p className="text-sm text-amber-100">boleto(s)</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Subscription Status */}
+      <SubscriptionStatus />
 
-      {/* Tabs */}
-      <Tabs defaultValue="pending" className="w-full">
+      {/* Histórico de Faturas */}
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+          <Receipt className="w-6 h-6 text-emerald-600" />
+          Histórico de Faturas
+        </h2>
+
+        {/* Summary */}
+        {pendingInvoices.length > 0 && (
+          <Card className="bg-gradient-to-r from-amber-500 to-orange-500 border-0 text-white mb-6">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center">
+                    <AlertTriangle className="w-7 h-7" />
+                  </div>
+                  <div>
+                    <p className="text-amber-100">Pagamentos Pendentes</p>
+                    <p className="text-3xl font-bold">
+                      R$ {totalPending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-amber-100">{pendingInvoices.length}</p>
+                  <p className="text-sm text-amber-100">boleto(s)</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Tabs */}
+        <Tabs defaultValue="pending" className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="pending" className="flex items-center gap-2">
             <Clock className="w-4 h-4" />
@@ -213,6 +224,7 @@ export default function Invoices() {
           )}
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 }

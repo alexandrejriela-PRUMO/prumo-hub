@@ -180,7 +180,7 @@ export default function DocumentsHub() {
           entityId=""
           onSuccess={handleUploadSuccess}
           onCancel={() => setShowUpload(false)}
-          allowedTypes={['CAR', 'CCIR', 'Georreferenciamento', 'Licença', 'Contrato', 'Relatório', 'Laudo', 'PDD', 'Validação', 'Certificado', 'Comprovante', 'Outro']}
+          allowedTypes={['CAR', 'CCIR', 'Contrato', 'Relatório', 'Laudo', 'Validação', 'Certificado', 'Comprovante', 'Outro']}
         />
       )}
 

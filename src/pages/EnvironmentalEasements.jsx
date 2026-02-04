@@ -208,6 +208,7 @@ export default function EnvironmentalEasementsPage() {
         <EasementForm
           easement={editingEasement}
           properties={properties}
+          user={user}
           onSubmit={handleSubmit}
           onCancel={() => {
             setShowForm(false);

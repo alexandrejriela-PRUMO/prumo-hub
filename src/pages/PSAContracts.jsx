@@ -210,6 +210,7 @@ export default function PSAContractsPage() {
         <PSAContractForm
           contract={editingContract}
           properties={properties}
+          user={user}
           onSubmit={handleSubmit}
           onCancel={() => {
             setShowForm(false);

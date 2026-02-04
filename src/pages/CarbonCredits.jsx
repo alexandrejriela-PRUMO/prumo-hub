@@ -214,6 +214,7 @@ export default function CarbonCreditsPage() {
         <CarbonCreditForm
           credit={editingCredit}
           properties={properties}
+          user={user}
           onSubmit={handleSubmit}
           onCancel={() => {
             setShowForm(false);

@@ -10,6 +10,7 @@ import ClimateCard from '../components/climate/ClimateCard';
 import WeatherForecast from '../components/climate/WeatherForecast';
 import ClimateAlerts from '../components/climate/ClimateAlerts';
 import ClimateHistory from '../components/history/ClimateHistory';
+import ClimateHistoryExport from '../components/climate/ClimateHistoryExport';
 
 export default function ClimateMonitoring() {
   const [user, setUser] = useState(null);
@@ -218,6 +219,10 @@ export default function ClimateMonitoring() {
               {currentLocation.alerts?.length > 0 && (
                 <ClimateAlerts alerts={currentLocation.alerts} />
               )}
+              <ClimateHistoryExport 
+                climateRecord={currentLocation} 
+                propertyName={currentProperty.property_name} 
+              />
               <ClimateHistory records={climateData} />
             </>
           )}

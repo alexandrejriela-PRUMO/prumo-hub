@@ -6,7 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { MessageSquare, Send, User, UserCheck, FileText, DollarSign } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { MessageSquare, Send, User, UserCheck, FileText, DollarSign, Paperclip, Download, X } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -14,13 +15,59 @@ export default function RequestConversation({ request, onUpdate, currentUser }) 
   const [message, setMessage] = useState('');
   const [offerBudget, setOfferBudget] = useState(false);
   const [sending, setSending] = useState(false);
+  const [attachments, setAttachments] = useState([]);
+  const [uploading, setUploading] = useState(false);
 
   const isAdmin = currentUser?.role === 'admin';
   const conversation = request.conversation || [];
 
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    // Validar tipo de arquivo (apenas PDFs)
+    const invalidFiles = files.filter(f => !f.type.includes('pdf'));
+    if (invalidFiles.length > 0) {
+      toast.error('Apenas arquivos PDF são permitidos');
+      return;
+    }
+
+    // Validar tamanho (máximo 10MB por arquivo)
+    const largeFiles = files.filter(f => f.size > 10 * 1024 * 1024);
+    if (largeFiles.length > 0) {
+      toast.error('Arquivos devem ter no máximo 10MB');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const uploadedFiles = [];
+      for (const file of files) {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        uploadedFiles.push({
+          name: file.name,
+          url: file_url,
+          type: 'outro',
+          size: file.size
+        });
+      }
+      setAttachments([...attachments, ...uploadedFiles]);
+      toast.success(`${uploadedFiles.length} arquivo(s) anexado(s)`);
+    } catch (error) {
+      console.error('Erro ao fazer upload:', error);
+      toast.error('Erro ao fazer upload do arquivo');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeAttachment = (index) => {
+    setAttachments(attachments.filter((_, i) => i !== index));
+  };
+
   const handleSendMessage = async () => {
-    if (!message.trim()) {
-      toast.error('Digite uma mensagem');
+    if (!message.trim() && attachments.length === 0) {
+      toast.error('Digite uma mensagem ou anexe um documento');
       return;
     }
 
@@ -32,7 +79,8 @@ export default function RequestConversation({ request, onUpdate, currentUser }) 
         sender_type: isAdmin ? 'team' : 'client',
         message: message.trim(),
         timestamp: new Date().toISOString(),
-        offer_budget: offerBudget
+        offer_budget: offerBudget,
+        attachments: attachments
       };
 
       const updatedConversation = [...conversation, newMessage];
@@ -83,6 +131,7 @@ export default function RequestConversation({ request, onUpdate, currentUser }) 
 
       setMessage('');
       setOfferBudget(false);
+      setAttachments([]);
       toast.success('Mensagem enviada!');
       onUpdate();
     } catch (error) {
@@ -145,7 +194,31 @@ export default function RequestConversation({ request, onUpdate, currentUser }) 
                         {msg.sender_type === 'team' ? 'Equipe Santa Rute' : 'Cliente'}
                       </Badge>
                     </div>
-                    <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                    {msg.message && <p className="text-sm whitespace-pre-wrap">{msg.message}</p>}
+                    
+                    {msg.attachments && msg.attachments.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {msg.attachments.map((file, fileIdx) => (
+                          <a
+                            key={fileIdx}
+                            href={file.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 p-2 bg-white/50 rounded-lg hover:bg-white/80 transition-colors border border-gray-200"
+                          >
+                            <FileText className="w-4 h-4 text-red-600 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium truncate">{file.name}</p>
+                              <p className="text-[10px] text-gray-500">
+                                {(file.size / 1024).toFixed(1)} KB
+                              </p>
+                            </div>
+                            <Download className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                    
                     {msg.offer_budget && (
                       <div className="mt-2 pt-2 border-t border-amber-200">
                         <Badge className="bg-amber-500 text-white">
@@ -167,6 +240,33 @@ export default function RequestConversation({ request, onUpdate, currentUser }) 
         {/* Área de Nova Mensagem */}
         <div className="border-t border-gray-200 p-4 bg-gray-50">
           <div className="space-y-3">
+            {/* Anexos Pendentes */}
+            {attachments.length > 0 && (
+              <div className="space-y-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-xs font-medium text-blue-700 flex items-center gap-1">
+                  <Paperclip className="w-3 h-3" />
+                  Arquivos anexados ({attachments.length})
+                </p>
+                {attachments.map((file, idx) => (
+                  <div key={idx} className="flex items-center gap-2 p-2 bg-white rounded-lg">
+                    <FileText className="w-4 h-4 text-red-600 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">{file.name}</p>
+                      <p className="text-[10px] text-gray-500">
+                        {(file.size / 1024).toFixed(1)} KB
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => removeAttachment(idx)}
+                      className="p-1 hover:bg-red-100 rounded transition-colors"
+                    >
+                      <X className="w-3 h-3 text-red-600" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <Textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
@@ -174,6 +274,27 @@ export default function RequestConversation({ request, onUpdate, currentUser }) 
               rows={3}
               className="resize-none"
             />
+
+            {/* Botão de Anexar */}
+            <div>
+              <Label htmlFor="file-upload" className="cursor-pointer">
+                <div className="flex items-center gap-2 p-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-emerald-500 hover:bg-emerald-50 transition-colors">
+                  <Paperclip className="w-4 h-4 text-gray-500" />
+                  <span className="text-sm text-gray-600">
+                    {uploading ? 'Fazendo upload...' : 'Anexar documento PDF (máx. 10MB)'}
+                  </span>
+                </div>
+              </Label>
+              <Input
+                id="file-upload"
+                type="file"
+                accept=".pdf"
+                multiple
+                onChange={handleFileUpload}
+                disabled={uploading}
+                className="hidden"
+              />
+            </div>
             
             {isAdmin && (
               <div className="flex items-center space-x-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
@@ -194,11 +315,11 @@ export default function RequestConversation({ request, onUpdate, currentUser }) 
 
             <Button
               onClick={handleSendMessage}
-              disabled={sending || !message.trim()}
+              disabled={sending || uploading || (!message.trim() && attachments.length === 0)}
               className="w-full bg-emerald-600 hover:bg-emerald-700"
             >
               <Send className="w-4 h-4 mr-2" />
-              {sending ? 'Enviando...' : 'Enviar Mensagem'}
+              {sending ? 'Enviando...' : uploading ? 'Aguardando upload...' : 'Enviar Mensagem'}
             </Button>
 
             {!isAdmin && (

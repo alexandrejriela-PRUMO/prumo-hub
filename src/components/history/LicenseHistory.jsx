@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Clock, Plus, User, FileCheck, Calendar, Building, Upload, FileText, Download, Edit2, History } from 'lucide-react';
+import { Clock, Plus, User, FileCheck, Calendar, Building, Upload, FileText, Download, Edit2, History, AlertCircle } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { base44 } from '@/api/base44Client';
@@ -22,7 +22,8 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
     responsible: '',
     description: '',
     file_url: null,
-    file_name: null
+    file_name: null,
+    deadline: null
   });
   const [editUpdate, setEditUpdate] = useState({
     date: '',
@@ -30,6 +31,7 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
     description: '',
     file_url: null,
     file_name: null,
+    deadline: null,
     edit_reason: ''
   });
 
@@ -82,7 +84,8 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
       responsible: '',
       description: '',
       file_url: null,
-      file_name: null
+      file_name: null,
+      deadline: null
     });
     setDialogOpen(false);
   };
@@ -96,6 +99,7 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
       description: update.description || '',
       file_url: update.file_url || null,
       file_name: update.file_name || null,
+      deadline: update.deadline || null,
       edit_reason: ''
     });
     setEditDialogOpen(true);
@@ -120,7 +124,8 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
             responsible: originalUpdate.responsible,
             description: originalUpdate.description,
             file_url: originalUpdate.file_url,
-            file_name: originalUpdate.file_name
+            file_name: originalUpdate.file_name,
+            deadline: originalUpdate.deadline
           }
         }
       ]
@@ -162,6 +167,27 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
     if (lower.includes('emissão') || lower.includes('emitida')) return '📄';
     if (lower.includes('vistoria') || lower.includes('inspeção')) return '👁️';
     return '📋';
+  };
+
+  const getDeadlineStatus = (deadline) => {
+    if (!deadline) return null;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const deadlineDate = new Date(deadline);
+    deadlineDate.setHours(0, 0, 0, 0);
+    
+    const diffTime = deadlineDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) {
+      return { status: 'vencido', color: 'bg-red-100 text-red-700 border-red-300', days: Math.abs(diffDays) };
+    } else if (diffDays <= 7) {
+      return { status: 'urgente', color: 'bg-orange-100 text-orange-700 border-orange-300', days: diffDays };
+    } else if (diffDays <= 30) {
+      return { status: 'atencao', color: 'bg-yellow-100 text-yellow-700 border-yellow-300', days: diffDays };
+    }
+    return { status: 'ok', color: 'bg-blue-100 text-blue-700 border-blue-300', days: diffDays };
   };
 
   const renderAuditTrail = (update) => {
@@ -265,6 +291,16 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
                     </label>
                   </div>
                 </div>
+                <div>
+                  <Label>Prazo para Cumprimento (opcional)</Label>
+                  <Input
+                    type="date"
+                    value={newUpdate.deadline || ''}
+                    onChange={(e) => setNewUpdate({ ...newUpdate, deadline: e.target.value })}
+                    placeholder="Data limite para obrigação/condicionante"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Se houver prazo para cumprimento de obrigação ou condicionante</p>
+                </div>
                 <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={uploading}>
                   Adicionar Andamento
                 </Button>
@@ -323,6 +359,16 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
                       />
                     </label>
                   </div>
+                </div>
+                <div>
+                  <Label>Prazo para Cumprimento (opcional)</Label>
+                  <Input
+                    type="date"
+                    value={editUpdate.deadline || ''}
+                    onChange={(e) => setEditUpdate({ ...editUpdate, deadline: e.target.value })}
+                    placeholder="Data limite para obrigação/condicionante"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Se houver prazo para cumprimento de obrigação ou condicionante</p>
                 </div>
                 <div>
                   <Label>Motivo da Alteração *</Label>
@@ -413,6 +459,24 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
                           <span>{update.file_name || 'Documento anexo'}</span>
                           <Download className="w-3 h-3" />
                         </a>
+                      )}
+
+                      {update.deadline && (
+                        <div className="mt-2">
+                          {(() => {
+                            const deadlineInfo = getDeadlineStatus(update.deadline);
+                            return (
+                              <Badge className={`${deadlineInfo.color} flex items-center gap-1 w-fit`}>
+                                <AlertCircle className="w-3 h-3" />
+                                <span className="font-medium">Prazo: {format(parseISO(update.deadline), "dd/MM/yyyy", { locale: ptBR })}</span>
+                                {deadlineInfo.status === 'vencido' && <span className="ml-1">• Vencido há {deadlineInfo.days} {deadlineInfo.days === 1 ? 'dia' : 'dias'}</span>}
+                                {deadlineInfo.status === 'urgente' && <span className="ml-1">• Vence em {deadlineInfo.days} {deadlineInfo.days === 1 ? 'dia' : 'dias'}!</span>}
+                                {deadlineInfo.status === 'atencao' && <span className="ml-1">• Vence em {deadlineInfo.days} dias</span>}
+                                {deadlineInfo.status === 'ok' && <span className="ml-1">• {deadlineInfo.days} dias restantes</span>}
+                              </Badge>
+                            );
+                          })()}
+                        </div>
                       )}
 
                       {renderAuditTrail(update)}

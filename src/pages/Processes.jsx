@@ -480,6 +480,15 @@ export default function Processes() {
                 };
                 updateMutation.mutate({ id: selectedProcess.id, data: updatedProcess });
               }}
+              onEditUpdate={(index, editedUpdate) => {
+                const updatedUpdates = [...(selectedProcess.updates || [])];
+                updatedUpdates[index] = editedUpdate;
+                const updatedProcess = {
+                  ...selectedProcess,
+                  updates: updatedUpdates
+                };
+                updateMutation.mutate({ id: selectedProcess.id, data: updatedProcess });
+              }}
             />
           )}
         </DialogContent>

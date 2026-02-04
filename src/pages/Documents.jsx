@@ -305,16 +305,27 @@ export default function Documents() {
               </div>
 
               <div className="space-y-2">
-                <Label>Arquivo</Label>
+                <Label>Selecionar Arquivo do Computador</Label>
+                <label 
+                  htmlFor="document-file-upload"
+                  className="flex items-center justify-center gap-2 w-full p-4 border-2 border-dashed border-emerald-300 rounded-lg cursor-pointer hover:bg-emerald-50 transition-colors"
+                >
+                  <Upload className="w-5 h-5 text-emerald-600" />
+                  <span className="text-sm font-medium text-emerald-700">
+                    {uploading ? 'Enviando...' : formData.file_url ? 'Arquivo carregado - Clique para alterar' : 'Clique para buscar arquivo (PDF, JPG, PNG)'}
+                  </span>
+                </label>
                 <Input
+                  id="document-file-upload"
                   type="file"
                   accept=".pdf,.jpg,.jpeg,.png"
                   onChange={handleFileUpload}
+                  className="hidden"
+                  disabled={uploading}
                 />
-                {uploading && <span className="text-sm text-gray-500">Enviando...</span>}
                 {formData.file_url && (
-                  <a href={formData.file_url} target="_blank" rel="noopener noreferrer" className="text-sm text-emerald-600 flex items-center gap-1">
-                    <FileText className="w-4 h-4" /> Ver arquivo
+                  <a href={formData.file_url} target="_blank" rel="noopener noreferrer" className="text-sm text-emerald-600 flex items-center gap-1 hover:underline">
+                    <FileText className="w-4 h-4" /> Visualizar arquivo carregado
                   </a>
                 )}
               </div>
@@ -355,16 +366,27 @@ export default function Documents() {
               </h3>
               <div className="space-y-3">
                 <div className="space-y-2">
-                  <Label>Arquivo</Label>
+                  <Label>Selecionar Nova Versão do Arquivo</Label>
+                  <label 
+                    htmlFor="version-file-upload"
+                    className="flex items-center justify-center gap-2 w-full p-4 border-2 border-dashed border-emerald-300 rounded-lg cursor-pointer hover:bg-emerald-50 transition-colors"
+                  >
+                    <Upload className="w-5 h-5 text-emerald-600" />
+                    <span className="text-sm font-medium text-emerald-700">
+                      {uploading ? 'Enviando...' : newVersionData.file_url ? 'Arquivo carregado' : 'Clique para buscar arquivo (PDF, JPG, PNG)'}
+                    </span>
+                  </label>
                   <Input
+                    id="version-file-upload"
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png"
                     onChange={handleNewVersionUpload}
+                    className="hidden"
+                    disabled={uploading}
                   />
-                  {uploading && <span className="text-sm text-gray-500">Enviando...</span>}
                   {newVersionData.file_url && (
-                    <a href={newVersionData.file_url} target="_blank" rel="noopener noreferrer" className="text-sm text-emerald-600 flex items-center gap-1">
-                      <FileText className="w-4 h-4" /> Arquivo carregado
+                    <a href={newVersionData.file_url} target="_blank" rel="noopener noreferrer" className="text-sm text-emerald-600 flex items-center gap-1 hover:underline">
+                      <FileText className="w-4 h-4" /> Visualizar arquivo carregado
                     </a>
                   )}
                 </div>

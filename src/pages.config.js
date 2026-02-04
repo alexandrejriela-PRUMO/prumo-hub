@@ -70,6 +70,7 @@ import Invoices from './pages/Invoices';
 import Licenses from './pages/Licenses';
 import Mappings from './pages/Mappings';
 import NotificationSettings from './pages/NotificationSettings';
+import PRAD from './pages/PRAD';
 import PSAContracts from './pages/PSAContracts';
 import Processes from './pages/Processes';
 import Properties from './pages/Properties';
@@ -79,7 +80,6 @@ import Reports from './pages/Reports';
 import Requests from './pages/Requests';
 import Support from './pages/Support';
 import TaxIncentives from './pages/TaxIncentives';
-import PRAD from './pages/PRAD';
 import __Layout from './Layout.jsx';
 
 
@@ -107,6 +107,7 @@ export const PAGES = {
     "Licenses": Licenses,
     "Mappings": Mappings,
     "NotificationSettings": NotificationSettings,
+    "PRAD": PRAD,
     "PSAContracts": PSAContracts,
     "Processes": Processes,
     "Properties": Properties,
@@ -116,7 +117,6 @@ export const PAGES = {
     "Requests": Requests,
     "Support": Support,
     "TaxIncentives": TaxIncentives,
-    "PRAD": PRAD,
 }
 
 export const pagesConfig = {

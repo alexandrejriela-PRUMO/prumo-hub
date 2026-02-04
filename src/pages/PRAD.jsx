@@ -21,6 +21,7 @@ import {
 import { toast } from 'sonner';
 import PRADForm from '../components/prad/PRADForm';
 import PRADDetails from '../components/prad/PRADDetails';
+import PRADReportGenerator from '../components/prad/PRADReportGenerator';
 
 export default function PRAD() {
   const [user, setUser] = useState(null);
@@ -28,6 +29,7 @@ export default function PRAD() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [currentPRAD, setCurrentPRAD] = useState(null);
+  const [selectedPrad, setSelectedPrad] = useState(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -298,10 +300,17 @@ export default function PRAD() {
             <DialogHeader>
               <DialogTitle>{currentPRAD?.project_name}</DialogTitle>
             </DialogHeader>
-            {currentPRAD && <PRADDetails prad={currentPRAD} />}
-          </DialogContent>
-        </Dialog>
-      </div>
-    </div>
-  );
-}
+            {currentPRAD && (
+              <div className="space-y-4">
+                <div className="flex justify-end">
+                  <PRADReportGenerator prad={currentPRAD} />
+                </div>
+                <PRADDetails prad={currentPRAD} />
+              </div>
+            )}
+            </DialogContent>
+            </Dialog>
+            </div>
+            </div>
+            );
+            }

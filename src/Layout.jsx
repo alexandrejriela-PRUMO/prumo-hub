@@ -56,6 +56,7 @@ const navItems = [
       { name: 'Análise de Commodities', page: 'CommodityAnalysis', icon: BarChart3 },
     ]
   },
+  { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
   { 
     name: 'Agro 4.0 - Ambiental', 
     icon: TrendingUp,

@@ -324,15 +324,22 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
                     </label>
                   </div>
                 </div>
+                <div>
+                  <Label>Motivo da Alteração *</Label>
+                  <Textarea
+                    value={editUpdate.edit_reason}
+                    onChange={(e) => setEditUpdate({ ...editUpdate, edit_reason: e.target.value })}
+                    placeholder="Descreva o motivo desta alteração..."
+                    rows={2}
+                    required
+                  />
+                </div>
                 <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={uploading}>
                   Salvar Alterações
                 </Button>
               </form>
             </DialogContent>
           </Dialog>
-
-          {/* Dialog de Confirmação de Exclusão */}
-          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>

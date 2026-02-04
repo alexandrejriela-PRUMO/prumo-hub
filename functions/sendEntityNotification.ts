@@ -106,38 +106,51 @@ Deno.serve(async (req) => {
       }
     });
 
-    // Buscar preferências de notificação do usuário
-    const preferences = await base44.asServiceRole.entities.NotificationPreference.filter({
+    // Buscar ou criar preferências de notificação
+    let preferences = await base44.asServiceRole.entities.NotificationPreference.filter({
       user_email: affectedUserEmail,
       event_type: notificationType
     });
 
+    // Se não existe preferência, criar com valores padrão habilitados
+    if (preferences.length === 0) {
+      try {
+        await base44.asServiceRole.entities.NotificationPreference.create({
+          user_email: affectedUserEmail,
+          event_type: notificationType,
+          email_enabled: true,
+          push_enabled: true,
+          sms_enabled: false
+        });
+      } catch (prefError) {
+        console.error('Erro ao criar preferência:', prefError);
+      }
+    }
+
     const userPref = preferences[0];
 
-    // Enviar email se habilitado
-    if (userPref?.email_enabled !== false) {
-      try {
-        await base44.asServiceRole.integrations.Core.SendEmail({
-          to: affectedUserEmail,
-          subject: notificationTitle,
-          body: `
-            <html>
-              <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4;">
-                <div style="max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px;">
-                  <h2 style="color: #1B4332;">${notificationTitle}</h2>
-                  <p style="font-size: 16px; color: #333; line-height: 1.6;">${notificationMessage}</p>
-                  <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;" />
-                  <p style="font-size: 14px; color: #666;">
-                    Esta é uma notificação automática do sistema Santa Rute.
-                  </p>
-                </div>
-              </body>
-            </html>
-          `
-        });
-      } catch (emailError) {
-        console.error('Erro ao enviar email:', emailError);
-      }
+    // SEMPRE enviar email para esses eventos críticos
+    try {
+      await base44.asServiceRole.integrations.Core.SendEmail({
+        to: affectedUserEmail,
+        subject: notificationTitle,
+        body: `
+          <html>
+            <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4;">
+              <div style="max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px;">
+                <h2 style="color: #1B4332;">${notificationTitle}</h2>
+                <p style="font-size: 16px; color: #333; line-height: 1.6;">${notificationMessage}</p>
+                <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;" />
+                <p style="font-size: 14px; color: #666;">
+                  Esta é uma notificação automática do sistema Santa Rute.
+                </p>
+              </div>
+            </body>
+          </html>
+        `
+      });
+    } catch (emailError) {
+      console.error('Erro ao enviar email:', emailError);
     }
 
     return Response.json({ 

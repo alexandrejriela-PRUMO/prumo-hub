@@ -46,6 +46,7 @@ export default function Requests() {
   const [user, setUser] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [conversationDialogOpen, setConversationDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     subject: '',
     category: '',

@@ -21,12 +21,10 @@ import {
   CheckCircle,
   Pause,
   Archive,
-  Trash2,
-  Sparkles
+  Trash2
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import ProcessFlowchart from '../components/process/ProcessFlowchart';
 import ProcessHistory from '../components/history/ProcessHistory';
 
 export default function Processes() {
@@ -144,7 +142,6 @@ export default function Processes() {
   };
 
   const [selectedProcess, setSelectedProcess] = useState(null);
-  const [showFlowchart, setShowFlowchart] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
   const ProcessCard = ({ process }) => {
@@ -180,18 +177,6 @@ export default function Processes() {
               >
                 <Clock className="w-4 h-4 mr-1" />
                 Histórico
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSelectedProcess(process);
-                  setShowFlowchart(true);
-                }}
-                className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-              >
-                <Sparkles className="w-4 h-4 mr-1" />
-                Fluxograma
               </Button>
               <Button
                 variant="outline"
@@ -471,18 +456,7 @@ export default function Processes() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog de Fluxograma */}
-      <Dialog open={showFlowchart} onOpenChange={setShowFlowchart}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-emerald-600" />
-              Análise Processual - {selectedProcess?.process_number}
-            </DialogTitle>
-          </DialogHeader>
-          {selectedProcess && <ProcessFlowchart process={selectedProcess} />}
-        </DialogContent>
-      </Dialog>
+
     </div>
   );
 }

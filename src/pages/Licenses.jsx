@@ -20,12 +20,10 @@ import {
   FileText,
   Upload,
   Trash2,
-  Sparkles
 } from 'lucide-react';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
-import LicenseFlowchart from '../components/license/LicenseFlowchart';
 import LicenseHistory from '../components/history/LicenseHistory';
 import LicenseDocuments from '../components/license/LicenseDocuments';
 import { toast } from 'sonner';
@@ -37,7 +35,6 @@ export default function Licenses() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedLicense, setSelectedLicense] = useState(null);
-  const [showFlowchart, setShowFlowchart] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
@@ -489,18 +486,6 @@ export default function Licenses() {
                         Histórico
                       </Button>
                       <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedLicense(license);
-                          setShowFlowchart(true);
-                        }}
-                        className="flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-                      >
-                        <Sparkles className="w-4 h-4 mr-1" />
-                        Análise
-                      </Button>
-                      <Button
                         variant="ghost"
                         size="icon"
                         className="text-red-500 hover:text-red-700 hover:bg-red-50"
@@ -707,18 +692,7 @@ export default function Licenses() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog de Fluxograma */}
-      <Dialog open={showFlowchart} onOpenChange={setShowFlowchart}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-emerald-600" />
-              Análise de Licenciamento - {selectedLicense?.license_type} {selectedLicense?.license_number}
-            </DialogTitle>
-          </DialogHeader>
-          {selectedLicense && <LicenseFlowchart license={selectedLicense} />}
-        </DialogContent>
-      </Dialog>
+
     </div>
   );
 }

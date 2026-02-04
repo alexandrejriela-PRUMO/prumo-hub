@@ -56,7 +56,6 @@ const navItems = [
       { name: 'Análise de Commodities', page: 'CommodityAnalysis', icon: BarChart3 },
     ]
   },
-  { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
   { 
     name: 'Agro 4.0 - Ambiental', 
     icon: TrendingUp,
@@ -67,6 +66,7 @@ const navItems = [
       { name: 'ESG para o Agro', page: 'ESGAgro', icon: TrendingUp },
     ]
   },
+  { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
   { name: 'Relatórios', page: 'Reports', icon: FileText },
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
   { name: 'E-book Grátis', page: 'EbookReader', icon: FileText },

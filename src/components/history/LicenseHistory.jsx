@@ -6,20 +6,17 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Clock, Plus, User, FileCheck, Calendar, Building, Upload, FileText, Download, Edit2, Trash2, History } from 'lucide-react';
+import { Clock, Plus, User, FileCheck, Calendar, Building, Upload, FileText, Download, Edit2, History } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { base44 } from '@/api/base44Client';
 
-export default function LicenseHistory({ license, onAddUpdate, onEditUpdate, onDeleteUpdate }) {
+export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [editingIndex, setEditingIndex] = useState(null);
-  const [deletingIndex, setDeletingIndex] = useState(null);
   const [newUpdate, setNewUpdate] = useState({
     date: new Date().toISOString().split('T')[0],
     responsible: '',
@@ -32,7 +29,8 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate, onD
     responsible: '',
     description: '',
     file_url: null,
-    file_name: null
+    file_name: null,
+    edit_reason: ''
   });
 
   useEffect(() => {
@@ -97,7 +95,8 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate, onD
       responsible: update.responsible || '',
       description: update.description || '',
       file_url: update.file_url || null,
-      file_name: update.file_name || null
+      file_name: update.file_name || null,
+      edit_reason: ''
     });
     setEditDialogOpen(true);
   };
@@ -105,8 +104,9 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate, onD
   const handleEditSubmit = (e) => {
     e.preventDefault();
     const originalUpdate = updates[editingIndex];
+    const { edit_reason, ...updateData } = editUpdate;
     const editedUpdate = {
-      ...editUpdate,
+      ...updateData,
       audit_trail: [
         ...(originalUpdate.audit_trail || []),
         {
@@ -114,6 +114,7 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate, onD
           timestamp: new Date().toISOString(),
           user_email: currentUser?.email || 'desconhecido',
           user_role: currentUser?.role || 'user',
+          edit_reason: edit_reason || 'Sem observação',
           previous_data: {
             date: originalUpdate.date,
             responsible: originalUpdate.responsible,
@@ -127,38 +128,6 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate, onD
     onEditUpdate(editingIndex, editedUpdate);
     setEditDialogOpen(false);
     setEditingIndex(null);
-  };
-
-  const handleDeleteClick = (index) => {
-    setDeletingIndex(index);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleDeleteConfirm = () => {
-    const originalUpdate = updates[deletingIndex];
-    const deletedUpdate = {
-      ...originalUpdate,
-      _deleted: true,
-      audit_trail: [
-        ...(originalUpdate.audit_trail || []),
-        {
-          action: 'deleted',
-          timestamp: new Date().toISOString(),
-          user_email: currentUser?.email || 'desconhecido',
-          user_role: currentUser?.role || 'user',
-          previous_data: {
-            date: originalUpdate.date,
-            responsible: originalUpdate.responsible,
-            description: originalUpdate.description,
-            file_url: originalUpdate.file_url,
-            file_name: originalUpdate.file_name
-          }
-        }
-      ]
-    };
-    onDeleteUpdate(deletingIndex, deletedUpdate);
-    setDeleteDialogOpen(false);
-    setDeletingIndex(null);
   };
 
   const handleFileUploadEdit = async (e) => {
@@ -199,30 +168,32 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate, onD
     if (!update.audit_trail || update.audit_trail.length === 0) return null;
     
     return (
-      <div className="mt-2 space-y-1 text-xs text-gray-400 border-t border-gray-200 pt-2">
+      <div className="mt-2 space-y-2 text-xs text-gray-400 border-t border-gray-200 pt-2">
         {update.audit_trail.map((audit, idx) => (
-          <div key={idx} className="flex items-center gap-2">
-            <History className="w-3 h-3" />
-            <span>
-              {audit.action === 'created' && 'Criado'}
-              {audit.action === 'edited' && 'Editado'}
-              {audit.action === 'deleted' && 'Excluído'}
-              {' por '}
-              <span className="font-medium">{audit.user_role === 'admin' ? 'Administrador' : 'Usuário'}</span>
-              {' '}({audit.user_email})
-              {' em '}
-              {format(parseISO(audit.timestamp), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-            </span>
-          </div>
-        ))}
-        {update.audit_trail.some(a => a.action === 'deleted') && (
-          <div className="text-xs text-red-400 italic mt-1">
-            ⚠️ Dados excluídos: {update.audit_trail.find(a => a.action === 'deleted')?.previous_data?.description}
-          </div>
-        )}
-        {update.audit_trail.filter(a => a.action === 'edited').map((audit, idx) => (
-          <div key={`edit-${idx}`} className="text-xs text-orange-400 italic">
-            📝 Alterado de: {audit.previous_data?.description?.substring(0, 50)}...
+          <div key={idx} className="space-y-1">
+            <div className="flex items-center gap-2">
+              <History className="w-3 h-3" />
+              <span>
+                {audit.action === 'created' && 'Criado'}
+                {audit.action === 'edited' && 'Editado'}
+                {' por '}
+                <span className="font-medium">{audit.user_role === 'admin' ? 'Administrador' : 'Usuário'}</span>
+                {' '}({audit.user_email})
+                {' em '}
+                {format(parseISO(audit.timestamp), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+              </span>
+            </div>
+            {audit.action === 'edited' && audit.edit_reason && (
+              <div className="ml-5 text-xs text-blue-400 italic">
+                💬 Motivo da alteração: {audit.edit_reason}
+              </div>
+            )}
+            {audit.action === 'edited' && audit.previous_data && (
+              <div className="ml-5 text-xs text-orange-400 italic">
+                📝 Descrição anterior: {audit.previous_data?.description?.substring(0, 80)}
+                {audit.previous_data?.description?.length > 80 ? '...' : ''}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -419,16 +390,9 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate, onD
                             variant="ghost"
                             onClick={() => handleEditClick(originalIndex)}
                             className="h-7 w-7 p-0 hover:bg-blue-50"
+                            title="Editar andamento"
                           >
                             <Edit2 className="w-3 h-3 text-blue-600" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDeleteClick(originalIndex)}
-                            className="h-7 w-7 p-0 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-3 h-3 text-red-600" />
                           </Button>
                         </div>
                       </div>

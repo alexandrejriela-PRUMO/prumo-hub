@@ -745,16 +745,7 @@ export default function Licenses() {
                   };
                   updateMutation.mutate({ id: selectedLicense.id, data: updatedLicense });
                   setSelectedLicense(updatedLicense);
-                }}
-                onDeleteUpdate={(index, deletedUpdate) => {
-                  const newUpdates = [...(selectedLicense.updates || [])];
-                  newUpdates[index] = deletedUpdate;
-                  const updatedLicense = {
-                    ...selectedLicense,
-                    updates: newUpdates
-                  };
-                  updateMutation.mutate({ id: selectedLicense.id, data: updatedLicense });
-                  setSelectedLicense(updatedLicense);
+                  toast.success('Andamento editado com sucesso!');
                 }}
               />
             </div>

@@ -340,21 +340,6 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
               </form>
             </DialogContent>
           </Dialog>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Tem certeza que deseja excluir este andamento? Esta ação ficará registrada no histórico de auditoria.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700">
-                  Excluir
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
         </div>
       </CardHeader>
       <CardContent>

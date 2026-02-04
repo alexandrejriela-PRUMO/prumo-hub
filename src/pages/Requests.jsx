@@ -288,12 +288,66 @@ export default function Requests() {
                       <p className="text-sm text-gray-700">{request.response}</p>
                     </div>
                   )}
+
+                  {/* Botão para abrir conversa */}
+                  {(request.status === 'Aberto' || request.status === 'Em Análise' || request.status === 'Respondido') && (
+                    <div className="mt-4">
+                      <Button
+                        onClick={() => {
+                          setSelectedRequest(request);
+                          setConversationDialogOpen(true);
+                        }}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700"
+                        variant="outline"
+                      >
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                        {request.conversation?.length > 0 
+                          ? `Ver Conversa (${request.conversation.length} mensagens)` 
+                          : 'Iniciar Conversa com a Equipe'}
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );
           })}
         </div>
       )}
+
+      {/* Dialog de Conversa */}
+      <Dialog open={conversationDialogOpen} onOpenChange={setConversationDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-emerald-600" />
+              {selectedRequest?.subject}
+            </DialogTitle>
+            <div className="flex items-center gap-2 mt-2">
+              <Badge className={getCategoryInfo(selectedRequest?.category).color}>
+                {selectedRequest?.category}
+              </Badge>
+              <Badge className={getPriorityColor(selectedRequest?.priority)}>
+                {selectedRequest?.priority}
+              </Badge>
+              <Badge className={statusConfig[selectedRequest?.status]?.color}>
+                {selectedRequest?.status}
+              </Badge>
+            </div>
+          </DialogHeader>
+          
+          {selectedRequest && (
+            <div className="flex-1 overflow-hidden">
+              <RequestConversation
+                request={selectedRequest}
+                currentUser={user}
+                onUpdate={() => {
+                  queryClient.invalidateQueries(['requests']);
+                }}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

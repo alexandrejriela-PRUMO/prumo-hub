@@ -74,7 +74,7 @@ const navItems = [
   { name: 'Santa Blog', page: 'Blog', icon: Newspaper },
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
   { name: 'Suporte', page: 'Support', icon: Headphones },
-  { name: 'Boletos', page: 'Invoices', icon: CreditCard },
+  { name: 'Assinatura e Boletos', page: 'Invoices', icon: CreditCard },
   ];
 
 export default function Layout({ children, currentPageName }) {

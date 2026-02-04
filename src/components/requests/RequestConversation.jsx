@@ -133,9 +133,18 @@ export default function RequestConversation({ request, onUpdate, currentUser }) 
                       ? 'bg-emerald-100 text-gray-900'
                       : 'bg-blue-100 text-gray-900'
                   }`}>
-                    <p className="text-xs font-medium mb-1 opacity-70">
-                      {msg.sender_name}
-                    </p>
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-xs font-semibold">
+                        {msg.sender_name}
+                      </p>
+                      <Badge variant="outline" className={`text-[10px] px-1 py-0 h-4 ${
+                        msg.sender_type === 'team' 
+                          ? 'bg-emerald-600 text-white border-emerald-600' 
+                          : 'bg-blue-600 text-white border-blue-600'
+                      }`}>
+                        {msg.sender_type === 'team' ? 'Equipe Santa Rute' : 'Cliente'}
+                      </Badge>
+                    </div>
                     <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
                     {msg.offer_budget && (
                       <div className="mt-2 pt-2 border-t border-amber-200">

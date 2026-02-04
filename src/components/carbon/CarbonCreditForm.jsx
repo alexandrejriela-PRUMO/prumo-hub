@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
+import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { X } from 'lucide-react';
+import { X, Upload, FileText, Trash2, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
-export default function CarbonCreditForm({ credit, properties, onSubmit, onCancel }) {
+export default function CarbonCreditForm({ credit, properties, user, onSubmit, onCancel }) {
   const [formData, setFormData] = useState(credit || {
     property_id: '',
     project_name: '',
@@ -24,8 +26,45 @@ export default function CarbonCreditForm({ credit, properties, onSubmit, onCance
     validator: '',
     methodology: '',
     responsible_email: '',
-    notes: ''
+    notes: '',
+    documents: credit?.documents || []
   });
+
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileUpload = async (e, docType) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      
+      const newDoc = {
+        name: file.name,
+        type: docType,
+        url: file_url,
+        upload_date: new Date().toISOString()
+      };
+
+      setFormData({
+        ...formData,
+        documents: [...(formData.documents || []), newDoc]
+      });
+      
+      toast.success('Documento adicionado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao fazer upload:', error);
+      toast.error('Erro ao fazer upload do documento');
+    }
+    setUploading(false);
+  };
+
+  const removeDocument = (index) => {
+    const newDocs = [...formData.documents];
+    newDocs.splice(index, 1);
+    setFormData({ ...formData, documents: newDocs });
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -273,6 +312,67 @@ export default function CarbonCreditForm({ credit, properties, onSubmit, onCance
                 placeholder="Informações adicionais sobre o projeto..."
                 rows={3}
               />
+            </div>
+
+            {/* Documents Upload */}
+            <div className="space-y-4 pt-4 border-t">
+              <h3 className="font-semibold text-gray-900">Documentos do Projeto</h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                {['PDD', 'Validação', 'Verificação', 'Certificado', 'Contrato', 'Relatório', 'Outro'].map(docType => (
+                  <div key={docType} className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-green-400 transition-colors">
+                    <Label className="text-sm font-medium mb-2 block">{docType}</Label>
+                    <label className="flex items-center justify-center gap-2 cursor-pointer text-sm text-gray-600 hover:text-green-600">
+                      <Upload className="w-4 h-4" />
+                      Selecionar arquivo
+                      <Input
+                        type="file"
+                        onChange={(e) => handleFileUpload(e, docType)}
+                        className="hidden"
+                        disabled={uploading}
+                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                      />
+                    </label>
+                  </div>
+                ))}
+              </div>
+
+              {uploading && (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Enviando arquivo...
+                </div>
+              )}
+
+              {formData.documents?.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Documentos Anexados:</Label>
+                  {formData.documents.map((doc, idx) => (
+                    <div key={idx} className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
+                      <FileText className="w-5 h-5 text-green-600" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{doc.name}</p>
+                        <p className="text-xs text-gray-500">{doc.type}</p>
+                      </div>
+                      <a
+                        href={doc.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-green-600 hover:underline"
+                      >
+                        Abrir
+                      </a>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeDocument(idx)}
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Actions */}

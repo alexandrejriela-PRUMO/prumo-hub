@@ -184,7 +184,7 @@ export default function RequestConversation({ request, onUpdate, currentUser }) 
                   }`}>
                     <div className="flex items-center gap-2 mb-1">
                       <p className="text-xs font-semibold">
-                        {msg.sender_name}
+                        {msg.sender_name || 'Usuário'}
                       </p>
                       <Badge variant="outline" className={`text-[10px] px-1 py-0 h-4 ${
                         msg.sender_type === 'team' 
@@ -229,7 +229,7 @@ export default function RequestConversation({ request, onUpdate, currentUser }) 
                     )}
                   </div>
                   <p className="text-xs text-gray-400 mt-1">
-                    {format(parseISO(msg.timestamp), 'dd/MM/yyyy HH:mm')}
+                    {msg.timestamp ? format(parseISO(msg.timestamp), 'dd/MM/yyyy HH:mm') : ''}
                   </p>
                 </div>
               </div>

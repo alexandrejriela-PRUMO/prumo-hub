@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
+import RequestConversation from '../components/requests/RequestConversation';
 
 const categories = [
   { value: 'Jurídico', icon: Scale, color: 'bg-purple-100 text-purple-700' },

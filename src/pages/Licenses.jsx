@@ -281,40 +281,45 @@ export default function Licenses() {
               <div className="space-y-2">
                 <Label>Documentos da Licença</Label>
                 <div className="space-y-3">
-                  <Select value={docType} onValueChange={setDocType}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Licença Principal">Licença Principal</SelectItem>
-                      <SelectItem value="Documento Complementar">Documento Complementar</SelectItem>
-                      <SelectItem value="Comprovante">Comprovante</SelectItem>
-                      <SelectItem value="Outro">Outro</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  
-                  <div>
-                    <label 
-                      htmlFor="file-upload-form"
-                      className="flex items-center justify-center gap-2 w-full p-4 border-2 border-dashed border-emerald-300 rounded-lg cursor-pointer hover:bg-emerald-50 transition-colors"
-                    >
-                      <Upload className="w-5 h-5 text-emerald-600" />
-                      <span className="text-sm font-medium text-emerald-700">
-                        {uploadingDoc ? 'Enviando...' : 'Clique para buscar arquivo do computador'}
-                      </span>
-                    </label>
-                    <Input
-                      id="file-upload-form"
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                      disabled={uploadingDoc}
-                    />
-                    <p className="text-xs text-gray-500 mt-2">
-                      Formatos aceitos: PDF, JPG, PNG
-                    </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="col-span-2">
+                      <Label className="text-xs">Tipo de Documento</Label>
+                      <Select value={docType} onValueChange={setDocType}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Licença Principal">Licença Principal</SelectItem>
+                          <SelectItem value="Documento Complementar">Documento Complementar</SelectItem>
+                          <SelectItem value="Comprovante">Comprovante</SelectItem>
+                          <SelectItem value="Outro">Outro</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Upload</Label>
+                      <label 
+                        htmlFor="file-upload-form"
+                        className="flex items-center justify-center gap-1 h-9 px-3 border-2 border-emerald-300 rounded-lg cursor-pointer hover:bg-emerald-50 transition-colors"
+                      >
+                        <Upload className="w-4 h-4 text-emerald-600" />
+                        <span className="text-xs font-medium text-emerald-700">
+                          {uploadingDoc ? 'Enviando...' : 'Arquivo'}
+                        </span>
+                      </label>
+                      <Input
+                        id="file-upload-form"
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        disabled={uploadingDoc}
+                      />
+                    </div>
                   </div>
+                  <p className="text-xs text-gray-500">
+                    Selecione o tipo e clique em "Arquivo" para adicionar documentos (PDF, JPG, PNG)
+                  </p>
                 </div>
                 {formData.documents.length > 0 && (
                   <div className="space-y-2 mt-3">

@@ -82,26 +82,46 @@ export default function Mappings() {
   });
 
   const handleFileUpload = async (e, mapping) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    // Validar tipos de arquivo (KML, TIF, TFW)
+    const allowedExtensions = ['.kml', '.tif', '.tiff', '.tfw'];
+    const invalidFiles = files.filter(f => {
+      const ext = f.name.toLowerCase().substring(f.name.lastIndexOf('.'));
+      return !allowedExtensions.includes(ext);
+    });
+
+    if (invalidFiles.length > 0) {
+      toast.error('Apenas arquivos KML, TIF e TFW são permitidos');
+      return;
+    }
 
     setUploadingFile(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const updatedFiles = [
-        ...(mapping.files || []),
-        {
+      const uploadedFiles = [];
+      for (const file of files) {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        const ext = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+        let fileType = 'geoespacial';
+        if (ext === '.kml') fileType = 'kml';
+        else if (ext === '.tif' || ext === '.tiff') fileType = 'tif';
+        else if (ext === '.tfw') fileType = 'tfw';
+
+        uploadedFiles.push({
           name: file.name,
           url: file_url,
-          type: file.type,
+          type: fileType,
           upload_date: new Date().toISOString(),
-        },
-      ];
+        });
+      }
+
+      const updatedFiles = [...(mapping.files || []), ...uploadedFiles];
       await updateMutation.mutateAsync({
         id: mapping.id,
         data: { ...mapping, files: updatedFiles },
       });
-      toast.success('Arquivo enviado!');
+      toast.success(`${uploadedFiles.length} arquivo(s) geoespacial(is) enviado(s)!`);
     } catch (error) {
       toast.error('Erro ao enviar arquivo');
     } finally {
@@ -471,9 +491,9 @@ export default function Mappings() {
                     {/* Files */}
                     {mapping.files?.length > 0 && (
                       <div className="text-xs">
-                        <p className="text-gray-600 mb-1">Arquivos ({mapping.files.length}):</p>
+                        <p className="text-gray-600 mb-1">Arquivos Geoespaciais ({mapping.files.length}):</p>
                         <div className="space-y-1">
-                          {mapping.files.slice(0, 2).map((file, idx) => (
+                          {mapping.files.slice(0, 3).map((file, idx) => (
                             <a
                               key={idx}
                               href={file.url}
@@ -482,9 +502,17 @@ export default function Mappings() {
                               className="flex items-center gap-1 text-emerald-600 hover:underline"
                             >
                               <FileText className="w-3 h-3" />
-                              {file.name}
+                              <span className="truncate">{file.name}</span>
+                              {file.type && (
+                                <Badge variant="outline" className="ml-auto text-[10px] px-1 py-0 h-4">
+                                  {file.type.toUpperCase()}
+                                </Badge>
+                              )}
                             </a>
                           ))}
+                          {mapping.files.length > 3 && (
+                            <p className="text-gray-500 text-[10px]">+{mapping.files.length - 3} mais</p>
+                          )}
                         </div>
                       </div>
                     )}
@@ -513,12 +541,14 @@ export default function Mappings() {
                         >
                           <div>
                             <Upload className="w-4 h-4 mr-1" />
-                            Arquivo
+                            {uploadingFile ? 'Enviando...' : 'KML/TIF'}
                           </div>
                         </Button>
                         <input
                           type="file"
                           className="hidden"
+                          accept=".kml,.tif,.tiff,.tfw"
+                          multiple
                           onChange={(e) => handleFileUpload(e, mapping)}
                           disabled={uploadingFile}
                         />

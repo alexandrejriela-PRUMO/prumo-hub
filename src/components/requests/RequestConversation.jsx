@@ -191,6 +191,12 @@ export default function RequestConversation({ request, onUpdate, currentUser }) 
               <Send className="w-4 h-4 mr-2" />
               {sending ? 'Enviando...' : 'Enviar Mensagem'}
             </Button>
+
+            {!isAdmin && (
+              <p className="text-xs text-gray-500 text-center mt-2">
+                A Equipe Santa Rute responderá em breve
+              </p>
+            )}
           </div>
         </div>
       </CardContent>

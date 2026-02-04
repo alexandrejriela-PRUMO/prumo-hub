@@ -429,7 +429,8 @@ export default function PRADDetails({ prad }) {
       {/* Timeline */}
       <TabsContent value="timeline" className="space-y-4">
         <PRADTimeline prad={prad} onUpdate={() => queryClient.invalidateQueries(['prad'])} />
-    </Tabs>
+      </TabsContent>
+      </Tabs>
   );
 }
 

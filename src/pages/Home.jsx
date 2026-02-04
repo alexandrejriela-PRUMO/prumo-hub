@@ -13,6 +13,7 @@ import DashboardMetrics from '../components/dashboard/DashboardMetrics';
 import DashboardCharts from '../components/dashboard/DashboardCharts';
 import DashboardFilters from '../components/dashboard/DashboardFilters';
 import ExportPDF from '../components/dashboard/ExportPDF';
+import DashboardFullExport from '../components/dashboard/DashboardFullExport';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -313,6 +314,17 @@ export default function Home() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Full Export Section */}
+      {!isLoading && (
+        <div className="mt-12 pt-8 border-t border-gray-200">
+          <div className="mb-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Exportar Dados</h2>
+            <p className="text-gray-600 text-sm">Baixe um relatório completo com todas as suas informações no sistema</p>
+          </div>
+          <DashboardFullExport user={user} />
+        </div>
+      )}
       </div>);
 
       }

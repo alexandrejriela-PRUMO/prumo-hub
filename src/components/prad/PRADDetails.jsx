@@ -26,10 +26,11 @@ import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import PRADTimeline from './PRADTimeline';
+import PRADTimelineCreative from './PRADTimelineCreative';
 import PRADAlerts from './PRADAlerts';
 import PRADDocuments from './PRADDocuments';
 import PRADImageMonitoring from './PRADImageMonitoring';
+import PRADDiagnosisMappedAreas from './PRADDiagnosisMappedAreas';
 import { toast } from 'sonner';
 
 export default function PRADDetails({ prad }) {
@@ -155,29 +156,7 @@ export default function PRADDetails({ prad }) {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sprout className="w-5 h-5" />
-              Estágios de Vegetação da Área
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {prad.environmental_diagnosis?.vegetation_stages && prad.environmental_diagnosis.vegetation_stages.length > 0 ? (
-              prad.environmental_diagnosis.vegetation_stages.map((stage, idx) => (
-                <div key={idx} className="p-3 bg-green-50 rounded-lg border border-green-200">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Badge>{stage.stage_type}</Badge>
-                    <span className="font-semibold text-green-900">{stage.area_percentage}% da área</span>
-                  </div>
-                  {stage.description && <p className="text-sm text-gray-700">{stage.description}</p>}
-                </div>
-              ))
-            ) : (
-              <p className="text-gray-500">Nenhum estágio de vegetação cadastrado</p>
-            )}
-          </CardContent>
-        </Card>
+        <PRADDiagnosisMappedAreas prad={prad} onUpdate={() => queryClient.invalidateQueries(['prad'])} />
 
         <Card>
           <CardHeader>
@@ -428,7 +407,7 @@ export default function PRADDetails({ prad }) {
 
       {/* Timeline */}
       <TabsContent value="timeline" className="space-y-4">
-        <PRADTimeline prad={prad} onUpdate={() => queryClient.invalidateQueries(['prad'])} />
+        <PRADTimelineCreative prad={prad} onUpdate={() => queryClient.invalidateQueries(['prad'])} />
       </TabsContent>
       </Tabs>
   );

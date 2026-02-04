@@ -74,13 +74,13 @@ export default function RequestConversation({ request, onUpdate, currentUser }) 
     setSending(true);
     try {
       const newMessage = {
-        sender: currentUser.email,
-        sender_name: currentUser.full_name || currentUser.email,
+        sender: currentUser?.email || '',
+        sender_name: currentUser?.full_name || currentUser?.email || 'Usuário',
         sender_type: isAdmin ? 'team' : 'client',
-        message: message.trim(),
+        message: message.trim() || '',
         timestamp: new Date().toISOString(),
-        offer_budget: offerBudget,
-        attachments: attachments
+        offer_budget: offerBudget || false,
+        attachments: attachments || []
       };
 
       const updatedConversation = [...conversation, newMessage];
@@ -106,28 +106,31 @@ export default function RequestConversation({ request, onUpdate, currentUser }) 
         ? 'Nova Resposta da Equipe Santa Rute'
         : 'Nova Mensagem do Cliente no Requerimento';
       
-      await base44.integrations.Core.SendEmail({
-        to: recipientEmail,
-        subject: notificationTitle,
-        body: `
-          <html>
-            <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4;">
-              <div style="max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px;">
-                <h2 style="color: #1B4332;">${notificationTitle}</h2>
-                <p style="font-size: 14px; color: #666;">Requerimento: <strong>${request.subject}</strong></p>
-                <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                  <p style="font-size: 16px; color: #333; line-height: 1.6;">${message.trim()}</p>
+      if (message.trim()) {
+        await base44.integrations.Core.SendEmail({
+          to: recipientEmail,
+          subject: notificationTitle,
+          body: `
+            <html>
+              <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px;">
+                  <h2 style="color: #1B4332;">${notificationTitle}</h2>
+                  <p style="font-size: 14px; color: #666;">Requerimento: <strong>${request.subject}</strong></p>
+                  <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <p style="font-size: 16px; color: #333; line-height: 1.6;">${message.trim()}</p>
+                  </div>
+                  ${offerBudget ? '<p style="font-size: 14px; color: #C9A227; font-weight: bold;">💼 Oferecemos orçamento com estratégia para dar andamento nesta situação.</p>' : ''}
+                  ${attachments.length > 0 ? '<p style="font-size: 14px; color: #666;">📎 ' + attachments.length + ' arquivo(s) anexado(s)</p>' : ''}
+                  <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;" />
+                  <p style="font-size: 14px; color: #666;">
+                    Acesse o sistema Santa Rute para continuar a conversa.
+                  </p>
                 </div>
-                ${offerBudget ? '<p style="font-size: 14px; color: #C9A227; font-weight: bold;">💼 Oferecemos orçamento com estratégia para dar andamento nesta situação.</p>' : ''}
-                <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;" />
-                <p style="font-size: 14px; color: #666;">
-                  Acesse o sistema Santa Rute para continuar a conversa.
-                </p>
-              </div>
-            </body>
-          </html>
-        `
-      });
+              </body>
+            </html>
+          `
+        });
+      }
 
       setMessage('');
       setOfferBudget(false);
@@ -160,7 +163,11 @@ export default function RequestConversation({ request, onUpdate, currentUser }) 
               <p className="text-xs mt-1">Inicie a conversa abaixo</p>
             </div>
           ) : (
-            conversation.map((msg, index) => (
+            conversation.map((msg, index) => {
+              // Garantir que msg é um objeto válido
+              if (!msg || typeof msg !== 'object') return null;
+              
+              return (
               <div 
                 key={index} 
                 className={`flex gap-3 ${msg.sender_type === 'client' ? 'flex-row' : 'flex-row-reverse'}`}
@@ -233,7 +240,7 @@ export default function RequestConversation({ request, onUpdate, currentUser }) 
                   </p>
                 </div>
               </div>
-            ))
+            )})
           )}
         </div>
 

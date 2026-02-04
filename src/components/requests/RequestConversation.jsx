@@ -52,10 +52,10 @@ export default function RequestConversation({ request, onUpdate, currentUser }) 
         response: isAdmin ? message.trim() : request.response
       });
 
-      // Enviar notificação
-      const recipientEmail = isAdmin ? request.client_email : currentUser.email;
+      // Enviar notificação - cliente envia para admins, admin envia para cliente
+      const recipientEmail = isAdmin ? request.client_email : 'contato@santarute.com.br';
       const notificationTitle = isAdmin 
-        ? 'Nova Resposta ao seu Requerimento'
+        ? 'Nova Resposta da Equipe Santa Rute'
         : 'Nova Mensagem do Cliente no Requerimento';
       
       await base44.integrations.Core.SendEmail({

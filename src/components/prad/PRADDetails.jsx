@@ -1,6 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   MapPin,
@@ -12,20 +17,46 @@ import {
   TrendingUp,
   Satellite,
   FileText,
-  Bell
+  Bell,
+  Plus,
+  Edit2,
+  Trash2
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
+import PRADTimeline from './PRADTimeline';
+import PRADAlerts from './PRADAlerts';
+import PRADDocuments from './PRADDocuments';
+import PRADImageMonitoring from './PRADImageMonitoring';
+import { toast } from 'sonner';
 
 export default function PRADDetails({ prad }) {
+  const [editingMethod, setEditingMethod] = useState(null);
+  const [editingStage, setEditingStageIdx] = useState(null);
+  const [newMethod, setNewMethod] = useState('');
+  const [newStage, setNewStage] = useState({});
+  const queryClient = useQueryClient();
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.PRAD.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['prad']);
+      setEditingMethod(null);
+      setEditingStageIdx(null);
+      toast.success('PRAD atualizado!');
+    },
+  });
   return (
     <Tabs defaultValue="identification" className="w-full">
-      <TabsList className="grid w-full grid-cols-5">
-        <TabsTrigger value="identification">Identificação</TabsTrigger>
-        <TabsTrigger value="diagnosis">Diagnóstico</TabsTrigger>
-        <TabsTrigger value="execution">Execução</TabsTrigger>
-        <TabsTrigger value="monitoring">Monitoramento</TabsTrigger>
-        <TabsTrigger value="documents">Documentos</TabsTrigger>
+      <TabsList className="grid w-full grid-cols-6">
+        <TabsTrigger value="identification" className="text-xs">Identificação</TabsTrigger>
+        <TabsTrigger value="diagnosis" className="text-xs">Diagnóstico</TabsTrigger>
+        <TabsTrigger value="execution" className="text-xs">Execução</TabsTrigger>
+        <TabsTrigger value="monitoring" className="text-xs">Monitoramento</TabsTrigger>
+        <TabsTrigger value="documents" className="text-xs">Documentos</TabsTrigger>
+        <TabsTrigger value="timeline" className="text-xs">Timeline</TabsTrigger>
       </TabsList>
 
       {/* Identificação */}
@@ -127,6 +158,30 @@ export default function PRADDetails({ prad }) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
+              <Sprout className="w-5 h-5" />
+              Estágios de Vegetação da Área
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {prad.environmental_diagnosis?.vegetation_stages && prad.environmental_diagnosis.vegetation_stages.length > 0 ? (
+              prad.environmental_diagnosis.vegetation_stages.map((stage, idx) => (
+                <div key={idx} className="p-3 bg-green-50 rounded-lg border border-green-200">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Badge>{stage.stage_type}</Badge>
+                    <span className="font-semibold text-green-900">{stage.area_percentage}% da área</span>
+                  </div>
+                  {stage.description && <p className="text-sm text-gray-700">{stage.description}</p>}
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500">Nenhum estágio de vegetação cadastrado</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
               <Layers className="w-5 h-5" />
               Caracterização do Solo
             </CardTitle>
@@ -151,17 +206,72 @@ export default function PRADDetails({ prad }) {
       {/* Execução */}
       <TabsContent value="execution" className="space-y-4">
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <Sprout className="w-5 h-5" />
               Métodos de Recuperação
             </CardTitle>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                  <Plus className="w-4 h-4 mr-1" />
+                  Adicionar
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Selecionar Método de Recuperação</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 mt-4">
+                  <Select value={newMethod} onValueChange={setNewMethod}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o método" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Regeneração Natural Assistida">Regeneração Natural Assistida</SelectItem>
+                      <SelectItem value="Plantio de Espécies Nativas">Plantio de Espécies Nativas</SelectItem>
+                      <SelectItem value="Isolamento da Área">Isolamento da Área</SelectItem>
+                      <SelectItem value="Controle de Erosão">Controle de Erosão</SelectItem>
+                      <SelectItem value="Bioengenharia do Solo">Bioengenharia do Solo</SelectItem>
+                      <SelectItem value="Outro">Outro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline">Cancelar</Button>
+                    <Button
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => {
+                        if (newMethod && !prad.recovery_methods?.includes(newMethod)) {
+                          updateMutation.mutate({
+                            id: prad.id,
+                            data: { recovery_methods: [...(prad.recovery_methods || []), newMethod] }
+                          });
+                          setNewMethod('');
+                        }
+                      }}
+                    >
+                      Adicionar Método
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </CardHeader>
           <CardContent>
             {prad.recovery_methods && prad.recovery_methods.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {prad.recovery_methods.map((method, idx) => (
-                  <Badge key={idx} variant="outline">{method}</Badge>
+                  <Badge
+                    key={idx}
+                    variant="outline"
+                    className="cursor-pointer hover:bg-red-50"
+                    onClick={() => {
+                      const updated = prad.recovery_methods.filter((_, i) => i !== idx);
+                      updateMutation.mutate({ id: prad.id, data: { recovery_methods: updated } });
+                    }}
+                  >
+                    {method} ✕
+                  </Badge>
                 ))}
               </div>
             ) : (
@@ -171,31 +281,89 @@ export default function PRADDetails({ prad }) {
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <Calendar className="w-5 h-5" />
               Cronograma de Execução
             </CardTitle>
+            <Dialog open={editingStage === -1} onOpenChange={(open) => {
+              if (open) {
+                setEditingStageIdx(-1);
+                setNewStage({ stage: '', deadline: '', status: 'Pendente', responsible: '', notes: '' });
+              } else {
+                setEditingStageIdx(null);
+              }
+            }}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                  <Plus className="w-4 h-4 mr-1" />
+                  Nova Etapa
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Nova Etapa do Cronograma</DialogTitle>
+                </DialogHeader>
+                <ScheduleForm data={newStage} setData={setNewStage} onSave={() => {
+                  const schedule = [...(prad.execution_schedule || []), newStage];
+                  updateMutation.mutate({ id: prad.id, data: { execution_schedule: schedule } });
+                }} />
+              </DialogContent>
+            </Dialog>
           </CardHeader>
           <CardContent>
             {prad.execution_schedule && prad.execution_schedule.length > 0 ? (
               <div className="space-y-3">
                 {prad.execution_schedule.map((stage, idx) => (
-                  <div key={idx} className="p-3 bg-gray-50 rounded-lg border-l-4 border-green-500">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="font-semibold">{stage.stage}</p>
-                      <Badge className={
-                        stage.status === 'Concluído' ? 'bg-green-600' :
-                        stage.status === 'Em Execução' ? 'bg-blue-600' :
-                        stage.status === 'Atrasado' ? 'bg-red-600' :
-                        'bg-gray-600'
-                      }>
-                        {stage.status}
-                      </Badge>
+                  <div key={idx} className="p-3 bg-gray-50 rounded-lg border-l-4 border-green-500 flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="font-semibold">{stage.stage}</p>
+                        <Badge className={
+                          stage.status === 'Concluído' ? 'bg-green-600' :
+                          stage.status === 'Em Execução' ? 'bg-blue-600' :
+                          stage.status === 'Atrasado' ? 'bg-red-600' :
+                          'bg-gray-600'
+                        }>
+                          {stage.status}
+                        </Badge>
+                      </div>
+                      <div className="flex gap-4 text-sm text-gray-600 mb-1">
+                        <span>📅 {stage.deadline ? format(parseISO(stage.deadline), 'dd/MM/yyyy', { locale: ptBR }) : '-'}</span>
+                        <span>👤 {stage.responsible || '-'}</span>
+                      </div>
+                      {stage.notes && <p className="text-xs text-gray-600">{stage.notes}</p>}
                     </div>
-                    <div className="flex gap-4 text-sm text-gray-600">
-                      <span>📅 {stage.deadline ? format(parseISO(stage.deadline), 'dd/MM/yyyy', { locale: ptBR }) : '-'}</span>
-                      <span>👤 {stage.responsible || '-'}</span>
+                    <div className="flex gap-1 ml-2">
+                      <Dialog open={editingStage === idx} onOpenChange={(open) => {
+                        if (open) {
+                          setEditingStageIdx(idx);
+                          setNewStage(stage);
+                        } else {
+                          setEditingStageIdx(null);
+                        }
+                      }}>
+                        <DialogTrigger asChild>
+                          <Button size="sm" variant="outline">
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Editar Etapa</DialogTitle>
+                          </DialogHeader>
+                          <ScheduleForm data={newStage} setData={setNewStage} onSave={() => {
+                            const schedule = prad.execution_schedule.map((s, i) => i === idx ? newStage : s);
+                            updateMutation.mutate({ id: prad.id, data: { execution_schedule: schedule } });
+                          }} />
+                        </DialogContent>
+                      </Dialog>
+                      <Button size="sm" variant="destructive" onClick={() => {
+                        const schedule = prad.execution_schedule.filter((_, i) => i !== idx);
+                        updateMutation.mutate({ id: prad.id, data: { execution_schedule: schedule } });
+                      }}>
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -248,106 +416,60 @@ export default function PRADDetails({ prad }) {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Satellite className="w-5 h-5" />
-              Monitoramento por Imagem (NDVI)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {prad.image_monitoring?.ndvi_evolution && prad.image_monitoring.ndvi_evolution.length > 0 ? (
-              <div className="space-y-2">
-                {prad.image_monitoring.ndvi_evolution.slice(-6).reverse().map((record, idx) => (
-                  <div key={idx} className="flex justify-between p-3 bg-purple-50 rounded-lg">
-                    <span className="text-sm">{format(parseISO(record.date), 'dd/MM/yyyy', { locale: ptBR })}</span>
-                    <span className="font-bold text-purple-900">NDVI: {record.ndvi}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500">Nenhum dado de NDVI disponível</p>
-            )}
-          </CardContent>
-        </Card>
+        <PRADImageMonitoring prad={prad} onUpdate={() => queryClient.invalidateQueries(['prad'])} />
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="w-5 h-5" />
-              Alertas e Riscos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {prad.alerts_and_risks && prad.alerts_and_risks.length > 0 ? (
-              <div className="space-y-2">
-                {prad.alerts_and_risks.map((alert, idx) => (
-                  <div key={idx} className={`p-3 rounded-lg border-l-4 ${
-                    alert.severity === 'Crítica' ? 'bg-red-50 border-red-500' :
-                    alert.severity === 'Alta' ? 'bg-orange-50 border-orange-500' :
-                    alert.severity === 'Média' ? 'bg-yellow-50 border-yellow-500' :
-                    'bg-blue-50 border-blue-500'
-                  }`}>
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="font-semibold">{alert.alert_type}</p>
-                      <Badge className={
-                        alert.status === 'Resolvido' ? 'bg-green-600' :
-                        alert.status === 'Em Tratamento' ? 'bg-blue-600' :
-                        'bg-red-600'
-                      }>
-                        {alert.status}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-gray-700">{alert.description}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500">Nenhum alerta registrado</p>
-            )}
-          </CardContent>
-        </Card>
+        <PRADAlerts prad={prad} onUpdate={() => queryClient.invalidateQueries(['prad'])} />
       </TabsContent>
 
       {/* Documentos */}
       <TabsContent value="documents" className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              Documentos e Relatórios
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {prad.documents && prad.documents.length > 0 ? (
-              <div className="space-y-2">
-                {prad.documents.map((doc, idx) => (
-                  <a
-                    key={idx}
-                    href={doc.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <div>
-                      <p className="font-medium">{doc.name}</p>
-                      <div className="flex gap-2 mt-1">
-                        <Badge variant="outline">{doc.type}</Badge>
-                        <span className="text-xs text-gray-500">
-                          {doc.upload_date && format(parseISO(doc.upload_date), 'dd/MM/yyyy', { locale: ptBR })}
-                        </span>
-                      </div>
-                    </div>
-                    <FileText className="w-5 h-5 text-gray-400" />
-                  </a>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500">Nenhum documento cadastrado</p>
-            )}
-          </CardContent>
-        </Card>
+        <PRADDocuments prad={prad} userEmail={prad.owner_email} onUpdate={() => queryClient.invalidateQueries(['prad'])} />
       </TabsContent>
+
+      {/* Timeline */}
+      <TabsContent value="timeline" className="space-y-4">
+        <PRADTimeline prad={prad} onUpdate={() => queryClient.invalidateQueries(['prad'])} />
     </Tabs>
+  );
+}
+
+function ScheduleForm({ data, setData, onSave }) {
+  return (
+    <div className="space-y-4 mt-4">
+      <div>
+        <label className="text-sm font-medium">Etapa *</label>
+        <Input value={data.stage || ''} onChange={(e) => setData({ ...data, stage: e.target.value })} placeholder="Ex: Preparação da Área" />
+      </div>
+      <div>
+        <label className="text-sm font-medium">Prazo</label>
+        <Input type="date" value={data.deadline || ''} onChange={(e) => setData({ ...data, deadline: e.target.value })} />
+      </div>
+      <div>
+        <label className="text-sm font-medium">Status</label>
+        <Select value={data.status || 'Pendente'} onValueChange={(value) => setData({ ...data, status: value })}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Pendente">Pendente</SelectItem>
+            <SelectItem value="Em Execução">Em Execução</SelectItem>
+            <SelectItem value="Concluído">Concluído</SelectItem>
+            <SelectItem value="Atrasado">Atrasado</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <label className="text-sm font-medium">Responsável</label>
+        <Input value={data.responsible || ''} onChange={(e) => setData({ ...data, responsible: e.target.value })} placeholder="Nome do responsável" />
+      </div>
+      <div>
+        <label className="text-sm font-medium">Observações</label>
+        <Textarea value={data.notes || ''} onChange={(e) => setData({ ...data, notes: e.target.value })} placeholder="Notas desta etapa" className="h-16" />
+      </div>
+      <div className="flex gap-2 justify-end">
+        <Button variant="outline" onClick={() => {}}>Cancelar</Button>
+        <Button className="bg-green-600 hover:bg-green-700" onClick={onSave}>Salvar Etapa</Button>
+      </div>
+    </div>
   );
 }

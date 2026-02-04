@@ -35,6 +35,7 @@ const licenseTypes = ['LP', 'LI', 'LO', 'LAU', 'Dispensa', 'Outorga', 'Outro'];
 export default function Licenses() {
   const [user, setUser] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedLicense, setSelectedLicense] = useState(null);
   const [showFlowchart, setShowFlowchart] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -110,6 +111,19 @@ export default function Licenses() {
     setDocType('Licença Principal');
   };
 
+  const openEditDialog = (license) => {
+    setSelectedLicense(license);
+    setFormData({
+      license_type: license.license_type || '',
+      license_number: license.license_number || '',
+      issue_date: license.issue_date || '',
+      expiry_date: license.expiry_date || '',
+      conditions: license.conditions || [],
+      documents: license.documents || [],
+    });
+    setEditDialogOpen(true);
+  };
+
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -167,6 +181,17 @@ export default function Licenses() {
       ...formData,
       owner_email: user.email,
     });
+  };
+
+  const handleUpdate = (e) => {
+    e.preventDefault();
+    updateMutation.mutate({
+      id: selectedLicense.id,
+      data: formData
+    });
+    setEditDialogOpen(false);
+    resetForm();
+    toast.success('Licença atualizada com sucesso!');
   };
 
   const getLicenseStatus = (license) => {
@@ -445,6 +470,15 @@ export default function Licenses() {
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => openEditDialog(license)}
+                        className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50"
+                      >
+                        <FileText className="w-4 h-4 mr-1" />
+                        Editar
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => {
                           setSelectedLicense(license);
                           setShowHistory(true);
@@ -486,6 +520,159 @@ export default function Licenses() {
           })}
         </div>
       )}
+
+      {/* Dialog de Edição */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Licença</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleUpdate} className="space-y-4 mt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Tipo de Licença</Label>
+                <Select
+                  value={formData.license_type}
+                  onValueChange={(v) => setFormData({ ...formData, license_type: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {licenseTypes.map((type) => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Número da Licença</Label>
+                <Input
+                  value={formData.license_number}
+                  onChange={(e) => setFormData({ ...formData, license_number: e.target.value })}
+                  placeholder="Ex: 001/2024"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Data de Emissão</Label>
+                <Input
+                  type="date"
+                  value={formData.issue_date}
+                  onChange={(e) => setFormData({ ...formData, issue_date: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Data de Validade</Label>
+                <Input
+                  type="date"
+                  value={formData.expiry_date}
+                  onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Condicionantes</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={newCondition}
+                  onChange={(e) => setNewCondition(e.target.value)}
+                  placeholder="Adicionar condicionante"
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCondition())}
+                />
+                <Button type="button" variant="outline" onClick={addCondition}>
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+              {formData.conditions.length > 0 && (
+                <div className="space-y-2 mt-2">
+                  {formData.conditions.map((cond, idx) => (
+                    <div key={idx} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                      <span className="flex-1 text-sm">{cond}</span>
+                      <button type="button" onClick={() => removeCondition(idx)} className="text-red-500 hover:text-red-700">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Documentos da Licença</Label>
+              <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-2">
+                    <Label className="text-xs">Tipo de Documento</Label>
+                    <Select value={docType} onValueChange={setDocType}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Licença Principal">Licença Principal</SelectItem>
+                        <SelectItem value="Documento Complementar">Documento Complementar</SelectItem>
+                        <SelectItem value="Comprovante">Comprovante</SelectItem>
+                        <SelectItem value="Outro">Outro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Upload</Label>
+                    <label 
+                      htmlFor="file-upload-edit"
+                      className="flex items-center justify-center gap-1 h-9 px-3 border-2 border-emerald-300 rounded-lg cursor-pointer hover:bg-emerald-50 transition-colors"
+                    >
+                      <Upload className="w-4 h-4 text-emerald-600" />
+                      <span className="text-xs font-medium text-emerald-700">
+                        {uploadingDoc ? 'Enviando...' : 'Arquivo'}
+                      </span>
+                    </label>
+                    <Input
+                      id="file-upload-edit"
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                      disabled={uploadingDoc}
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Selecione o tipo e clique em "Arquivo" para adicionar documentos (PDF, JPG, PNG)
+                </p>
+              </div>
+              {formData.documents.length > 0 && (
+                <div className="space-y-2 mt-3">
+                  <p className="text-sm font-medium text-gray-700">Documentos adicionados:</p>
+                  {formData.documents.map((doc, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg border">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">{doc.name}</p>
+                        <p className="text-xs text-gray-600">{doc.type}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:text-emerald-700">
+                          <FileText className="w-4 h-4" />
+                        </a>
+                        <button type="button" onClick={() => removeDocument(idx)} className="text-red-500 hover:text-red-700">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog de Histórico */}
       <Dialog open={showHistory} onOpenChange={setShowHistory}>

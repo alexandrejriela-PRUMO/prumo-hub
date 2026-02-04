@@ -38,7 +38,6 @@ export default function EnvironmentalAlerts({ alerts = [] }) {
               <AlertTriangle className="w-6 h-6 text-emerald-600" />
               Alertas Ambientais
             </CardTitle>
-            <Badge className="bg-blue-100 text-blue-700 border border-blue-300 text-xs">Em Breve</Badge>
           </div>
           {(totalCritical > 0 || totalHigh > 0) && (
             <div className="flex gap-2">

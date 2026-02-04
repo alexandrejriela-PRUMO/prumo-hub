@@ -15,25 +15,40 @@ import { ptBR } from 'date-fns/locale';
 export default function PRADDocuments({ prad, userEmail, onUpdate }) {
   const queryClient = useQueryClient();
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [formData, setFormData] = useState({ name: '', type: '', observations: '', url: '' });
+  const [formData, setFormData] = useState({ name: '', type: '', observations: '', file: null });
+  const [uploading, setUploading] = useState(false);
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.PRAD.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries(['prad']);
       setShowAddDialog(false);
-      setFormData({ name: '', type: '', observations: '', url: '' });
+      setFormData({ name: '', type: '', observations: '', file: null });
       onUpdate?.();
     },
   });
 
   const handleAddDocument = async () => {
-    const documents = [...(prad.documents || []), {
-      ...formData,
-      upload_date: new Date().toISOString(),
-      uploaded_by: userEmail,
-    }];
-    updateMutation.mutate({ id: prad.id, data: { documents } });
+    if (!formData.file) return;
+    
+    setUploading(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: formData.file });
+      
+      const documents = [...(prad.documents || []), {
+        name: formData.name,
+        type: formData.type,
+        observations: formData.observations,
+        url: file_url,
+        upload_date: new Date().toISOString(),
+        uploaded_by: userEmail,
+      }];
+      updateMutation.mutate({ id: prad.id, data: { documents } });
+    } catch (error) {
+      console.error('Erro ao fazer upload:', error);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleDeleteDocument = (index) => {
@@ -50,7 +65,7 @@ export default function PRADDocuments({ prad, userEmail, onUpdate }) {
         </CardTitle>
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
           <DialogTrigger asChild>
-            <Button size="sm" className="bg-green-600 hover:bg-green-700">
+            <Button size="sm" className="bg-green-600 hover:bg-green-700" disabled={uploading}>
               <Plus className="w-4 h-4 mr-1" />
               Adicionar Documento
             </Button>
@@ -85,12 +100,13 @@ export default function PRADDocuments({ prad, userEmail, onUpdate }) {
                 </Select>
               </div>
               <div>
-                <label className="text-sm font-medium">URL do Documento *</label>
+                <label className="text-sm font-medium">Fazer Upload do Arquivo *</label>
                 <Input
-                  value={formData.url}
-                  onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-                  placeholder="https://..."
+                  type="file"
+                  onChange={(e) => setFormData({ ...formData, file: e.target.files?.[0] || null })}
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
                 />
+                <p className="text-xs text-gray-500 mt-1">PDF, DOC, XLS, JPG e PNG</p>
               </div>
               <div>
                 <label className="text-sm font-medium">Observações</label>
@@ -102,13 +118,13 @@ export default function PRADDocuments({ prad, userEmail, onUpdate }) {
                 />
               </div>
               <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancelar</Button>
+                <Button variant="outline" onClick={() => setShowAddDialog(false)} disabled={uploading}>Cancelar</Button>
                 <Button
                   className="bg-green-600 hover:bg-green-700"
                   onClick={handleAddDocument}
-                  disabled={!formData.name || !formData.type || !formData.url || updateMutation.isPending}
+                  disabled={!formData.name || !formData.type || !formData.file || uploading || updateMutation.isPending}
                 >
-                  Adicionar
+                  {uploading ? 'Enviando...' : 'Adicionar'}
                 </Button>
               </div>
             </div>

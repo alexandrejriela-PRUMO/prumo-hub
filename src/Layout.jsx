@@ -131,8 +131,8 @@ export default function Layout({ children, currentPageName }) {
           <Menu className="w-6 h-6 text-emerald-900" />
         </button>
         <img 
-          src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/b78b381e7_MARCADGUASANTARUTE.png" 
-          alt="Santa Rute" 
+          src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/9e64158f0_PRUMO1.png" 
+          alt="PRUMO Hub" 
           className="h-16 w-auto object-contain"
         />
         <button
@@ -177,8 +177,8 @@ export default function Layout({ children, currentPageName }) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <img 
-                  src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/b78b381e7_MARCADGUASANTARUTE.png" 
-                  alt="Santa Rute" 
+                  src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/9e64158f0_PRUMO1.png" 
+                  alt="PRUMO Hub" 
                   className="h-20 w-auto object-contain"
                 />
               </div>

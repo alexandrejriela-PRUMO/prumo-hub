@@ -71,8 +71,6 @@ const navItems = [
   { name: 'Relatórios', page: 'Reports', icon: FileText },
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
-  { name: 'Suporte', page: 'Support', icon: Headphones },
-  { name: 'Assinatura e Boletos', page: 'Invoices', icon: CreditCard },
   ];
 
 export default function Layout({ children, currentPageName }) {
@@ -133,17 +131,94 @@ export default function Layout({ children, currentPageName }) {
           alt="PRUMO Hub" 
           className="h-16 w-auto object-contain"
         />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setNotificationOpen(true)}
+            className="relative p-2 rounded-xl hover:bg-emerald-50 transition-colors"
+          >
+            <Bell className="w-6 h-6 text-emerald-900" />
+            {unreadCount > 0 && (
+              <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </Badge>
+            )}
+          </button>
+          {user && (
+            <div className="relative group">
+              <button className="flex items-center gap-2 p-2 rounded-xl hover:bg-emerald-50 transition-colors">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-semibold text-sm">
+                  {user.full_name?.charAt(0) || user.email?.charAt(0)?.toUpperCase()}
+                </div>
+              </button>
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-emerald-100 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div className="px-4 py-3 border-b border-emerald-100">
+                  <p className="text-sm font-medium text-emerald-900 truncate">{user.full_name || 'Cliente'}</p>
+                  <p className="text-xs text-emerald-600 truncate">{user.email}</p>
+                </div>
+                <Link to={createPageUrl('Support')} className="flex items-center gap-3 px-4 py-2 hover:bg-emerald-50 transition-colors text-sm text-emerald-900">
+                  <Headphones className="w-4 h-4" />
+                  Suporte
+                </Link>
+                <Link to={createPageUrl('Invoices')} className="flex items-center gap-3 px-4 py-2 hover:bg-emerald-50 transition-colors text-sm text-emerald-900">
+                  <CreditCard className="w-4 h-4" />
+                  Assinatura e Boletos
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-4 py-2 hover:bg-emerald-50 transition-colors text-sm text-emerald-900"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sair
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Desktop Header */}
+      <div className="hidden lg:flex fixed top-0 left-72 right-0 h-16 bg-white/80 backdrop-blur-xl border-b border-emerald-100 z-40 items-center justify-end px-6 gap-4">
         <button
           onClick={() => setNotificationOpen(true)}
           className="relative p-2 rounded-xl hover:bg-emerald-50 transition-colors"
         >
-          <Bell className="w-6 h-6 text-emerald-900" />
+          <Bell className="w-5 h-5 text-emerald-900" />
           {unreadCount > 0 && (
             <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs">
               {unreadCount > 9 ? '9+' : unreadCount}
             </Badge>
           )}
         </button>
+        {user && (
+          <div className="relative group">
+            <button className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-emerald-50 transition-colors">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-semibold">
+                {user.full_name?.charAt(0) || user.email?.charAt(0)?.toUpperCase()}
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-medium text-emerald-900">{user.full_name || 'Cliente'}</p>
+                <p className="text-xs text-emerald-600">{user.email}</p>
+              </div>
+            </button>
+            <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-emerald-100 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+              <Link to={createPageUrl('Support')} className="flex items-center gap-3 px-4 py-2 hover:bg-emerald-50 transition-colors text-sm text-emerald-900">
+                <Headphones className="w-4 h-4" />
+                Suporte
+              </Link>
+              <Link to={createPageUrl('Invoices')} className="flex items-center gap-3 px-4 py-2 hover:bg-emerald-50 transition-colors text-sm text-emerald-900">
+                <CreditCard className="w-4 h-4" />
+                Assinatura e Boletos
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-4 py-2 hover:bg-emerald-50 transition-colors text-sm text-emerald-900"
+              >
+                <LogOut className="w-4 h-4" />
+                Sair
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Notification Center */}
@@ -269,34 +344,12 @@ export default function Layout({ children, currentPageName }) {
             })}
           </nav>
 
-          {/* User Info */}
-          {user && (
-            <div className="p-4 border-t border-emerald-800/50">
-              <div className="bg-emerald-800/30 rounded-xl p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-semibold">
-                    {user.full_name?.charAt(0) || user.email?.charAt(0)?.toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white font-medium text-sm truncate">{user.full_name || 'Cliente'}</p>
-                    <p className="text-emerald-400 text-xs truncate">{user.email}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-emerald-700/50 hover:bg-emerald-700 text-emerald-200 hover:text-white transition-colors text-sm"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Sair
-                </button>
-              </div>
-            </div>
-          )}
+
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="lg:ml-72 pt-20 lg:pt-0 min-h-screen">
+      <main className="lg:ml-72 pt-20 lg:pt-16 min-h-screen">
         <div className="p-3 sm:p-4 lg:p-8">
           <ErrorBoundary>
             {children}

@@ -133,7 +133,7 @@ export default function Layout({ children, currentPageName }) {
         <img 
           src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/9e64158f0_PRUMO1.png" 
           alt="PRUMO Hub" 
-          className="h-16 w-auto object-contain"
+          className="h-24 w-auto object-contain"
         />
         <button
           onClick={() => setNotificationOpen(true)}
@@ -179,7 +179,7 @@ export default function Layout({ children, currentPageName }) {
                 <img 
                   src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/9e64158f0_PRUMO1.png" 
                   alt="PRUMO Hub" 
-                  className="h-20 w-auto object-contain"
+                  className="h-28 w-auto object-contain"
                 />
               </div>
               <button

@@ -70,8 +70,6 @@ const navItems = [
   { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
   { name: 'Relatórios', page: 'Reports', icon: FileText },
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
-  { name: 'E-book Grátis', page: 'EbookReader', icon: FileText },
-  { name: 'Santa Blog', page: 'Blog', icon: Newspaper },
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
   { name: 'Suporte', page: 'Support', icon: Headphones },
   { name: 'Assinatura e Boletos', page: 'Invoices', icon: CreditCard },

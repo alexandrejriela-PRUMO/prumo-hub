@@ -253,6 +253,47 @@ export default function Requests() {
         </Card>
       </div>
 
+      {/* Informações sobre Plano */}
+      <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white">
+        <CardContent className="p-5">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0">
+              <CheckCircle className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900 mb-3">O que está incluído no seu Plano Campo Nobre</h3>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-gray-700">Consultoria Estratégica para gestão da propriedade</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-gray-700">Dúvidas Ambientais e Orientações Técnicas</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-gray-700">Orientações de Engenharia e Jurídicas</p>
+                </div>
+              </div>
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <DollarSign className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-amber-900 mb-1">Serviços que requerem orçamento adicional:</p>
+                    <p className="text-xs text-amber-800">
+                      Elaboração de novos Projetos, Renovação de Licenças, Atuação em Processos, Defesas e Recursos, 
+                      Retificação de CAR, Elaboração de CCIR, Execução a Campo de Mapeamentos e demais serviços técnicos 
+                      ou jurídicos específicos que exijam atuação direta.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Requests List */}
       {isLoading ? (
         <div className="space-y-4">

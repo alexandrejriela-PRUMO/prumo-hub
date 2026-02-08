@@ -19,8 +19,10 @@ import {
   Scale,
   Leaf,
   FileText,
-  Folder
+  Folder,
+  DollarSign
 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { format, parseISO } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import RequestConversation from '../components/requests/RequestConversation';
@@ -52,6 +54,7 @@ export default function Requests() {
     category: '',
     description: '',
     priority: 'Média',
+    requestBudget: false,
   });
 
   const queryClient = useQueryClient();
@@ -90,6 +93,7 @@ export default function Requests() {
       category: '',
       description: '',
       priority: 'Média',
+      requestBudget: false,
     });
   };
 
@@ -194,6 +198,23 @@ export default function Requests() {
                 />
               </div>
 
+              <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <Checkbox
+                  id="requestBudget"
+                  checked={formData.requestBudget}
+                  onCheckedChange={(checked) => setFormData({ ...formData, requestBudget: checked })}
+                />
+                <div className="flex-1">
+                  <Label htmlFor="requestBudget" className="flex items-center gap-2 cursor-pointer">
+                    <DollarSign className="w-4 h-4 text-amber-600" />
+                    <span className="font-medium text-gray-900">Solicitar Orçamento</span>
+                  </Label>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Marque se deseja receber um orçamento para serviços relacionados a este requerimento
+                  </p>
+                </div>
+              </div>
+
               <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={createMutation.isPending}>
                 {createMutation.isPending ? 'Enviando...' : 'Enviar Requerimento'}
               </Button>
@@ -268,9 +289,17 @@ export default function Requests() {
                           <Badge className={getPriorityColor(request.priority)}>{request.priority}</Badge>
                         </div>
                         <p className="text-sm text-gray-600 mt-3 line-clamp-2">{request.description}</p>
-                        <p className="text-xs text-gray-400 mt-2">
-                          Enviado em {format(parseISO(request.created_date), 'dd/MM/yyyy às HH:mm')}
-                        </p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <p className="text-xs text-gray-400">
+                            Enviado em {format(parseISO(request.created_date), 'dd/MM/yyyy às HH:mm')}
+                          </p>
+                          {request.requestBudget && (
+                            <Badge className="bg-amber-100 text-amber-700 flex items-center gap-1">
+                              <DollarSign className="w-3 h-3" />
+                              Orçamento Solicitado
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <Badge className={`${status.color} flex items-center gap-1`}>

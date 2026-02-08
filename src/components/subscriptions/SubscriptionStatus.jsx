@@ -2,21 +2,51 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Check, Zap, Calendar, AlertCircle } from 'lucide-react';
-import { format, addDays, isPast } from 'date-fns';
+import { Check, Zap, CreditCard, Settings } from 'lucide-react';
+import { format, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { base44 } from '@/api/base44Client';
+import { toast } from 'sonner';
 
 export default function SubscriptionStatus() {
-  const [subscription, setSubscription] = useState({
+  const [subscription] = useState({
     status: 'active',
     plan: 'campo-nobre',
     monthlyValue: 497.00,
     nextBillingDate: addDays(new Date(), 30),
     createdAt: new Date()
   });
+  const [loading, setLoading] = useState(false);
 
-  const isPremium = subscription.plan === 'campo-nobre';
+  const handleSubscribe = async () => {
+    setLoading(true);
+    try {
+      const { data } = await base44.functions.invoke('createStripeCheckout', {});
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error('Error creating checkout:', error);
+      toast.error('Erro ao iniciar pagamento. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    setLoading(true);
+    try {
+      const { data } = await base44.functions.invoke('createStripePortal', {});
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error('Error opening portal:', error);
+      toast.error('Erro ao abrir portal. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
 
@@ -57,6 +87,26 @@ export default function SubscriptionStatus() {
                   <p className="text-lg font-semibold text-blue-900">
                     {format(subscription.nextBillingDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                   </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Button
+                    onClick={handleSubscribe}
+                    disabled={loading}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    {loading ? 'Processando...' : 'Assinar Plano'}
+                  </Button>
+                  <Button
+                    onClick={handleManageSubscription}
+                    disabled={loading}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    Gerenciar Assinatura
+                  </Button>
                 </div>
               </div>
             </div>

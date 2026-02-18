@@ -5,8 +5,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MapPin, AlertTriangle, FileX, TrendingUp, ArrowRight, Plus, Building2, Users } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { MapPin, AlertTriangle, FileX, TrendingUp, ArrowRight, Plus, Building2, Users, MessageCircle } from 'lucide-react';
 import NewClientForm from './NewClientForm';
+import ClientCRMPanel from './ClientCRMPanel';
 
 function calcRegularity(licenses) {
   if (!licenses || licenses.length === 0) return 30;

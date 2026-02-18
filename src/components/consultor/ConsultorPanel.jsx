@@ -287,7 +287,7 @@ export default function ConsultorPanel({ user, onEnterProperty }) {
           ))}
           </div>
         </div>
-      ) : null}
+      )}
       <NewClientForm
         isOpen={showNewClientForm}
         onClose={() => setShowNewClientForm(false)}

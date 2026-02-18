@@ -52,7 +52,7 @@ export default function PropertyCard({ property, isConsultor }) {
 
   const coordinates = parseCoordinates(property.coordinates);
 
-  const stats = isConsultor && isUrban
+  const stats = (isConsultor && isUrban)
     ? [
         { label: 'Área Total', value: `${property.total_area_m2 || 0} m²`, icon: Trees, color: 'from-emerald-400 to-emerald-600' },
         { label: 'Área Construída', value: `${property.built_area_m2 || 0} m²`, icon: Leaf, color: 'from-teal-400 to-teal-600' },

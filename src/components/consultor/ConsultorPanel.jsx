@@ -194,8 +194,12 @@ export default function ConsultorPanel({ user, onEnterProperty }) {
             </Button>
           </CardContent>
         </Card>
-      ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+      ) : propertiesWithMetrics.length > 0 ? (
+        <div>
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+            <Building2 className="w-4 h-4" /> Propriedades e Empreendimentos ({propertiesWithMetrics.length})
+          </h2>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {propertiesWithMetrics.map(property => (
             <Card
               key={property.id}

@@ -97,6 +97,7 @@ export default function NewClientForm({ isOpen, onClose, consultorEmail, onSucce
         owner_email: clientData.email,
         property_name: `Cliente: ${clientName}`,
         property_type: 'rural',
+        is_client_only: true,
         city: clientData.city,
         state: clientData.state,
         consultor_email: consultorEmail,

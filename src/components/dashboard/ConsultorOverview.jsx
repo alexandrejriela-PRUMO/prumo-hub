@@ -188,17 +188,12 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1"
+                      className="w-full"
                       onClick={() => window.location.href = `/?property_id=${property.id}`}
                     >
                       <Eye className="w-3 h-3 mr-1" />
                       Dashboard
                     </Button>
-                    <Link to={createPageUrl('ConsultorClients')} className="flex-1">
-                      <Button variant="outline" size="sm" className="w-full">
-                        CRM
-                      </Button>
-                    </Link>
                   </div>
                 </CardContent>
               </Card>

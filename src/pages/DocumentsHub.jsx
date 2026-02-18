@@ -128,7 +128,7 @@ export default function DocumentsHub() {
     const dateMatch = (!dateFrom || (docDate && docDate >= dateFrom)) &&
                       (!dateTo || (docDate && docDate <= dateTo));
 
-    return searchMatch && entityMatch && typeMatch && dateMatch && doc.is_active !== false;
+    return searchMatch && propertyMatch && entityMatch && typeMatch && dateMatch && doc.is_active !== false;
   });
 
   // Get unique document types

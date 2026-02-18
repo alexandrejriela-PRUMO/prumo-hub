@@ -12,6 +12,20 @@ export default function Reports() {
   const [activeTab, setActiveTab] = useState('builder');
   const [editingReport, setEditingReport] = useState(null);
 
+  const [selectedPropertyId, setSelectedPropertyId] = useState(null);
+
+  const { data: properties = [] } = useQuery({
+    queryKey: ['properties', user?.email],
+    queryFn: () => {
+      const isConsultor = user?.user_type === 'consultor';
+      return isConsultor
+        ? base44.entities.Property.filter({ consultor_email: user.email })
+        : base44.entities.Property.filter({ owner_email: user.email });
+    },
+    enabled: !!user?.email,
+    initialData: []
+  });
+
   useEffect(() => {
     const loadUser = async () => {
       try {

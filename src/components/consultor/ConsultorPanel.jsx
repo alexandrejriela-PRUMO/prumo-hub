@@ -143,12 +143,10 @@ export default function ConsultorPanel({ user, onEnterProperty }) {
               Cadastre suas propriedades. Ao criar uma nova propriedade,
               seu email será automaticamente vinculado como consultor responsável.
             </p>
-            <Link to={createPageUrl('Properties')}>
-              <Button className="mt-4 bg-emerald-600 hover:bg-emerald-700">
-                <Plus className="w-4 h-4 mr-2" />
-                Cadastrar Primeiro Cliente
-              </Button>
-            </Link>
+            <Button className="mt-4 bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowNewClientForm(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Cadastrar Primeiro Cliente
+            </Button>
           </CardContent>
         </Card>
       ) : (

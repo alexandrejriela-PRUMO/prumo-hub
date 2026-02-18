@@ -37,7 +37,7 @@ export default function ConsultorPropertySelector({ properties, selectedProperty
               </SelectTrigger>
               <SelectContent>
                 {properties.length === 0 ? (
-                  <div className="px-3 py-2 text-sm text-gray-500">Nenhuma propriedade encontrada</div>
+                  <div className="px-3 py-2 text-sm text-gray-500">Nenhum cliente encontrado</div>
                 ) : (
                   properties.map(p => (
                     <SelectItem key={p.id} value={p.id}>

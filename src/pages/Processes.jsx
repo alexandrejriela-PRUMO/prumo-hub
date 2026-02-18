@@ -59,17 +59,23 @@ export default function Processes() {
     loadUser();
   }, []);
 
-  const { data: processes, isLoading } = useQuery({
-    queryKey: ['processes', user?.email],
-    queryFn: () => base44.entities.Process.filter({ client_email: user.email }),
-    enabled: !!user?.email,
-    initialData: []
+  const isConsultor = user?.user_type === 'consultor';
+
+  const { data: properties = [], isLoading: propertiesLoading } = useQuery({
+    queryKey: ['properties', user?.email],
+    queryFn: () => isConsultor
+      ? base44.entities.Property.filter({ consultor_email: user.email })
+      : base44.entities.Property.filter({ owner_email: user.email }),
+    enabled: !!user?.email
   });
 
-  const { data: properties = [] } = useQuery({
-    queryKey: ['properties', user?.email],
-    queryFn: () => base44.entities.Property.filter({ owner_email: user.email }),
-    enabled: !!user?.email
+  const { data: processes, isLoading } = useQuery({
+    queryKey: ['processes', user?.email, consultorPropertyId],
+    queryFn: () => isConsultor
+      ? base44.entities.Process.filter({ property_id: consultorPropertyId })
+      : base44.entities.Process.filter({ client_email: user.email }),
+    enabled: isConsultor ? !!consultorPropertyId : !!user?.email,
+    initialData: []
   });
 
   const createMutation = useMutation({

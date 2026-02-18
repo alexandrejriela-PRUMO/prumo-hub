@@ -285,7 +285,7 @@ export default function Layout({ children, currentPageName }) {
                   )}
                 >
                   <Icon className={cn("w-5 h-5", isActive ? "text-white" : "text-emerald-400 group-hover:text-amber-400")} />
-                  <span className="font-semibold text-sm">Minhas Propriedades</span>
+                  <span className="font-semibold text-sm">Meus Clientes</span>
                   {isActive && <ChevronRight className="w-4 h-4 ml-auto" />}
                 </Link>
               );

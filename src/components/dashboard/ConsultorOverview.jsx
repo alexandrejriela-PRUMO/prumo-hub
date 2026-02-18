@@ -53,9 +53,12 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
     return 'normal';
   };
 
-  const criticalCount = properties.filter(p => getPropertyStatus(p.id) === 'critical').length;
-  const attentionCount = properties.filter(p => getPropertyStatus(p.id) === 'attention').length;
-  const avgRegularity = Math.round(properties.reduce((acc, p) => acc + calcRegularity(p.id), 0) / (properties.length || 1));
+  // Filter out client-only records without properties
+  const propertiesWithClients = properties.filter(p => !p.is_client_only);
+
+  const criticalCount = propertiesWithClients.filter(p => getPropertyStatus(p.id) === 'critical').length;
+  const attentionCount = propertiesWithClients.filter(p => getPropertyStatus(p.id) === 'attention').length;
+  const avgRegularity = Math.round(propertiesWithClients.reduce((acc, p) => acc + calcRegularity(p.id), 0) / (propertiesWithClients.length || 1));
 
   if (isLoading) {
     return <div className="space-y-6"><Skeleton className="h-64 rounded-xl" /></div>;

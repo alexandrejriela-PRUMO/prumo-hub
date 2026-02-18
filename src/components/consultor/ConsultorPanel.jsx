@@ -137,12 +137,49 @@ export default function ConsultorPanel({ user, onEnterProperty }) {
         </div>
       )}
 
+      {/* Clientes sem propriedade */}
+      {clientOnlyRecords.length > 0 && (
+        <div>
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+            <Users className="w-4 h-4" /> Clientes sem propriedade vinculada ({clientOnlyRecords.length})
+          </h2>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {clientOnlyRecords.map(p => (
+              <Card key={p.id} className="border-dashed border-gray-200 hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-800 truncate">{p.client_name || p.property_name}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{p.owner_email}</p>
+                      {(p.city || p.state) && (
+                        <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />{p.city || ''}{p.city && p.state ? '/' : ''}{p.state || ''}
+                        </p>
+                      )}
+                    </div>
+                    <Badge variant="outline" className="text-xs ml-2">Sem propriedade</Badge>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full mt-3 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                    onClick={() => setCrmProperty(p)}
+                  >
+                    <MessageCircle className="w-3 h-3 mr-1" /> Ver CRM
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Properties Grid */}
       {loadingProperties ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map(i => <Skeleton key={i} className="h-52 rounded-xl" />)}
         </div>
-      ) : propertiesWithMetrics.length === 0 ? (
+      ) : propertiesWithMetrics.length === 0 && clientOnlyRecords.length === 0 ? (
         <Card className="border-dashed border-2 border-emerald-200">
           <CardContent className="py-16 text-center">
             <Building2 className="w-16 h-16 mx-auto text-emerald-300 mb-4" />

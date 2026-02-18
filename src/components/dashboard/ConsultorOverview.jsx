@@ -70,10 +70,6 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
           <h1 className="text-3xl font-bold text-gray-900">Olá, {user?.full_name?.split(' ')[0]}! 👋</h1>
           <p className="text-gray-500 mt-1">Resumo da carteira de clientes</p>
         </div>
-        <Button onClick={() => setShowNewClientForm(true)} className="bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="w-4 h-4 mr-2" />
-          + Novo Cliente
-        </Button>
       </div>
 
       {/* Summary Cards */}

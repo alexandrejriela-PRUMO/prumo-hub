@@ -196,8 +196,17 @@ export default function PRAD() {
           </Card>
         )}
 
+        {isConsultor && !selectedProperty && (
+          <Card className="text-center py-12 border-dashed border-2 border-amber-200">
+            <CardContent>
+              <Sprout className="w-16 h-16 mx-auto text-amber-300 mb-4" />
+              <p className="text-gray-600 mb-2">Selecione uma propriedade para visualizar os PRADs.</p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* PRADs Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {selectedProperty && <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {prads.map((prad) => {
             const StatusIcon = getStatusIcon(prad.status);
             const activeAlerts = countActiveAlerts(prad);

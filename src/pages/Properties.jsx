@@ -89,7 +89,9 @@ export default function Properties() {
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Property.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries(['properties']);
+      queryClient.invalidateQueries(['properties-owner']);
+      queryClient.invalidateQueries(['properties-consultor']);
+      queryClient.invalidateQueries(['consultor-properties']);
       toast.success('Propriedade removida com sucesso!');
     }
   });

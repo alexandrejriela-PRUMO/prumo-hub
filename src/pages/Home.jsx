@@ -31,6 +31,8 @@ export default function Home() {
     startDate: null,
     endDate: null
   });
+  const urlParams = new URLSearchParams(window.location.search);
+  const propertyIdFromUrl = urlParams.get('property_id');
 
   useEffect(() => {
     const loadUser = async () => {
@@ -45,8 +47,13 @@ export default function Home() {
   }, []);
 
   const { data: properties, isLoading: loadingProperties } = useQuery({
-    queryKey: ['properties', user?.email],
-    queryFn: () => base44.entities.Property.filter({ owner_email: user.email }),
+    queryKey: ['properties', user?.email, user?.user_type],
+    queryFn: () => {
+      if (user?.user_type === 'consultor') {
+        return base44.entities.Property.filter({ consultor_email: user.email });
+      }
+      return base44.entities.Property.filter({ owner_email: user.email });
+    },
     enabled: !!user?.email,
     initialData: []
   });

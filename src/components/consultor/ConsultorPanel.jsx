@@ -95,7 +95,7 @@ export default function ConsultorPanel({ user, onEnterProperty }) {
         <Link to={createPageUrl('Properties')}>
           <Button className="bg-emerald-600 hover:bg-emerald-700">
             <Plus className="w-4 h-4 mr-2" />
-            Nova Propriedade
+            Novo Cliente
           </Button>
         </Link>
       </div>

@@ -41,6 +41,8 @@ function getPropertyStatus(regularityScore, expiredCount, alertsCount) {
 }
 
 export default function ConsultorPanel({ user, onEnterProperty }) {
+  const [showNewClientForm, setShowNewClientForm] = useState(false);
+
   const { data: properties, isLoading: loadingProperties } = useQuery({
     queryKey: ['consultor-properties', user?.email],
     queryFn: () => base44.entities.Property.filter({ consultor_email: user.email }),

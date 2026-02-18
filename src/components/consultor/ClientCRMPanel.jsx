@@ -213,7 +213,21 @@ export default function ClientCRMPanel({ property, onClose }) {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
                             <span className="font-medium text-sm text-gray-900">{interaction.title}</span>
-                            <Badge variant="outline" className="text-xs flex-shrink-0">{interaction.type}</Badge>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <Badge variant="outline" className="text-xs">{interaction.type}</Badge>
+                              <button
+                                onClick={() => syncToGoogleCalendar(interaction)}
+                                disabled={syncingInteractionId === interaction.id}
+                                className="p-1 hover:bg-emerald-50 rounded text-emerald-600 disabled:opacity-50"
+                                title="Sincronizar com Google Calendar"
+                              >
+                                {syncingInteractionId === interaction.id ? (
+                                  <Loader className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <Share2 className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                            </div>
                           </div>
                           {interaction.description && <p className="text-xs text-gray-500 mt-0.5">{interaction.description}</p>}
                           {interaction.next_action && (

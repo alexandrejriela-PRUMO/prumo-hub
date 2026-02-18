@@ -74,7 +74,9 @@ export default function Properties() {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Property.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['properties']);
+      queryClient.invalidateQueries(['properties-owner']);
+      queryClient.invalidateQueries(['properties-consultor']);
+      queryClient.invalidateQueries(['consultor-properties']);
       setFormDialogOpen(false);
       setMapDialogOpen(false);
       setUsersDialogOpen(false);

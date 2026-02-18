@@ -34,6 +34,7 @@ import { format, parseISO } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import PropertyMap from '@/components/properties/PropertyMap';
+import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
 
 export default function Georeferencing() {
   const [user, setUser] = useState(null);

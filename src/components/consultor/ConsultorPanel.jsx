@@ -98,7 +98,7 @@ export default function ConsultorPanel({ user, onEnterProperty }) {
             Meus Clientes
           </h1>
           <p className="text-gray-500 mt-1">
-            Olá, {user?.full_name?.split(' ')[0]}! Você tem {properties.length} cliente(s) vinculado(s).
+            Olá, {user?.full_name?.split(' ')[0]}! Você tem {totalClients} cliente(s) vinculado(s).
           </p>
         </div>
         <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowNewClientForm(true)}>

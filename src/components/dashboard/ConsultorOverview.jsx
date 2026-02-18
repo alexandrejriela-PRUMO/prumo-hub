@@ -11,7 +11,7 @@ import { AlertTriangle, TrendingUp, Building2, Plus, BarChart3, Eye } from 'luci
 import NewClientForm from '../consultor/NewClientForm';
 
 export default function ConsultorOverview({ user, properties, isLoading }) {
-  const [showNewClientForm, setShowNewClientForm] = useState(false);
+
 
   const { data: licenses = [] } = useQuery({
     queryKey: ['licenses', user?.email],

@@ -65,8 +65,12 @@ export default function ConsultorPanel({ user, onEnterProperty }) {
     initialData: []
   });
 
+  // Separar clientes-apenas de propriedades reais
+  const clientOnlyRecords = useMemo(() => properties.filter(p => p.is_client_only), [properties]);
+  const realProperties = useMemo(() => properties.filter(p => !p.is_client_only), [properties]);
+
   const propertiesWithMetrics = useMemo(() => {
-    return properties.map(property => {
+    return realProperties.map(property => {
       const propLicenses = allLicenses.filter(l => l.property_id === property.id);
       const propAlerts = allAlerts.filter(a => a.property_id === property.id);
       const now = new Date();

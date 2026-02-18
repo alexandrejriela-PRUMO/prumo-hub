@@ -207,7 +207,7 @@ export default function Home() {
       {/* Property Card */}
       {isLoading ?
       <Skeleton className="h-64 rounded-2xl" /> :
-      <PropertyCard property={selectedProperty} isConsultor={isConsultor} />
+      <PropertyCard property={selectedProperty} />
       }
 
       {/* Quick Actions */}

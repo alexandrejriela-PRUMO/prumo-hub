@@ -38,6 +38,8 @@ import {
                     } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+const consultorNavItem = { name: 'Minhas Propriedades', page: 'Home', icon: Users };
+
 const navItems = [
   { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
   { name: 'Propriedades', page: 'Properties', icon: Building2 },
@@ -266,6 +268,29 @@ export default function Layout({ children, currentPageName }) {
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+            {/* Consultor shortcut */}
+            {user?.user_type === 'consultor' && (() => {
+              const isActive = currentPageName === consultorNavItem.page;
+              const Icon = consultorNavItem.icon;
+              return (
+                <Link
+                  key="consultor-home"
+                  to={createPageUrl(consultorNavItem.page)}
+                  onClick={() => setSidebarOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group mb-2 border border-emerald-700",
+                    isActive
+                      ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30"
+                      : "text-emerald-200 hover:bg-emerald-800/50 hover:text-white"
+                  )}
+                >
+                  <Icon className={cn("w-5 h-5", isActive ? "text-white" : "text-emerald-400 group-hover:text-amber-400")} />
+                  <span className="font-semibold text-sm">Minhas Propriedades</span>
+                  {isActive && <ChevronRight className="w-4 h-4 ml-auto" />}
+                </Link>
+              );
+            })()}
+
             {navItems.map((item, index) => {
               // Hide admin-only items for non-admin users
               if (item.adminOnly && user?.role !== 'admin') return null;

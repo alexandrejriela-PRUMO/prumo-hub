@@ -25,6 +25,8 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
   const initialActivities = property?.activities 
     ? (typeof property.activities === 'string' ? property.activities.split(',').map(a => a.trim()) : property.activities)
     : [];
+
+  const isConsultor = user?.user_type === 'consultor';
   
   const [formData, setFormData] = useState(property ? {
     ...property,
@@ -40,7 +42,9 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
     legal_reserve_hectares: '',
     main_activity: '',
     activities: [],
-    authorized_users: []
+    authorized_users: [],
+    client_name: '',
+    client_contact: '',
   });
 
   const [activityInput, setActivityInput] = useState('');
@@ -72,6 +76,7 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
       app_hectares: formData.app_hectares ? parseFloat(formData.app_hectares) : undefined,
       legal_reserve_hectares: formData.legal_reserve_hectares ? parseFloat(formData.legal_reserve_hectares) : undefined,
       activities: formData.activities.length > 0 ? formData.activities.join(', ') : '',
+      ...(isConsultor && !property ? { consultor_email: user.email } : {}),
     };
     
     onSubmit(submitData);
@@ -228,6 +233,31 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
           </div>
         )}
       </div>
+
+      {/* Campos exclusivos do consultor */}
+      {isConsultor && (
+        <div className="space-y-4 pt-4 border-t border-dashed border-emerald-200">
+          <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Dados do Cliente Responsável</p>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Nome do Cliente / Produtor</Label>
+              <Input
+                value={formData.client_name}
+                onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
+                placeholder="Ex: João da Silva"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Contato do Cliente</Label>
+              <Input
+                value={formData.client_contact}
+                onChange={(e) => setFormData({ ...formData, client_contact: e.target.value })}
+                placeholder="Telefone ou email"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-3 justify-end pt-4 border-t">
         <Button type="button" variant="outline" onClick={onCancel}>

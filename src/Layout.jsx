@@ -296,6 +296,8 @@ export default function Layout({ children, currentPageName }) {
             })}
 
             {navItems.map((item, index) => {
+              // Hide items for consultors (they have their own menu)
+              if (user?.user_type === 'consultor') return null;
               // Hide admin-only items for non-admin users
               if (item.adminOnly && user?.role !== 'admin') return null;
               // Hide consultor-restricted items for consultors

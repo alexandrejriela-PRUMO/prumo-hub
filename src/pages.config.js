@@ -56,6 +56,7 @@ import ChatRute from './pages/ChatRute';
 import ClimateMonitoring from './pages/ClimateMonitoring';
 import CommodityAnalysis from './pages/CommodityAnalysis';
 import ConsolidatedReports from './pages/ConsolidatedReports';
+import ConsultorClients from './pages/ConsultorClients';
 import Documents from './pages/Documents';
 import DocumentsHub from './pages/DocumentsHub';
 import DocumentsManager from './pages/DocumentsManager';
@@ -80,7 +81,6 @@ import Reports from './pages/Reports';
 import Requests from './pages/Requests';
 import Support from './pages/Support';
 import TaxIncentives from './pages/TaxIncentives';
-import ConsultorClients from './pages/ConsultorClients';
 import __Layout from './Layout.jsx';
 
 
@@ -94,6 +94,7 @@ export const PAGES = {
     "ClimateMonitoring": ClimateMonitoring,
     "CommodityAnalysis": CommodityAnalysis,
     "ConsolidatedReports": ConsolidatedReports,
+    "ConsultorClients": ConsultorClients,
     "Documents": Documents,
     "DocumentsHub": DocumentsHub,
     "DocumentsManager": DocumentsManager,
@@ -118,7 +119,6 @@ export const PAGES = {
     "Requests": Requests,
     "Support": Support,
     "TaxIncentives": TaxIncentives,
-    "ConsultorClients": ConsultorClients,
 }
 
 export const pagesConfig = {

@@ -32,7 +32,7 @@ export default function ConsultorPropertySelector({ properties, selectedProperty
               <SelectTrigger className="bg-white border-amber-300 focus:ring-amber-400">
                 <div className="flex items-center gap-2">
                   <Building2 className="w-4 h-4 text-amber-600 shrink-0" />
-                  <SelectValue placeholder="Escolha uma propriedade..." />
+                  <SelectValue placeholder="Selecione o seu Cliente..." />
                 </div>
               </SelectTrigger>
               <SelectContent>

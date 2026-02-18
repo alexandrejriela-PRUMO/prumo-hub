@@ -77,9 +77,11 @@ export default function PropertyCard({ property, isConsultor }) {
                 <MapPin className="w-7 h-7 text-white" />
               </div>
               <div>
-                <p className="text-emerald-400 text-xs uppercase tracking-wide mb-1">
-                  {isConsultor ? (isUrban ? 'Empreendimento' : 'Propriedade') : 'Propriedade'}
-                </p>
+                {isConsultor && (
+                  <p className="text-emerald-400 text-xs uppercase tracking-wide mb-1">
+                    {isUrban ? 'Empreendimento' : 'Propriedade'}
+                  </p>
+                )}
                 <h2 className="text-2xl font-bold text-white">{property.property_name}</h2>
                 <p className="text-emerald-300 flex items-center gap-2 mt-1">
                   <MapPin className="w-4 h-4" />

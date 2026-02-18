@@ -310,7 +310,9 @@ export default function PRAD() {
           })}
         </div>
 
-        {prads.length === 0 && (
+        }
+
+        {selectedProperty && prads.length === 0 && (
           <Card className="text-center py-12">
             <CardContent>
               <Sprout className="w-16 h-16 mx-auto text-gray-400 mb-4" />

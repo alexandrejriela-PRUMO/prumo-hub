@@ -161,10 +161,10 @@ export default function EnvironmentalAlerts() {
   });
 
   useEffect(() => {
-    if (properties.length > 0 && !selectedPropertyId) {
+    if (properties.length > 0 && !selectedPropertyId && !isConsultor) {
       setSelectedPropertyId(properties[0].id);
     }
-  }, [properties, selectedPropertyId]);
+  }, [properties, selectedPropertyId, isConsultor]);
 
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
   const propertyAlerts = allAlerts.filter(a => a.property_id === selectedPropertyId);

@@ -317,15 +317,15 @@ export default function RegularityReport() {
       </div>
 
       {/* Seletor de Propriedade */}
-      {properties.length > 1 && (
+      {(properties.length > 1 || isConsultor) && (
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <MapPinned className="w-5 h-5 text-emerald-600" />
-              <span className="text-gray-700 font-medium">Selecionar Cliente:</span>
+              <span className="text-gray-700 font-medium whitespace-nowrap">{isConsultor ? 'Selecionar Cliente:' : 'Propriedade:'}</span>
               <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
                 <SelectTrigger className="w-96">
-                  <SelectValue />
+                  <SelectValue placeholder="Selecione uma propriedade" />
                 </SelectTrigger>
                 <SelectContent>
                   {properties.map(prop => (

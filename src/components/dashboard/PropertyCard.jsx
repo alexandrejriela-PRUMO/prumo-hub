@@ -33,7 +33,9 @@ const parseCoordinates = (coordString) => {
   }
 };
 
-export default function PropertyCard({ property }) {
+export default function PropertyCard({ property, isConsultor }) {
+  const isUrban = property?.property_type === 'urbano';
+
   if (!property) {
     return (
       <Card className="bg-gradient-to-br from-emerald-900 to-emerald-950 border-0 overflow-hidden">
@@ -50,26 +52,16 @@ export default function PropertyCard({ property }) {
 
   const coordinates = parseCoordinates(property.coordinates);
 
-  const stats = [
-    { 
-      label: 'Área Total', 
-      value: `${property.total_hectares || 0} ha`, 
-      icon: Trees,
-      color: 'from-emerald-400 to-emerald-600'
-    },
-    { 
-      label: 'APP', 
-      value: `${property.app_hectares || 0} ha`, 
-      icon: Leaf,
-      color: 'from-teal-400 to-teal-600'
-    },
-    { 
-      label: 'Reserva Legal', 
-      value: `${property.legal_reserve_hectares || 0} ha`, 
-      icon: Trees,
-      color: 'from-green-400 to-green-600'
-    },
-  ];
+  const stats = isConsultor && isUrban
+    ? [
+        { label: 'Área Total', value: `${property.total_area_m2 || 0} m²`, icon: Trees, color: 'from-emerald-400 to-emerald-600' },
+        { label: 'Área Construída', value: `${property.built_area_m2 || 0} m²`, icon: Leaf, color: 'from-teal-400 to-teal-600' },
+      ]
+    : [
+        { label: 'Área Total', value: `${property.total_hectares || 0} ha`, icon: Trees, color: 'from-emerald-400 to-emerald-600' },
+        { label: 'APP', value: `${property.app_hectares || 0} ha`, icon: Leaf, color: 'from-teal-400 to-teal-600' },
+        { label: 'Reserva Legal', value: `${property.legal_reserve_hectares || 0} ha`, icon: Trees, color: 'from-green-400 to-green-600' },
+      ];
 
   return (
     <Card className="bg-gradient-to-br from-emerald-900 via-emerald-900 to-emerald-950 border-0 overflow-hidden relative">

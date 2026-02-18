@@ -82,7 +82,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
           </CardHeader>
           <CardContent>
             <div className="flex items-end justify-between">
-              <div className="text-3xl font-bold">{properties.length}</div>
+              <div className="text-3xl font-bold">{propertiesWithClients.length}</div>
               <Building2 className="w-8 h-8 text-emerald-600 opacity-20" />
             </div>
           </CardContent>

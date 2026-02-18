@@ -439,6 +439,16 @@ export default function Processes() {
         </Dialog>
       </div>
 
+      {isConsultor && !consultorPropertyId ? (
+        <Card className="border-dashed border-2 border-amber-200">
+          <CardContent className="py-16 text-center">
+            <Scale className="w-16 h-16 mx-auto text-amber-300 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-700">Selecione uma propriedade</h3>
+            <p className="text-gray-500 mt-2">Escolha a propriedade acima para visualizar os processos</p>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <Tabs defaultValue="Administrativo" className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-6">
           <TabsTrigger value="Administrativo" className="flex items-center gap-2">

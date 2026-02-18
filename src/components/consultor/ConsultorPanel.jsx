@@ -86,10 +86,10 @@ export default function ConsultorPanel({ user, onEnterProperty }) {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
             <Users className="w-8 h-8 text-emerald-600" />
-            Painel do Consultor
+            Meus Clientes
           </h1>
           <p className="text-gray-500 mt-1">
-            Olá, {user?.full_name?.split(' ')[0]}! Você tem {properties.length} propriedade(s) vinculada(s).
+            Olá, {user?.full_name?.split(' ')[0]}! Você tem {properties.length} cliente(s) vinculado(s).
           </p>
         </div>
         <Link to={createPageUrl('Properties')}>

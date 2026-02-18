@@ -139,7 +139,7 @@ export default function ConsultorClients() {
       {/* Clients Grid */}
       {!loadingClients && clients.length > 0 && (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {clientPropertiesCount.map(client => (
+          {clients.map(client => (
             <Card key={client.id} className="hover:shadow-lg transition-shadow flex flex-col">
               <CardContent className="p-5 flex-1 flex flex-col">
                 <div className="flex items-start gap-3 mb-4">

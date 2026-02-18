@@ -76,10 +76,10 @@ export default function Georeferencing() {
   });
 
   useEffect(() => {
-    if (properties.length > 0 && !selectedProperty) {
+    if (properties.length > 0 && !selectedProperty && !isConsultor) {
       setSelectedProperty(properties[0].id);
     }
-  }, [properties, selectedProperty]);
+  }, [properties, selectedProperty, isConsultor]);
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Georeferencing.create(data),

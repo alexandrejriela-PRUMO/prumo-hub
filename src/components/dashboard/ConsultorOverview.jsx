@@ -204,13 +204,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
         </div>
       </div>
 
-      {/* New Client Form Modal */}
-      {showNewClientForm && (
-        <NewClientForm
-          consultorEmail={user?.email}
-          onClose={() => setShowNewClientForm(false)}
-        />
-      )}
+
     </div>
   );
 }

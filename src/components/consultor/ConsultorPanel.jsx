@@ -175,18 +175,19 @@ export default function ConsultorPanel({ user, onEnterProperty }) {
       )}
 
       {/* Properties Grid */}
-      {loadingProperties ? (
+      {loadingProperties && (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map(i => <Skeleton key={i} className="h-52 rounded-xl" />)}
         </div>
-      ) : propertiesWithMetrics.length === 0 && clientOnlyRecords.length === 0 ? (
+      )}
+
+      {!loadingProperties && propertiesWithMetrics.length === 0 && clientOnlyRecords.length === 0 && (
         <Card className="border-dashed border-2 border-emerald-200">
           <CardContent className="py-16 text-center">
             <Building2 className="w-16 h-16 mx-auto text-emerald-300 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900">Nenhuma propriedade vinculada</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Nenhum cliente cadastrado</h3>
             <p className="text-gray-500 mt-2 max-w-md mx-auto">
-              Cadastre suas propriedades. Ao criar uma nova propriedade,
-              seu email será automaticamente vinculado como consultor responsável.
+              Cadastre seus clientes e propriedades para começar a gerenciar.
             </p>
             <Button className="mt-4 bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowNewClientForm(true)}>
               <Plus className="w-4 h-4 mr-2" />
@@ -194,7 +195,9 @@ export default function ConsultorPanel({ user, onEnterProperty }) {
             </Button>
           </CardContent>
         </Card>
-      ) : propertiesWithMetrics.length > 0 ? (
+      )}
+
+      {!loadingProperties && propertiesWithMetrics.length > 0 && (
         <div>
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
             <Building2 className="w-4 h-4" /> Propriedades e Empreendimentos ({propertiesWithMetrics.length})

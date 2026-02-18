@@ -91,8 +91,19 @@ export default function NewClientForm({ isOpen, onClose, consultorEmail, onSucce
     if (addProperty) {
       setStep(2);
     } else {
-      // Salvar só como propriedade sem área (criar com dados mínimos do cliente)
-      submitWithProperty(null);
+      // Salvar cliente sem propriedade vinculada - cria uma propriedade mínima com os dados do cliente
+      const clientName = clientType === 'pf' ? clientData.full_name : clientData.company_name;
+      createProperty.mutate({
+        owner_email: clientData.email,
+        property_name: `Cliente: ${clientName}`,
+        property_type: 'rural',
+        city: clientData.city,
+        state: clientData.state,
+        consultor_email: consultorEmail,
+        client_name: clientName,
+        client_contact: `${clientData.phone || ''}${clientData.phone && clientData.email ? ' | ' : ''}${clientData.email || ''}`,
+        authorized_users: JSON.stringify({ client_type: clientType, ...buildClientObject(), notes: clientData.notes }),
+      });
     }
   };
 

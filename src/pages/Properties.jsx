@@ -42,11 +42,22 @@ export default function Properties() {
     loadUser();
   }, []);
 
-  const { data: properties = [], isLoading } = useQuery({
-    queryKey: ['properties', user?.email],
+  const isConsultor = user?.user_type === 'consultor';
+
+  const { data: ownerProperties = [] } = useQuery({
+    queryKey: ['properties-owner', user?.email],
     queryFn: () => base44.entities.Property.filter({ owner_email: user.email }),
-    enabled: !!user?.email
+    enabled: !!user?.email && !isConsultor
   });
+
+  const { data: consultorProperties = [] } = useQuery({
+    queryKey: ['properties-consultor', user?.email],
+    queryFn: () => base44.entities.Property.filter({ consultor_email: user.email }),
+    enabled: !!user?.email && isConsultor
+  });
+
+  const properties = isConsultor ? consultorProperties : ownerProperties;
+  const isLoading = false;
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Property.create(data),

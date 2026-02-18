@@ -147,7 +147,7 @@ export default function ConsultorClients() {
                     <Users className="w-5 h-5 text-emerald-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-gray-900 truncate">{client.client_email?.split('@')[0]}</h3>
+                    <h3 className="font-bold text-gray-900 truncate">{client.client_name || client.client_email?.split('@')[0]}</h3>
                     <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
                       <Mail className="w-3 h-3" />
                       {client.client_email}

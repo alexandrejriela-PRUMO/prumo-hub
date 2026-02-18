@@ -26,9 +26,11 @@ import {
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import ProcessHistory from '../components/history/ProcessHistory';
+import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
 
 export default function Processes() {
   const [user, setUser] = useState(null);
+  const [consultorPropertyId, setConsultorPropertyId] = useState(null);
   const [showDialog, setShowDialog] = useState(false);
   const [editingProcess, setEditingProcess] = useState(null);
   const [formData, setFormData] = useState({

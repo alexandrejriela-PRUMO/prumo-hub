@@ -225,6 +225,12 @@ export default function ConsultorPanel({ user, onEnterProperty }) {
           ))}
         </div>
       )}
+      <NewClientForm
+        isOpen={showNewClientForm}
+        onClose={() => setShowNewClientForm(false)}
+        consultorEmail={user?.email}
+        onSuccess={() => setShowNewClientForm(false)}
+      />
     </div>
   );
 }

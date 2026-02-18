@@ -212,7 +212,7 @@ export default function ConsultorClients() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-emerald-800">
               <MessageCircle className="w-5 h-5" />
-              Gestão do Cliente — {crmProperty?.client_email?.split('@')[0] || crmProperty?.property_name}
+              Gestão do Cliente — {crmProperty?.client_name || crmProperty?.client_email?.split('@')[0]}
             </DialogTitle>
           </DialogHeader>
           {crmProperty && (

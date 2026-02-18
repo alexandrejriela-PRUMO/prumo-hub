@@ -106,7 +106,7 @@ export default function ConsultorPanel({ user, onEnterProperty }) {
           <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200">
             <CardContent className="p-4 text-center">
               <p className="text-3xl font-bold text-emerald-900">{properties.length}</p>
-              <p className="text-sm text-emerald-700 mt-1">Propriedades</p>
+              <p className="text-sm text-emerald-700 mt-1">Propriedades e Empreendimentos</p>
             </CardContent>
           </Card>
           <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">

@@ -108,12 +108,12 @@ export default function ConsultorPanel({ user, onEnterProperty }) {
       </div>
 
       {/* Summary Cards */}
-      {propertiesWithMetrics.length > 0 && (
+      {properties.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200">
             <CardContent className="p-4 text-center">
-              <p className="text-3xl font-bold text-emerald-900">{properties.length}</p>
-              <p className="text-sm text-emerald-700 mt-1">Propriedades e Empreendimentos</p>
+              <p className="text-3xl font-bold text-emerald-900">{propertiesWithMetrics.length}</p>
+              <p className="text-sm text-emerald-700 mt-1">Propriedades</p>
             </CardContent>
           </Card>
           <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">

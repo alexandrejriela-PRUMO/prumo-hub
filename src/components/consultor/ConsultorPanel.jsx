@@ -44,6 +44,7 @@ function getPropertyStatus(regularityScore, expiredCount, alertsCount) {
 
 export default function ConsultorPanel({ user, onEnterProperty }) {
   const [showNewClientForm, setShowNewClientForm] = useState(false);
+  const [crmProperty, setCrmProperty] = useState(null);
 
   const { data: properties, isLoading: loadingProperties } = useQuery({
     queryKey: ['consultor-properties', user?.email],

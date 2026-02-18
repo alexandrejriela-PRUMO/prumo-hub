@@ -181,6 +181,7 @@ export default function DocumentsHub() {
           onSuccess={handleUploadSuccess}
           onCancel={() => setShowUpload(false)}
           allowedTypes={['CAR', 'CCIR', 'Contrato', 'Relatório', 'Laudo', 'Validação', 'Certificado', 'Comprovante', 'Outro']}
+          properties={properties}
         />
       )}
 

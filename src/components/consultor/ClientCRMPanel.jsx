@@ -36,6 +36,7 @@ export default function ClientCRMPanel({ property, onClose }) {
   const [showInteractionForm, setShowInteractionForm] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [showServiceForm, setShowServiceForm] = useState(false);
+  const [syncingInteractionId, setSyncingInteractionId] = useState(null);
   const [newInteraction, setNewInteraction] = useState({ type: 'Ligação', title: '', description: '', next_action: '', next_action_date: '' });
   const [newTask, setNewTask] = useState({ title: '', due_date: '', priority: 'Média' });
   const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '' });

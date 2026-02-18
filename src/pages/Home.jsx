@@ -186,15 +186,30 @@ export default function Home() {
     });
   };
 
+  // Se é consultor E está na view de overview (sem property_id), mostra painel de consultoria
+  if (isConsultor && !isDashboardView) {
+    return <ConsultorOverview user={user} properties={properties} isLoading={isLoading} />;
+  }
+
   return (
   <div className="max-w-7xl mx-auto space-y-8">
-      {/* Header with Export */}
+      {/* Header with back button if viewing specific property */}
       <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Olá, {user?.full_name?.split(' ')[0] || 'Cliente'}! 👋
-          </h1>
-          <p className="text-gray-500 mt-1">Bem-vindo à sua área do cliente Santa Rute - Engenharia Rural</p>
+        <div className="flex items-center gap-3">
+          {isDashboardView && (
+            <button
+              onClick={() => window.location.href = '/'}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-600" />
+            </button>
+          )}
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Olá, {user?.full_name?.split(' ')[0] || 'Cliente'}! 👋
+            </h1>
+            <p className="text-gray-500 mt-1">Bem-vindo à sua área do cliente Santa Rute - Engenharia Rural</p>
+          </div>
         </div>
       </div>
 
@@ -224,8 +239,8 @@ export default function Home() {
 
       {/* Property Card */}
       {isLoading ?
-      <Skeleton className="h-64 rounded-2xl" /> :
-      <PropertyCard property={selectedProperty} />
+       <Skeleton className="h-64 rounded-2xl" /> :
+       <PropertyCard property={selectedProperty} />
       }
 
       {/* Quick Actions */}

@@ -57,8 +57,8 @@ export default function DocumentUpload({
 
       // Prepare document data
       const documentData = {
-        entity_type: entityType,
-        entity_id: entityId,
+        entity_type: selectedPropertyId ? 'Property' : entityType,
+        entity_id: selectedPropertyId || entityId,
         document_type: metadata.document_type,
         document_name: metadata.document_name,
         description: metadata.description,

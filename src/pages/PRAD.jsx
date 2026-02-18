@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 import PRADForm from '../components/prad/PRADForm';
 import PRADDetails from '../components/prad/PRADDetails';
 import PRADReportGenerator from '../components/prad/PRADReportGenerator';
+import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
 
 export default function PRAD() {
   const [user, setUser] = useState(null);

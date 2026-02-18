@@ -453,7 +453,7 @@ export default function Licenses() {
         </Card>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {licenses.map((license) => {
+          {(licenses || []).map((license) => {
             const statusInfo = getLicenseStatus(license);
             const StatusIcon = statusInfo.icon || Clock;
             return (

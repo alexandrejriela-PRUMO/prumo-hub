@@ -283,15 +283,17 @@ export default function Home() {
             />
           )}
 
-          {/* Faturas/Boletos */}
-          {isLoading ? (
-            <Skeleton className="h-80 rounded-xl" />
-          ) : (
-            <InvoicesSummary invoices={invoices} />
+          {/* Faturas/Boletos - apenas para não-consultores */}
+          {!isConsultor && (
+            isLoading ? (
+              <Skeleton className="h-80 rounded-xl" />
+            ) : (
+              <InvoicesSummary invoices={invoices} />
+            )
           )}
 
-          {/* Blog Preview */}
-          <BlogPreview />
+          {/* Blog Preview - apenas para não-consultores */}
+          {!isConsultor && <BlogPreview />}
         </TabsContent>
 
         {/* Analytics Tab */}

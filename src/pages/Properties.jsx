@@ -56,7 +56,7 @@ export default function Properties() {
     enabled: !!user?.email && isConsultor
   });
 
-  const properties = isConsultor ? consultorProperties : ownerProperties;
+  const properties = (isConsultor ? consultorProperties : ownerProperties).filter(p => !p.is_client_only);
   const isLoading = false;
 
   const createMutation = useMutation({

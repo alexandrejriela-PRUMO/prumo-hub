@@ -102,7 +102,18 @@ export default function Home() {
     }
   }, [properties, selectedPropertyId]);
 
+  // Se vem com property_id da URL, usa esse; senão, auto-seleciona o primeiro
+  useEffect(() => {
+    if (propertyIdFromUrl) {
+      setSelectedPropertyId(propertyIdFromUrl);
+    } else if (properties.length > 0 && !selectedPropertyId) {
+      setSelectedPropertyId(properties[0].id);
+    }
+  }, [properties, propertyIdFromUrl, selectedPropertyId]);
+
   const selectedProperty = properties.find((p) => p.id === selectedPropertyId) || properties[0];
+  const isConsultor = user?.user_type === 'consultor';
+  const isDashboardView = !!propertyIdFromUrl; // Se tem property_id na URL, é o dashboard detalhado
   
   // Apply filters
   const filteredData = useMemo(() => {

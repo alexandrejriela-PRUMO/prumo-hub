@@ -86,6 +86,7 @@ export default function ConsultorPanel({ user, onEnterProperty }) {
   const avgRegularity = propertiesWithMetrics.length > 0
     ? Math.round(propertiesWithMetrics.reduce((acc, p) => acc + p.regularityScore, 0) / propertiesWithMetrics.length)
     : 0;
+  const totalClients = properties.length;
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">

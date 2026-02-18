@@ -63,27 +63,33 @@ export default function ConsultorClients() {
     loadUser();
   }, []);
 
-  const { data: clients = [], isLoading: loadingClients } = useQuery({
-    queryKey: ['consultor-clients', user?.email],
-    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: user.email }),
-    enabled: !!user?.email,
-    initialData: []
-  });
-
-  const { data: clientProperties = [] } = useQuery({
-    queryKey: ['client-properties', user?.email],
+  const { data: properties = [], isLoading: loadingClients } = useQuery({
+    queryKey: ['consultor-properties', user?.email],
     queryFn: () => base44.entities.Property.filter({ consultor_email: user.email }),
     enabled: !!user?.email,
     initialData: []
   });
 
-  // Conta propriedades por cliente
-  const clientPropertiesCount = useMemo(() => {
-    return clients.map(client => ({
-      ...client,
-      propertyCount: clientProperties.filter(p => p.owner_email === client.client_email).length
-    }));
-  }, [clients, clientProperties]);
+  // Extrai clientes únicos das propriedades
+  const clients = useMemo(() => {
+    const clientMap = new Map();
+    properties.forEach(prop => {
+      const key = prop.owner_email;
+      if (!clientMap.has(key)) {
+        clientMap.set(key, {
+          id: prop.owner_email,
+          client_email: prop.owner_email,
+          client_name: prop.client_name,
+          status: 'Ativo',
+          propertyCount: 0,
+          properties: []
+        });
+      }
+      clientMap.get(key).propertyCount++;
+      clientMap.get(key).properties.push(prop);
+    });
+    return Array.from(clientMap.values());
+  }, [properties]);
 
 
 

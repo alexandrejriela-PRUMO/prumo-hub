@@ -419,6 +419,7 @@ export default function DocumentsHub() {
           )}
         </CardContent>
       </Card>
+      </> }
     </div>
   );
 }

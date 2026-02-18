@@ -272,28 +272,28 @@ export default function Layout({ children, currentPageName }) {
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-            {/* Consultor shortcut */}
-            {user?.user_type === 'consultor' && (() => {
-              const isActive = currentPageName === consultorNavItem.page;
-              const Icon = consultorNavItem.icon;
+            {/* Consultor menu items */}
+            {user?.user_type === 'consultor' && consultorNavItems.map((item) => {
+              const isActive = currentPageName === item.page;
+              const Icon = item.icon;
               return (
                 <Link
-                  key="consultor-home"
-                  to={createPageUrl(consultorNavItem.page)}
+                  key={item.page}
+                  to={createPageUrl(item.page)}
                   onClick={() => setSidebarOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group mb-2 border border-emerald-700",
+                    "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
                     isActive
                       ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30"
                       : "text-emerald-200 hover:bg-emerald-800/50 hover:text-white"
                   )}
                 >
                   <Icon className={cn("w-5 h-5", isActive ? "text-white" : "text-emerald-400 group-hover:text-amber-400")} />
-                  <span className="font-semibold text-sm">Meus Clientes</span>
+                  <span className="font-semibold text-sm">{item.name}</span>
                   {isActive && <ChevronRight className="w-4 h-4 ml-auto" />}
                 </Link>
               );
-            })()}
+            })}
 
             {navItems.map((item, index) => {
               // Hide admin-only items for non-admin users

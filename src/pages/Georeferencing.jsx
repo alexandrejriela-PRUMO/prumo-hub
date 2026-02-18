@@ -158,7 +158,7 @@ export default function Georeferencing() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Georreferenciamento</h1>
-          <p className="text-gray-500 mt-1">Gestão completa do georreferenciamento das propriedades</p>
+          <p className="text-gray-500 mt-1">Gestão completa do georreferenciamento dos clientes</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -185,7 +185,7 @@ export default function Georeferencing() {
       {properties.length > 1 && (
         <Card>
           <CardContent className="p-4">
-            <Label>Selecione a Propriedade</Label>
+            <Label>Selecione o Cliente</Label>
             <Select value={selectedProperty} onValueChange={setSelectedProperty}>
               <SelectTrigger className="mt-2">
                 <SelectValue />
@@ -345,7 +345,7 @@ function GeoreferencingForm({ properties, user, onSubmit, isLoading }) {
     <form onSubmit={handleSubmit} className="space-y-4 mt-4">
       <div className="grid md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label>Propriedade *</Label>
+          <Label>Cliente *</Label>
           <Select value={formData.property_id} onValueChange={(v) => setFormData({ ...formData, property_id: v })}>
             <SelectTrigger>
               <SelectValue />

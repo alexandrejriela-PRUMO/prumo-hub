@@ -146,13 +146,13 @@ export default function ReportBuilder({ user, onGenerate, editingReport, onCance
 
         <div className="grid md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Filtrar por Propriedade</label>
+            <label className="text-sm font-medium">Filtrar por Cliente</label>
             <select
               value={config.propertyId}
               onChange={(e) => setConfig({ ...config, propertyId: e.target.value })}
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
-              <option value="">Todas as propriedades</option>
+              <option value="">Todos os clientes</option>
               {properties.map((property) => (
                 <option key={property.id} value={property.id}>
                   {property.property_name}

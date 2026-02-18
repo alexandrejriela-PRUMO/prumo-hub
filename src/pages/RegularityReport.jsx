@@ -272,7 +272,7 @@ export default function RegularityReport() {
       icon: CheckCircle2, 
       bg: 'bg-green-50', 
       text: 'text-green-700',
-      description: 'Sua propriedade está em conformidade com as normas ambientais.'
+      description: 'O cliente está em conformidade com as normas ambientais.'
     };
     if (percentage >= 50) return { 
       color: 'yellow', 
@@ -280,7 +280,7 @@ export default function RegularityReport() {
       icon: AlertTriangle, 
       bg: 'bg-yellow-50', 
       text: 'text-yellow-700',
-      description: 'Existem pendências que requerem sua atenção para evitar irregularidades.'
+      description: 'Existem pendências que requerem atenção para evitar irregularidades.'
     };
     return { 
       color: 'red', 
@@ -304,7 +304,7 @@ export default function RegularityReport() {
             <TrendingUp className="w-8 h-8 text-emerald-600" />
             Relatório de Regularidade Ambiental
           </h1>
-          <p className="text-gray-500 mt-1">Análise completa da conformidade da propriedade</p>
+          <p className="text-gray-500 mt-1">Análise completa da conformidade do cliente</p>
         </div>
         <Button variant="outline" className="gap-2">
           <Download className="w-4 h-4" />
@@ -318,7 +318,7 @@ export default function RegularityReport() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <MapPinned className="w-5 h-5 text-emerald-600" />
-              <span className="text-gray-700 font-medium">Selecionar Propriedade:</span>
+              <span className="text-gray-700 font-medium">Selecionar Cliente:</span>
               <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
                 <SelectTrigger className="w-96">
                   <SelectValue />

@@ -121,7 +121,7 @@ export default function ClimateMonitoring() {
           <Cloud className="w-8 h-8 text-blue-600" />
           Monitoramento Climático e Previsões
         </h1>
-        <p className="text-gray-600">Acompanhe dados meteorológicos em tempo real por localização na propriedade</p>
+        <p className="text-gray-600">Acompanhe dados meteorológicos em tempo real por localização do cliente</p>
       </div>
 
       {/* Info Card */}
@@ -138,7 +138,7 @@ export default function ClimateMonitoring() {
       {properties.length > 0 && (
         <Card>
           <CardContent className="pt-6">
-            <label className="text-sm font-medium text-gray-700 mb-2 block">Selecione a Propriedade</label>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">Selecione o Cliente</label>
             <select
               value={currentProperty?.id || ''}
               onChange={(e) => {

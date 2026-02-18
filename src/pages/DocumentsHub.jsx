@@ -21,12 +21,14 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import DocumentUpload from '../components/documents/DocumentUpload';
 import DocumentViewer from '../components/documents/DocumentViewer';
+import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
 
 export default function DocumentsHub() {
   const [user, setUser] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedPropertyId, setSelectedPropertyId] = useState(null);
   const [filters, setFilters] = useState({
     entityType: 'all',
     documentType: 'all',

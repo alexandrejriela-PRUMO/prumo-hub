@@ -408,6 +408,25 @@ export default function Processes() {
         />
       )}
 
+      {/* Produtor Property Selector */}
+      {!isConsultor && properties.length > 1 && (
+        <div className="flex items-center gap-3 p-4 bg-white rounded-xl border border-emerald-100 shadow-sm">
+          <span className="text-gray-700 font-medium whitespace-nowrap">Propriedade:</span>
+          <Select value={formData.property_id} onValueChange={(v) => setFormData({ ...formData, property_id: v })}>
+            <SelectTrigger className="w-full sm:w-96 bg-emerald-50 border-emerald-200">
+              <SelectValue placeholder="Selecione uma propriedade" />
+            </SelectTrigger>
+            <SelectContent>
+              {properties.map(prop => (
+                <SelectItem key={prop.id} value={prop.id}>
+                  {prop.property_name} - {prop.city || 'N/A'}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">

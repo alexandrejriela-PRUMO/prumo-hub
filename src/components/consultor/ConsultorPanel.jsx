@@ -261,19 +261,30 @@ export default function ConsultorPanel({ user, onEnterProperty }) {
                   </div>
                 </div>
 
-                <Button
-                  onClick={() => onEnterProperty(property)}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700"
-                  size="sm"
-                >
-                  Acessar Dashboard
-                  <ArrowRight className="w-3 h-3 ml-1" />
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => setCrmProperty(property)}
+                    variant="outline"
+                    className="flex-shrink-0 border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                    size="sm"
+                  >
+                    <MessageCircle className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    onClick={() => onEnterProperty(property)}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                    size="sm"
+                  >
+                    Acessar Dashboard
+                    <ArrowRight className="w-3 h-3 ml-1" />
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
+          </div>
         </div>
-      )}
+      ) : null}
       <NewClientForm
         isOpen={showNewClientForm}
         onClose={() => setShowNewClientForm(false)}

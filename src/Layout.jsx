@@ -38,7 +38,7 @@ import {
                     } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const consultorNavItem = { name: 'Minhas Propriedades', page: 'Home', icon: Users };
+const consultorNavItem = { name: 'Meus Clientes', page: 'Home', icon: Users };
 
 const navItems = [
   { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },

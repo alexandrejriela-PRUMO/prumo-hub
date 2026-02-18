@@ -1,14 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MapPin, AlertTriangle, FileX, TrendingUp, ArrowRight, Plus, Building2, Users, UserPlus } from 'lucide-react';
+import { MapPin, AlertTriangle, FileX, TrendingUp, ArrowRight, Plus, Building2, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import InviteProdutorDialog from './InviteProdutorDialog';
 
 function calcRegularity(licenses) {
   if (!licenses || licenses.length === 0) return 30;

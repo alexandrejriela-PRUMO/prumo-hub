@@ -371,7 +371,7 @@ export default function EnvironmentalAlerts() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <MapPinned className="w-5 h-5 text-emerald-600" />
-              <span className="text-gray-700 font-medium">Propriedade:</span>
+              <span className="text-gray-700 font-medium">Propriedade ou Empreendimento:</span>
               <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
                 <SelectTrigger className="w-96">
                   <SelectValue />

@@ -185,7 +185,7 @@ export default function Georeferencing() {
       {properties.length > 1 && (
         <Card>
           <CardContent className="p-4">
-            <Label>Selecione o Cliente</Label>
+            <Label>Propriedade ou Empreendimento</Label>
             <Select value={selectedProperty} onValueChange={setSelectedProperty}>
               <SelectTrigger className="mt-2">
                 <SelectValue />

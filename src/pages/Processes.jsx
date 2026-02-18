@@ -411,7 +411,7 @@ export default function Processes() {
       {/* Produtor Property Selector */}
       {!isConsultor && properties.length > 1 && (
         <div className="flex items-center gap-3 p-4 bg-white rounded-xl border border-emerald-100 shadow-sm">
-          <span className="text-gray-700 font-medium whitespace-nowrap">Propriedade:</span>
+          <span className="text-gray-700 font-medium whitespace-nowrap">Propriedade ou Empreendimento:</span>
           <Select value={formData.property_id} onValueChange={(v) => setFormData({ ...formData, property_id: v })}>
             <SelectTrigger className="w-full sm:w-96 bg-emerald-50 border-emerald-200">
               <SelectValue placeholder="Selecione uma propriedade" />

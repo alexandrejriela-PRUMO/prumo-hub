@@ -192,8 +192,8 @@ export default function Properties() {
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Propriedades</h1>
-          <p className="text-gray-500 mt-1">Gerencie suas propriedades rurais</p>
+          <h1 className="text-3xl font-bold text-gray-900">Propriedades e Empreendimentos</h1>
+          <p className="text-gray-500 mt-1">Gerencie suas propriedades rurais e empreendimentos</p>
         </div>
         <Button 
           onClick={() => {
@@ -203,7 +203,7 @@ export default function Properties() {
           className="bg-emerald-600 hover:bg-emerald-700"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Nova Propriedade
+          Nova Propriedade ou Empreendimento
         </Button>
       </div>
 

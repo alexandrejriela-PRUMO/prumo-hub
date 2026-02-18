@@ -301,6 +301,16 @@ export default function EnvironmentalAlerts() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      {/* Consultor Selector */}
+      {isConsultor && (
+        <ConsultorPropertySelector
+          properties={properties}
+          selectedPropertyId={selectedPropertyId}
+          onSelect={setSelectedPropertyId}
+          isLoading={propertiesLoading}
+        />
+      )}
+
       {/* Info Card */}
       <Card className="bg-orange-50 border-orange-200">
         <CardContent className="pt-6">

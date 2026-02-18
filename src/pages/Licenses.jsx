@@ -429,7 +429,15 @@ export default function Licenses() {
       </div>
 
       {/* Licenses Grid */}
-      {isLoading ? (
+      {isConsultor && !consultorPropertyId ? (
+        <Card className="border-dashed border-2 border-amber-200">
+          <CardContent className="py-16 text-center">
+            <FileCheck className="w-16 h-16 mx-auto text-amber-300 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-700">Selecione uma propriedade</h3>
+            <p className="text-gray-500 mt-2">Escolha a propriedade acima para visualizar as licenças</p>
+          </CardContent>
+        </Card>
+      ) : isLoading ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-48 rounded-xl" />

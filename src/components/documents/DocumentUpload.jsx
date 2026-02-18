@@ -115,6 +115,24 @@ export default function DocumentUpload({
               )}
             </div>
 
+            {/* Property Selector */}
+            {properties.length > 0 && (
+              <div>
+                <Label>Propriedade Vinculada</Label>
+                <select
+                  value={selectedPropertyId}
+                  onChange={(e) => setSelectedPropertyId(e.target.value)}
+                  disabled={uploading}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 mt-1"
+                >
+                  <option value="">Nenhuma (Documento Geral)</option>
+                  {properties.map(p => (
+                    <option key={p.id} value={p.id}>{p.property_name} {p.city ? `— ${p.city}/${p.state}` : ''}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {/* Document Type */}
             <div>
               <Label>Tipo de Documento *</Label>

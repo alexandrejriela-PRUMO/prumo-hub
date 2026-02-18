@@ -117,6 +117,7 @@ export default function DocumentsHub() {
       doc.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       doc.document_type?.toLowerCase().includes(searchTerm.toLowerCase());
 
+    const propertyMatch = !selectedPropertyId || doc.entity_id === selectedPropertyId || doc.property_id === selectedPropertyId;
     const entityMatch = filters.entityType === 'all' || doc.entity_type === filters.entityType;
     const typeMatch = filters.documentType === 'all' || doc.document_type === filters.documentType;
     

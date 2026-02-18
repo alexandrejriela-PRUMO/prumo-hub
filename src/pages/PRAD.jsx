@@ -174,7 +174,7 @@ export default function PRAD() {
         </Card>
 
         {/* Property Selector */}
-        {properties.length > 1 && (
+        {!isConsultor && properties.length > 1 && (
           <Card className="mb-6">
             <CardContent className="pt-6">
               <label className="text-sm font-medium text-gray-700 mb-2 block">Propriedade</label>

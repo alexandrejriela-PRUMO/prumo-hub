@@ -70,7 +70,7 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid md:grid-cols-2 gap-4">
         <div className="space-y-2 md:col-span-2">
-          <Label>Nome da Propriedade *</Label>
+          <Label>Nome da Propriedade ou Empreendimento *</Label>
           <Input
             value={formData.property_name}
             onChange={(e) => setFormData({ ...formData, property_name: e.target.value })}

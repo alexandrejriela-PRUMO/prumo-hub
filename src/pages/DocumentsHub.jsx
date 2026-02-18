@@ -169,6 +169,29 @@ export default function DocumentsHub() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      {/* Consultor Property Selector */}
+      {isConsultor && (
+        <ConsultorPropertySelector
+          properties={properties}
+          selectedPropertyId={selectedPropertyId}
+          onSelect={setSelectedPropertyId}
+          isLoading={propertiesLoading}
+        />
+      )}
+
+      {/* Bloqueio para consultor sem propriedade selecionada */}
+      {isConsultor && !selectedPropertyId ? (
+        <Card className="text-center py-16 border-dashed border-2 border-amber-200">
+          <CardContent>
+            <FileText className="w-16 h-16 mx-auto text-amber-300 mb-4" />
+            <p className="text-gray-600">Selecione uma propriedade para visualizar os documentos.</p>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {/* Conteúdo principal - oculto para consultor sem propriedade */}
+      {(!isConsultor || selectedPropertyId) && <>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

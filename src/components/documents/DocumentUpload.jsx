@@ -13,10 +13,12 @@ export default function DocumentUpload({
   entityId, 
   onSuccess, 
   onCancel,
-  allowedTypes = ['CAR', 'CCIR', 'Georreferenciamento', 'Licença', 'Contrato', 'Relatório', 'Laudo', 'Outro']
+  allowedTypes = ['CAR', 'CCIR', 'Georreferenciamento', 'Licença', 'Contrato', 'Relatório', 'Laudo', 'Outro'],
+  properties = []
 }) {
   const [uploading, setUploading] = useState(false);
   const [file, setFile] = useState(null);
+  const [selectedPropertyId, setSelectedPropertyId] = useState(entityId || '');
   const [metadata, setMetadata] = useState({
     document_type: '',
     document_name: '',

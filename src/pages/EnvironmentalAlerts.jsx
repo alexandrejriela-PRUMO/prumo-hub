@@ -355,8 +355,18 @@ export default function EnvironmentalAlerts() {
         </Button>
       </div>
 
+      {isConsultor && !selectedPropertyId && (
+        <Card className="border-dashed border-2 border-amber-200">
+          <CardContent className="py-16 text-center">
+            <AlertTriangle className="w-16 h-16 mx-auto text-amber-300 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-700">Selecione uma propriedade</h3>
+            <p className="text-gray-500 mt-2">Escolha a propriedade acima para visualizar os alertas</p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Property Selector */}
-      {properties.length > 1 && (
+      {!isConsultor && properties.length > 1 && (
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">

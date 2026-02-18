@@ -97,96 +97,30 @@ export default function ConsultorClients() {
             Meus Clientes
           </h1>
           <p className="text-gray-500 mt-1">
-            Olá, {user?.full_name?.split(' ')[0]}! Você tem {totalClients} cliente(s) vinculado(s).
+            Olá, {user?.full_name?.split(' ')[0]}! Você tem {clients.length} cliente(s) vinculado(s).
           </p>
         </div>
         <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowNewClientForm(true)}>
           <Plus className="w-4 h-4 mr-2" />
-          Novo Cliente
+          + Novo Cliente
         </Button>
       </div>
 
-      {/* Summary Cards */}
-      {properties.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200">
-            <CardContent className="p-4 text-center">
-              <p className="text-3xl font-bold text-emerald-900">{propertiesWithMetrics.length}</p>
-              <p className="text-sm text-emerald-700 mt-1">Propriedades</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
-            <CardContent className="p-4 text-center">
-              <p className="text-3xl font-bold text-red-900">{criticalCount}</p>
-              <p className="text-sm text-red-700 mt-1">Críticas</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
-            <CardContent className="p-4 text-center">
-              <p className="text-3xl font-bold text-amber-900">{attentionCount}</p>
-              <p className="text-sm text-amber-700 mt-1">Em Atenção</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-            <CardContent className="p-4 text-center">
-              <p className="text-3xl font-bold text-blue-900">{avgRegularity}%</p>
-              <p className="text-sm text-blue-700 mt-1">Regularidade Média</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Clientes sem propriedade */}
-      {clientOnlyRecords.length > 0 && (
-        <div>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-            <Users className="w-4 h-4" /> Clientes sem propriedade vinculada ({clientOnlyRecords.length})
-          </h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {clientOnlyRecords.map(p => (
-              <Card key={p.id} className="border-dashed border-gray-200 hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-800 truncate">{p.client_name || p.property_name}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{p.owner_email}</p>
-                      {(p.city || p.state) && (
-                        <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />{p.city || ''}{p.city && p.state ? '/' : ''}{p.state || ''}
-                        </p>
-                      )}
-                    </div>
-                    <Badge variant="outline" className="text-xs ml-2">Sem propriedade</Badge>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full mt-3 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
-                    onClick={() => setCrmProperty(p)}
-                  >
-                    <MessageCircle className="w-3 h-3 mr-1" /> Ver CRM
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Properties Grid */}
-      {loadingProperties && (
+      {/* Loading State */}
+      {loadingClients && (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map(i => <Skeleton key={i} className="h-52 rounded-xl" />)}
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-64 rounded-xl" />)}
         </div>
       )}
 
-      {!loadingProperties && propertiesWithMetrics.length === 0 && clientOnlyRecords.length === 0 && (
+      {/* Empty State */}
+      {!loadingClients && clients.length === 0 && (
         <Card className="border-dashed border-2 border-emerald-200">
           <CardContent className="py-16 text-center">
-            <Building2 className="w-16 h-16 mx-auto text-emerald-300 mb-4" />
+            <Users className="w-16 h-16 mx-auto text-emerald-300 mb-4" />
             <h3 className="text-lg font-semibold text-gray-900">Nenhum cliente cadastrado</h3>
             <p className="text-gray-500 mt-2 max-w-md mx-auto">
-              Cadastre seus clientes e propriedades para começar a gerenciar.
+              Cadastre seus primeiro cliente para começar a gerenciar seu relacionamento.
             </p>
             <Button className="mt-4 bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowNewClientForm(true)}>
               <Plus className="w-4 h-4 mr-2" />
@@ -196,95 +130,67 @@ export default function ConsultorClients() {
         </Card>
       )}
 
-      {!loadingProperties && propertiesWithMetrics.length > 0 && (
-        <div>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-            <Building2 className="w-4 h-4" /> Propriedades e Empreendimentos ({propertiesWithMetrics.length})
-          </h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {propertiesWithMetrics.map(property => (
-            <Card
-              key={property.id}
-              className={`hover:shadow-lg transition-shadow ${property.status.borderLeft}`}
-            >
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-gray-900 truncate">{property.property_name}</h3>
-                    {property.client_name && (
-                      <p className="text-xs text-gray-500 mt-0.5">Cliente: {property.client_name}</p>
-                    )}
-                    <div className="flex items-center gap-1 mt-1">
-                      <MapPin className="w-3 h-3 text-gray-400" />
-                      <span className="text-xs text-gray-500">
-                        {property.city || '—'}/{property.state || '—'}
-                      </span>
-                    </div>
+      {/* Clients Grid */}
+      {!loadingClients && clients.length > 0 && (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {clientPropertiesCount.map(client => (
+            <Card key={client.id} className="hover:shadow-lg transition-shadow flex flex-col">
+              <CardContent className="p-5 flex-1 flex flex-col">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                    <Users className="w-5 h-5 text-emerald-600" />
                   </div>
-                  <Badge className={`${property.status.badgeColor} border ml-2 flex-shrink-0 text-xs`}>
-                    {property.status.label}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-gray-900 truncate">{client.client_email?.split('@')[0]}</h3>
+                    <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                      <Mail className="w-3 h-3" />
+                      {client.client_email}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Status Badge */}
+                <div className="mb-4">
+                  <Badge className={`
+                    ${client.status === 'Ativo' ? 'bg-emerald-100 text-emerald-800' :
+                      client.status === 'Em Negociação' ? 'bg-blue-100 text-blue-800' :
+                      client.status === 'Prospect' ? 'bg-amber-100 text-amber-800' :
+                      'bg-gray-100 text-gray-800'}
+                  `}>
+                    {client.status}
                   </Badge>
                 </div>
 
-                {/* Regularity Bar */}
-                <div className="space-y-1 mb-3">
+                {/* Properties Count */}
+                <div className="bg-gray-50 rounded-lg p-3 mb-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600 flex items-center gap-1">
-                      <TrendingUp className="w-3 h-3" />
-                      Regularidade
-                    </span>
-                    <span className={`text-sm font-bold ${
-                      property.regularityScore >= 80 ? 'text-green-600' :
-                      property.regularityScore >= 50 ? 'text-amber-600' : 'text-red-600'
-                    }`}>
-                      {property.regularityScore}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-1.5">
-                    <div
-                      className={`h-1.5 rounded-full transition-all ${
-                        property.regularityScore >= 80 ? 'bg-green-500' :
-                        property.regularityScore >= 50 ? 'bg-amber-500' : 'bg-red-500'
-                      }`}
-                      style={{ width: `${property.regularityScore}%` }}
-                    />
+                    <span className="text-xs text-gray-600">Propriedades vinculadas</span>
+                    <span className="text-lg font-bold text-emerald-700">{client.propertyCount}</span>
                   </div>
                 </div>
 
-                {/* Metrics */}
-                <div className="flex gap-4 mb-4">
-                  <div className="flex items-center gap-1">
-                    <FileX className="w-3 h-3 text-red-500" />
-                    <span className="text-xs text-gray-600">{property.expiredLicensesCount} lic. vencida(s)</span>
+                {/* Financial Summary */}
+                {client.services && client.services.length > 0 && (
+                  <div className="bg-emerald-50 rounded-lg p-3 mb-4 text-sm">
+                    <div className="font-semibold text-emerald-900 mb-2">Serviços Ativos</div>
+                    <div className="text-xs text-emerald-700">
+                      {client.services.filter(s => s.status === 'Contratado' || s.status === 'Em Andamento').length} de {client.services.length}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3 text-amber-500" />
-                    <span className="text-xs text-gray-600">{property.activeAlertsCount} alerta(s)</span>
-                  </div>
-                </div>
+                )}
 
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => setCrmProperty(property)}
-                    variant="outline"
-                    className="flex-shrink-0 border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-                    size="sm"
-                  >
-                    <MessageCircle className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    onClick={() => handleAccessProperty(property)}
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-700"
-                    size="sm"
-                  >
-                    Acessar Dashboard
-                    <ArrowRight className="w-3 h-3 ml-1" />
-                  </Button>
-                </div>
+                {/* CRM Button */}
+                <Button
+                  onClick={() => setCrmProperty(client)}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 mt-auto"
+                  size="sm"
+                >
+                  <MessageCircle className="w-3 h-3 mr-2" />
+                  Ver CRM & Financeiro
+                </Button>
               </CardContent>
             </Card>
           ))}
-          </div>
         </div>
       )}
       <NewClientForm

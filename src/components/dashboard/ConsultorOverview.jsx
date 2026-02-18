@@ -7,8 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, TrendingUp, Building2, Plus, BarChart3, Eye } from 'lucide-react';
-import NewClientForm from '../consultor/NewClientForm';
+import { AlertTriangle, TrendingUp, Building2, BarChart3, Eye } from 'lucide-react';
 
 export default function ConsultorOverview({ user, properties, isLoading }) {
 

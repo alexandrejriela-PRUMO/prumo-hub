@@ -55,7 +55,7 @@ export default function ConsultorPropertySelector({ properties, selectedProperty
           </div>
         </div>
         {!selectedPropertyId && (
-          <p className="text-xs text-amber-600 mt-2">⚠ Selecione uma propriedade para visualizar as informações</p>
+          <p className="text-xs text-amber-600 mt-2">⚠ Selecione o seu Cliente para visualizar as informações</p>
         )}
       </CardContent>
     </Card>

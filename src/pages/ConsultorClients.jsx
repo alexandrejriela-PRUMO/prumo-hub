@@ -77,24 +77,13 @@ export default function ConsultorClients() {
     initialData: []
   });
 
-  const propertiesWithMetrics = useMemo(() => {
-    return realProperties.map(property => {
-      const propLicenses = allLicenses.filter(l => l.property_id === property.id);
-      const propAlerts = allAlerts.filter(a => a.property_id === property.id);
-      const now = new Date();
-      const expiredLicenses = propLicenses.filter(l => l.expiry_date && new Date(l.expiry_date) <= now);
-      const regularityScore = calcRegularity(propLicenses);
-      const status = getPropertyStatus(regularityScore, expiredLicenses.length, propAlerts.length);
-      return { ...property, regularityScore, expiredLicensesCount: expiredLicenses.length, activeAlertsCount: propAlerts.length, status };
-    });
-  }, [properties, allLicenses, allAlerts]);
-
-  const criticalCount = propertiesWithMetrics.filter(p => p.status.label === 'Crítico').length;
-  const attentionCount = propertiesWithMetrics.filter(p => p.status.label === 'Atenção').length;
-  const avgRegularity = propertiesWithMetrics.length > 0
-    ? Math.round(propertiesWithMetrics.reduce((acc, p) => acc + p.regularityScore, 0) / propertiesWithMetrics.length)
-    : 0;
-  const totalClients = properties.length;
+  // Conta propriedades por cliente
+  const clientPropertiesCount = useMemo(() => {
+    return clients.map(client => ({
+      ...client,
+      propertyCount: clientProperties.filter(p => p.owner_email === client.client_email).length
+    }));
+  }, [clients, clientProperties]);
 
   const handleAccessProperty = (property) => {
     // Navegar para o Dashboard com a propriedade selecionada

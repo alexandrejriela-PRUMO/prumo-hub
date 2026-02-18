@@ -63,28 +63,19 @@ export default function ConsultorClients() {
     loadUser();
   }, []);
 
-  const { data: properties, isLoading: loadingProperties } = useQuery({
-    queryKey: ['consultor-properties', user?.email],
-    queryFn: () => base44.entities.Property.filter({ consultor_email: user.email }),
+  const { data: clients = [], isLoading: loadingClients } = useQuery({
+    queryKey: ['consultor-clients', user?.email],
+    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: user.email }),
     enabled: !!user?.email,
     initialData: []
   });
 
-  const { data: allLicenses } = useQuery({
-    queryKey: ['all-licenses-consultor'],
-    queryFn: () => base44.entities.License.list(),
+  const { data: clientProperties = [] } = useQuery({
+    queryKey: ['client-properties', user?.email],
+    queryFn: () => base44.entities.Property.filter({ consultor_email: user.email }),
+    enabled: !!user?.email,
     initialData: []
   });
-
-  const { data: allAlerts } = useQuery({
-    queryKey: ['all-alerts-consultor'],
-    queryFn: () => base44.entities.EnvironmentalAlert.filter({ status: 'Aberto' }),
-    initialData: []
-  });
-
-  // Separar clientes-apenas de propriedades reais
-  const clientOnlyRecords = useMemo(() => properties.filter(p => p.is_client_only), [properties]);
-  const realProperties = useMemo(() => properties.filter(p => !p.is_client_only), [properties]);
 
   const propertiesWithMetrics = useMemo(() => {
     return realProperties.map(property => {

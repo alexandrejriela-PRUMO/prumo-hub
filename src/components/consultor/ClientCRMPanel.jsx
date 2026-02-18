@@ -100,6 +100,25 @@ export default function ClientCRMPanel({ property, onClose }) {
 
   const updateStatus = (status) => upsertCRM.mutate({ status });
 
+  const syncToGoogleCalendar = async (interaction) => {
+    setSyncingInteractionId(interaction.id);
+    try {
+      const response = await base44.functions.invoke('syncToGoogleCalendar', {
+        interaction,
+        clientName: property?.client_name || property?.property_name,
+        propertyName: property?.property_name,
+      });
+      toast.success('Evento sincronizado com Google Calendar!');
+      if (response.data?.eventLink) {
+        window.open(response.data.eventLink, '_blank');
+      }
+    } catch (error) {
+      toast.error('Erro ao sincronizar: ' + (error.message || 'Tente novamente'));
+    } finally {
+      setSyncingInteractionId(null);
+    }
+  };
+
   const clientData = (() => {
     try { return JSON.parse(property?.authorized_users || '{}'); } catch { return {}; }
   })();

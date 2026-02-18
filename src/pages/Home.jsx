@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { MapPin, BarChart3, ChevronLeft } from 'lucide-react';
 import { subDays, isAfter, isBefore } from 'date-fns';
+import ConsultorOverview from '../components/dashboard/ConsultorOverview';
 
 export default function Home() {
   const [user, setUser] = useState(null);

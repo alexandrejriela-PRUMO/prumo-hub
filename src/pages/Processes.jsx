@@ -397,7 +397,17 @@ export default function Processes() {
     processes.filter(p => p.process_type === type);
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto space-y-4">
+      {/* Consultor Selector */}
+      {isConsultor && (
+        <ConsultorPropertySelector
+          properties={properties}
+          selectedPropertyId={consultorPropertyId}
+          onSelect={setConsultorPropertyId}
+          isLoading={propertiesLoading}
+        />
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">

@@ -234,7 +234,7 @@ export default function Properties() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingProperty ? 'Editar Propriedade' : 'Nova Propriedade'}
+              {editingProperty ? 'Editar Propriedade ou Empreendimento' : 'Nova Propriedade ou Empreendimento'}
             </DialogTitle>
           </DialogHeader>
           <PropertyForm

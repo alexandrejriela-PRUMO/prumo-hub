@@ -27,11 +27,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import LicenseHistory from '../components/history/LicenseHistory';
 import LicenseDocuments from '../components/license/LicenseDocuments';
 import { toast } from 'sonner';
+import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
 
 const licenseTypes = ['LP', 'LI', 'LO', 'LAU', 'Dispensa', 'Outorga', 'Outro'];
 
 export default function Licenses() {
   const [user, setUser] = useState(null);
+  const [consultorPropertyId, setConsultorPropertyId] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedLicense, setSelectedLicense] = useState(null);

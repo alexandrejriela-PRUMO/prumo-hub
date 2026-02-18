@@ -217,14 +217,24 @@ export default function ConsultorPanel({ user, onEnterProperty }) {
                   </div>
                 </div>
 
-                <Button
-                  onClick={() => onEnterProperty(property)}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700"
-                  size="sm"
-                >
-                  Acessar Dashboard
-                  <ArrowRight className="w-3 h-3 ml-1" />
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => onEnterProperty(property)}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                    size="sm"
+                  >
+                    Acessar Dashboard
+                    <ArrowRight className="w-3 h-3 ml-1" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setInviteProperty(property)}
+                    title="Convidar produtor"
+                  >
+                    <UserPlus className="w-3 h-3" />
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}

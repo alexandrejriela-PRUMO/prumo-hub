@@ -129,7 +129,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
       <div>
         <h2 className="text-2xl font-bold mb-4">Propriedades e Empreendimentos</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {properties.map((property) => {
+          {propertiesWithClients.map((property) => {
             const status = getPropertyStatus(property.id);
             const regularity = calcRegularity(property.id);
             const totalAlerts = countAlertsByProperty(property.id);

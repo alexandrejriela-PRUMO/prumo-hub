@@ -106,6 +106,18 @@ export default function PRAD() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 p-6">
       <div className="max-w-7xl mx-auto">
+        {/* Consultor Selector */}
+        {isConsultor && (
+          <div className="mb-6">
+            <ConsultorPropertySelector
+              properties={properties}
+              selectedPropertyId={selectedProperty?.id || null}
+              onSelect={(id) => setSelectedProperty(properties.find(p => p.id === id) || null)}
+              isLoading={propertiesLoading}
+            />
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>

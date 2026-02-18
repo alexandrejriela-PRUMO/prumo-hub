@@ -412,7 +412,7 @@ export default function Mappings() {
         {/* Property Selector */}
         {(properties.length > 1 || isConsultor) && (
           <div className="mb-6">
-            <Label>{isConsultor ? 'Cliente' : 'Propriedade'}</Label>
+            <Label>Propriedade ou Empreendimento</Label>
             <Select
               value={selectedProperty?.id}
               onValueChange={(id) => setSelectedProperty(properties.find((p) => p.id === id))}

@@ -5,7 +5,6 @@ import PropertyCard from '../components/dashboard/PropertyCard';
 import QuickActions from '../components/dashboard/QuickActions';
 import LicenseAlerts from '../components/dashboard/LicenseAlerts';
 import InvoicesSummary from '../components/dashboard/InvoicesSummary';
-
 import BlogPreview from '../components/dashboard/BlogPreview';
 import RegularityThermometer from '../components/dashboard/RegularityThermometer';
 import EnvironmentalAlerts from '../components/dashboard/EnvironmentalAlerts';
@@ -13,15 +12,18 @@ import DashboardMetrics from '../components/dashboard/DashboardMetrics';
 import DashboardCharts from '../components/dashboard/DashboardCharts';
 import DashboardFilters from '../components/dashboard/DashboardFilters';
 import DashboardFullExport from '../components/dashboard/DashboardFullExport';
+import ConsultorPanel from '../components/consultor/ConsultorPanel';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MapPin, BarChart3 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { MapPin, BarChart3, ChevronLeft } from 'lucide-react';
 import { subDays, isAfter, isBefore } from 'date-fns';
 
 export default function Home() {
   const [user, setUser] = useState(null);
   const [selectedPropertyId, setSelectedPropertyId] = useState(null);
+  const [consultorMode, setConsultorMode] = useState('panel'); // 'panel' | 'property'
   const [filters, setFilters] = useState({
     period: 'all',
     licenseStatus: 'all',
@@ -43,9 +45,13 @@ export default function Home() {
     loadUser();
   }, []);
 
+  const isConsultor = user?.user_type === 'consultor';
+
   const { data: properties, isLoading: loadingProperties } = useQuery({
     queryKey: ['properties', user?.email],
-    queryFn: () => base44.entities.Property.filter({ owner_email: user.email }),
+    queryFn: () => isConsultor
+      ? base44.entities.Property.filter({ consultor_email: user.email })
+      : base44.entities.Property.filter({ owner_email: user.email }),
     enabled: !!user?.email,
     initialData: []
   });
@@ -167,15 +173,41 @@ export default function Home() {
     });
   };
 
+  // Consultor: show panel initially
+  if (isConsultor && consultorMode === 'panel') {
+    return (
+      <ConsultorPanel
+        user={user}
+        onEnterProperty={(property) => {
+          setSelectedPropertyId(property.id);
+          setConsultorMode('property');
+        }}
+      />
+    );
+  }
+
   return (
   <div className="max-w-7xl mx-auto space-y-8">
       {/* Header with Export */}
       <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Olá, {user?.full_name?.split(' ')[0] || 'Cliente'}! 👋
-          </h1>
-          <p className="text-gray-500 mt-1">Bem-vindo à sua área do cliente Santa Rute - Engenharia Rural</p>
+        <div className="flex items-center gap-3">
+          {isConsultor && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setConsultorMode('panel')}
+              className="flex items-center gap-1"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Painel
+            </Button>
+          )}
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Olá, {user?.full_name?.split(' ')[0] || 'Cliente'}! 👋
+            </h1>
+            <p className="text-gray-500 mt-1">Bem-vindo à sua área do cliente Santa Rute - Engenharia Rural</p>
+          </div>
         </div>
       </div>
 

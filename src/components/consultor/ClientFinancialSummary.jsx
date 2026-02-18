@@ -1,101 +1,76 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { DollarSign, Calendar, Zap } from 'lucide-react';
+import { CreditCard, TrendingUp, Calendar } from 'lucide-react';
 
 export default function ClientFinancialSummary({ crm }) {
-  if (!crm?.services || crm.services.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-emerald-600" />
-            Controle Financeiro
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-gray-500 text-sm">Nenhum serviço registrado</p>
-        </CardContent>
-      </Card>
-    );
-  }
+  if (!crm) return null;
 
-  const activeServices = crm.services.filter(s => s.status === 'Contratado' || s.status === 'Em Andamento');
-  const totalHonorarios = crm.services.reduce((sum, s) => sum + (s.value || 0), 0);
-  
-  // Encontra próximo vencimento
-  let nextExpiry = null;
-  if (activeServices.length > 0) {
-    activeServices.forEach(s => {
-      if (s.start_date) {
-        const startDate = new Date(s.start_date);
-        // Assumindo contrato de 12 meses como padrão
-        const expiryDate = new Date(startDate.getFullYear() + 1, startDate.getMonth(), startDate.getDate());
-        
-        if (!nextExpiry || expiryDate < nextExpiry) {
-          nextExpiry = expiryDate;
-        }
-      }
-    });
-  }
-
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-  };
-
-  const daysUntilExpiry = nextExpiry ? Math.ceil((nextExpiry - new Date()) / (1000 * 60 * 60 * 24)) : null;
+  // Calcula total de serviços
+  const totalServices = crm.services?.length || 0;
+  const activeServices = crm.services?.filter(s => s.status === 'Contratado' || s.status === 'Em Andamento').length || 0;
+  const totalRevenue = crm.services?.reduce((sum, s) => sum + (s.value || 0), 0) || 0;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-emerald-600" />
-            Honorários Totais
+    <div className="grid md:grid-cols-3 gap-4">
+      {/* Total Revenue */}
+      <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold text-emerald-900 flex items-center gap-2">
+            <CreditCard className="w-4 h-4" />
+            Receita Total
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-emerald-700">{formatCurrency(totalHonorarios)}</div>
-          <p className="text-xs text-gray-500 mt-1">{crm.services.length} serviço(s)</p>
+          <div className="text-2xl font-bold text-emerald-900">
+            R$ {totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </div>
+          <p className="text-xs text-emerald-700 mt-1">De serviços contratados</p>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-            <Zap className="w-4 h-4 text-blue-600" />
+      {/* Active Services */}
+      <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold text-blue-900 flex items-center gap-2">
+            <TrendingUp className="w-4 h-4" />
             Serviços Ativos
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-blue-700">{activeServices.length}</div>
-          <p className="text-xs text-gray-500 mt-1">Em andamento ou contratado</p>
+          <div className="text-2xl font-bold text-blue-900">
+            {activeServices} <span className="text-sm text-blue-700">de {totalServices}</span>
+          </div>
+          <div className="flex gap-1 mt-2 flex-wrap">
+            {crm.services?.slice(0, 2).map((service, idx) => (
+              <Badge key={idx} variant="outline" className="text-xs">
+                {service.name?.substring(0, 15)}
+              </Badge>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-orange-600" />
-            Próx. Vencimento
+      {/* Client Status */}
+      <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold text-purple-900 flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
+            Status do Cliente
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {nextExpiry ? (
-            <>
-              <div className={`text-2xl font-bold ${daysUntilExpiry < 30 ? 'text-orange-700' : 'text-gray-700'}`}>
-                {daysUntilExpiry}d
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                {nextExpiry.toLocaleDateString('pt-BR')}
-              </p>
-              {daysUntilExpiry < 30 && (
-                <Badge className="mt-2 bg-orange-100 text-orange-800">Vence em breve</Badge>
-              )}
-            </>
-          ) : (
-            <div className="text-gray-500 text-sm">-</div>
-          )}
+          <Badge className={`
+            ${crm.status === 'Ativo' ? 'bg-emerald-100 text-emerald-800' :
+              crm.status === 'Em Negociação' ? 'bg-blue-100 text-blue-800' :
+              crm.status === 'Prospect' ? 'bg-amber-100 text-amber-800' :
+              'bg-gray-100 text-gray-800'}
+          `}>
+            {crm.status}
+          </Badge>
+          <p className="text-xs text-purple-700 mt-2">
+            {crm.tags?.length > 0 ? `${crm.tags.join(', ')}` : 'Sem tags'}
+          </p>
         </CardContent>
       </Card>
     </div>

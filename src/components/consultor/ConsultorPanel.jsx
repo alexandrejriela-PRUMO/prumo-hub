@@ -240,6 +240,13 @@ export default function ConsultorPanel({ user, onEnterProperty }) {
           ))}
         </div>
       )}
+      {inviteProperty && (
+        <InviteProdutorDialog
+          property={inviteProperty}
+          open={!!inviteProperty}
+          onClose={() => setInviteProperty(null)}
+        />
+      )}
     </div>
   );
 }

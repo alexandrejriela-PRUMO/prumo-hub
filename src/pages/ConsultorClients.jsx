@@ -6,11 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { MapPin, AlertTriangle, FileX, TrendingUp, ArrowRight, Plus, Building2, Users, MessageCircle } from 'lucide-react';
+import { Mail, AlertTriangle, TrendingUp, ArrowRight, Plus, Building2, Users, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import NewClientForm from '../components/consultor/NewClientForm';
 import ClientCRMPanel from '../components/consultor/ClientCRMPanel';
+import ClientFinancialSummary from '../components/consultor/ClientFinancialSummary';
 
 function calcRegularity(licenses) {
   if (!licenses || licenses.length === 0) return 30;

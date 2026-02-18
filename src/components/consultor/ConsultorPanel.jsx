@@ -9,6 +9,7 @@ import { MapPin, AlertTriangle, FileX, TrendingUp, ArrowRight, Plus, Building2, 
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 
+
 function calcRegularity(licenses) {
   if (!licenses || licenses.length === 0) return 30;
   const now = new Date();

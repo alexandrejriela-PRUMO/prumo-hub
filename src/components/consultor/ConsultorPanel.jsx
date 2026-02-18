@@ -93,12 +93,10 @@ export default function ConsultorPanel({ user, onEnterProperty }) {
             Olá, {user?.full_name?.split(' ')[0]}! Você tem {properties.length} cliente(s) vinculado(s).
           </p>
         </div>
-        <Link to={createPageUrl('Properties')}>
-          <Button className="bg-emerald-600 hover:bg-emerald-700">
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Cliente
-          </Button>
-        </Link>
+        <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowNewClientForm(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Novo Cliente
+        </Button>
       </div>
 
       {/* Summary Cards */}

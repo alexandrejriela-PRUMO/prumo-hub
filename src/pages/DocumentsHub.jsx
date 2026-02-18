@@ -56,16 +56,27 @@ export default function DocumentsHub() {
     enabled: !!user
   });
 
-  const { data: properties = [] } = useQuery({
+  const isConsultor = user?.user_type === 'consultor';
+
+  const { data: properties = [], isLoading: propertiesLoading } = useQuery({
     queryKey: ['properties', user?.email],
     queryFn: () => {
       if (user?.role === 'admin') {
         return base44.entities.Property.list('-created_date', 1000);
       }
+      if (isConsultor) {
+        return base44.entities.Property.filter({ consultor_email: user.email }, '-created_date', 100);
+      }
       return base44.entities.Property.filter({ owner_email: user.email }, '-created_date', 100);
     },
     enabled: !!user?.email
   });
+
+  useEffect(() => {
+    if (properties.length > 0 && !selectedPropertyId && !isConsultor) {
+      setSelectedPropertyId(properties[0].id);
+    }
+  }, [properties, selectedPropertyId, isConsultor]);
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.UnifiedDocument.create({

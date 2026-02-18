@@ -200,16 +200,24 @@ export default function ConsultorClients() {
         onSuccess={() => setShowNewClientForm(false)}
       />
 
-      {/* CRM Modal */}
+      {/* CRM & Financial Modal */}
       <Dialog open={!!crmProperty} onOpenChange={() => setCrmProperty(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-emerald-800">
               <MessageCircle className="w-5 h-5" />
-              CRM — {crmProperty?.client_name || crmProperty?.property_name}
+              Gestão do Cliente — {crmProperty?.client_email?.split('@')[0] || crmProperty?.property_name}
             </DialogTitle>
           </DialogHeader>
-          {crmProperty && <ClientCRMPanel property={crmProperty} onClose={() => setCrmProperty(null)} />}
+          {crmProperty && (
+            <div className="space-y-6">
+              {/* Financial Summary */}
+              <ClientFinancialSummary crm={crmProperty} />
+              
+              {/* CRM Panel */}
+              <ClientCRMPanel property={crmProperty} onClose={() => setCrmProperty(null)} />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

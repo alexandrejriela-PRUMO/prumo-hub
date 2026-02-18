@@ -42,7 +42,7 @@ const consultorNavItem = { name: 'Meus Clientes', page: 'Home', icon: Users };
 
 const navItems = [
   { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
-  { name: 'Propriedades', page: 'Properties', icon: Building2 },
+  { name: 'Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
   { name: 'Documentos', page: 'DocumentsHub', icon: FileText },
   { name: 'Licenças Ambientais', page: 'Licenses', icon: FileCheck },
   { name: 'Processos', page: 'Processes', icon: Scale },

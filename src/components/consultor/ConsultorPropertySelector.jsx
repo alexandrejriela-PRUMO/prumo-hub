@@ -24,7 +24,7 @@ export default function ConsultorPropertySelector({ properties, selectedProperty
             </div>
             <div>
               <p className="text-xs text-amber-600 font-medium uppercase tracking-wide">Modo Consultor</p>
-              <p className="text-sm font-semibold text-amber-900">Selecione o cliente/propriedade</p>
+              <p className="text-sm font-semibold text-amber-900">Selecione o seu Cliente</p>
             </div>
           </div>
           <div className="w-full sm:flex-1">

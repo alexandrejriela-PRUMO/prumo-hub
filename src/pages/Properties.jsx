@@ -62,7 +62,9 @@ export default function Properties() {
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Property.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['properties']);
+      queryClient.invalidateQueries(['properties-owner']);
+      queryClient.invalidateQueries(['properties-consultor']);
+      queryClient.invalidateQueries(['consultor-properties']);
       setFormDialogOpen(false);
       setEditingProperty(null);
       toast.success('Propriedade criada com sucesso!');

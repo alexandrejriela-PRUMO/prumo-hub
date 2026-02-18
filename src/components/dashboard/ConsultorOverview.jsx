@@ -149,6 +149,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
                     <div className="flex-1">
                       <CardTitle className="text-lg">{property.property_name}</CardTitle>
                       <p className="text-sm text-gray-600 mt-1">{property.city}/{property.state}</p>
+                      {property.client_name && <p className="text-xs text-gray-500 mt-1">Cliente: {property.client_name}</p>}
                     </div>
                     <Badge className={config.badge}>
                       {status === 'critical' ? 'Crítica' : status === 'attention' ? 'Atenção' : 'Normal'}

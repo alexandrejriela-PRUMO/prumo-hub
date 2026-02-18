@@ -296,6 +296,8 @@ export default function Layout({ children, currentPageName }) {
             })}
 
             {navItems.map((item, index) => {
+              // Skip duplicate items for consultors (already shown in consultorNavItems)
+              if (user?.user_type === 'consultor' && (item.page === 'Home' || item.page === 'Properties')) return null;
               // Hide admin-only items for non-admin users
               if (item.adminOnly && user?.role !== 'admin') return null;
               // Hide consultor-restricted items for consultors

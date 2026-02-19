@@ -70,23 +70,61 @@ export default function ClientCRMPanel({ property, onClose }) {
 
   const addInteraction = () => {
     if (!newInteraction.title) { toast.error('Informe o título da interação.'); return; }
-    const interactions = [...(crm?.interactions || []), {
-      id: Date.now().toString(), date: new Date().toISOString(),
-      ...newInteraction, created_by: property.consultor_email,
-    }];
+    let interactions;
+    if (editingInteraction) {
+      interactions = (crm?.interactions || []).map(i =>
+        i.id === editingInteraction.id ? { ...i, ...newInteraction } : i
+      );
+    } else {
+      interactions = [...(crm?.interactions || []), {
+        id: Date.now().toString(), date: new Date().toISOString(),
+        ...newInteraction, created_by: crmConsultorEmail,
+      }];
+    }
     upsertCRM.mutate({ interactions });
     setNewInteraction({ type: 'Ligação', title: '', description: '', next_action: '', next_action_date: '' });
     setShowInteractionForm(false);
-    toast.success('Interação registrada!');
+    setEditingInteraction(null);
+    toast.success(editingInteraction ? 'Interação atualizada!' : 'Interação registrada!');
+  };
+
+  const deleteInteraction = (id) => {
+    const interactions = (crm?.interactions || []).filter(i => i.id !== id);
+    upsertCRM.mutate({ interactions });
+    toast.success('Interação removida.');
+  };
+
+  const startEditInteraction = (interaction) => {
+    setEditingInteraction(interaction);
+    setNewInteraction({
+      type: interaction.type,
+      title: interaction.title,
+      description: interaction.description || '',
+      next_action: interaction.next_action || '',
+      next_action_date: interaction.next_action_date || '',
+    });
+    setShowInteractionForm(true);
   };
 
   const addTask = () => {
     if (!newTask.title) { toast.error('Informe o título da tarefa.'); return; }
-    const tasks = [...(crm?.tasks || []), { id: Date.now().toString(), done: false, ...newTask }];
+    let tasks;
+    if (editingTask) {
+      tasks = (crm?.tasks || []).map(t => t.id === editingTask.id ? { ...t, ...newTask } : t);
+    } else {
+      tasks = [...(crm?.tasks || []), { id: Date.now().toString(), done: false, ...newTask }];
+    }
     upsertCRM.mutate({ tasks });
     setNewTask({ title: '', due_date: '', priority: 'Média' });
     setShowTaskForm(false);
-    toast.success('Tarefa adicionada!');
+    setEditingTask(null);
+    toast.success(editingTask ? 'Tarefa atualizada!' : 'Tarefa adicionada!');
+  };
+
+  const startEditTask = (task) => {
+    setEditingTask(task);
+    setNewTask({ title: task.title, due_date: task.due_date || '', priority: task.priority || 'Média' });
+    setShowTaskForm(true);
   };
 
   const toggleTask = (taskId) => {
@@ -101,11 +139,31 @@ export default function ClientCRMPanel({ property, onClose }) {
 
   const addService = () => {
     if (!newService.name) { toast.error('Informe o nome do serviço.'); return; }
-    const services = [...(crm?.services || []), { id: Date.now().toString(), ...newService, value: parseFloat(newService.value) || 0 }];
+    let services;
+    if (editingServiceIndex !== null) {
+      services = (crm?.services || []).map((s, i) =>
+        i === editingServiceIndex ? { ...s, ...newService, value: parseFloat(newService.value) || 0 } : s
+      );
+    } else {
+      services = [...(crm?.services || []), { ...newService, value: parseFloat(newService.value) || 0 }];
+    }
     upsertCRM.mutate({ services });
     setNewService({ name: '', status: 'Em Proposta', value: '', notes: '' });
     setShowServiceForm(false);
-    toast.success('Serviço adicionado!');
+    setEditingServiceIndex(null);
+    toast.success(editingServiceIndex !== null ? 'Serviço atualizado!' : 'Serviço adicionado!');
+  };
+
+  const startEditService = (service, index) => {
+    setEditingServiceIndex(index);
+    setNewService({ name: service.name, status: service.status, value: service.value?.toString() || '', notes: service.notes || '' });
+    setShowServiceForm(true);
+  };
+
+  const deleteService = (index) => {
+    const services = (crm?.services || []).filter((_, i) => i !== index);
+    upsertCRM.mutate({ services });
+    toast.success('Serviço removido.');
   };
 
   const updateStatus = (status) => upsertCRM.mutate({ status });

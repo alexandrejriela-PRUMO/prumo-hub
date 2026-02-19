@@ -154,7 +154,10 @@ export default function PropertyCard({ property, isConsultor }) {
                   <Popup>
                     <div className="text-center">
                       <strong>{property.property_name}</strong><br />
-                      {property.total_hectares} hectares<br />
+                      {isUrban
+                        ? (property.total_area_m2 ? `${property.total_area_m2} m²` : '')
+                        : (property.total_hectares ? `${property.total_hectares} ha` : '')
+                      }<br />
                       {property.city}, {property.state}
                     </div>
                   </Popup>

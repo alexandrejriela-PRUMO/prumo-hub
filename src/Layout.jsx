@@ -64,7 +64,7 @@ const navItems = [
     ]
   },
   { 
-    name: 'Agro 4.0 - Ambiental', 
+    name: 'Ativos Ambientais', 
     icon: TrendingUp,
     children: [
       { name: 'Créditos de Carbono', page: 'CarbonCredits', icon: Leaf },

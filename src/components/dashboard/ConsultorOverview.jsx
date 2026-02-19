@@ -90,7 +90,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
 
         <Card className="border-red-200 bg-red-50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-red-700">Críticas</CardTitle>
+            <CardTitle className="text-sm font-medium text-red-700">Alerta Crítico</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-end justify-between">

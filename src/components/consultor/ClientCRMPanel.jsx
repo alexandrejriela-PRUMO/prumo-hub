@@ -41,21 +41,28 @@ export default function ClientCRMPanel({ property, onClose }) {
   const [newTask, setNewTask] = useState({ title: '', due_date: '', priority: 'Média' });
   const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '' });
 
+  // Se vier do ConsultorClients, property é um objeto "client" com .properties[]
+  // Usa a primeira propriedade real para associar o CRM
+  const firstRealProperty = property?.properties?.find(p => !p.is_client_only) || property?.properties?.[0];
+  const crmPropertyId = firstRealProperty?.id || property?.id;
+  const crmConsultorEmail = firstRealProperty?.consultor_email || property?.consultor_email;
+  const crmOwnerEmail = firstRealProperty?.owner_email || property?.owner_email;
+
   const { data: crm, isLoading } = useQuery({
-    queryKey: ['client-crm', property?.id],
+    queryKey: ['client-crm', crmPropertyId],
     queryFn: async () => {
-      const results = await base44.entities.ClientCRM.filter({ property_id: property.id });
+      const results = await base44.entities.ClientCRM.filter({ property_id: crmPropertyId });
       return results[0] || null;
     },
-    enabled: !!property?.id,
+    enabled: !!crmPropertyId,
   });
 
   const upsertCRM = useMutation({
     mutationFn: (data) => {
       if (crm?.id) return base44.entities.ClientCRM.update(crm.id, data);
-      return base44.entities.ClientCRM.create({ property_id: property.id, consultor_email: property.consultor_email, client_email: property.owner_email, ...data });
+      return base44.entities.ClientCRM.create({ property_id: crmPropertyId, consultor_email: crmConsultorEmail, client_email: crmOwnerEmail, ...data });
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['client-crm', property?.id] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['client-crm', crmPropertyId] }),
   });
 
   const addInteraction = () => {

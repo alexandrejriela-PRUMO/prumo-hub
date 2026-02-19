@@ -78,7 +78,7 @@ export default function PropertyCard({ property, isConsultor }) {
               </div>
               <div>
                 <p className="text-emerald-400 text-xs uppercase tracking-wide mb-1">
-                  {isConsultor ? (isUrban ? 'Empreendimento' : 'Propriedade') : 'Propriedade'}
+                  {isUrban ? 'Empreendimento' : 'Propriedade Rural'}
                 </p>
                 <h2 className="text-2xl font-bold text-white">{property.property_name}</h2>
                 <p className="text-emerald-300 flex items-center gap-2 mt-1">

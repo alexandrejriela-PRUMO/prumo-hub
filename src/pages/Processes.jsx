@@ -280,7 +280,7 @@ export default function Processes() {
           required
         >
           <SelectTrigger>
-            <SelectValue placeholder="Selecione uma propriedade" />
+            <SelectValue placeholder="Selecione" />
           </SelectTrigger>
           <SelectContent>
             {properties.map(prop => (
@@ -414,7 +414,7 @@ export default function Processes() {
           <span className="text-gray-700 font-medium whitespace-nowrap">Propriedade ou Empreendimento:</span>
           <Select value={formData.property_id} onValueChange={(v) => setFormData({ ...formData, property_id: v })}>
             <SelectTrigger className="w-full sm:w-96 bg-emerald-50 border-emerald-200">
-              <SelectValue placeholder="Selecione uma propriedade" />
+              <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent>
               {properties.map(prop => (

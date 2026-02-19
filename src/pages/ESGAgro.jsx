@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { createPageUrl } from '../utils';
 import { Link } from 'react-router-dom';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Filter } from 'lucide-react';
 import ESGReportBuilder from '../components/esg/ESGReportBuilder';
 import ESGReportDisplay from '../components/esg/ESGReportDisplay';
 import ESGScoreCard from '../components/esg/ESGScoreCard';

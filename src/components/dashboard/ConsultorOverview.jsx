@@ -78,7 +78,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total de Propriedades</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">Total de Propriedades e Empreendimentos</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-end justify-between">

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { MapPin, Trees, Leaf, Activity } from 'lucide-react';
+import { MapPin, Trees, Leaf, Activity, Building2, Ruler } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';

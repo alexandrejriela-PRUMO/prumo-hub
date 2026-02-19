@@ -179,6 +179,24 @@ export default function DocumentsHub() {
         />
       )}
 
+      {/* Produtor Property Selector */}
+      {!isConsultor && properties.length > 1 && (
+        <div className="flex items-center gap-3 p-4 bg-white rounded-xl border border-emerald-100 shadow-sm">
+          <Filter className="w-4 h-4 text-gray-500 flex-shrink-0" />
+          <span className="text-gray-700 font-medium whitespace-nowrap">Propriedade ou Empreendimento:</span>
+          <select
+            value={selectedPropertyId || ''}
+            onChange={(e) => setSelectedPropertyId(e.target.value || null)}
+            className="w-full sm:w-96 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+          >
+            <option value="">Todas as Propriedades e Empreendimentos</option>
+            {properties.map(prop => (
+              <option key={prop.id} value={prop.id}>{prop.property_name} - {prop.city || 'N/A'}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* Bloqueio para consultor sem propriedade selecionada */}
       {isConsultor && !selectedPropertyId ? (
         <Card className="text-center py-16 border-dashed border-2 border-amber-200">

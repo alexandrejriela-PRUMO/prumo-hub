@@ -220,7 +220,7 @@ export default function Home() {
           <div className="flex items-center gap-3 min-w-0">
             <MapPin className="w-5 h-5 text-emerald-600 flex-shrink-0" />
             <span className="text-gray-700 font-medium text-sm sm:text-base whitespace-nowrap">
-              {selectedProperty?.property_type === 'urbano' ? 'Empreendimento:' : 'Propriedade:'}
+              Propriedade ou Empreendimento:
             </span>
           </div>
           <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>

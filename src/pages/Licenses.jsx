@@ -249,18 +249,18 @@ export default function Licenses() {
           <span className="text-gray-700 font-medium whitespace-nowrap">Propriedade ou Empreendimento:</span>
           <Select value={formData.property_id} onValueChange={(v) => setFormData({ ...formData, property_id: v })}>
             <SelectTrigger className="w-full sm:w-96 bg-emerald-50 border-emerald-200">
-              <SelectValue placeholder="Selecione uma propriedade" />
-            </SelectTrigger>
-            <SelectContent>
+              <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
               {properties.map(prop => (
-                <SelectItem key={prop.id} value={prop.id}>
-                  {prop.property_name} - {prop.city}/{prop.state}
-                </SelectItem>
+              <SelectItem key={prop.id} value={prop.id}>
+                {prop.property_name} - {prop.city}/{prop.state}
+              </SelectItem>
               ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+              </SelectContent>
+              </Select>
+              </div>
+              )}
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -602,25 +602,25 @@ export default function Licenses() {
                 required
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione uma propriedade" />
-                </SelectTrigger>
-                <SelectContent>
+                  <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
                   {properties.map(prop => (
                     <SelectItem key={prop.id} value={prop.id}>
                       {prop.property_name} - {prop.city || 'N/A'}
                     </SelectItem>
                   ))}
-                </SelectContent>
-              </Select>
-            </div>
+                  </SelectContent>
+                  </Select>
+                  </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Tipo de Licença</Label>
-                <Select
+                  <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                  <Label>Tipo de Licença</Label>
+                  <Select
                   value={formData.license_type}
                   onValueChange={(v) => setFormData({ ...formData, license_type: v })}
-                >
+                  >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
@@ -629,52 +629,52 @@ export default function Licenses() {
                       <SelectItem key={type} value={type}>{type}</SelectItem>
                     ))}
                   </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Número da Licença</Label>
-                <Input
+                  </Select>
+                  </div>
+                  <div className="space-y-2">
+                  <Label>Número da Licença</Label>
+                  <Input
                   value={formData.license_number}
                   onChange={(e) => setFormData({ ...formData, license_number: e.target.value })}
                   placeholder="Ex: 001/2024"
-                />
-              </div>
-            </div>
+                  />
+                  </div>
+                  </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Data de Emissão</Label>
-                <Input
+                  <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                  <Label>Data de Emissão</Label>
+                  <Input
                   type="date"
                   value={formData.issue_date}
                   onChange={(e) => setFormData({ ...formData, issue_date: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Data de Validade</Label>
-                <Input
+                  />
+                  </div>
+                  <div className="space-y-2">
+                  <Label>Data de Validade</Label>
+                  <Input
                   type="date"
                   value={formData.expiry_date}
                   onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
-                />
-              </div>
-            </div>
+                  />
+                  </div>
+                  </div>
 
-            <div className="space-y-2">
-              <Label>Condicionantes</Label>
-              <div className="flex gap-2">
-                <Input
+                  <div className="space-y-2">
+                  <Label>Condicionantes</Label>
+                  <div className="flex gap-2">
+                  <Input
                   value={newCondition}
                   onChange={(e) => setNewCondition(e.target.value)}
                   placeholder="Adicionar condicionante"
                   onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCondition())}
-                />
-                <Button type="button" variant="outline" onClick={addCondition}>
+                  />
+                  <Button type="button" variant="outline" onClick={addCondition}>
                   <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-              {formData.conditions.length > 0 && (
-                <div className="space-y-2 mt-2">
+                  </Button>
+                  </div>
+                  {formData.conditions.length > 0 && (
+                  <div className="space-y-2 mt-2">
                   {formData.conditions.map((cond, idx) => (
                     <div key={idx} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
                       <span className="flex-1 text-sm">{cond}</span>
@@ -683,14 +683,14 @@ export default function Licenses() {
                       </button>
                     </div>
                   ))}
-                </div>
-              )}
-            </div>
+                  </div>
+                  )}
+                  </div>
 
-            <div className="space-y-2">
-              <Label>Documentos da Licença</Label>
-              <div className="space-y-3">
-                <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-2">
+                  <Label>Documentos da Licença</Label>
+                  <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2">
                   <div className="col-span-2">
                     <Label className="text-xs">Tipo de Documento</Label>
                     <Select value={docType} onValueChange={setDocType}>
@@ -725,7 +725,7 @@ export default function Licenses() {
                       disabled={uploadingDoc}
                     />
                   </div>
-                </div>
+                  </div>
                 <p className="text-xs text-gray-500">
                   Selecione o tipo e clique em "Arquivo" para adicionar documentos (PDF, JPG, PNG)
                 </p>

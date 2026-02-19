@@ -28,6 +28,7 @@ import TaxIncentiveWizard from '../components/esg/TaxIncentiveWizard';
 
 export default function ESGAgro() {
   const [user, setUser] = useState(null);
+  const [selectedPropertyId, setSelectedPropertyId] = useState('all');
   const [generatedReport, setGeneratedReport] = useState(null);
   const [selectedMetrics, setSelectedMetrics] = useState(null);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);

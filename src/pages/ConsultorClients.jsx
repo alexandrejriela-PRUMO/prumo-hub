@@ -231,7 +231,7 @@ export default function ConsultorClients() {
                 <ClientCRMPanel property={crmProperty} onClose={() => setCrmProperty(null)} />
               </TabsContent>
               <TabsContent value="financeiro" className="mt-4">
-                <ClientFinancialSummary crm={crmProperty} />
+                <ClientFinancialSummary client={crmProperty} />
               </TabsContent>
             </Tabs>
           )}

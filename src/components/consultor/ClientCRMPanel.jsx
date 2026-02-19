@@ -417,13 +417,18 @@ export default function ClientCRMPanel({ property, onClose }) {
 
         {/* Serviços */}
         <TabsContent value="services" className="space-y-3 mt-3">
-          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowServiceForm(true)}>
+          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => {
+            setEditingServiceIndex(null);
+            setNewService({ name: '', status: 'Em Proposta', value: '', notes: '' });
+            setShowServiceForm(true);
+          }}>
             <Plus className="w-3 h-3 mr-1" /> Novo Serviço
           </Button>
 
           {showServiceForm && (
             <Card className="border-emerald-200">
               <CardContent className="p-4 space-y-3">
+                <p className="text-sm font-semibold text-emerald-800">{editingServiceIndex !== null ? 'Editar Serviço' : 'Novo Serviço'}</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
                     <Label className="text-xs">Nome do Serviço *</Label>
@@ -448,7 +453,7 @@ export default function ClientCRMPanel({ property, onClose }) {
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button size="sm" variant="outline" onClick={() => setShowServiceForm(false)}>Cancelar</Button>
+                  <Button size="sm" variant="outline" onClick={() => { setShowServiceForm(false); setEditingServiceIndex(null); }}>Cancelar</Button>
                   <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={addService}>Salvar</Button>
                 </div>
               </CardContent>
@@ -475,13 +480,21 @@ export default function ClientCRMPanel({ property, onClose }) {
                           <p className="font-medium text-sm text-gray-900">{service.name}</p>
                           {service.notes && <p className="text-xs text-gray-500 mt-0.5">{service.notes}</p>}
                         </div>
-                        <div className="flex flex-col items-end gap-1">
-                          <Badge className={`${statusColor} text-xs border-0`}>{service.status}</Badge>
-                          {service.value > 0 && (
-                            <span className="text-sm font-bold text-emerald-700">
-                              R$ {service.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </span>
-                          )}
+                        <div className="flex items-center gap-2">
+                          <div className="flex flex-col items-end gap-1">
+                            <Badge className={`${statusColor} text-xs border-0`}>{service.status}</Badge>
+                            {parseFloat(service.value) > 0 && (
+                              <span className="text-sm font-bold text-emerald-700">
+                                R$ {parseFloat(service.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </span>
+                            )}
+                          </div>
+                          <button onClick={() => startEditService(service, i)} className="text-gray-300 hover:text-blue-500 p-1">
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => deleteService(i)} className="text-gray-300 hover:text-red-400 p-1">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </div>
                     </CardContent>

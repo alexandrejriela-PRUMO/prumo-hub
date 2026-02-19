@@ -223,13 +223,18 @@ export default function ClientCRMPanel({ property, onClose }) {
 
         {/* Interações */}
         <TabsContent value="interactions" className="space-y-3 mt-3">
-          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowInteractionForm(true)}>
+          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => {
+            setEditingInteraction(null);
+            setNewInteraction({ type: 'Ligação', title: '', description: '', next_action: '', next_action_date: '' });
+            setShowInteractionForm(true);
+          }}>
             <Plus className="w-3 h-3 mr-1" /> Nova Interação
           </Button>
 
           {showInteractionForm && (
             <Card className="border-emerald-200">
               <CardContent className="p-4 space-y-3">
+                <p className="text-sm font-semibold text-emerald-800">{editingInteraction ? 'Editar Interação' : 'Nova Interação'}</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label className="text-xs">Tipo</Label>
@@ -258,7 +263,7 @@ export default function ClientCRMPanel({ property, onClose }) {
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button size="sm" variant="outline" onClick={() => setShowInteractionForm(false)}>Cancelar</Button>
+                  <Button size="sm" variant="outline" onClick={() => { setShowInteractionForm(false); setEditingInteraction(null); }}>Cancelar</Button>
                   <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={addInteraction}>Salvar</Button>
                 </div>
               </CardContent>
@@ -284,6 +289,13 @@ export default function ClientCRMPanel({ property, onClose }) {
                             <div className="flex items-center gap-1 flex-shrink-0">
                               <Badge variant="outline" className="text-xs">{interaction.type}</Badge>
                               <button
+                                onClick={() => startEditInteraction(interaction)}
+                                className="p-1 hover:bg-blue-50 rounded text-blue-500"
+                                title="Editar"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
                                 onClick={() => syncToGoogleCalendar(interaction)}
                                 disabled={syncingInteractionId === interaction.id}
                                 className="p-1 hover:bg-emerald-50 rounded text-emerald-600 disabled:opacity-50"
@@ -294,6 +306,13 @@ export default function ClientCRMPanel({ property, onClose }) {
                                 ) : (
                                   <Share2 className="w-3.5 h-3.5" />
                                 )}
+                              </button>
+                              <button
+                                onClick={() => deleteInteraction(interaction.id)}
+                                className="p-1 hover:bg-red-50 rounded text-red-400"
+                                title="Excluir"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           </div>

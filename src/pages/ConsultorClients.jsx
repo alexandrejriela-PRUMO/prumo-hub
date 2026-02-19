@@ -208,23 +208,32 @@ export default function ConsultorClients() {
         onSuccess={() => setShowNewClientForm(false)}
       />
 
-      {/* CRM & Financial Modal */}
+      {/* Client Full Modal */}
       <Dialog open={!!crmProperty} onOpenChange={() => setCrmProperty(null)}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-emerald-800">
-              <MessageCircle className="w-5 h-5" />
-              Gestão do Cliente — {crmProperty?.client_name || crmProperty?.client_email?.split('@')[0]}
+              <Users className="w-5 h-5" />
+              {crmProperty?.client_name || crmProperty?.client_email?.split('@')[0]}
             </DialogTitle>
           </DialogHeader>
           {crmProperty && (
-            <div className="space-y-6">
-              {/* Financial Summary */}
-              <ClientFinancialSummary crm={crmProperty} />
-              
-              {/* CRM Panel */}
-              <ClientCRMPanel property={crmProperty} onClose={() => setCrmProperty(null)} />
-            </div>
+            <Tabs defaultValue="perfil">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="perfil">Perfil</TabsTrigger>
+                <TabsTrigger value="crm">CRM</TabsTrigger>
+                <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
+              </TabsList>
+              <TabsContent value="perfil" className="mt-4">
+                <ClientProfilePanel client={crmProperty} />
+              </TabsContent>
+              <TabsContent value="crm" className="mt-4">
+                <ClientCRMPanel property={crmProperty} onClose={() => setCrmProperty(null)} />
+              </TabsContent>
+              <TabsContent value="financeiro" className="mt-4">
+                <ClientFinancialSummary crm={crmProperty} />
+              </TabsContent>
+            </Tabs>
           )}
         </DialogContent>
       </Dialog>

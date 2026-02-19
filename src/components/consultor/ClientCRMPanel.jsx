@@ -338,13 +338,18 @@ export default function ClientCRMPanel({ property, onClose }) {
 
         {/* Tarefas */}
         <TabsContent value="tasks" className="space-y-3 mt-3">
-          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowTaskForm(true)}>
+          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => {
+            setEditingTask(null);
+            setNewTask({ title: '', due_date: '', priority: 'Média' });
+            setShowTaskForm(true);
+          }}>
             <Plus className="w-3 h-3 mr-1" /> Nova Tarefa
           </Button>
 
           {showTaskForm && (
             <Card className="border-emerald-200">
               <CardContent className="p-4 space-y-3">
+                <p className="text-sm font-semibold text-emerald-800">{editingTask ? 'Editar Tarefa' : 'Nova Tarefa'}</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
                     <Label className="text-xs">Tarefa *</Label>
@@ -367,7 +372,7 @@ export default function ClientCRMPanel({ property, onClose }) {
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button size="sm" variant="outline" onClick={() => setShowTaskForm(false)}>Cancelar</Button>
+                  <Button size="sm" variant="outline" onClick={() => { setShowTaskForm(false); setEditingTask(null); }}>Cancelar</Button>
                   <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={addTask}>Salvar</Button>
                 </div>
               </CardContent>
@@ -397,7 +402,10 @@ export default function ClientCRMPanel({ property, onClose }) {
                       )}
                     </div>
                     <span className={`text-xs font-medium ${priorityColor}`}>{task.priority}</span>
-                    <button onClick={() => deleteTask(task.id)} className="text-gray-300 hover:text-red-400">
+                    <button onClick={() => startEditTask(task)} className="text-gray-300 hover:text-blue-500 p-1">
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={() => deleteTask(task.id)} className="text-gray-300 hover:text-red-400 p-1">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>

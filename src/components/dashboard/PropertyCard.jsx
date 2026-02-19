@@ -103,7 +103,7 @@ export default function PropertyCard({ property, isConsultor }) {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-3 lg:gap-4">
+          <div className={`grid gap-3 lg:gap-4 ${isUrban ? 'grid-cols-2' : 'grid-cols-3'}`}>
             {stats.map((stat, index) => (
               <div key={index} className="bg-emerald-800/40 backdrop-blur rounded-2xl p-4 text-center">
                 <div className={`w-10 h-10 mx-auto rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center mb-2`}>

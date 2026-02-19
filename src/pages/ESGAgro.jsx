@@ -236,9 +236,28 @@ export default function ESGAgro() {
           <h1 className="text-4xl font-bold text-gray-900">ESG para o Agro</h1>
         </div>
         <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-          Práticas sustentáveis que geram valor econômico, ambiental e social para sua propriedade rural
+          Práticas sustentáveis que geram valor econômico, ambiental e social para sua propriedade ou empreendimento
         </p>
       </div>
+
+      {/* Property Selector */}
+      {properties.length > 1 && (
+        <div className="flex items-center gap-3 p-4 bg-white rounded-xl border border-green-100 shadow-sm">
+          <Filter className="w-4 h-4 text-gray-500 flex-shrink-0" />
+          <span className="text-gray-700 font-medium whitespace-nowrap">Propriedade ou Empreendimento:</span>
+          <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
+            <SelectTrigger className="w-full sm:w-96 bg-green-50 border-green-200">
+              <SelectValue placeholder="Selecione" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as Propriedades e Empreendimentos</SelectItem>
+              {properties.map(prop => (
+                <SelectItem key={prop.id} value={prop.id}>{prop.property_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {/* Dashboards Interativos */}
       <div className="space-y-6">

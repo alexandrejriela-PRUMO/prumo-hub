@@ -12,6 +12,8 @@ import { createPageUrl } from '@/utils';
 import NewClientForm from '../components/consultor/NewClientForm';
 import ClientCRMPanel from '../components/consultor/ClientCRMPanel';
 import ClientFinancialSummary from '../components/consultor/ClientFinancialSummary';
+import ClientProfilePanel from '../components/consultor/ClientProfilePanel';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 function calcRegularity(licenses) {
   if (!licenses || licenses.length === 0) return 30;

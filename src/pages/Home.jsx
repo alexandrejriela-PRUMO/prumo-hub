@@ -220,21 +220,23 @@ export default function Home() {
 
       {/* Property Selector */}
       {!isLoading && properties.length > 1 &&
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-white rounded-xl border border-emerald-100 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 sm:p-5 bg-gradient-to-r from-white to-emerald-50/40 rounded-xl border border-emerald-100/60 shadow-sm hover:shadow-md transition-all duration-300 hover:border-emerald-200">
           <div className="flex items-center gap-3 min-w-0">
-            <MapPin className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-            <span className="text-gray-700 font-medium text-sm sm:text-base whitespace-nowrap">
-              Propriedade ou Empreendimento:
+            <div className="p-2 bg-emerald-100/60 rounded-lg">
+              <MapPin className="w-5 h-5 text-emerald-700" />
+            </div>
+            <span className="text-gray-700 font-semibold text-sm sm:text-base whitespace-nowrap">
+              Propriedade:
             </span>
           </div>
           <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
-            <SelectTrigger className="w-full sm:w-72 bg-emerald-50 border-emerald-200 text-sm">
+            <SelectTrigger className="w-full sm:w-80 bg-white border-emerald-200 text-sm font-medium hover:border-emerald-300 transition-colors">
               <SelectValue placeholder="Selecione uma propriedade" />
             </SelectTrigger>
             <SelectContent>
               {properties.map((prop) =>
             <SelectItem key={prop.id} value={prop.id}>
-                  {prop.property_name} - {prop.city}/{prop.state}
+                  <span className="font-medium">{prop.property_name}</span> • <span className="text-gray-500">{prop.city}/{prop.state}</span>
                 </SelectItem>
             )}
             </SelectContent>

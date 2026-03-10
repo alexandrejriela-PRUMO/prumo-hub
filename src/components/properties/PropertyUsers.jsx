@@ -82,6 +82,24 @@ export default function PropertyUsers({ property, currentUser, onSave, onCancel 
         </Card>
       </div>
 
+      {/* Consultor Alert Panel - Only for Consultors */}
+       {isConsultor && users.length > 0 && (
+         <div className="bg-gradient-to-r from-emerald-50 to-blue-50 border border-emerald-200 rounded-lg p-4">
+           <div className="flex items-start justify-between gap-4">
+             <div>
+               <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                 <Bell className="w-4 h-4 text-emerald-600" />
+                 Enviar Alertas
+               </h3>
+               <p className="text-sm text-gray-600 mt-1">
+                 Notifique seus visualizadores sobre prazos críticos, atualizações do PRAD e licenças ambientais
+               </p>
+             </div>
+             <ConsultorAlertPanel propertyId={property?.id} viewers={users} />
+           </div>
+         </div>
+       )}
+
       {/* Add User Form - Only for Consultors */}
        {isConsultor && (
          <div>

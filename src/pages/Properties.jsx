@@ -107,8 +107,14 @@ export default function Properties() {
           
           <div className="flex-1">
             <h3 className="font-bold text-gray-900 text-lg">{property.property_name}</h3>
-            <p className="text-sm text-gray-600 mt-1">
-              {property.city}, {property.state}
+            {(property.client_name || property.owner_email) && (
+              <p className="text-sm text-emerald-700 font-medium mt-0.5 flex items-center gap-1">
+                <User className="w-3.5 h-3.5" />
+                {property.client_name || property.owner_email}
+              </p>
+            )}
+            <p className="text-sm text-gray-500 mt-0.5">
+              {property.city}{property.city && property.state ? ', ' : ''}{property.state}
             </p>
             
             <div className="flex flex-wrap gap-2 mt-3">

@@ -254,10 +254,10 @@ export default function Home() {
       <QuickActions />
 
       {/* Tabs for Overview and Analytics */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full max-w-md grid-cols-2 mx-auto">
-          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
+      <Tabs defaultValue="overview" className="space-y-6 mt-8">
+        <TabsList className="grid w-full max-w-md grid-cols-2 mx-auto bg-gradient-to-r from-emerald-50 to-emerald-50 border border-emerald-100 rounded-lg p-1">
+          <TabsTrigger value="overview" className="rounded-md transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-emerald-700">Visão Geral</TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-2 rounded-md transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-emerald-700">
             <BarChart3 className="w-4 h-4" />
             Análises
           </TabsTrigger>

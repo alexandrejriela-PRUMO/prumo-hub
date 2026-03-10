@@ -54,6 +54,21 @@ export default function ConsultorClients() {
   const [user, setUser] = React.useState(null);
   const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [crmProperty, setCrmProperty] = useState(null);
+  const [clientToDelete, setClientToDelete] = useState(null);
+  const queryClient = useQueryClient();
+
+  const deleteClientMutation = useMutation({
+    mutationFn: async (client) => {
+      // Deleta todas as propriedades vinculadas ao cliente
+      for (const prop of client.properties) {
+        await base44.entities.Property.delete(prop.id);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['consultor-properties']);
+      setClientToDelete(null);
+    }
+  });
 
   React.useEffect(() => {
     const loadUser = async () => {

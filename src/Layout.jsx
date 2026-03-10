@@ -42,7 +42,7 @@ import { cn } from '@/lib/utils';
 const consultorNavItems = [
   { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
   { name: 'Meus Clientes', page: 'ConsultorClients', icon: Users },
-  { name: 'Minhas Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
+  { name: 'Gestão de Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
 ];
 
 const navItems = [

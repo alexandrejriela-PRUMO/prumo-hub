@@ -72,7 +72,7 @@ export default function ESGScoreCard({ score = 0, greenLoans = 0, taxIncentives 
                 <div>
                   <p className="text-2xl font-bold text-white mb-1">{scoreLabel}</p>
                   <p className="text-white/80 text-sm mb-4">
-                    {score >= 75 ? '✨ Parabéns!' : score >= 50 ? '📈 Bom progresso' : '🚀 Continue melhorando'}
+                    {score >= 75 ? '✨ Parabéns!' : score >= 50 ? '📈 Bom progresso' : ''}
                   </p>
                   <div className="flex items-center gap-2 text-white/90 text-sm">
                     <TrendingUp className="w-4 h-4" />

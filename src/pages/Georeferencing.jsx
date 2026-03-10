@@ -452,10 +452,29 @@ function GeoreferencingForm({ properties, user, onSubmit, isLoading }) {
 }
 
 // Details Component
-function GeoreferencingDetails({ geo, onFileUpload, uploading, user }) {
+function GeoreferencingDetails({ geo, onFileUpload, uploading, user, onUpdate }) {
+  const [localGeo, setLocalGeo] = useState(geo);
+  const [editingSection, setEditingSection] = useState(null); // 'general' | 'conflicts' | 'sigef' | 'technical' | 'envAreas' | 'envAlerts' | 'mapLayers' | 'history' | 'technician'
+
+  useEffect(() => { setLocalGeo(geo); }, [geo]);
+
+  const save = (field, value) => {
+    const updated = { ...localGeo, [field]: value };
+    setLocalGeo(updated);
+    onUpdate({ [field]: value });
+    setEditingSection(null);
+  };
+
+  const saveMulti = (fields) => {
+    const updated = { ...localGeo, ...fields };
+    setLocalGeo(updated);
+    onUpdate(fields);
+    setEditingSection(null);
+  };
+
   return (
     <Tabs defaultValue="general" className="w-full">
-      <TabsList className="grid w-full grid-cols-5">
+      <TabsList className="grid w-full grid-cols-5 text-xs">
         <TabsTrigger value="general">Geral</TabsTrigger>
         <TabsTrigger value="technical">Técnico</TabsTrigger>
         <TabsTrigger value="environmental">Ambiental</TabsTrigger>
@@ -465,341 +484,24 @@ function GeoreferencingDetails({ geo, onFileUpload, uploading, user }) {
 
       {/* General Tab */}
       <TabsContent value="general" className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Info className="w-5 h-5" />
-              Informações Básicas
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-500">Município</p>
-              <p className="font-semibold">{geo.municipality || 'Não informado'}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Matrícula</p>
-              <p className="font-semibold">{geo.registration_number || 'Não informada'}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Sistema de Coordenadas</p>
-              <p className="font-semibold">{geo.coordinate_system}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Status</p>
-              <Badge className={getStatusColor(geo.status)}>{geo.status}</Badge>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Perímetro Georreferenciado</p>
-              <p className="font-semibold">{geo.georeferenced_perimeter ? `${geo.georeferenced_perimeter.toLocaleString()} m` : 'Não informado'}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Risco Jurídico</p>
-              <p className={`font-semibold ${getRiskColor(geo.legal_risk)}`}>{geo.legal_risk}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5" />
-              Conflitos e Sobreposições
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="text-sm">Sobreposição Detectada</span>
-              {geo.overlap_detected ? (
-                <Badge className="bg-red-100 text-red-800"><XCircle className="w-3 h-3 mr-1" />Sim</Badge>
-              ) : (
-                <Badge className="bg-green-100 text-green-800"><CheckCircle2 className="w-3 h-3 mr-1" />Não</Badge>
-              )}
-            </div>
-            {geo.conflicts && (
-              <>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm">Sobreposição com Terras Públicas</span>
-                  {geo.conflicts.public_land_overlap ? (
-                    <Badge className="bg-red-100 text-red-800"><XCircle className="w-3 h-3 mr-1" />Sim</Badge>
-                  ) : (
-                    <Badge className="bg-green-100 text-green-800"><CheckCircle2 className="w-3 h-3 mr-1" />Não</Badge>
-                  )}
-                </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm">Invasão de APP</span>
-                  {geo.conflicts.app_invasion ? (
-                    <Badge className="bg-red-100 text-red-800"><XCircle className="w-3 h-3 mr-1" />Sim</Badge>
-                  ) : (
-                    <Badge className="bg-green-100 text-green-800"><CheckCircle2 className="w-3 h-3 mr-1" />Não</Badge>
-                  )}
-                </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm">Conflito de Limites</span>
-                  {geo.conflicts.boundary_conflict ? (
-                    <Badge className="bg-red-100 text-red-800"><XCircle className="w-3 h-3 mr-1" />Sim</Badge>
-                  ) : (
-                    <Badge className="bg-green-100 text-green-800"><CheckCircle2 className="w-3 h-3 mr-1" />Não</Badge>
-                  )}
-                </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm">Inconsistência de Área</span>
-                  {geo.conflicts.area_inconsistency ? (
-                    <Badge className="bg-red-100 text-red-800"><XCircle className="w-3 h-3 mr-1" />Sim</Badge>
-                  ) : (
-                    <Badge className="bg-green-100 text-green-800"><CheckCircle2 className="w-3 h-3 mr-1" />Não</Badge>
-                  )}
-                </div>
-              </>
-            )}
-            {geo.pending_issues && geo.pending_issues.length > 0 && (
-              <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                <p className="text-sm font-medium text-yellow-900 mb-2">Pendências Identificadas:</p>
-                <ul className="list-disc list-inside text-sm text-yellow-800 space-y-1">
-                  {geo.pending_issues.map((issue, idx) => (
-                    <li key={idx}>{issue}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {/* Basic Info */}
+        <GeneralInfoCard localGeo={localGeo} editingSection={editingSection} setEditingSection={setEditingSection} saveMulti={saveMulti} />
+        {/* Conflicts */}
+        <ConflictsCard localGeo={localGeo} editingSection={editingSection} setEditingSection={setEditingSection} save={save} saveMulti={saveMulti} />
       </TabsContent>
 
       {/* Technical Tab */}
       <TabsContent value="technical" className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Confrontantes (Vizinhos)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {geo.neighbors && geo.neighbors.length > 0 ? (
-              <div className="space-y-2">
-                {geo.neighbors.map((neighbor, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-semibold">{neighbor.name}</p>
-                      <p className="text-sm text-gray-500">{neighbor.direction}</p>
-                    </div>
-                    {neighbor.registration && (
-                      <Badge variant="outline">Mat: {neighbor.registration}</Badge>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center py-8">Nenhum confrontante cadastrado</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="w-5 h-5" />
-              Vértices do Imóvel
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {geo.vertices && geo.vertices.length > 0 ? (
-              <div className="grid gap-2">
-                {geo.vertices.slice(0, 5).map((vertex, idx) => (
-                  <div key={idx} className="p-3 bg-gray-50 rounded-lg text-sm">
-                    <div className="grid grid-cols-4 gap-2">
-                      <div>
-                        <p className="text-gray-500">Vértice</p>
-                        <p className="font-semibold">{vertex.vertex_number}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500">Latitude</p>
-                        <p className="font-mono text-xs">{vertex.latitude?.toFixed(6)}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500">Longitude</p>
-                        <p className="font-mono text-xs">{vertex.longitude?.toFixed(6)}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500">Elevação</p>
-                        <p className="font-semibold">{vertex.elevation ? `${vertex.elevation}m` : '-'}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {geo.vertices.length > 5 && (
-                  <p className="text-sm text-gray-500 text-center">+{geo.vertices.length - 5} vértices</p>
-                )}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center py-8">Nenhum vértice cadastrado</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="w-5 h-5" />
-              SIGEF e CAR
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-500">Status no SIGEF</p>
-                <p className="font-semibold">{geo.sigef_status || 'Não cadastrado'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Código SIGEF</p>
-                <p className="font-semibold">{geo.sigef_code || 'Não informado'}</p>
-              </div>
-            </div>
-            {geo.sigef_date && (
-              <div>
-                <p className="text-sm text-gray-500">Data de Certificação SIGEF</p>
-                <p className="font-semibold">{format(parseISO(geo.sigef_date), 'dd/MM/yyyy')}</p>
-              </div>
-            )}
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="text-sm">Integração com Matrícula</span>
-              {geo.registration_integration ? (
-                <Badge className="bg-green-100 text-green-800"><CheckCircle2 className="w-3 h-3 mr-1" />Integrado</Badge>
-              ) : (
-                <Badge className="bg-yellow-100 text-yellow-800"><AlertTriangle className="w-3 h-3 mr-1" />Pendente</Badge>
-              )}
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="text-sm">Compatibilidade com CAR</span>
-              <Badge variant="outline">{geo.car_compatibility || 'Não verificado'}</Badge>
-            </div>
-          </CardContent>
-        </Card>
+        <NeighborsCard localGeo={localGeo} editingSection={editingSection} setEditingSection={setEditingSection} save={save} />
+        <VerticesCard localGeo={localGeo} editingSection={editingSection} setEditingSection={setEditingSection} save={save} />
+        <SigefCard localGeo={localGeo} editingSection={editingSection} setEditingSection={setEditingSection} saveMulti={saveMulti} />
       </TabsContent>
 
       {/* Environmental Tab */}
       <TabsContent value="environmental" className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Leaf className="w-5 h-5" />
-              Áreas Ambientais
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {geo.environmental_areas ? (
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                  <p className="text-sm text-green-700 mb-1">APP Mapeada</p>
-                  <p className="text-2xl font-bold text-green-900">
-                    {geo.environmental_areas.app_mapped ? `${geo.environmental_areas.app_mapped} ha` : 'Não informado'}
-                  </p>
-                </div>
-                <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-                  <p className="text-sm text-emerald-700 mb-1">Reserva Legal</p>
-                  <p className="text-2xl font-bold text-emerald-900">
-                    {geo.environmental_areas.legal_reserve ? `${geo.environmental_areas.legal_reserve} ha` : 'Não informado'}
-                  </p>
-                </div>
-                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <p className="text-sm text-blue-700 mb-1">Áreas Consolidadas</p>
-                  <p className="text-2xl font-bold text-blue-900">
-                    {geo.environmental_areas.consolidated_areas ? `${geo.environmental_areas.consolidated_areas} ha` : 'Não informado'}
-                  </p>
-                </div>
-                <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                  <p className="text-sm text-yellow-700 mb-1">Áreas Regularizáveis</p>
-                  <p className="text-2xl font-bold text-yellow-900">
-                    {geo.environmental_areas.regularizable_areas ? `${geo.environmental_areas.regularizable_areas} ha` : 'Não informado'}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center py-8">Áreas ambientais não mapeadas</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5" />
-              Alertas de Conflito Ambiental
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {geo.environmental_conflict_alerts && geo.environmental_conflict_alerts.length > 0 ? (
-              <div className="space-y-2">
-                {geo.environmental_conflict_alerts.map((alert, idx) => (
-                  <div key={idx} className="p-4 bg-red-50 rounded-lg border border-red-200">
-                    <div className="flex items-start justify-between mb-2">
-                      <p className="font-semibold text-red-900">{alert.alert_type}</p>
-                      <Badge className={
-                        alert.severity === 'Alta' ? 'bg-red-600 text-white' :
-                        alert.severity === 'Média' ? 'bg-yellow-600 text-white' :
-                        'bg-blue-600 text-white'
-                      }>
-                        {alert.severity}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-red-800">{alert.description}</p>
-                    <div className="mt-2">
-                      <Badge variant="outline">{alert.status}</Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center py-8">Nenhum alerta de conflito ambiental</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Layers className="w-5 h-5" />
-              Camadas do Mapa
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {geo.map_layers && (
-              <>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm">Imagem de Satélite</span>
-                  {geo.map_layers.satellite_imagery ? (
-                    <Badge className="bg-green-100 text-green-800"><CheckCircle2 className="w-3 h-3 mr-1" />Disponível</Badge>
-                  ) : (
-                    <Badge variant="outline">Não disponível</Badge>
-                  )}
-                </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm">Curvas de Nível</span>
-                  {geo.map_layers.contour_lines ? (
-                    <Badge className="bg-green-100 text-green-800"><CheckCircle2 className="w-3 h-3 mr-1" />Disponível</Badge>
-                  ) : (
-                    <Badge variant="outline">Não disponível</Badge>
-                  )}
-                </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm">Hidrografia</span>
-                  {geo.map_layers.hydrography ? (
-                    <Badge className="bg-green-100 text-green-800"><CheckCircle2 className="w-3 h-3 mr-1" />Disponível</Badge>
-                  ) : (
-                    <Badge variant="outline">Não disponível</Badge>
-                  )}
-                </div>
-                {geo.map_layers.land_use && (
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <p className="text-sm text-gray-500 mb-1">Uso e Ocupação do Solo</p>
-                    <p className="font-semibold">{geo.map_layers.land_use}</p>
-                  </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
+        <EnvAreasCard localGeo={localGeo} editingSection={editingSection} setEditingSection={setEditingSection} save={save} />
+        <EnvAlertsCard localGeo={localGeo} editingSection={editingSection} setEditingSection={setEditingSection} save={save} />
+        <MapLayersCard localGeo={localGeo} editingSection={editingSection} setEditingSection={setEditingSection} save={save} />
       </TabsContent>
 
       {/* Documents Tab */}
@@ -808,46 +510,28 @@ function GeoreferencingDetails({ geo, onFileUpload, uploading, user }) {
           <Card key={docType}>
             <CardHeader>
               <CardTitle className="text-base flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  {docType}
-                </span>
+                <span className="flex items-center gap-2"><FileText className="w-4 h-4" />{docType}</span>
                 <label>
                   <Button variant="outline" size="sm" disabled={uploading} asChild>
-                    <div>
-                      <Upload className="w-4 h-4 mr-2" />
-                      {uploading ? 'Enviando...' : 'Upload'}
-                    </div>
+                    <div><Upload className="w-4 h-4 mr-2" />{uploading ? 'Enviando...' : 'Upload'}</div>
                   </Button>
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept=".pdf,.kml,.kmz,.shp,.zip,.dwg,.dxf"
-                    onChange={(e) => onFileUpload(e, geo.id, docType)}
-                  />
+                  <input type="file" className="hidden" accept=".pdf,.kml,.kmz,.shp,.zip,.dwg,.dxf" onChange={(e) => onFileUpload(e, localGeo.id, docType)} />
                 </label>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {geo.documents?.filter(d => d.type === docType).length > 0 ? (
+              {localGeo.documents?.filter(d => d.type === docType).length > 0 ? (
                 <div className="space-y-2">
-                  {geo.documents.filter(d => d.type === docType).map((doc, idx) => (
+                  {localGeo.documents.filter(d => d.type === docType).map((doc, idx) => (
                     <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center gap-3">
                         <FileText className="w-5 h-5 text-emerald-600" />
                         <div>
                           <p className="font-medium text-sm">{doc.name}</p>
-                          <p className="text-xs text-gray-500">
-                            {format(parseISO(doc.upload_date), 'dd/MM/yyyy HH:mm')}
-                          </p>
+                          <p className="text-xs text-gray-500">{format(parseISO(doc.upload_date), 'dd/MM/yyyy HH:mm')}</p>
                         </div>
                       </div>
-                      <a
-                        href={doc.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-emerald-600 hover:text-emerald-700"
-                      >
+                      <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:text-emerald-700">
                         <Download className="w-5 h-5" />
                       </a>
                     </div>
@@ -863,80 +547,551 @@ function GeoreferencingDetails({ geo, onFileUpload, uploading, user }) {
 
       {/* History Tab */}
       <TabsContent value="history" className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              Histórico de Ajustes de Perímetro
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {geo.perimeter_adjustments && geo.perimeter_adjustments.length > 0 ? (
-              <div className="space-y-3">
-                {geo.perimeter_adjustments.map((adjustment, idx) => (
-                  <div key={idx} className="p-4 bg-gray-50 rounded-lg border-l-4 border-emerald-500">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <p className="font-semibold text-gray-900">
-                          {format(parseISO(adjustment.date), 'dd/MM/yyyy')}
-                        </p>
-                        <p className="text-sm text-gray-600 mt-1">{adjustment.reason}</p>
-                      </div>
-                      <Badge variant="outline">{adjustment.technician}</Badge>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 mt-3 text-sm">
-                      <div>
-                        <p className="text-gray-500">Perímetro Anterior</p>
-                        <p className="font-semibold">{adjustment.previous_perimeter?.toLocaleString()} m</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500">Novo Perímetro</p>
-                        <p className="font-semibold text-emerald-600">{adjustment.new_perimeter?.toLocaleString()} m</p>
-                      </div>
-                    </div>
-                    {adjustment.file_url && (
-                      <a
-                        href={adjustment.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 mt-3 text-sm text-emerald-600 hover:underline"
-                      >
-                        <Download className="w-4 h-4" />
-                        Ver arquivo desta versão
-                      </a>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center py-8">Nenhum ajuste registrado</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Informações do Responsável Técnico</CardTitle>
-          </CardHeader>
-          <CardContent className="grid md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-500">Nome</p>
-              <p className="font-semibold">{geo.technician_name || 'Não informado'}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">CREA</p>
-              <p className="font-semibold">{geo.technician_crea || 'Não informado'}</p>
-            </div>
-            <div className="md:col-span-2">
-              <p className="text-sm text-gray-500">Último Levantamento</p>
-              <p className="font-semibold">
-                {geo.last_survey_date ? format(parseISO(geo.last_survey_date), 'dd/MM/yyyy') : 'Não informado'}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <PerimeterHistoryCard localGeo={localGeo} editingSection={editingSection} setEditingSection={setEditingSection} save={save} />
+        <TechnicianCard localGeo={localGeo} editingSection={editingSection} setEditingSection={setEditingSection} saveMulti={saveMulti} />
       </TabsContent>
     </Tabs>
+  );
+}
+
+function EditBtn({ label = 'Editar', onClick }) {
+  return (
+    <Button variant="outline" size="sm" onClick={onClick} className="text-emerald-700 border-emerald-200 hover:bg-emerald-50">
+      <Edit className="w-3.5 h-3.5 mr-1" />{label}
+    </Button>
+  );
+}
+
+function GeneralInfoCard({ localGeo, editingSection, setEditingSection, saveMulti }) {
+  const [form, setForm] = useState({
+    municipality: localGeo.municipality || '',
+    registration_number: localGeo.registration_number || '',
+    coordinate_system: localGeo.coordinate_system || 'SIRGAS2000',
+    status: localGeo.status || 'Pendente',
+    georeferenced_perimeter: localGeo.georeferenced_perimeter || '',
+    legal_risk: localGeo.legal_risk || 'Baixo',
+    notes: localGeo.notes || '',
+  });
+
+  useEffect(() => {
+    setForm({
+      municipality: localGeo.municipality || '',
+      registration_number: localGeo.registration_number || '',
+      coordinate_system: localGeo.coordinate_system || 'SIRGAS2000',
+      status: localGeo.status || 'Pendente',
+      georeferenced_perimeter: localGeo.georeferenced_perimeter || '',
+      legal_risk: localGeo.legal_risk || 'Baixo',
+      notes: localGeo.notes || '',
+    });
+  }, [localGeo]);
+
+  const isEditing = editingSection === 'general';
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="flex items-center gap-2"><Info className="w-5 h-5" />Informações Básicas</CardTitle>
+        {!isEditing && <EditBtn onClick={() => setEditingSection('general')} />}
+      </CardHeader>
+      <CardContent>
+        {isEditing ? (
+          <div className="space-y-3">
+            <div className="grid md:grid-cols-2 gap-3">
+              <div><Label className="text-xs">Município</Label><Input value={form.municipality} onChange={e => setForm(p => ({...p, municipality: e.target.value}))} /></div>
+              <div><Label className="text-xs">Matrícula</Label><Input value={form.registration_number} onChange={e => setForm(p => ({...p, registration_number: e.target.value}))} /></div>
+              <div><Label className="text-xs">Sistema de Coordenadas</Label>
+                <Select value={form.coordinate_system} onValueChange={v => setForm(p => ({...p, coordinate_system: v}))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="SIRGAS2000">SIRGAS2000</SelectItem><SelectItem value="WGS84">WGS84</SelectItem><SelectItem value="SAD69">SAD69</SelectItem><SelectItem value="Outro">Outro</SelectItem></SelectContent>
+                </Select>
+              </div>
+              <div><Label className="text-xs">Status</Label>
+                <Select value={form.status} onValueChange={v => setForm(p => ({...p, status: v}))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="Regular">Regular</SelectItem><SelectItem value="Pendente">Pendente</SelectItem><SelectItem value="Em Atualização">Em Atualização</SelectItem><SelectItem value="Irregular">Irregular</SelectItem></SelectContent>
+                </Select>
+              </div>
+              <div><Label className="text-xs">Perímetro (m)</Label><Input type="number" value={form.georeferenced_perimeter} onChange={e => setForm(p => ({...p, georeferenced_perimeter: e.target.value}))} /></div>
+              <div><Label className="text-xs">Risco Jurídico</Label>
+                <Select value={form.legal_risk} onValueChange={v => setForm(p => ({...p, legal_risk: v}))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="Baixo">Baixo</SelectItem><SelectItem value="Médio">Médio</SelectItem><SelectItem value="Alto">Alto</SelectItem></SelectContent>
+                </Select>
+              </div>
+              <div className="md:col-span-2"><Label className="text-xs">Observações</Label><Textarea value={form.notes} onChange={e => setForm(p => ({...p, notes: e.target.value}))} rows={2} /></div>
+            </div>
+            <div className="flex justify-end gap-2"><Button size="sm" variant="outline" onClick={() => setEditingSection(null)}>Cancelar</Button><Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => saveMulti(form)}>Salvar</Button></div>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-4">
+            <div><p className="text-sm text-gray-500">Município</p><p className="font-semibold">{localGeo.municipality || 'Não informado'}</p></div>
+            <div><p className="text-sm text-gray-500">Matrícula</p><p className="font-semibold">{localGeo.registration_number || 'Não informada'}</p></div>
+            <div><p className="text-sm text-gray-500">Sistema de Coordenadas</p><p className="font-semibold">{localGeo.coordinate_system}</p></div>
+            <div><p className="text-sm text-gray-500">Status</p><Badge className={getStatusColor(localGeo.status)}>{localGeo.status}</Badge></div>
+            <div><p className="text-sm text-gray-500">Perímetro Georreferenciado</p><p className="font-semibold">{localGeo.georeferenced_perimeter ? `${Number(localGeo.georeferenced_perimeter).toLocaleString()} m` : 'Não informado'}</p></div>
+            <div><p className="text-sm text-gray-500">Risco Jurídico</p><p className={`font-semibold ${getRiskColor(localGeo.legal_risk)}`}>{localGeo.legal_risk}</p></div>
+            {localGeo.notes && <div className="md:col-span-2"><p className="text-sm text-gray-500">Observações</p><p className="text-sm text-gray-700">{localGeo.notes}</p></div>}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ConflictsCard({ localGeo, editingSection, setEditingSection, save, saveMulti }) {
+  const [form, setForm] = useState({
+    overlap_detected: localGeo.overlap_detected || false,
+    overlap_details: localGeo.overlap_details || '',
+    conflicts: { public_land_overlap: false, app_invasion: false, boundary_conflict: false, area_inconsistency: false, details: '', ...(localGeo.conflicts || {}) },
+    pending_issues: (localGeo.pending_issues || []).join('\n'),
+  });
+
+  useEffect(() => {
+    setForm({
+      overlap_detected: localGeo.overlap_detected || false,
+      overlap_details: localGeo.overlap_details || '',
+      conflicts: { public_land_overlap: false, app_invasion: false, boundary_conflict: false, area_inconsistency: false, details: '', ...(localGeo.conflicts || {}) },
+      pending_issues: (localGeo.pending_issues || []).join('\n'),
+    });
+  }, [localGeo]);
+
+  const isEditing = editingSection === 'conflicts';
+
+  const BoolRow = ({ label, field }) => (
+    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+      <span className="text-sm">{label}</span>
+      {form.conflicts[field] ? <Badge className="bg-red-100 text-red-800"><XCircle className="w-3 h-3 mr-1" />Sim</Badge> : <Badge className="bg-green-100 text-green-800"><CheckCircle2 className="w-3 h-3 mr-1" />Não</Badge>}
+    </div>
+  );
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="flex items-center gap-2"><AlertTriangle className="w-5 h-5" />Conflitos e Sobreposições</CardTitle>
+        {!isEditing && <EditBtn onClick={() => setEditingSection('conflicts')} />}
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {isEditing ? (
+          <div className="space-y-3">
+            {[
+              { label: 'Sobreposição Detectada', key: 'overlap_detected', isTop: true },
+              { label: 'Sobreposição com Terras Públicas', key: 'public_land_overlap' },
+              { label: 'Invasão de APP', key: 'app_invasion' },
+              { label: 'Conflito de Limites', key: 'boundary_conflict' },
+              { label: 'Inconsistência de Área', key: 'area_inconsistency' },
+            ].map(({ label, key, isTop }) => (
+              <div key={key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <span className="text-sm">{label}</span>
+                <Select
+                  value={isTop ? String(form.overlap_detected) : String(form.conflicts[key])}
+                  onValueChange={v => {
+                    if (isTop) setForm(p => ({...p, overlap_detected: v === 'true'}));
+                    else setForm(p => ({...p, conflicts: {...p.conflicts, [key]: v === 'true'}}));
+                  }}
+                >
+                  <SelectTrigger className="w-24 h-8 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="true">Sim</SelectItem><SelectItem value="false">Não</SelectItem></SelectContent>
+                </Select>
+              </div>
+            ))}
+            <div><Label className="text-xs">Detalhes de Sobreposição</Label><Input value={form.overlap_details} onChange={e => setForm(p => ({...p, overlap_details: e.target.value}))} placeholder="Descreva a sobreposição..." /></div>
+            <div><Label className="text-xs">Pendências (uma por linha)</Label><Textarea value={form.pending_issues} onChange={e => setForm(p => ({...p, pending_issues: e.target.value}))} rows={3} placeholder="Ex: Regularização de APP" /></div>
+            <div className="flex justify-end gap-2">
+              <Button size="sm" variant="outline" onClick={() => setEditingSection(null)}>Cancelar</Button>
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => saveMulti({
+                overlap_detected: form.overlap_detected,
+                overlap_details: form.overlap_details,
+                conflicts: form.conflicts,
+                pending_issues: form.pending_issues.split('\n').map(s => s.trim()).filter(Boolean),
+              })}>Salvar</Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <span className="text-sm">Sobreposição Detectada</span>
+              {localGeo.overlap_detected ? <Badge className="bg-red-100 text-red-800"><XCircle className="w-3 h-3 mr-1" />Sim</Badge> : <Badge className="bg-green-100 text-green-800"><CheckCircle2 className="w-3 h-3 mr-1" />Não</Badge>}
+            </div>
+            {localGeo.conflicts && (
+              <>
+                {[['Sobreposição com Terras Públicas','public_land_overlap'],['Invasão de APP','app_invasion'],['Conflito de Limites','boundary_conflict'],['Inconsistência de Área','area_inconsistency']].map(([label, key]) => (
+                  <div key={key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm">{label}</span>
+                    {localGeo.conflicts[key] ? <Badge className="bg-red-100 text-red-800"><XCircle className="w-3 h-3 mr-1" />Sim</Badge> : <Badge className="bg-green-100 text-green-800"><CheckCircle2 className="w-3 h-3 mr-1" />Não</Badge>}
+                  </div>
+                ))}
+              </>
+            )}
+            {localGeo.pending_issues && localGeo.pending_issues.length > 0 && (
+              <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                <p className="text-sm font-medium text-yellow-900 mb-2">Pendências:</p>
+                <ul className="list-disc list-inside text-sm text-yellow-800 space-y-1">{localGeo.pending_issues.map((issue, i) => <li key={i}>{issue}</li>)}</ul>
+              </div>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function NeighborsCard({ localGeo, editingSection, setEditingSection, save }) {
+  const [neighbors, setNeighbors] = useState(localGeo.neighbors || []);
+  const [newNeighbor, setNewNeighbor] = useState({ name: '', direction: 'Norte', registration: '' });
+  const isEditing = editingSection === 'neighbors';
+
+  useEffect(() => { setNeighbors(localGeo.neighbors || []); }, [localGeo]);
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="flex items-center gap-2"><Users className="w-5 h-5" />Confrontantes (Vizinhos)</CardTitle>
+        {!isEditing && <EditBtn onClick={() => setEditingSection('neighbors')} />}
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {neighbors.length > 0 ? neighbors.map((n, idx) => (
+          <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div><p className="font-semibold">{n.name}</p><p className="text-sm text-gray-500">{n.direction}</p></div>
+            <div className="flex items-center gap-2">
+              {n.registration && <Badge variant="outline">Mat: {n.registration}</Badge>}
+              {isEditing && <button onClick={() => { const updated = neighbors.filter((_, i) => i !== idx); setNeighbors(updated); }} className="text-red-400 hover:text-red-600 p-1"><Trash2 className="w-3.5 h-3.5" /></button>}
+            </div>
+          </div>
+        )) : <p className="text-gray-500 text-center py-6">Nenhum confrontante cadastrado</p>}
+        {isEditing && (
+          <div className="border-t pt-3 space-y-2">
+            <p className="text-sm font-medium text-gray-700">Adicionar Confrontante</p>
+            <div className="grid grid-cols-3 gap-2">
+              <Input placeholder="Nome" value={newNeighbor.name} onChange={e => setNewNeighbor(p => ({...p, name: e.target.value}))} />
+              <Select value={newNeighbor.direction} onValueChange={v => setNewNeighbor(p => ({...p, direction: v}))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{['Norte','Sul','Leste','Oeste','Nordeste','Noroeste','Sudeste','Sudoeste'].map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+              </Select>
+              <Input placeholder="Matrícula" value={newNeighbor.registration} onChange={e => setNewNeighbor(p => ({...p, registration: e.target.value}))} />
+            </div>
+            <Button size="sm" variant="outline" onClick={() => { if (!newNeighbor.name) return; setNeighbors(p => [...p, newNeighbor]); setNewNeighbor({ name: '', direction: 'Norte', registration: '' }); }}><Plus className="w-3 h-3 mr-1" />Adicionar</Button>
+            <div className="flex justify-end gap-2 pt-1"><Button size="sm" variant="outline" onClick={() => setEditingSection(null)}>Cancelar</Button><Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => { save('neighbors', neighbors); }}>Salvar</Button></div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function VerticesCard({ localGeo, editingSection, setEditingSection, save }) {
+  const [vertices, setVertices] = useState(localGeo.vertices || []);
+  const [newVertex, setNewVertex] = useState({ vertex_number: '', latitude: '', longitude: '', elevation: '' });
+  const isEditing = editingSection === 'vertices';
+
+  useEffect(() => { setVertices(localGeo.vertices || []); }, [localGeo]);
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="flex items-center gap-2"><MapPin className="w-5 h-5" />Vértices do Imóvel</CardTitle>
+        {!isEditing && <EditBtn onClick={() => setEditingSection('vertices')} />}
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {vertices.length > 0 ? (
+          <div className="grid gap-2">
+            {vertices.map((v, idx) => (
+              <div key={idx} className="p-3 bg-gray-50 rounded-lg text-sm">
+                <div className="flex items-center justify-between">
+                  <div className="grid grid-cols-4 gap-2 flex-1">
+                    <div><p className="text-gray-500">Vértice</p><p className="font-semibold">{v.vertex_number}</p></div>
+                    <div><p className="text-gray-500">Latitude</p><p className="font-mono text-xs">{Number(v.latitude)?.toFixed(6)}</p></div>
+                    <div><p className="text-gray-500">Longitude</p><p className="font-mono text-xs">{Number(v.longitude)?.toFixed(6)}</p></div>
+                    <div><p className="text-gray-500">Elevação</p><p className="font-semibold">{v.elevation ? `${v.elevation}m` : '-'}</p></div>
+                  </div>
+                  {isEditing && <button onClick={() => setVertices(p => p.filter((_, i) => i !== idx))} className="ml-2 text-red-400 hover:text-red-600 p-1"><Trash2 className="w-3.5 h-3.5" /></button>}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : <p className="text-gray-500 text-center py-6">Nenhum vértice cadastrado</p>}
+        {isEditing && (
+          <div className="border-t pt-3 space-y-2">
+            <p className="text-sm font-medium text-gray-700">Adicionar Vértice</p>
+            <div className="grid grid-cols-4 gap-2">
+              <Input placeholder="Nº" value={newVertex.vertex_number} onChange={e => setNewVertex(p => ({...p, vertex_number: e.target.value}))} />
+              <Input placeholder="Latitude" type="number" value={newVertex.latitude} onChange={e => setNewVertex(p => ({...p, latitude: e.target.value}))} />
+              <Input placeholder="Longitude" type="number" value={newVertex.longitude} onChange={e => setNewVertex(p => ({...p, longitude: e.target.value}))} />
+              <Input placeholder="Elevação(m)" type="number" value={newVertex.elevation} onChange={e => setNewVertex(p => ({...p, elevation: e.target.value}))} />
+            </div>
+            <Button size="sm" variant="outline" onClick={() => { if (!newVertex.vertex_number) return; setVertices(p => [...p, { ...newVertex, latitude: parseFloat(newVertex.latitude), longitude: parseFloat(newVertex.longitude), elevation: newVertex.elevation ? parseFloat(newVertex.elevation) : null }]); setNewVertex({ vertex_number: '', latitude: '', longitude: '', elevation: '' }); }}><Plus className="w-3 h-3 mr-1" />Adicionar</Button>
+            <div className="flex justify-end gap-2 pt-1"><Button size="sm" variant="outline" onClick={() => setEditingSection(null)}>Cancelar</Button><Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => save('vertices', vertices)}>Salvar</Button></div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function SigefCard({ localGeo, editingSection, setEditingSection, saveMulti }) {
+  const [form, setForm] = useState({
+    sigef_status: localGeo.sigef_status || 'Não Cadastrado',
+    sigef_code: localGeo.sigef_code || '',
+    sigef_date: localGeo.sigef_date || '',
+    registration_integration: localGeo.registration_integration || false,
+    car_compatibility: localGeo.car_compatibility || 'Não Verificado',
+  });
+
+  useEffect(() => {
+    setForm({
+      sigef_status: localGeo.sigef_status || 'Não Cadastrado',
+      sigef_code: localGeo.sigef_code || '',
+      sigef_date: localGeo.sigef_date || '',
+      registration_integration: localGeo.registration_integration || false,
+      car_compatibility: localGeo.car_compatibility || 'Não Verificado',
+    });
+  }, [localGeo]);
+
+  const isEditing = editingSection === 'sigef';
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="flex items-center gap-2"><Shield className="w-5 h-5" />SIGEF e CAR</CardTitle>
+        {!isEditing && <EditBtn onClick={() => setEditingSection('sigef')} />}
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {isEditing ? (
+          <div className="space-y-3">
+            <div className="grid md:grid-cols-2 gap-3">
+              <div><Label className="text-xs">Status no SIGEF</Label>
+                <Select value={form.sigef_status} onValueChange={v => setForm(p => ({...p, sigef_status: v}))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{['Não Cadastrado','Em Análise','Aprovado','Rejeitado'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div><Label className="text-xs">Código SIGEF</Label><Input value={form.sigef_code} onChange={e => setForm(p => ({...p, sigef_code: e.target.value}))} /></div>
+              <div><Label className="text-xs">Data Certificação SIGEF</Label><Input type="date" value={form.sigef_date} onChange={e => setForm(p => ({...p, sigef_date: e.target.value}))} /></div>
+              <div><Label className="text-xs">Compatibilidade CAR</Label>
+                <Select value={form.car_compatibility} onValueChange={v => setForm(p => ({...p, car_compatibility: v}))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{['Compatível','Parcialmente Compatível','Incompatível','Não Verificado'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div><Label className="text-xs">Integração com Matrícula</Label>
+                <Select value={String(form.registration_integration)} onValueChange={v => setForm(p => ({...p, registration_integration: v === 'true'}))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="true">Integrado</SelectItem><SelectItem value="false">Pendente</SelectItem></SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2"><Button size="sm" variant="outline" onClick={() => setEditingSection(null)}>Cancelar</Button><Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => saveMulti(form)}>Salvar</Button></div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div><p className="text-sm text-gray-500">Status no SIGEF</p><p className="font-semibold">{localGeo.sigef_status || 'Não cadastrado'}</p></div>
+              <div><p className="text-sm text-gray-500">Código SIGEF</p><p className="font-semibold">{localGeo.sigef_code || 'Não informado'}</p></div>
+              {localGeo.sigef_date && <div><p className="text-sm text-gray-500">Data Certificação SIGEF</p><p className="font-semibold">{format(parseISO(localGeo.sigef_date), 'dd/MM/yyyy')}</p></div>}
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"><span className="text-sm">Integração com Matrícula</span>{localGeo.registration_integration ? <Badge className="bg-green-100 text-green-800"><CheckCircle2 className="w-3 h-3 mr-1" />Integrado</Badge> : <Badge className="bg-yellow-100 text-yellow-800"><AlertTriangle className="w-3 h-3 mr-1" />Pendente</Badge>}</div>
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"><span className="text-sm">Compatibilidade com CAR</span><Badge variant="outline">{localGeo.car_compatibility || 'Não verificado'}</Badge></div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function EnvAreasCard({ localGeo, editingSection, setEditingSection, save }) {
+  const [form, setForm] = useState({ app_mapped: '', legal_reserve: '', consolidated_areas: '', regularizable_areas: '', ...(localGeo.environmental_areas || {}) });
+  useEffect(() => { setForm({ app_mapped: '', legal_reserve: '', consolidated_areas: '', regularizable_areas: '', ...(localGeo.environmental_areas || {}) }); }, [localGeo]);
+  const isEditing = editingSection === 'envAreas';
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="flex items-center gap-2"><Leaf className="w-5 h-5" />Áreas Ambientais</CardTitle>
+        {!isEditing && <EditBtn onClick={() => setEditingSection('envAreas')} />}
+      </CardHeader>
+      <CardContent>
+        {isEditing ? (
+          <div className="space-y-3">
+            <div className="grid md:grid-cols-2 gap-3">
+              {[['APP Mapeada (ha)','app_mapped'],['Reserva Legal (ha)','legal_reserve'],['Áreas Consolidadas (ha)','consolidated_areas'],['Áreas Regularizáveis (ha)','regularizable_areas']].map(([label, key]) => (
+                <div key={key}><Label className="text-xs">{label}</Label><Input type="number" value={form[key]} onChange={e => setForm(p => ({...p, [key]: e.target.value}))} /></div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2"><Button size="sm" variant="outline" onClick={() => setEditingSection(null)}>Cancelar</Button><Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => save('environmental_areas', { app_mapped: parseFloat(form.app_mapped) || 0, legal_reserve: parseFloat(form.legal_reserve) || 0, consolidated_areas: parseFloat(form.consolidated_areas) || 0, regularizable_areas: parseFloat(form.regularizable_areas) || 0 })}>Salvar</Button></div>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-4">
+            {[['APP Mapeada','app_mapped','green'],['Reserva Legal','legal_reserve','emerald'],['Áreas Consolidadas','consolidated_areas','blue'],['Áreas Regularizáveis','regularizable_areas','yellow']].map(([label, key, color]) => (
+              <div key={key} className={`p-4 bg-${color}-50 rounded-lg border border-${color}-200`}>
+                <p className={`text-sm text-${color}-700 mb-1`}>{label}</p>
+                <p className={`text-2xl font-bold text-${color}-900`}>{localGeo.environmental_areas?.[key] ? `${localGeo.environmental_areas[key]} ha` : 'Não informado'}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function EnvAlertsCard({ localGeo, editingSection, setEditingSection, save }) {
+  const [alerts, setAlerts] = useState(localGeo.environmental_conflict_alerts || []);
+  const [newAlert, setNewAlert] = useState({ alert_type: 'Invasão de APP', description: '', severity: 'Média', status: 'Aberto' });
+  const isEditing = editingSection === 'envAlerts';
+
+  useEffect(() => { setAlerts(localGeo.environmental_conflict_alerts || []); }, [localGeo]);
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="flex items-center gap-2"><AlertTriangle className="w-5 h-5" />Alertas de Conflito Ambiental</CardTitle>
+        {!isEditing && <EditBtn onClick={() => setEditingSection('envAlerts')} />}
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {alerts.length > 0 ? alerts.map((alert, idx) => (
+          <div key={idx} className="p-4 bg-red-50 rounded-lg border border-red-200">
+            <div className="flex items-start justify-between mb-1">
+              <p className="font-semibold text-red-900">{alert.alert_type}</p>
+              <div className="flex items-center gap-1">
+                <Badge className={alert.severity === 'Alta' ? 'bg-red-600 text-white' : alert.severity === 'Média' ? 'bg-yellow-600 text-white' : 'bg-blue-600 text-white'}>{alert.severity}</Badge>
+                {isEditing && <button onClick={() => setAlerts(p => p.filter((_, i) => i !== idx))} className="text-red-400 hover:text-red-600 p-1"><Trash2 className="w-3.5 h-3.5" /></button>}
+              </div>
+            </div>
+            <p className="text-sm text-red-800">{alert.description}</p>
+            <Badge variant="outline" className="mt-2">{alert.status}</Badge>
+          </div>
+        )) : <p className="text-gray-500 text-center py-6">Nenhum alerta de conflito ambiental</p>}
+        {isEditing && (
+          <div className="border-t pt-3 space-y-2">
+            <p className="text-sm font-medium">Adicionar Alerta</p>
+            <div className="grid md:grid-cols-2 gap-2">
+              <Select value={newAlert.alert_type} onValueChange={v => setNewAlert(p => ({...p, alert_type: v}))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{['Invasão de APP','Sobreposição','Conflito de Área','Outro'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select>
+              <Select value={newAlert.severity} onValueChange={v => setNewAlert(p => ({...p, severity: v}))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{['Baixa','Média','Alta'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select>
+              <Select value={newAlert.status} onValueChange={v => setNewAlert(p => ({...p, status: v}))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{['Aberto','Em Resolução','Resolvido'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select>
+              <Input placeholder="Descrição" value={newAlert.description} onChange={e => setNewAlert(p => ({...p, description: e.target.value}))} />
+            </div>
+            <Button size="sm" variant="outline" onClick={() => { if (!newAlert.description) return; setAlerts(p => [...p, newAlert]); setNewAlert({ alert_type: 'Invasão de APP', description: '', severity: 'Média', status: 'Aberto' }); }}><Plus className="w-3 h-3 mr-1" />Adicionar</Button>
+            <div className="flex justify-end gap-2 pt-1"><Button size="sm" variant="outline" onClick={() => setEditingSection(null)}>Cancelar</Button><Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => save('environmental_conflict_alerts', alerts)}>Salvar</Button></div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function MapLayersCard({ localGeo, editingSection, setEditingSection, save }) {
+  const [form, setForm] = useState({ satellite_imagery: '', contour_lines: false, hydrography: false, land_use: '', ...(localGeo.map_layers || {}) });
+  useEffect(() => { setForm({ satellite_imagery: '', contour_lines: false, hydrography: false, land_use: '', ...(localGeo.map_layers || {}) }); }, [localGeo]);
+  const isEditing = editingSection === 'mapLayers';
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="flex items-center gap-2"><Layers className="w-5 h-5" />Camadas do Mapa</CardTitle>
+        {!isEditing && <EditBtn onClick={() => setEditingSection('mapLayers')} />}
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {isEditing ? (
+          <div className="space-y-3">
+            <div><Label className="text-xs">URL Imagem de Satélite</Label><Input value={form.satellite_imagery} onChange={e => setForm(p => ({...p, satellite_imagery: e.target.value}))} placeholder="https://..." /></div>
+            {[['Curvas de Nível','contour_lines'],['Hidrografia','hydrography']].map(([label, key]) => (
+              <div key={key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <span className="text-sm">{label}</span>
+                <Select value={String(form[key])} onValueChange={v => setForm(p => ({...p, [key]: v === 'true'}))}>
+                  <SelectTrigger className="w-32 h-8 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="true">Disponível</SelectItem><SelectItem value="false">Não disponível</SelectItem></SelectContent>
+                </Select>
+              </div>
+            ))}
+            <div><Label className="text-xs">Uso e Ocupação do Solo</Label><Input value={form.land_use} onChange={e => setForm(p => ({...p, land_use: e.target.value}))} /></div>
+            <div className="flex justify-end gap-2"><Button size="sm" variant="outline" onClick={() => setEditingSection(null)}>Cancelar</Button><Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => save('map_layers', form)}>Salvar</Button></div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {[['Imagem de Satélite', !!localGeo.map_layers?.satellite_imagery],['Curvas de Nível', localGeo.map_layers?.contour_lines],['Hidrografia', localGeo.map_layers?.hydrography]].map(([label, val]) => (
+              <div key={label} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <span className="text-sm">{label}</span>
+                {val ? <Badge className="bg-green-100 text-green-800"><CheckCircle2 className="w-3 h-3 mr-1" />Disponível</Badge> : <Badge variant="outline">Não disponível</Badge>}
+              </div>
+            ))}
+            {localGeo.map_layers?.land_use && <div className="p-3 bg-gray-50 rounded-lg"><p className="text-sm text-gray-500 mb-1">Uso e Ocupação do Solo</p><p className="font-semibold">{localGeo.map_layers.land_use}</p></div>}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function PerimeterHistoryCard({ localGeo, editingSection, setEditingSection, save }) {
+  const [adjustments, setAdjustments] = useState(localGeo.perimeter_adjustments || []);
+  const [newAdj, setNewAdj] = useState({ date: '', reason: '', technician: '', previous_perimeter: '', new_perimeter: '' });
+  const isEditing = editingSection === 'history';
+
+  useEffect(() => { setAdjustments(localGeo.perimeter_adjustments || []); }, [localGeo]);
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="flex items-center gap-2"><TrendingUp className="w-5 h-5" />Histórico de Ajustes de Perímetro</CardTitle>
+        {!isEditing && <EditBtn onClick={() => setEditingSection('history')} />}
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {adjustments.length > 0 ? adjustments.map((a, idx) => (
+          <div key={idx} className="p-4 bg-gray-50 rounded-lg border-l-4 border-emerald-500">
+            <div className="flex items-start justify-between mb-2">
+              <div><p className="font-semibold">{a.date ? format(parseISO(a.date), 'dd/MM/yyyy') : '-'}</p><p className="text-sm text-gray-600 mt-1">{a.reason}</p></div>
+              <div className="flex items-center gap-1"><Badge variant="outline">{a.technician}</Badge>{isEditing && <button onClick={() => setAdjustments(p => p.filter((_, i) => i !== idx))} className="text-red-400 hover:text-red-600 p-1"><Trash2 className="w-3.5 h-3.5" /></button>}</div>
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-sm"><div><p className="text-gray-500">Anterior</p><p className="font-semibold">{a.previous_perimeter?.toLocaleString()} m</p></div><div><p className="text-gray-500">Novo</p><p className="font-semibold text-emerald-600">{a.new_perimeter?.toLocaleString()} m</p></div></div>
+          </div>
+        )) : <p className="text-gray-500 text-center py-6">Nenhum ajuste registrado</p>}
+        {isEditing && (
+          <div className="border-t pt-3 space-y-2">
+            <p className="text-sm font-medium">Adicionar Ajuste</p>
+            <div className="grid md:grid-cols-2 gap-2">
+              <Input type="date" value={newAdj.date} onChange={e => setNewAdj(p => ({...p, date: e.target.value}))} />
+              <Input placeholder="Responsável Técnico" value={newAdj.technician} onChange={e => setNewAdj(p => ({...p, technician: e.target.value}))} />
+              <Input placeholder="Motivo" value={newAdj.reason} onChange={e => setNewAdj(p => ({...p, reason: e.target.value}))} className="md:col-span-2" />
+              <Input type="number" placeholder="Perímetro Anterior (m)" value={newAdj.previous_perimeter} onChange={e => setNewAdj(p => ({...p, previous_perimeter: e.target.value}))} />
+              <Input type="number" placeholder="Novo Perímetro (m)" value={newAdj.new_perimeter} onChange={e => setNewAdj(p => ({...p, new_perimeter: e.target.value}))} />
+            </div>
+            <Button size="sm" variant="outline" onClick={() => { if (!newAdj.date || !newAdj.reason) return; setAdjustments(p => [...p, { ...newAdj, previous_perimeter: parseFloat(newAdj.previous_perimeter), new_perimeter: parseFloat(newAdj.new_perimeter) }]); setNewAdj({ date: '', reason: '', technician: '', previous_perimeter: '', new_perimeter: '' }); }}><Plus className="w-3 h-3 mr-1" />Adicionar</Button>
+            <div className="flex justify-end gap-2 pt-1"><Button size="sm" variant="outline" onClick={() => setEditingSection(null)}>Cancelar</Button><Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => save('perimeter_adjustments', adjustments)}>Salvar</Button></div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function TechnicianCard({ localGeo, editingSection, setEditingSection, saveMulti }) {
+  const [form, setForm] = useState({ technician_name: localGeo.technician_name || '', technician_crea: localGeo.technician_crea || '', last_survey_date: localGeo.last_survey_date || '' });
+  useEffect(() => { setForm({ technician_name: localGeo.technician_name || '', technician_crea: localGeo.technician_crea || '', last_survey_date: localGeo.last_survey_date || '' }); }, [localGeo]);
+  const isEditing = editingSection === 'technician';
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle>Responsável Técnico</CardTitle>
+        {!isEditing && <EditBtn onClick={() => setEditingSection('technician')} />}
+      </CardHeader>
+      <CardContent>
+        {isEditing ? (
+          <div className="space-y-3">
+            <div className="grid md:grid-cols-2 gap-3">
+              <div><Label className="text-xs">Nome</Label><Input value={form.technician_name} onChange={e => setForm(p => ({...p, technician_name: e.target.value}))} /></div>
+              <div><Label className="text-xs">CREA</Label><Input value={form.technician_crea} onChange={e => setForm(p => ({...p, technician_crea: e.target.value}))} /></div>
+              <div className="md:col-span-2"><Label className="text-xs">Último Levantamento</Label><Input type="date" value={form.last_survey_date} onChange={e => setForm(p => ({...p, last_survey_date: e.target.value}))} /></div>
+            </div>
+            <div className="flex justify-end gap-2"><Button size="sm" variant="outline" onClick={() => setEditingSection(null)}>Cancelar</Button><Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => saveMulti(form)}>Salvar</Button></div>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-4">
+            <div><p className="text-sm text-gray-500">Nome</p><p className="font-semibold">{localGeo.technician_name || 'Não informado'}</p></div>
+            <div><p className="text-sm text-gray-500">CREA</p><p className="font-semibold">{localGeo.technician_crea || 'Não informado'}</p></div>
+            <div className="md:col-span-2"><p className="text-sm text-gray-500">Último Levantamento</p><p className="font-semibold">{localGeo.last_survey_date ? format(parseISO(localGeo.last_survey_date), 'dd/MM/yyyy') : 'Não informado'}</p></div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

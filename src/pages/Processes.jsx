@@ -356,6 +356,27 @@ export default function Processes() {
       </div>
 
       <div>
+        <Label>Localização / Município</Label>
+        <Input
+          value={formData.location}
+          onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+          placeholder="Ex: São Paulo - SP / Zona Rural, Km 15"
+        />
+      </div>
+
+      <div>
+        <Label>Valor da Multa Arbitrada (R$)</Label>
+        <Input
+          type="number"
+          min="0"
+          step="0.01"
+          value={formData.fine_value}
+          onChange={(e) => setFormData({ ...formData, fine_value: e.target.value })}
+          placeholder="Ex: 15000.00"
+        />
+      </div>
+
+      <div>
         <Label>Status</Label>
         <Select
           value={formData.status}

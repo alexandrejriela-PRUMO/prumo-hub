@@ -13,7 +13,8 @@ import {
   Users, 
   Map as MapIcon,
   TreePine,
-  Briefcase
+  Briefcase,
+  User
 } from 'lucide-react';
 import { toast } from 'sonner';
 import PropertyForm from '../components/properties/PropertyForm';

@@ -181,15 +181,19 @@ export default function PropertyUsers({ property, currentUser, onSave, onCancel 
       </div>
 
       {/* Info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <p className="text-sm text-blue-800">
-          <strong>Sobre Permissões:</strong><br/>
-          • <strong>Proprietário:</strong> Acesso total à propriedade<br/>
-          • <strong>Gestor:</strong> Pode criar e editar informações<br/>
-          • <strong>Técnico:</strong> Pode criar alertas e relatórios<br/>
-          • <strong>Visualizador:</strong> Apenas visualização
-        </p>
-      </div>
+       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+         <p className="text-sm text-blue-800">
+           {isConsultor ? (
+             <>
+               <strong>Visualizador:</strong> Clientes do consultor que podem visualizar a propriedade e receber notificações, sem permissão de edição.
+             </>
+           ) : (
+             <>
+               <strong>Proprietário:</strong> Você tem acesso total à propriedade. Para adicionar usuários autorizados, você precisa ser um consultor.
+             </>
+           )}
+         </p>
+       </div>
 
       <div className="flex gap-3 justify-end pt-4 border-t">
         <Button type="button" variant="outline" onClick={onCancel}>

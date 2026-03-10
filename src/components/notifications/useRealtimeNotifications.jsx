@@ -8,7 +8,7 @@ export function useRealtimeNotifications(userEmail) {
   useEffect(() => {
     if (!userEmail) return;
 
-    const loadInitialNotifications = async () => {
+    const load = async () => {
       try {
         const data = await base44.entities.InAppNotification.filter(
           { user_email: userEmail },
@@ -23,11 +23,13 @@ export function useRealtimeNotifications(userEmail) {
       }
     };
 
-    loadInitialNotifications();
+    load();
 
     const unsubscribe = base44.entities.InAppNotification.subscribe((event) => {
-      if (event.type === 'create' && event.data?.user_email === userEmail) {
-        setNotifications(prev => [event.data, ...prev]);
+      if (event.type === 'create') {
+        if (event.data?.user_email === userEmail) {
+          setNotifications(prev => [event.data, ...prev]);
+        }
       } else if (event.type === 'update') {
         setNotifications(prev => prev.map(n => n.id === event.id ? event.data : n));
       } else if (event.type === 'delete') {
@@ -38,31 +40,17 @@ export function useRealtimeNotifications(userEmail) {
     return () => unsubscribe();
   }, [userEmail]);
 
-  const markAsRead = useCallback(async (notificationId) => {
-    try {
-      await base44.entities.InAppNotification.update(notificationId, { read: true });
-    } catch (error) {
-      console.error('Erro ao marcar como lida:', error);
-    }
+  const markAsRead = useCallback(async (id) => {
+    await base44.entities.InAppNotification.update(id, { read: true });
   }, []);
 
-  const markAllAsRead = useCallback(async () => {
-    const unread = notifications.filter(n => !n.read);
-    for (const n of unread) {
-      try {
-        await base44.entities.InAppNotification.update(n.id, { read: true });
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  }, [notifications]);
+  const markAllAsRead = useCallback(async (notifs) => {
+    const unread = notifs.filter(n => !n.read);
+    await Promise.all(unread.map(n => base44.entities.InAppNotification.update(n.id, { read: true })));
+  }, []);
 
-  const deleteNotification = useCallback(async (notificationId) => {
-    try {
-      await base44.entities.InAppNotification.delete(notificationId);
-    } catch (error) {
-      console.error('Erro ao deletar notificação:', error);
-    }
+  const deleteNotification = useCallback(async (id) => {
+    await base44.entities.InAppNotification.delete(id);
   }, []);
 
   const unreadCount = notifications.filter(n => !n.read).length;

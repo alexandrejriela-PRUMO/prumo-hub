@@ -172,6 +172,12 @@ export default function ConsultorClients() {
                       {client.client_email}
                     </p>
                   </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setClientToDelete(client); }}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
 
                 {/* Status Badge */}

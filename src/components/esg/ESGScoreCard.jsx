@@ -13,7 +13,7 @@ export default function ESGScoreCard({ score = 0, greenLoans = 0, taxIncentives 
   const getScoreLabel = (score) => {
     if (score >= 75) return 'Excelente';
     if (score >= 50) return 'Bom';
-    return 'Em Progresso';
+    return 'Continue Melhorando';
   };
 
   const scoreColor = getScoreColor(score);

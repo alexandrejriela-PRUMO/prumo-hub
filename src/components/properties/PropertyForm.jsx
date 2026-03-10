@@ -55,6 +55,22 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
 
   const [activityInput, setActivityInput] = useState('');
 
+  // Confrontantes
+  const [neighbors, setNeighbors] = useState(
+    property?.neighbors ? (typeof property.neighbors === 'string' ? JSON.parse(property.neighbors) : property.neighbors) : []
+  );
+  const [newNeighbor, setNewNeighbor] = useState({ direction: 'Norte', name: '', location: '', registration: '' });
+
+  const addNeighbor = () => {
+    if (!newNeighbor.name.trim()) return;
+    setNeighbors([...neighbors, { ...newNeighbor }]);
+    setNewNeighbor({ direction: 'Norte', name: '', location: '', registration: '' });
+  };
+
+  const removeNeighbor = (idx) => {
+    setNeighbors(neighbors.filter((_, i) => i !== idx));
+  };
+
   const isUrban = formData.property_type === 'urbano';
   const currentActivities = isUrban ? urbanActivities : ruralActivities;
 

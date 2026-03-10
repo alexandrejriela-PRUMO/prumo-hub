@@ -117,7 +117,9 @@ export default function Processes() {
       filing_date: '',
       status: 'Em Andamento',
       notes: '',
-      updates: []
+      updates: [],
+      fine_value: '',
+      location: ''
     });
     setEditingProcess(null);
   };

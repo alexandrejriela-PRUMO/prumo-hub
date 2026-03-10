@@ -231,6 +231,27 @@ export default function ConsultorClients() {
         onSuccess={() => setShowNewClientForm(false)}
       />
 
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!clientToDelete} onOpenChange={() => setClientToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir cliente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Isso irá excluir <strong>{clientToDelete?.client_name || clientToDelete?.client_email}</strong> e todas as suas propriedades vinculadas. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => deleteClientMutation.mutate(clientToDelete)}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Client Full Modal */}
       <Dialog open={!!crmProperty} onOpenChange={() => setCrmProperty(null)}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">

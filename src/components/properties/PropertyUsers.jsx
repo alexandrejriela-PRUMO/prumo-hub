@@ -8,9 +8,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { X, Plus, User, Mail, Shield } from 'lucide-react';
 import { format } from 'date-fns';
 
-const userRoles = ['Proprietário', 'Gestor', 'Técnico', 'Visualizador'];
-
 export default function PropertyUsers({ property, currentUser, onSave, onCancel }) {
+  const isConsultor = currentUser?.user_type === 'consultor';
   const [users, setUsers] = useState(() => {
     const au = property?.authorized_users;
     if (!au) return [];

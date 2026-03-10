@@ -81,59 +81,50 @@ export default function PropertyUsers({ property, currentUser, onSave, onCancel 
         </Card>
       </div>
 
-      {/* Add User Form */}
-      <div>
-        <h3 className="font-semibold text-gray-900 mb-3">Adicionar Usuário Autorizado</h3>
-        <Card>
-          <CardContent className="p-4 space-y-3">
-            <div className="grid md:grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Email *</Label>
-                <Input
-                  type="email"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                  placeholder="usuario@exemplo.com"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Nome *</Label>
-                <Input
-                  value={newUser.name}
-                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                  placeholder="Nome do usuário"
-                />
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <div className="flex-1 space-y-2">
-                <Label>Permissão</Label>
-                <Select
-                  value={newUser.role}
-                  onValueChange={(v) => setNewUser({ ...newUser, role: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {userRoles.map(role => (
-                      <SelectItem key={role} value={role}>{role}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button
-                type="button"
-                onClick={addUser}
-                className="bg-emerald-600 hover:bg-emerald-700 self-end"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Adicionar
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Add User Form - Only for Consultors */}
+       {isConsultor && (
+         <div>
+           <h3 className="font-semibold text-gray-900 mb-3">Adicionar Visualizador</h3>
+           <Card>
+             <CardContent className="p-4 space-y-3">
+               <div className="grid md:grid-cols-2 gap-3">
+                 <div className="space-y-2">
+                   <Label>Email *</Label>
+                   <Input
+                     type="email"
+                     value={newUser.email}
+                     onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                     placeholder="usuario@exemplo.com"
+                   />
+                 </div>
+                 <div className="space-y-2">
+                   <Label>Nome *</Label>
+                   <Input
+                     value={newUser.name}
+                     onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                     placeholder="Nome do usuário"
+                   />
+                 </div>
+               </div>
+               <div className="flex gap-3">
+                 <div className="flex-1">
+                   <Badge className="bg-gray-100 text-gray-700">
+                     Visualizador
+                   </Badge>
+                 </div>
+                 <Button
+                   type="button"
+                   onClick={addUser}
+                   className="bg-emerald-600 hover:bg-emerald-700"
+                 >
+                   <Plus className="w-4 h-4 mr-2" />
+                   Adicionar
+                 </Button>
+               </div>
+             </CardContent>
+           </Card>
+         </div>
+       )}
 
       {/* Users List */}
       <div>

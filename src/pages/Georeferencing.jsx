@@ -324,6 +324,7 @@ export default function Georeferencing() {
               onFileUpload={handleFileUpload}
               uploading={uploading}
               user={user}
+              onUpdate={(data) => updateMutation.mutate({ id: viewingGeo.id, data })}
             />
           </DialogContent>
         </Dialog>

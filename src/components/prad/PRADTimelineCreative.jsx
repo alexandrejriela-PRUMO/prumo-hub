@@ -136,14 +136,14 @@ export default function PRADTimelineCreative({ prad, onUpdate }) {
                    `}
                   >
                     {/* Ícone + nome + número */}
-                    <div className="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
+                    <div className="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3 w-full">
                       <span className={`shrink-0 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center mt-0.5
                         ${isCompleted || isActive ? `${c.text} ${c.bg}` : 'text-gray-400 bg-gray-200'}`}>
                         {index + 1}
                       </span>
-                      <span className="text-xl sm:text-2xl leading-none">{stage.icon}</span>
+                      <span className="text-xl sm:text-2xl leading-none flex-shrink-0">{stage.icon}</span>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-xs sm:text-sm font-semibold leading-tight ${isCompleted || isActive ? c.text : 'text-gray-600'}`}>
+                        <p className={`text-xs sm:text-sm font-semibold leading-snug ${isCompleted || isActive ? c.text : 'text-gray-600'} break-words`}>
                           {stage.name}
                         </p>
                       </div>

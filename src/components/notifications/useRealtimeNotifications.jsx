@@ -1,9 +1,10 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 
 export function useRealtimeNotifications(userEmail) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const refetchTimeoutRef = useRef(null);
 
   useEffect(() => {
     if (!userEmail) return;
@@ -37,7 +38,14 @@ export function useRealtimeNotifications(userEmail) {
       }
     });
 
-    return () => unsubscribe();
+    // Refetch a cada 30 segundos para garantir sincronização
+    const refetchInterval = setInterval(load, 30000);
+
+    return () => {
+      unsubscribe();
+      clearInterval(refetchInterval);
+      if (refetchTimeoutRef.current) clearTimeout(refetchTimeoutRef.current);
+    };
   }, [userEmail]);
 
   const markAsRead = useCallback(async (id) => {

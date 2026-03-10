@@ -42,7 +42,7 @@ export default function ClientCRMPanel({ property, onClose }) {
   const [editingServiceIndex, setEditingServiceIndex] = useState(null);
   const [newInteraction, setNewInteraction] = useState({ type: 'Ligação', title: '', description: '', next_action: '', next_action_date: '' });
   const [newTask, setNewTask] = useState({ title: '', due_date: '', priority: 'Média' });
-  const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '' });
+  const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', received: false });
 
   // Se vier do ConsultorClients, property é um objeto "client" com .properties[]
   // Usa a primeira propriedade real para associar o CRM
@@ -148,7 +148,7 @@ export default function ClientCRMPanel({ property, onClose }) {
       services = [...(crm?.services || []), { ...newService, value: parseFloat(newService.value) || 0 }];
     }
     upsertCRM.mutate({ services });
-    setNewService({ name: '', status: 'Em Proposta', value: '', notes: '' });
+    setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', received: false });
     setShowServiceForm(false);
     setEditingServiceIndex(null);
     toast.success(editingServiceIndex !== null ? 'Serviço atualizado!' : 'Serviço adicionado!');
@@ -156,7 +156,12 @@ export default function ClientCRMPanel({ property, onClose }) {
 
   const startEditService = (service, index) => {
     setEditingServiceIndex(index);
-    setNewService({ name: service.name, status: service.status, value: service.value?.toString() || '', notes: service.notes || '' });
+    setNewService({
+      name: service.name, status: service.status, value: service.value?.toString() || '',
+      notes: service.notes || '', payment_type: service.payment_type || 'avista',
+      payment_method: service.payment_method || 'Pix', installments: service.installments || '',
+      start_date: service.start_date || '', received: service.received || false,
+    });
     setShowServiceForm(true);
   };
 

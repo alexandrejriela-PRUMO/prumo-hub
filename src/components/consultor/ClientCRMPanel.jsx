@@ -454,8 +454,41 @@ export default function ClientCRMPanel({ property, onClose }) {
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-600 mb-1 block">Valor (R$)</Label>
+                    <Label className="text-xs text-gray-600 mb-1 block">Valor Total (R$)</Label>
                     <Input className="h-9 text-sm" type="number" value={newService.value} onChange={e => setNewService(p => ({ ...p, value: e.target.value }))} placeholder="0,00" />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600 mb-1 block">Data de Início</Label>
+                    <Input className="h-9 text-sm" type="date" value={newService.start_date} onChange={e => setNewService(p => ({ ...p, start_date: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600 mb-1 block">Tipo de Pagamento</Label>
+                    <Select value={newService.payment_type} onValueChange={v => setNewService(p => ({ ...p, payment_type: v }))}>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="avista">À Vista</SelectItem>
+                        <SelectItem value="parcelado">Parcelado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600 mb-1 block">Forma de Pagamento</Label>
+                    <Select value={newService.payment_method} onValueChange={v => setNewService(p => ({ ...p, payment_method: v }))}>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {['Pix','Transferência','Boleto','Cartão de Crédito','Cartão de Débito','Dinheiro','Cheque','Outro'].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {newService.payment_type === 'parcelado' && (
+                    <div>
+                      <Label className="text-xs text-gray-600 mb-1 block">Nº de Parcelas</Label>
+                      <Input className="h-9 text-sm" type="number" min="2" value={newService.installments} onChange={e => setNewService(p => ({ ...p, installments: e.target.value }))} placeholder="Ex: 3" />
+                    </div>
+                  )}
+                  <div className="sm:col-span-2 flex items-center gap-2 mt-1">
+                    <input type="checkbox" id="svc-received" checked={newService.received} onChange={e => setNewService(p => ({ ...p, received: e.target.checked }))} className="w-4 h-4 accent-emerald-600" />
+                    <label htmlFor="svc-received" className="text-sm text-gray-700 cursor-pointer">Valor já recebido</label>
                   </div>
                   <div className="sm:col-span-2">
                     <Label className="text-xs text-gray-600 mb-1 block">Observações</Label>

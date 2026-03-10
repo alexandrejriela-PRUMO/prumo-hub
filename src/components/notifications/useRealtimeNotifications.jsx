@@ -8,10 +8,9 @@ export function useRealtimeNotifications(userEmail) {
   useEffect(() => {
     if (!userEmail) return;
 
-    // Carregar notificações iniciais
     const loadInitialNotifications = async () => {
       try {
-        const data = await base44.entities.RealtimeNotification.filter(
+        const data = await base44.entities.InAppNotification.filter(
           { user_email: userEmail },
           '-created_date',
           100
@@ -26,42 +25,41 @@ export function useRealtimeNotifications(userEmail) {
 
     loadInitialNotifications();
 
-    // Subscrever a mudanças em tempo real
-    const unsubscribe = base44.entities.RealtimeNotification.subscribe((event) => {
-      if (event.type === 'create') {
-        // Adicionar nova notificação apenas se for para este usuário
-        if (event.data.user_email === userEmail) {
-          setNotifications(prev => [event.data, ...prev]);
-        }
+    const unsubscribe = base44.entities.InAppNotification.subscribe((event) => {
+      if (event.type === 'create' && event.data?.user_email === userEmail) {
+        setNotifications(prev => [event.data, ...prev]);
       } else if (event.type === 'update') {
-        // Atualizar notificação existente
-        setNotifications(prev =>
-          prev.map(n => n.id === event.id ? event.data : n)
-        );
+        setNotifications(prev => prev.map(n => n.id === event.id ? event.data : n));
       } else if (event.type === 'delete') {
-        // Remover notificação
         setNotifications(prev => prev.filter(n => n.id !== event.id));
       }
     });
 
-    return () => {
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, [userEmail]);
 
   const markAsRead = useCallback(async (notificationId) => {
     try {
-      await base44.entities.RealtimeNotification.update(notificationId, {
-        read: true
-      });
+      await base44.entities.InAppNotification.update(notificationId, { read: true });
     } catch (error) {
       console.error('Erro ao marcar como lida:', error);
     }
   }, []);
 
+  const markAllAsRead = useCallback(async () => {
+    const unread = notifications.filter(n => !n.read);
+    for (const n of unread) {
+      try {
+        await base44.entities.InAppNotification.update(n.id, { read: true });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, [notifications]);
+
   const deleteNotification = useCallback(async (notificationId) => {
     try {
-      await base44.entities.RealtimeNotification.delete(notificationId);
+      await base44.entities.InAppNotification.delete(notificationId);
     } catch (error) {
       console.error('Erro ao deletar notificação:', error);
     }
@@ -69,11 +67,5 @@ export function useRealtimeNotifications(userEmail) {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  return {
-    notifications,
-    loading,
-    unreadCount,
-    markAsRead,
-    deleteNotification
-  };
+  return { notifications, loading, unreadCount, markAsRead, markAllAsRead, deleteNotification };
 }

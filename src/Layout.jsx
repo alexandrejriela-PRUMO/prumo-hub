@@ -34,7 +34,8 @@ import {
               TrendingUp,
               Cloud,
               Sparkles,
-              Map
+              Map,
+              ClipboardList
                     } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

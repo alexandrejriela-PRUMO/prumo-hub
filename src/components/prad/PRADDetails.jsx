@@ -27,6 +27,7 @@ import { ptBR } from 'date-fns/locale';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import PRADTimelineCreative from './PRADTimelineCreative';
+import PRADAnnualReports from './PRADAnnualReports';
 import PRADAlerts from './PRADAlerts';
 import PRADDocuments from './PRADDocuments';
 import PRADImageMonitoring from './PRADImageMonitoring';

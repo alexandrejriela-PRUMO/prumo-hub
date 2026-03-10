@@ -57,6 +57,15 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
 
   const [activityInput, setActivityInput] = useState('');
 
+  // Dados extras rurais
+  const parseRuralExtra = () => {
+    try {
+      return property?.rural_extra ? JSON.parse(property.rural_extra) : {};
+    } catch { return {}; }
+  };
+  const [ruralExtra, setRuralExtra] = useState(parseRuralExtra());
+  const setExtra = (key, val) => setRuralExtra(prev => ({ ...prev, [key]: val }));
+
   // Confrontantes
   const [neighbors, setNeighbors] = useState(
     property?.neighbors ? (typeof property.neighbors === 'string' ? JSON.parse(property.neighbors) : property.neighbors) : []

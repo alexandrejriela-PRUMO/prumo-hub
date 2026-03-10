@@ -81,6 +81,8 @@ import Reports from './pages/Reports';
 import Requests from './pages/Requests';
 import Support from './pages/Support';
 import TaxIncentives from './pages/TaxIncentives';
+import MyTeam from './pages/MyTeam';
+import AuditLogs from './pages/AuditLogs';
 import __Layout from './Layout.jsx';
 
 
@@ -119,6 +121,8 @@ export const PAGES = {
     "Requests": Requests,
     "Support": Support,
     "TaxIncentives": TaxIncentives,
+    "MyTeam": MyTeam,
+    "AuditLogs": AuditLogs,
 }
 
 export const pagesConfig = {

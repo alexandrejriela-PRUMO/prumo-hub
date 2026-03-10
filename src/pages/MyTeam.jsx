@@ -342,7 +342,6 @@ export default function MyTeam() {
             <Button className="bg-emerald-700 hover:bg-emerald-800" onClick={handleInvite} disabled={isInviting || !inviteForm.member_email || !inviteForm.member_role}>
               {isInviting ? 'Enviando convite...' : 'Enviar Convite'}
             </Button>
-          </DialogsFooooter>
           </DialogFooter>
         </DialogContent>
       </Dialog>

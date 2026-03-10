@@ -19,7 +19,7 @@ export default function PropertyUsers({ property, currentUser, onSave, onCancel 
   const [newUser, setNewUser] = useState({
     email: '',
     name: '',
-    role: 'Visualizador'
+    role: isConsultor ? 'Visualizador' : 'Proprietário'
   });
 
   const addUser = () => {

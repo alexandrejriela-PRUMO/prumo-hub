@@ -290,9 +290,11 @@ export default function Home() {
             />
           )}
 
-          {/* Faturas/Boletos */}
+          {/* Financeiro */}
           {isLoading ? (
             <Skeleton className="h-80 rounded-xl" />
+          ) : isConsultor ? (
+            <ClientFinancialSummary client={{ id: selectedProperty?.id, properties: [selectedProperty] }} />
           ) : (
             <InvoicesSummary invoices={invoices} />
           )}

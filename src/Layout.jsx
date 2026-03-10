@@ -256,7 +256,7 @@ export default function Layout({ children, currentPageName }) {
           {/* Logo */}
           <div className="p-6 border-b border-emerald-800/50">
             <div className="flex flex-col items-center gap-3 w-full">
-              <p className="text-xs font-semibold tracking-widest uppercase" style={{fontFamily: 'Georgia, serif', backgroundImage: user?.user_type === 'consultor' ? 'linear-gradient(135deg, #fbbf24, #f59e0b, #d97706)' : 'linear-gradient(135deg, #e5e7eb, #a1a5b4, #6b7280)', backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
+              <p className="text-xs font-semibold italic tracking-widest uppercase" style={{fontFamily: 'Georgia, serif', backgroundImage: user?.user_type === 'consultor' ? 'linear-gradient(135deg, #fbbf24, #f59e0b, #d97706)' : 'linear-gradient(135deg, #e5e7eb, #a1a5b4, #6b7280)', backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
                 {user?.user_type === 'consultor' ? 'Consultor' : 'Produtor'}
               </p>
               <img 

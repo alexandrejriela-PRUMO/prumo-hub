@@ -146,7 +146,9 @@ export default function Processes() {
       filing_date: process.filing_date || '',
       status: process.status,
       notes: process.notes || '',
-      updates: process.updates || []
+      updates: process.updates || [],
+      fine_value: process.fine_value || '',
+      location: process.location || ''
     });
     setShowDialog(true);
   };

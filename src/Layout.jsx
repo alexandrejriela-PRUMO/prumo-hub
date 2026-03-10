@@ -256,13 +256,22 @@ export default function Layout({ children, currentPageName }) {
           {/* Logo */}
           <div className="p-6 border-b border-emerald-800/50">
             <div className="flex flex-col items-center gap-2 w-full">
+              {user?.user_type === 'consultor' ? (
+                <p className="text-xs font-semibold tracking-widest text-center" style={{fontFamily: 'Georgia, serif', backgroundImage: 'linear-gradient(135deg, #fbbf24, #f59e0b, #d97706)', backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
+                  CONSULTOR
+                </p>
+              ) : (
+                <p className="text-xs font-semibold tracking-widest text-center" style={{fontFamily: 'Georgia, serif', backgroundImage: 'linear-gradient(135deg, #e5e7eb, #a1a5b4, #6b7280)', backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
+                  PRODUTOR
+                </p>
+              )}
               <img 
                 src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/9e64158f0_PRUMO1.png" 
                 alt="PRUMO Hub" 
                 className="w-48 h-auto object-contain"
               />
               {user?.user_type === 'consultor' ? (
-                <p className="text-amber-300/80 text-xs italic font-light tracking-wide text-center" style={{fontFamily: 'Georgia, serif'}}>
+                <p className="text-xs italic font-light tracking-wide text-center" style={{fontFamily: 'Georgia, serif', backgroundImage: 'linear-gradient(135deg, #fbbf24, #f59e0b, #d97706)', backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
                   Ferramentas e oportunidades para quem orienta
                 </p>
               ) : (

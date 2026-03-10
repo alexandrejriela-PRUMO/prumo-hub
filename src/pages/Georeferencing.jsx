@@ -978,9 +978,50 @@ function EnvAlertsCard({ localGeo, editingSection, setEditingSection, save }) {
 }
 
 function MapLayersCard({ localGeo, editingSection, setEditingSection, save }) {
-  const [form, setForm] = useState({ satellite_imagery: '', contour_lines: false, hydrography: false, land_use: '', ...(localGeo.map_layers || {}) });
-  useEffect(() => { setForm({ satellite_imagery: '', contour_lines: false, hydrography: false, land_use: '', ...(localGeo.map_layers || {}) }); }, [localGeo]);
+  const [form, setForm] = useState({
+    satellite_imagery: '',
+    satellite_imagery_file: '',
+    contour_lines: false,
+    contour_lines_file: '',
+    hydrography: false,
+    hydrography_file: '',
+    land_use: '',
+    land_use_file: '',
+    ...(localGeo.map_layers || {})
+  });
+  const [uploading, setUploading] = useState({});
+
+  useEffect(() => {
+    setForm({
+      satellite_imagery: '',
+      satellite_imagery_file: '',
+      contour_lines: false,
+      contour_lines_file: '',
+      hydrography: false,
+      hydrography_file: '',
+      land_use: '',
+      land_use_file: '',
+      ...(localGeo.map_layers || {})
+    });
+  }, [localGeo]);
+
   const isEditing = editingSection === 'mapLayers';
+
+  const handleLayerUpload = async (e, fieldKey) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(p => ({ ...p, [fieldKey]: true }));
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setForm(p => ({ ...p, [fieldKey]: file_url }));
+    setUploading(p => ({ ...p, [fieldKey]: false }));
+  };
+
+  const layers = [
+    { label: 'Imagem de Satélite', urlKey: 'satellite_imagery', fileKey: 'satellite_imagery_file', boolKey: null },
+    { label: 'Curvas de Nível',    urlKey: null,                 fileKey: 'contour_lines_file',     boolKey: 'contour_lines' },
+    { label: 'Hidrografia',        urlKey: null,                 fileKey: 'hydrography_file',        boolKey: 'hydrography' },
+    { label: 'Uso e Ocupação do Solo', urlKey: 'land_use',       fileKey: 'land_use_file',           boolKey: null },
+  ];
 
   return (
     <Card>
@@ -990,29 +1031,81 @@ function MapLayersCard({ localGeo, editingSection, setEditingSection, save }) {
       </CardHeader>
       <CardContent className="space-y-3">
         {isEditing ? (
-          <div className="space-y-3">
-            <div><Label className="text-xs">URL Imagem de Satélite</Label><Input value={form.satellite_imagery} onChange={e => setForm(p => ({...p, satellite_imagery: e.target.value}))} placeholder="https://..." /></div>
-            {[['Curvas de Nível','contour_lines'],['Hidrografia','hydrography']].map(([label, key]) => (
-              <div key={key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm">{label}</span>
-                <Select value={String(form[key])} onValueChange={v => setForm(p => ({...p, [key]: v === 'true'}))}>
-                  <SelectTrigger className="w-32 h-8 text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="true">Disponível</SelectItem><SelectItem value="false">Não disponível</SelectItem></SelectContent>
-                </Select>
+          <div className="space-y-4">
+            {layers.map(({ label, urlKey, fileKey, boolKey }) => (
+              <div key={label} className="p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-2">
+                <p className="text-sm font-medium text-gray-700">{label}</p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  {boolKey !== null && (
+                    <Select value={String(form[boolKey])} onValueChange={v => setForm(p => ({...p, [boolKey]: v === 'true'}))}>
+                      <SelectTrigger className="h-8 text-sm w-40"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="true">Disponível</SelectItem>
+                        <SelectItem value="false">Não disponível</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {urlKey && (
+                    <Input
+                      className="h-8 text-sm flex-1"
+                      value={form[urlKey] || ''}
+                      onChange={e => setForm(p => ({...p, [urlKey]: e.target.value}))}
+                      placeholder="URL ou cole link..."
+                    />
+                  )}
+                  <label className="flex-shrink-0">
+                    <Button variant="outline" size="sm" asChild disabled={uploading[fileKey]} className="h-8 cursor-pointer">
+                      <div>
+                        <Upload className="w-3.5 h-3.5 mr-1" />
+                        {uploading[fileKey] ? 'Enviando...' : 'Upload'}
+                      </div>
+                    </Button>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept=".kml,.kmz,.shp,.zip,.geojson,.tif,.tiff,.png,.jpg,.jpeg,.pdf"
+                      onChange={e => handleLayerUpload(e, fileKey)}
+                    />
+                  </label>
+                </div>
+                {form[fileKey] && (
+                  <a href={form[fileKey]} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-xs text-emerald-600 hover:underline">
+                    <Download className="w-3 h-3" /> Arquivo enviado — clique para visualizar
+                  </a>
+                )}
               </div>
             ))}
-            <div><Label className="text-xs">Uso e Ocupação do Solo</Label><Input value={form.land_use} onChange={e => setForm(p => ({...p, land_use: e.target.value}))} /></div>
-            <div className="flex justify-end gap-2"><Button size="sm" variant="outline" onClick={() => setEditingSection(null)}>Cancelar</Button><Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => save('map_layers', form)}>Salvar</Button></div>
+            <div className="flex justify-end gap-2">
+              <Button size="sm" variant="outline" onClick={() => setEditingSection(null)}>Cancelar</Button>
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => save('map_layers', form)}>Salvar</Button>
+            </div>
           </div>
         ) : (
           <div className="space-y-3">
-            {[['Imagem de Satélite', !!localGeo.map_layers?.satellite_imagery],['Curvas de Nível', localGeo.map_layers?.contour_lines],['Hidrografia', localGeo.map_layers?.hydrography]].map(([label, val]) => (
-              <div key={label} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm">{label}</span>
-                {val ? <Badge className="bg-green-100 text-green-800"><CheckCircle2 className="w-3 h-3 mr-1" />Disponível</Badge> : <Badge variant="outline">Não disponível</Badge>}
-              </div>
-            ))}
-            {localGeo.map_layers?.land_use && <div className="p-3 bg-gray-50 rounded-lg"><p className="text-sm text-gray-500 mb-1">Uso e Ocupação do Solo</p><p className="font-semibold">{localGeo.map_layers.land_use}</p></div>}
+            {layers.map(({ label, urlKey, fileKey, boolKey }) => {
+              const hasFile = !!localGeo.map_layers?.[fileKey];
+              const hasUrl  = urlKey ? !!localGeo.map_layers?.[urlKey] : false;
+              const boolVal = boolKey ? localGeo.map_layers?.[boolKey] : null;
+              const available = hasFile || hasUrl || boolVal;
+              return (
+                <div key={label} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <span className="text-sm">{label}</span>
+                  <div className="flex items-center gap-2">
+                    {hasFile && (
+                      <a href={localGeo.map_layers[fileKey]} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-xs text-emerald-600 hover:underline">
+                        <Download className="w-3 h-3" /> Arquivo
+                      </a>
+                    )}
+                    {available
+                      ? <Badge className="bg-green-100 text-green-800"><CheckCircle2 className="w-3 h-3 mr-1" />Disponível</Badge>
+                      : <Badge variant="outline">Não disponível</Badge>
+                    }
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </CardContent>

@@ -265,8 +265,8 @@ export default function Licenses() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Licenças Ambientais</h1>
-          <p className="text-gray-500 mt-1">Gerencie suas licenças e condicionantes</p>
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 bg-clip-text text-transparent">Licenças Ambientais</h1>
+          <p className="text-gray-500 mt-1 text-sm sm:text-base">Gerencie suas licenças e condicionantes</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -471,59 +471,59 @@ export default function Licenses() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {(licenses || []).map((license) => {
             const statusInfo = getLicenseStatus(license);
             const StatusIcon = statusInfo.icon || Clock;
             return (
-              <Card key={license.id} className="hover:shadow-lg transition-shadow border-emerald-100">
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+              <Card key={license.id} className="hover:shadow-lg transition-all duration-300 border-emerald-100 hover:border-emerald-200">
+                <CardHeader className="pb-2 sm:pb-3">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-0">
+                    <div className="flex items-start gap-2 sm:gap-3 flex-1">
+                      <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0 ${
                         statusInfo.status === 'expired' ? 'bg-red-100' :
                         statusInfo.status === 'warning' ? 'bg-amber-100' : 'bg-emerald-100'
                       }`}>
-                        <FileCheck className={`w-6 h-6 ${
+                        <FileCheck className={`w-5 h-5 sm:w-6 sm:h-6 ${
                           statusInfo.status === 'expired' ? 'text-red-600' :
                           statusInfo.status === 'warning' ? 'text-amber-600' : 'text-emerald-600'
                         }`} />
                       </div>
-                      <div>
-                        <CardTitle className="text-lg">{license.license_type}</CardTitle>
-                        <p className="text-sm text-gray-500">{license.license_number || 'Sem número'}</p>
+                      <div className="min-w-0">
+                        <CardTitle className="text-base sm:text-lg truncate">{license.license_type}</CardTitle>
+                        <p className="text-xs sm:text-sm text-gray-500 truncate">{license.license_number || 'Sem número'}</p>
                       </div>
                     </div>
-                    <Badge className={statusInfo.color}>
+                    <Badge className={`${statusInfo.color} flex-shrink-0`}>
                       <StatusIcon className="w-3 h-3 mr-1" />
-                      {statusInfo.label}
+                      <span className="text-xs sm:text-sm">{statusInfo.label}</span>
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Calendar className="w-4 h-4" />
-                      <span>Validade: {license.expiry_date ? format(parseISO(license.expiry_date), "dd/MM/yyyy") : 'Não informada'}</span>
+                  <div className="space-y-2 sm:space-y-3">
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
+                      <Calendar className="w-4 h-4 flex-shrink-0" />
+                      <span className="truncate">Validade: {license.expiry_date ? format(parseISO(license.expiry_date), "dd/MM/yyyy") : 'Não informada'}</span>
                     </div>
 
                     {license.conditions && license.conditions.length > 0 && (
                       <div>
-                        <p className="text-xs text-gray-500 mb-1">Condicionantes:</p>
+                        <p className="text-xs text-gray-500 mb-1.5 font-medium">Condicionantes:</p>
                         <div className="space-y-1">
                           {license.conditions.slice(0, 2).map((cond, idx) => (
-                            <p key={idx} className="text-xs text-gray-600 bg-gray-50 p-2 rounded">• {cond}</p>
+                            <p key={idx} className="text-xs text-gray-600 bg-gray-50 p-1.5 sm:p-2 rounded line-clamp-2">• {cond}</p>
                           ))}
                           {license.conditions.length > 2 && (
-                            <p className="text-xs text-emerald-600">+{license.conditions.length - 2} mais</p>
+                            <p className="text-xs text-emerald-600 font-medium">+{license.conditions.length - 2} mais</p>
                           )}
                         </div>
                       </div>
                     )}
 
                     {license.documents && license.documents.length > 0 && (
-                      <div className="mb-3">
-                        <p className="text-xs text-gray-500 mb-2">Documentos ({license.documents.length}):</p>
+                      <div className="mb-2 sm:mb-3">
+                        <p className="text-xs text-gray-500 mb-1.5 font-medium">Documentos ({license.documents.length}):</p>
                         <div className="space-y-1">
                           {license.documents.slice(0, 2).map((doc, idx) => (
                             <a
@@ -531,28 +531,29 @@ export default function Licenses() {
                               href={doc.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center gap-2 p-2 bg-gray-50 rounded text-xs hover:bg-gray-100 transition-colors"
+                              className="flex items-center gap-1 sm:gap-2 p-1.5 sm:p-2 bg-gray-50 rounded text-xs hover:bg-gray-100 transition-colors group"
                             >
-                              <FileText className="w-3 h-3 text-emerald-600" />
-                              <span className="flex-1 truncate">{doc.name}</span>
+                              <FileText className="w-3 h-3 text-emerald-600 flex-shrink-0" />
+                              <span className="flex-1 truncate group-hover:text-emerald-600 transition-colors">{doc.name}</span>
                             </a>
                           ))}
                           {license.documents.length > 2 && (
-                            <p className="text-xs text-emerald-600 pl-2">+{license.documents.length - 2} mais</p>
+                            <p className="text-xs text-emerald-600 font-medium pl-0 sm:pl-2">+{license.documents.length - 2} mais</p>
                           )}
                         </div>
                       </div>
                     )}
 
-                    <div className="flex gap-2 pt-2">
+                    <div className="flex gap-1 sm:gap-2 pt-2 sm:pt-3">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => openEditDialog(license)}
-                        className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50"
+                        className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 text-xs sm:text-sm"
                       >
-                        <FileText className="w-4 h-4 mr-1" />
-                        Editar
+                        <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                        <span className="hidden sm:inline">Editar</span>
+                        <span className="sm:hidden">Edit</span>
                       </Button>
                       <Button
                         variant="outline"
@@ -561,15 +562,16 @@ export default function Licenses() {
                           setSelectedLicense(license);
                           setShowHistory(true);
                         }}
-                        className="flex-1 border-blue-300 text-blue-700 hover:bg-blue-50"
+                        className="flex-1 border-blue-300 text-blue-700 hover:bg-blue-50 text-xs sm:text-sm"
                       >
-                        <Clock className="w-4 h-4 mr-1" />
-                        Histórico
+                        <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                        <span className="hidden sm:inline">Histórico</span>
+                        <span className="sm:hidden">Hist</span>
                       </Button>
                       <Button
                         variant="ghost"
-                        size="icon"
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        size="sm"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 px-2 sm:px-3"
                         onClick={() => {
                           if (window.confirm('Deseja realmente excluir esta licença?')) {
                             deleteMutation.mutate(license.id);

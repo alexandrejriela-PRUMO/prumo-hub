@@ -40,18 +40,20 @@ export default function NotificationPreferences({ userEmail }) {
 
   const eventTypes = [
     { key: 'novo_alerta_ambiental', label: 'Novo Alerta Ambiental', icon: '🌍' },
+    { key: 'licenca_vencendo', label: 'Licença Vencendo', icon: '📋' },
+    { key: 'licenca_vencida', label: 'Licença Vencida', icon: '⚠️' },
+    { key: 'documento_vencendo', label: 'Documento/Certificado Vencendo', icon: '📄' },
+    { key: 'novo_processo', label: 'Novo Processo Legal', icon: '⚖️' },
+    { key: 'atualizacao_processo', label: 'Atualização em Processo', icon: '⚖️' },
+    { key: 'novo_requerimento', label: 'Novo Requerimento', icon: '💬' },
+    { key: 'resposta_requerimento', label: 'Resposta a Requerimento', icon: '💬' },
+    { key: 'nova_fatura', label: 'Nova Fatura', icon: '💳' },
+    { key: 'fatura_vencendo', label: 'Fatura Vencendo', icon: '⏰' },
+    { key: 'alerta_resolvido', label: 'Alerta Resolvido', icon: '✅' },
     { key: 'green_loan_status', label: 'Status de Empréstimo Verde', icon: '💚' },
     { key: 'tax_incentive_status', label: 'Status de Incentivo Fiscal', icon: '📊' },
     { key: 'certification_status', label: 'Status de Certificação', icon: '✅' },
-    { key: 'expiring_certification', label: 'Certificação Vencendo', icon: '⏰' },
-    { key: 'expiring_incentive', label: 'Prazo de Incentivo Vencendo', icon: '⏰' },
-    { key: 'document_vencendo', label: 'Documento Vencendo', icon: '📄' },
-    { key: 'licenca_vencida', label: 'Licença Vencida', icon: '⚠️' },
-    { key: 'novo_andamento_licenca', label: 'Novo Andamento em Licença', icon: '📋' },
-    { key: 'novo_andamento_processo', label: 'Novo Andamento em Processo', icon: '⚖️' },
-    { key: 'novo_documento', label: 'Novo Documento Adicionado', icon: '📄' },
-    { key: 'prazo_vencendo_licenca', label: 'Prazo Vencendo (Licença)', icon: '⏰' },
-    { key: 'prazo_vencendo_processo', label: 'Prazo Vencendo (Processo)', icon: '⏰' }
+    { key: 'outro', label: 'Outras Notificações', icon: '🔔' }
   ];
 
   const toggleNotification = (eventType, channel) => {

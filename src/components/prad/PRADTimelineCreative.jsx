@@ -143,13 +143,13 @@ export default function PRADTimelineCreative({ prad, onUpdate }) {
                       </span>
                       <span className="text-xl sm:text-2xl leading-none">{stage.icon}</span>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-xs sm:text-sm font-semibold leading-tight ${isCompleted || isActive ? c.text : 'text-gray-600'}`}>
+                        <p className={`text-xs sm:text-sm font-semibold leading-snug whitespace-normal ${isCompleted || isActive ? c.text : 'text-gray-600'}`}>
                           {stage.name}
                         </p>
                       </div>
-                    </div>
-                    {/* Status badge */}
-                     <div className="flex items-center gap-2 mt-2">
+                      </div>
+                      {/* Status badge */}
+                      <div className="flex items-center gap-2 mt-auto pt-2">
                       <StatusIcon status={status} />
                       <Badge className={`text-xs ${
                         isCompleted ? `${c.badge} text-white` :

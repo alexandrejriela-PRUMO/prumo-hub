@@ -11,7 +11,12 @@ import { format } from 'date-fns';
 const userRoles = ['Proprietário', 'Gestor', 'Técnico', 'Visualizador'];
 
 export default function PropertyUsers({ property, currentUser, onSave, onCancel }) {
-  const [users, setUsers] = useState(property?.authorized_users || []);
+  const [users, setUsers] = useState(() => {
+    const au = property?.authorized_users;
+    if (!au) return [];
+    if (Array.isArray(au)) return au;
+    try { const parsed = JSON.parse(au); return Array.isArray(parsed) ? parsed : []; } catch { return []; }
+  });
   const [newUser, setNewUser] = useState({
     email: '',
     name: '',

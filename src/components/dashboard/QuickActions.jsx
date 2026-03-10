@@ -43,17 +43,24 @@ const actions = [
 
 export default function QuickActions() {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
       {actions.map((action, index) => (
-        <Link key={index} to={createPageUrl(action.page)}>
-          <Card className="group hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 border-emerald-100 hover:border-emerald-200 h-full">
-            <CardContent className="p-5">
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform`}>
+        <Link 
+          key={index} 
+          to={createPageUrl(action.page)}
+          className="transform transition-all duration-300 hover:-translate-y-2"
+        >
+          <Card className="group hover:shadow-2xl hover:shadow-emerald-500/15 transition-all duration-300 border-emerald-100 hover:border-emerald-300 h-full bg-gradient-to-br from-white to-emerald-50/30 hover:from-emerald-50/50 hover:to-emerald-50/50">
+            <CardContent className="p-5 lg:p-6">
+              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center mb-4 shadow-lg group-hover:scale-125 group-hover:shadow-xl transition-all duration-300`}>
                 <action.icon className="w-6 h-6 text-white" />
               </div>
-              <h3 className="font-semibold text-gray-900 group-hover:text-emerald-700 transition-colors">{action.title}</h3>
-              <p className="text-sm text-gray-500 mt-1">{action.description}</p>
-              <ArrowRight className="w-4 h-4 text-emerald-600 mt-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <h3 className="font-semibold text-gray-900 group-hover:text-emerald-700 transition-colors text-sm lg:text-base">{action.title}</h3>
+              <p className="text-xs lg:text-sm text-gray-500 mt-1">{action.description}</p>
+              <div className="flex items-center gap-1 mt-4 text-emerald-600 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                <span className="text-xs font-medium">Acessar</span>
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              </div>
             </CardContent>
           </Card>
         </Link>

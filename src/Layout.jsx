@@ -277,6 +277,7 @@ export default function Layout({ children, currentPageName }) {
               >
                 <X className="w-5 h-5 text-emerald-400" />
               </button>
+              </div>
             </div>
           </div>
 

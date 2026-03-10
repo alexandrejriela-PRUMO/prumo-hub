@@ -135,14 +135,12 @@ export default function PRADTimelineCreative({ prad, onUpdate }) {
                       ${!isCompleted && !isActive ? 'bg-gray-50 border-gray-200 hover:border-gray-300' : ''}
                     `}
                   >
-                    {/* Número da etapa */}
-                    <span className={`absolute top-3 right-3 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center
-                      ${isCompleted ? `${c.text} ${c.bg}` : 'text-gray-400 bg-gray-200'}`}>
-                      {index + 1}
-                    </span>
-
-                    {/* Ícone + nome */}
-                    <div className="flex items-start gap-3 mb-3 pr-6">
+                    {/* Ícone + nome + número */}
+                    <div className="flex items-start gap-3 mb-3">
+                      <span className={`shrink-0 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center mt-0.5
+                        ${isCompleted || isActive ? `${c.text} ${c.bg}` : 'text-gray-400 bg-gray-200'}`}>
+                        {index + 1}
+                      </span>
                       <span className="text-2xl leading-none">{stage.icon}</span>
                       <div className="flex-1 min-w-0">
                         <p className={`text-sm font-semibold leading-tight ${isCompleted || isActive ? c.text : 'text-gray-600'}`}>

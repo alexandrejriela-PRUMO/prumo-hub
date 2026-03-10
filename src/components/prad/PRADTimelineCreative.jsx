@@ -106,8 +106,8 @@ export default function PRADTimelineCreative({ prad, onUpdate }) {
         </div>
       </CardHeader>
 
-      <CardContent className="p-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <CardContent className="p-3 sm:p-4 lg:p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {PIPELINE_STAGES.map((stage, index) => {
             const stageData = (prad.pipeline_status || []).find(s => s.stage_order === index);
             const status = stageData?.current_status || 'Pendente';
@@ -127,23 +127,23 @@ export default function PRADTimelineCreative({ prad, onUpdate }) {
               >
                 <DialogTrigger asChild>
                   <div
-                    className={`
-                      relative rounded-xl border-2 p-4 cursor-pointer transition-all duration-200
-                      hover:shadow-md hover:-translate-y-0.5 group
-                      ${isCompleted ? `${c.bg} ${c.border} shadow-sm` : ''}
-                      ${isActive ? `${c.bg} ${c.border} shadow-md ring-2 ring-offset-1 ring-blue-300` : ''}
-                      ${!isCompleted && !isActive ? 'bg-gray-50 border-gray-200 hover:border-gray-300' : ''}
-                    `}
+                   className={`
+                     relative rounded-lg sm:rounded-xl border-2 p-3 sm:p-4 cursor-pointer transition-all duration-200
+                     hover:shadow-md hover:-translate-y-0.5 group
+                     ${isCompleted ? `${c.bg} ${c.border} shadow-sm` : ''}
+                     ${isActive ? `${c.bg} ${c.border} shadow-md ring-2 ring-offset-1 ring-blue-300` : ''}
+                     ${!isCompleted && !isActive ? 'bg-gray-50 border-gray-200 hover:border-gray-300' : ''}
+                   `}
                   >
                     {/* Ícone + nome + número */}
-                    <div className="flex items-start gap-3 mb-3">
+                    <div className="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
                       <span className={`shrink-0 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center mt-0.5
                         ${isCompleted || isActive ? `${c.text} ${c.bg}` : 'text-gray-400 bg-gray-200'}`}>
                         {index + 1}
                       </span>
-                      <span className="text-2xl leading-none">{stage.icon}</span>
+                      <span className="text-xl sm:text-2xl leading-none">{stage.icon}</span>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-semibold leading-tight ${isCompleted || isActive ? c.text : 'text-gray-600'}`}>
+                        <p className={`text-xs sm:text-sm font-semibold leading-tight ${isCompleted || isActive ? c.text : 'text-gray-600'}`}>
                           {stage.name}
                         </p>
                       </div>
@@ -231,11 +231,11 @@ export default function PRADTimelineCreative({ prad, onUpdate }) {
         </div>
 
         {/* Legenda */}
-        <div className="mt-6 flex flex-wrap gap-4 text-xs text-gray-500 border-t pt-4">
+        <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row sm:items-center sm:flex-wrap gap-2 sm:gap-4 text-xs text-gray-500 border-t pt-3 sm:pt-4">
           <span className="flex items-center gap-1.5"><Circle className="w-4 h-4 text-gray-300" /> Pendente</span>
           <span className="flex items-center gap-1.5"><Zap className="w-4 h-4 text-blue-500" /> Em Progresso</span>
           <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-green-500" /> Concluído</span>
-          <span className="ml-auto text-gray-400">Clique em qualquer etapa para editar</span>
+          <span className="text-gray-400">Clique em qualquer etapa para editar</span>
         </div>
       </CardContent>
     </Card>

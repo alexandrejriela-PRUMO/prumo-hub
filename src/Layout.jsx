@@ -270,16 +270,14 @@ export default function Layout({ children, currentPageName }) {
                   Direção e estratégia para quem produz
                 </p>
               )}
-              <div className="flex items-center justify-end w-full absolute right-0 top-6">
               <button
-                onClick={() => setSidebarOpen(false)}
-                className="lg:hidden p-2 rounded-xl hover:bg-emerald-800/50 transition-colors"
+               onClick={() => setSidebarOpen(false)}
+               className="lg:hidden absolute right-6 top-6 p-2 rounded-xl hover:bg-emerald-800/50 transition-colors"
               >
-                <X className="w-5 h-5 text-emerald-400" />
+               <X className="w-5 h-5 text-emerald-400" />
               </button>
               </div>
-            </div>
-          </div>
+              </div>
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">

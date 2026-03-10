@@ -247,8 +247,8 @@ export default function Layout({ children, currentPageName }) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 h-full w-[80vw] max-w-xs bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 z-50 transition-transform duration-300 ease-out",
-          "lg:w-72 lg:translate-x-0",
+          "fixed top-0 left-0 h-full w-[80vw] max-w-xs bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 z-50 transition-all duration-300 ease-out shadow-2xl",
+          "lg:w-72 lg:translate-x-0 lg:shadow-xl",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >

@@ -201,7 +201,7 @@ export default function Home() {
         <div className="flex items-center gap-3">
           {isDashboardView && (
             <button
-              onClick={() => window.location.href = '/'}
+              onClick={() => navigate(createPageUrl('Home'))}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ChevronLeft className="w-5 h-5 text-gray-600" />

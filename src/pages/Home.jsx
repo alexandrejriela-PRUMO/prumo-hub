@@ -197,23 +197,23 @@ export default function Home() {
   }
 
   return (
-  <div className="max-w-7xl mx-auto space-y-8">
+  <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
       {/* Header with back button if viewing specific property */}
       <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
         <div className="flex items-center gap-3">
           {isDashboardView && (
             <button
               onClick={() => navigate(createPageUrl('Home'))}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-emerald-100/50 rounded-xl transition-all duration-300 hover:text-emerald-700"
             >
               <ChevronLeft className="w-5 h-5 text-gray-600" />
             </button>
           )}
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 bg-clip-text text-transparent">
               Olá, {user?.full_name?.split(' ')[0] || 'Cliente'}! 👋
             </h1>
-            <p className="text-gray-500 mt-1">Bem-vindo à sua área do cliente Santa Rute - Engenharia Rural</p>
+            <p className="text-gray-500 mt-2 text-sm lg:text-base">Bem-vindo à sua área do cliente Santa Rute - Engenharia Rural</p>
           </div>
         </div>
       </div>

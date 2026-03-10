@@ -255,23 +255,22 @@ export default function Layout({ children, currentPageName }) {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-6 border-b border-emerald-800/50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <img 
-                  src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/9e64158f0_PRUMO1.png" 
-                  alt="PRUMO Hub" 
-                  className="w-64 h-auto object-contain"
-                />
+            <div className="flex flex-col items-center gap-2 w-full">
+              <img 
+                src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/9e64158f0_PRUMO1.png" 
+                alt="PRUMO Hub" 
+                className="w-48 h-auto object-contain"
+              />
               {user?.user_type === 'consultor' ? (
-                <p className="text-amber-300/80 text-xs italic font-light tracking-wide mt-1 text-center" style={{fontFamily: 'Georgia, serif'}}>
+                <p className="text-amber-300/80 text-xs italic font-light tracking-wide text-center" style={{fontFamily: 'Georgia, serif'}}>
                   Ferramentas e oportunidades para quem orienta
                 </p>
               ) : (
-                <p className="text-emerald-300/80 text-xs italic font-light tracking-wide mt-1 text-center" style={{fontFamily: 'Georgia, serif'}}>
+                <p className="text-emerald-300/80 text-xs italic font-light tracking-wide text-center" style={{fontFamily: 'Georgia, serif'}}>
                   Direção e estratégia para quem produz
                 </p>
               )}
-              </div>
+              <div className="flex items-center justify-end w-full absolute right-0 top-6">
               <button
                 onClick={() => setSidebarOpen(false)}
                 className="lg:hidden p-2 rounded-xl hover:bg-emerald-800/50 transition-colors"

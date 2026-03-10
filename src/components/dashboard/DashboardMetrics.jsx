@@ -90,28 +90,37 @@ export default function DashboardMetrics({ licenses, documents, processes, alert
         const colors = colorClasses[metric.color];
         
         return (
-          <Card key={index} className={`border-2 ${colors.border} hover:shadow-lg transition-shadow`}>
+          <Card 
+            key={index} 
+            className={`border-2 ${colors.border} hover:shadow-xl hover:border-emerald-300 transition-all duration-300 ease-out hover:-translate-y-1 cursor-default`}
+          >
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600">{metric.title}</p>
-                  <div className="flex items-baseline gap-2 mt-2">
-                    <h3 className="text-3xl font-bold text-gray-900">{metric.value}</h3>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{metric.title}</p>
+                  <div className="flex items-baseline gap-2 mt-3">
+                    <h3 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">{metric.value}</h3>
                     {metric.total && (
-                      <span className="text-sm text-gray-500">/ {metric.total}</span>
+                      <span className="text-sm text-gray-400 font-medium">/ {metric.total}</span>
                     )}
                   </div>
-                  <div className="flex items-center gap-1 mt-2">
+                  <div className="flex items-center gap-2 mt-3">
                     {metric.trend === 'up' && (
-                      <TrendingUp className="w-4 h-4 text-green-500" />
+                      <div className="flex items-center gap-1 bg-green-50 px-2 py-1 rounded-full">
+                        <TrendingUp className="w-3.5 h-3.5 text-green-600" />
+                        <span className="text-xs text-green-700 font-medium">Crescendo</span>
+                      </div>
                     )}
                     {metric.trend === 'down' && (
-                      <TrendingDown className="w-4 h-4 text-red-500" />
+                      <div className="flex items-center gap-1 bg-red-50 px-2 py-1 rounded-full">
+                        <TrendingDown className="w-3.5 h-3.5 text-red-600" />
+                        <span className="text-xs text-red-700 font-medium">Atenção</span>
+                      </div>
                     )}
                     <p className="text-xs text-gray-500">{metric.footer}</p>
                   </div>
                 </div>
-                <div className={`p-3 rounded-lg ${colors.bg}`}>
+                <div className={`p-3 rounded-xl ${colors.bg} group-hover:scale-110 transition-transform duration-300`}>
                   <Icon className={`w-6 h-6 ${colors.text}`} />
                 </div>
               </div>

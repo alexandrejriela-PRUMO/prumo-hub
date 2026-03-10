@@ -11,9 +11,11 @@ const DIRECTIONS = ['Norte', 'Sul', 'Leste', 'Oeste', 'Nordeste', 'Noroeste', 'S
 const states = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
 
 const ruralActivities = [
-  'Agricultura', 'Pecuária', 'Silvicultura', 'Fruticultura',
-  'Horticultura', 'Avicultura', 'Piscicultura', 'Apicultura', 'Reflorestamento'
+  'Agricultura', 'Pecuária', 'Bovinocultura', 'Suinocultura', 'Avicultura',
+  'Silvicultura', 'Fruticultura', 'Horticultura', 'Piscicultura', 'Apicultura', 'Reflorestamento'
 ];
+
+const LIVESTOCK_ACTIVITIES = ['Suinocultura', 'Bovinocultura', 'Avicultura'];
 
 const urbanActivities = [
   'Residencial', 'Comercial', 'Industrial', 'Serviços',

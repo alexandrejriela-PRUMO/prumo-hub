@@ -113,6 +113,7 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
       activities: formData.activities.length > 0 ? formData.activities.join(', ') : '',
       authorized_users: '',
       neighbors: !isUrban ? JSON.stringify(neighbors) : '[]',
+      rural_extra: !isUrban ? JSON.stringify(ruralExtra) : '{}',
       ...(isConsultor && !property ? { consultor_email: user.email } : {}),
     };
     onSubmit(submitData);

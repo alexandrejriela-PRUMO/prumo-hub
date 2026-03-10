@@ -359,6 +359,102 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
         </div>
       )}
 
+      {/* Campos condicionais rurais */}
+      {!isUrban && (
+        <div className="space-y-4">
+
+          {/* Barragem / Açude */}
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
+            <div className="flex items-center gap-3">
+              <span className="text-lg">💧</span>
+              <Label className="font-semibold text-blue-800">Barragem / Açude</Label>
+              <div className="flex gap-3 ml-auto">
+                <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+                  <input type="radio" name="has_dam" checked={ruralExtra.has_dam === true}
+                    onChange={() => setExtra('has_dam', true)} className="accent-blue-600" />
+                  <span className="text-blue-800">Sim</span>
+                </label>
+                <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+                  <input type="radio" name="has_dam" checked={ruralExtra.has_dam === false || ruralExtra.has_dam === undefined}
+                    onChange={() => setExtra('has_dam', false)} className="accent-blue-600" />
+                  <span className="text-blue-800">Não</span>
+                </label>
+              </div>
+            </div>
+            {ruralExtra.has_dam && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-blue-700">Quantidade de Barragens</Label>
+                  <Input type="number" min="0" className="h-8"
+                    value={ruralExtra.dam_count || ''}
+                    onChange={(e) => setExtra('dam_count', e.target.value)}
+                    placeholder="Ex: 2" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-blue-700">Quantidade de Açudes</Label>
+                  <Input type="number" min="0" className="h-8"
+                    value={ruralExtra.pond_count || ''}
+                    onChange={(e) => setExtra('pond_count', e.target.value)}
+                    placeholder="Ex: 3" />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Pecuária intensiva (Suinocultura / Bovinocultura / Avicultura) */}
+          {formData.activities.some(a => LIVESTOCK_ACTIVITIES.includes(a)) && (
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🐄</span>
+                <Label className="font-semibold text-amber-800">Dados de Criação Animal</Label>
+              </div>
+              <p className="text-xs text-amber-600">
+                Atividades: {formData.activities.filter(a => LIVESTOCK_ACTIVITIES.includes(a)).join(', ')}
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-amber-700">Capacidade total de animais</Label>
+                  <Input type="number" min="0" className="h-8"
+                    value={ruralExtra.livestock_capacity || ''}
+                    onChange={(e) => setExtra('livestock_capacity', e.target.value)}
+                    placeholder="Ex: 5000" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-amber-700">Nº de galpões de criação</Label>
+                  <Input type="number" min="0" className="h-8"
+                    value={ruralExtra.livestock_sheds || ''}
+                    onChange={(e) => setExtra('livestock_sheds', e.target.value)}
+                    placeholder="Ex: 4" />
+                </div>
+                <div className="space-y-1 col-span-2">
+                  <Label className="text-xs text-amber-700">Nº de esterqueiras</Label>
+                  <Input type="number" min="0" className="h-8"
+                    value={ruralExtra.manure_pits || ''}
+                    onChange={(e) => setExtra('manure_pits', e.target.value)}
+                    placeholder="Ex: 2" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Agricultura - desde quando */}
+          {formData.activities.includes('Agricultura') && (
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🌱</span>
+                <Label className="font-semibold text-green-800">Dados de Agricultura</Label>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-green-700">Atividade agrícola realizada desde</Label>
+                <Input type="date" className="h-9"
+                  value={ruralExtra.agriculture_since || ''}
+                  onChange={(e) => setExtra('agriculture_since', e.target.value)} />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {isConsultor && (
         <div className="space-y-4 pt-4 border-t border-dashed border-emerald-200">
           <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Dados do Cliente Responsável</p>

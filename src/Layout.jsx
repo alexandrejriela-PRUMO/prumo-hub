@@ -255,16 +255,10 @@ export default function Layout({ children, currentPageName }) {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-6 border-b border-emerald-800/50">
-            <div className="flex flex-col items-center gap-2 w-full">
-              {user?.user_type === 'consultor' ? (
-                <p className="text-xs font-semibold tracking-widest text-center" style={{fontFamily: 'Georgia, serif', backgroundImage: 'linear-gradient(135deg, #fbbf24, #f59e0b, #d97706)', backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
-                  CONSULTOR
-                </p>
-              ) : (
-                <p className="text-xs font-semibold tracking-widest text-center" style={{fontFamily: 'Georgia, serif', backgroundImage: 'linear-gradient(135deg, #e5e7eb, #a1a5b4, #6b7280)', backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
-                  PRODUTOR
-                </p>
-              )}
+            <div className="flex flex-col items-center gap-3 w-full">
+              <p className="text-xs font-semibold tracking-widest uppercase" style={{fontFamily: 'Georgia, serif', backgroundImage: user?.user_type === 'consultor' ? 'linear-gradient(135deg, #fbbf24, #f59e0b, #d97706)' : 'linear-gradient(135deg, #e5e7eb, #a1a5b4, #6b7280)', backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
+                {user?.user_type === 'consultor' ? 'Consultor' : 'Produtor'}
+              </p>
               <img 
                 src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/9e64158f0_PRUMO1.png" 
                 alt="PRUMO Hub" 

@@ -79,7 +79,6 @@ const navItems = [
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
   { name: 'Minha Equipe', page: 'MyTeam', icon: Users },
-  { name: 'Logs de Auditoria', page: 'AuditLogs', icon: ClipboardList },
   ];
 
 export default function Layout({ children, currentPageName }) {

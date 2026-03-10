@@ -5,8 +5,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { X, Plus, User, Mail, Shield } from 'lucide-react';
+import { X, Plus, User, Mail, Shield, Bell } from 'lucide-react';
 import { format } from 'date-fns';
+import ConsultorAlertPanel from '../notifications/ConsultorAlertPanel';
 
 export default function PropertyUsers({ property, currentUser, onSave, onCancel }) {
   const isConsultor = currentUser?.user_type === 'consultor';

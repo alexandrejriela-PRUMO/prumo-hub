@@ -129,27 +129,27 @@ export default function PRADTimelineCreative({ prad, onUpdate }) {
                   <div
                    className={`
                      relative rounded-lg sm:rounded-xl border-2 p-3 sm:p-4 cursor-pointer transition-all duration-200
-                     hover:shadow-md hover:-translate-y-0.5 group
+                     hover:shadow-md hover:-translate-y-0.5 group min-h-[140px] sm:min-h-[150px] flex flex-col justify-between
                      ${isCompleted ? `${c.bg} ${c.border} shadow-sm` : ''}
                      ${isActive ? `${c.bg} ${c.border} shadow-md ring-2 ring-offset-1 ring-blue-300` : ''}
                      ${!isCompleted && !isActive ? 'bg-gray-50 border-gray-200 hover:border-gray-300' : ''}
                    `}
                   >
                     {/* Ícone + nome + número */}
-                    <div className="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3 w-full">
+                    <div className="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
                       <span className={`shrink-0 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center mt-0.5
                         ${isCompleted || isActive ? `${c.text} ${c.bg}` : 'text-gray-400 bg-gray-200'}`}>
                         {index + 1}
                       </span>
-                      <span className="text-xl sm:text-2xl leading-none flex-shrink-0">{stage.icon}</span>
+                      <span className="text-xl sm:text-2xl leading-none">{stage.icon}</span>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-xs sm:text-sm font-semibold leading-snug ${isCompleted || isActive ? c.text : 'text-gray-600'} break-words`}>
+                        <p className={`text-xs sm:text-sm font-semibold leading-tight ${isCompleted || isActive ? c.text : 'text-gray-600'}`}>
                           {stage.name}
                         </p>
                       </div>
                     </div>
                     {/* Status badge */}
-                    <div className="flex items-center gap-2">
+                     <div className="flex items-center gap-2 mt-2">
                       <StatusIcon status={status} />
                       <Badge className={`text-xs ${
                         isCompleted ? `${c.badge} text-white` :

@@ -193,6 +193,82 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
           <p className="text-xs text-gray-500">Use o mapa para definir os limites completos da propriedade</p>
         </div>
 
+        {/* Confrontantes - apenas Rural */}
+        {!isUrban && (
+          <div className="md:col-span-2 space-y-3">
+            <div className="flex items-center gap-2">
+              <Users2 className="w-4 h-4 text-emerald-700" />
+              <Label className="text-emerald-800 font-semibold">Confrontantes</Label>
+            </div>
+
+            {/* Lista existente */}
+            {neighbors.length > 0 && (
+              <div className="space-y-2">
+                {neighbors.map((n, idx) => (
+                  <div key={idx} className="flex items-start gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm">
+                    <Badge className="bg-emerald-700 text-white shrink-0 mt-0.5">{n.direction}</Badge>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-emerald-900">{n.name}</p>
+                      {n.location && <p className="text-emerald-700 text-xs">📍 {n.location}</p>}
+                      {n.registration && <p className="text-emerald-700 text-xs">📄 Matrícula: {n.registration}</p>}
+                    </div>
+                    <button type="button" onClick={() => removeNeighbor(idx)} className="text-red-400 hover:text-red-600 shrink-0">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Formulário para adicionar confrontante */}
+            <div className="border border-dashed border-emerald-300 rounded-lg p-3 space-y-2 bg-emerald-50/40">
+              <p className="text-xs text-emerald-700 font-medium">Adicionar confrontante</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Direção</Label>
+                  <Select value={newNeighbor.direction} onValueChange={(v) => setNewNeighbor({ ...newNeighbor, direction: v })}>
+                    <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {DIRECTIONS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Nome do confrontante *</Label>
+                  <Input
+                    className="h-8 text-sm"
+                    value={newNeighbor.name}
+                    onChange={(e) => setNewNeighbor({ ...newNeighbor, name: e.target.value })}
+                    placeholder="Ex: João da Silva"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Localização</Label>
+                  <Input
+                    className="h-8 text-sm"
+                    value={newNeighbor.location}
+                    onChange={(e) => setNewNeighbor({ ...newNeighbor, location: e.target.value })}
+                    placeholder="Ex: Município de São Luiz"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Matrícula</Label>
+                  <Input
+                    className="h-8 text-sm"
+                    value={newNeighbor.registration}
+                    onChange={(e) => setNewNeighbor({ ...newNeighbor, registration: e.target.value })}
+                    placeholder="Ex: 12.345"
+                  />
+                </div>
+              </div>
+              <Button type="button" size="sm" variant="outline" onClick={addNeighbor}
+                className="border-emerald-500 text-emerald-700 hover:bg-emerald-50 w-full gap-1 mt-1">
+                <Plus className="w-3 h-3" /> Adicionar Confrontante
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Campos RURAL */}
         {!isUrban && (
           <>

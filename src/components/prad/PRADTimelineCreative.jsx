@@ -148,6 +148,7 @@ export default function PRADTimelineCreative({ prad, onUpdate }) {
                         </p>
                       </div>
                     </div>
+                    {/* Espaço reservado para remover o absolute anterior */}
 
                     {/* Status badge */}
                     <div className="flex items-center gap-2">

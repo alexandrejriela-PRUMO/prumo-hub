@@ -13,29 +13,54 @@ Deno.serve(async (req) => {
     };
 
     // ─── LICENSE ─────────────────────────────────────────────────────────
-    if (event.entity_name === 'License') {
-      const owner = data.owner_email;
-      if (event.type === 'create') {
-        addNotif(owner, 'Nova Licença Cadastrada',
-          `Licença ${data.license_type}${data.license_number ? ` nº ${data.license_number}` : ''} foi registrada.`,
-          'licenca_vencendo', 'info', '/Licenses');
-      }
-      if (event.type === 'update') {
-        const oldU = old_data?.updates || [], newU = data?.updates || [];
-        if (newU.length > oldU.length) {
-          const latest = newU[newU.length - 1];
-          addNotif(owner, 'Novo Andamento em Licença',
-            `Licença ${data.license_type}: ${latest.description?.substring(0, 120) || 'Nova movimentação registrada'}`,
-            'atualizacao_processo', 'info', '/Licenses');
-        }
-        if (old_data?.status && old_data.status !== data.status) {
-          const sev = data.status === 'Vencida' ? 'error' : 'warning';
-          addNotif(owner, 'Status de Licença Alterado',
-            `Licença ${data.license_type}: ${old_data.status} → ${data.status}`,
-            'licenca_vencida', sev, '/Licenses');
-        }
-      }
-    }
+     if (event.entity_name === 'License') {
+       const owner = data.owner_email;
+       let consultorEmail = null;
+
+       // Buscar consultor responsável pela propriedade
+       if (data.property_id) {
+         try {
+           const props = await base44.asServiceRole.entities.Property.filter({ id: data.property_id });
+           if (props.length > 0) consultorEmail = props[0].consultor_email;
+         } catch (e) { /* ignore */ }
+       }
+
+       if (event.type === 'create') {
+         addNotif(owner, 'Nova Licença Cadastrada',
+           `Licença ${data.license_type}${data.license_number ? ` nº ${data.license_number}` : ''} foi registrada.`,
+           'licenca_vencendo', 'info', '/Licenses');
+         if (consultorEmail) {
+           addNotif(consultorEmail, 'Nova Licença - Cliente',
+             `Licença ${data.license_type} registrada para propriedade.`,
+             'licenca_vencendo', 'info', '/Licenses');
+         }
+       }
+       if (event.type === 'update') {
+         const oldU = old_data?.updates || [], newU = data?.updates || [];
+         if (newU.length > oldU.length) {
+           const latest = newU[newU.length - 1];
+           addNotif(owner, 'Novo Andamento em Licença',
+             `Licença ${data.license_type}: ${latest.description?.substring(0, 120) || 'Nova movimentação registrada'}`,
+             'atualizacao_processo', 'info', '/Licenses');
+           if (consultorEmail) {
+             addNotif(consultorEmail, 'Andamento em Licença - Cliente',
+               `${latest.description?.substring(0, 100) || 'Nova movimentação em licença'}`,
+               'atualizacao_processo', 'info', '/Licenses');
+           }
+         }
+         if (old_data?.status && old_data.status !== data.status) {
+           const sev = data.status === 'Vencida' ? 'error' : 'warning';
+           addNotif(owner, 'Status de Licença Alterado',
+             `Licença ${data.license_type}: ${old_data.status} → ${data.status}`,
+             'licenca_vencida', sev, '/Licenses');
+           if (consultorEmail) {
+             addNotif(consultorEmail, 'Status de Licença Alterado - Cliente',
+               `Licença ${data.license_type}: ${old_data.status} → ${data.status}`,
+               'licenca_vencida', sev, '/Licenses');
+           }
+         }
+       }
+     }
 
     // ─── PROCESS ─────────────────────────────────────────────────────────
     if (event.entity_name === 'Process') {

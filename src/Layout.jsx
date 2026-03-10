@@ -256,21 +256,21 @@ export default function Layout({ children, currentPageName }) {
           {/* Logo */}
           <div className="p-6 border-b border-emerald-800/50">
             <div className="flex items-center justify-between">
-              <div className="flex flex-col items-start gap-1">
+              <div className="flex items-center gap-3">
                 <img 
                   src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/9e64158f0_PRUMO1.png" 
                   alt="PRUMO Hub" 
                   className="w-64 h-auto object-contain"
                 />
-                {user?.user_type === 'consultor' ? (
-                  <p className="text-amber-300/80 text-xs italic font-light tracking-wide pl-1" style={{fontFamily: 'Georgia, serif'}}>
-                    Ferramentas e oportunidades para quem orienta
-                  </p>
-                ) : (
-                  <p className="text-emerald-300/80 text-xs italic font-light tracking-wide pl-1" style={{fontFamily: 'Georgia, serif'}}>
-                    Direção e estratégia para quem produz
-                  </p>
-                )}
+              {user?.user_type === 'consultor' ? (
+                <p className="text-amber-300/80 text-xs italic font-light tracking-wide mt-1 text-center" style={{fontFamily: 'Georgia, serif'}}>
+                  Ferramentas e oportunidades para quem orienta
+                </p>
+              ) : (
+                <p className="text-emerald-300/80 text-xs italic font-light tracking-wide mt-1 text-center" style={{fontFamily: 'Georgia, serif'}}>
+                  Direção e estratégia para quem produz
+                </p>
+              )}
               </div>
               <button
                 onClick={() => setSidebarOpen(false)}

@@ -266,7 +266,7 @@ export default function Layout({ children, currentPageName }) {
                   Ferramentas e oportunidades para quem orienta
                 </p>
               ) : (
-                <p className="text-emerald-300/80 text-xs italic font-light tracking-wide text-center" style={{fontFamily: 'Georgia, serif'}}>
+                <p className="text-xs italic font-light tracking-wide text-center" style={{fontFamily: 'Georgia, serif', backgroundImage: 'linear-gradient(135deg, #e5e7eb, #a1a5b4, #6b7280)', backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
                   Direção e estratégia para quem produz
                 </p>
               )}

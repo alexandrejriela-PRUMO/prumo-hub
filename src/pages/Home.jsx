@@ -351,10 +351,10 @@ export default function Home() {
 
       {/* Full Export Section */}
       {!isLoading && (
-        <div className="mt-12 pt-8 border-t border-gray-200">
-          <div className="mb-4">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Exportar Dados</h2>
-            <p className="text-gray-600 text-sm">Baixe um relatório completo com todas as suas informações no sistema</p>
+        <div className="mt-12 pt-8 border-t border-emerald-100/50">
+          <div className="mb-6">
+            <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-2">Exportar Dados</h2>
+            <p className="text-gray-600 text-sm lg:text-base">Baixe um relatório completo com todas as suas informações no sistema em PDF ou Excel</p>
           </div>
           <DashboardFullExport user={user} />
         </div>

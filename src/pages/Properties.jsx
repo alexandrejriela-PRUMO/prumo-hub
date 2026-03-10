@@ -196,21 +196,22 @@ export default function Properties() {
   );
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Propriedades e Empreendimentos</h1>
-          <p className="text-gray-500 mt-1">Gerencie suas propriedades rurais e empreendimentos</p>
+    <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Propriedades e Empreendimentos</h1>
+          <p className="text-gray-500 mt-1 text-sm sm:text-base">Gerencie suas propriedades rurais e empreendimentos</p>
         </div>
         <Button 
           onClick={() => {
             setEditingProperty(null);
             setFormDialogOpen(true);
           }}
-          className="bg-emerald-600 hover:bg-emerald-700"
+          className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto whitespace-nowrap"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Nova Propriedade ou Empreendimento
+          <span className="hidden sm:inline">Nova Propriedade ou Empreendimento</span>
+          <span className="sm:hidden">Nova Prop.</span>
         </Button>
       </div>
 

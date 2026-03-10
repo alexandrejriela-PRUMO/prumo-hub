@@ -190,7 +190,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
                       variant="outline"
                       size="sm"
                       className="w-full"
-                      onClick={() => window.location.href = `/?property_id=${property.id}`}
+                      onClick={() => navigate(`${createPageUrl('Home')}?property_id=${property.id}`)}
                     >
                       <Eye className="w-3 h-3 mr-1" />
                       Dashboard

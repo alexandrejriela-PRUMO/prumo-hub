@@ -49,6 +49,7 @@
  */
 import AlertSettings from './pages/AlertSettings';
 import AlertsReports from './pages/AlertsReports';
+import AuditLogs from './pages/AuditLogs';
 import Blog from './pages/Blog';
 import CarbonCredits from './pages/CarbonCredits';
 import Certifications from './pages/Certifications';
@@ -70,6 +71,7 @@ import Home from './pages/Home';
 import Invoices from './pages/Invoices';
 import Licenses from './pages/Licenses';
 import Mappings from './pages/Mappings';
+import MyTeam from './pages/MyTeam';
 import NotificationSettings from './pages/NotificationSettings';
 import PRAD from './pages/PRAD';
 import PSAContracts from './pages/PSAContracts';
@@ -81,14 +83,13 @@ import Reports from './pages/Reports';
 import Requests from './pages/Requests';
 import Support from './pages/Support';
 import TaxIncentives from './pages/TaxIncentives';
-import MyTeam from './pages/MyTeam';
-import AuditLogs from './pages/AuditLogs';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "AlertSettings": AlertSettings,
     "AlertsReports": AlertsReports,
+    "AuditLogs": AuditLogs,
     "Blog": Blog,
     "CarbonCredits": CarbonCredits,
     "Certifications": Certifications,
@@ -110,6 +111,7 @@ export const PAGES = {
     "Invoices": Invoices,
     "Licenses": Licenses,
     "Mappings": Mappings,
+    "MyTeam": MyTeam,
     "NotificationSettings": NotificationSettings,
     "PRAD": PRAD,
     "PSAContracts": PSAContracts,
@@ -121,8 +123,6 @@ export const PAGES = {
     "Requests": Requests,
     "Support": Support,
     "TaxIncentives": TaxIncentives,
-    "MyTeam": MyTeam,
-    "AuditLogs": AuditLogs,
 }
 
 export const pagesConfig = {

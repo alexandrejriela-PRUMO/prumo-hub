@@ -42,12 +42,12 @@ import { cn } from '@/lib/utils';
 const consultorNavItems = [
   { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
   { name: 'Meus Clientes', page: 'ConsultorClients', icon: Users },
-  { name: 'Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
+  { name: 'Minhas Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
 ];
 
 const navItems = [
   { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
-  { name: 'Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
+  { name: 'Minhas Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
   { name: 'Documentos', page: 'DocumentsHub', icon: FileText },
   { name: 'Licenças Ambientais', page: 'Licenses', icon: FileCheck },
   { name: 'Processos', page: 'Processes', icon: Scale },

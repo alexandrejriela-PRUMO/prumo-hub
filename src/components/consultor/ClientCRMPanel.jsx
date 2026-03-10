@@ -523,11 +523,22 @@ export default function ClientCRMPanel({ property, onClose }) {
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm text-gray-900 leading-snug">{service.name}</p>
                       {service.notes && <p className="text-xs text-gray-500 mt-0.5">{service.notes}</p>}
-                      {parseFloat(service.value) > 0 && (
-                        <p className="text-sm font-bold text-emerald-700 mt-1">
-                          R$ {parseFloat(service.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </p>
-                      )}
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        {parseFloat(service.value) > 0 && (
+                          <p className="text-sm font-bold text-emerald-700">
+                            R$ {parseFloat(service.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            {service.payment_type === 'parcelado' && service.installments && (
+                              <span className="text-xs font-normal text-gray-500"> · {service.installments}x</span>
+                            )}
+                          </p>
+                        )}
+                        {service.payment_method && <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded-md">{service.payment_method}</span>}
+                        {service.payment_type === 'avista' && <span className="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-md">À Vista</span>}
+                        {service.received
+                          ? <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded-md font-medium">✓ Recebido</span>
+                          : <span className="text-xs px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded-md">Aguardando</span>
+                        }
+                      </div>
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusColor}`}>{service.status}</span>

@@ -121,36 +121,67 @@ Deno.serve(async (req) => {
     }
 
     // ─── PRAD ────────────────────────────────────────────────────────────
-    if (event.entity_name === 'PRAD') {
-      const owner = data.owner_email;
-      if (event.type === 'create') {
-        addNotif(owner, 'Novo PRAD Criado',
-          `Projeto "${data.project_name}" foi registrado.`, 'outro', 'info', '/PRAD');
-      }
-      if (event.type === 'update') {
-        if (old_data?.status && old_data.status !== data.status) {
-          addNotif(owner, 'Status do PRAD Alterado',
-            `"${data.project_name}": ${old_data.status} → ${data.status}`,
-            'outro', data.status === 'Concluído' ? 'success' : 'info', '/PRAD');
-        }
-        const oldP = old_data?.pipeline_status || [], newP = data?.pipeline_status || [];
-        for (let i = 0; i < newP.length; i++) {
-          if (oldP[i] && oldP[i].current_status !== newP[i].current_status) {
-            addNotif(owner, 'Andamento no PRAD',
-              `Etapa "${newP[i].stage_name}": ${oldP[i].current_status} → ${newP[i].current_status}`,
-              'outro', newP[i].current_status === 'Concluído' ? 'success' : 'info', '/PRAD');
-          }
-        }
-        const oldR = old_data?.annual_reports || [], newR = data?.annual_reports || [];
-        for (let i = 0; i < newR.length; i++) {
-          if (oldR[i] && oldR[i].status !== newR[i].status) {
-            addNotif(owner, 'Relatório Anual do PRAD Atualizado',
-              `Relatório Ano ${newR[i].year}: ${oldR[i].status} → ${newR[i].status}`,
-              'outro', 'info', '/PRAD');
-          }
-        }
-      }
-    }
+     if (event.entity_name === 'PRAD') {
+       const owner = data.owner_email;
+       let consultorEmail = null;
+
+       // Buscar consultor responsável pela propriedade
+       if (data.property_id) {
+         try {
+           const props = await base44.asServiceRole.entities.Property.filter({ id: data.property_id });
+           if (props.length > 0) consultorEmail = props[0].consultor_email;
+         } catch (e) { /* ignore */ }
+       }
+
+       if (event.type === 'create') {
+         addNotif(owner, 'Novo PRAD Criado',
+           `Projeto "${data.project_name}" foi registrado.`, 'outro', 'info', '/PRAD');
+         if (consultorEmail) {
+           addNotif(consultorEmail, 'Novo PRAD - Cliente',
+             `Projeto "${data.project_name}" foi criado.`, 'outro', 'info', '/PRAD');
+         }
+       }
+       if (event.type === 'update') {
+         if (old_data?.status && old_data.status !== data.status) {
+           const sev = data.status === 'Concluído' ? 'success' : 'info';
+           addNotif(owner, 'Status do PRAD Alterado',
+             `"${data.project_name}": ${old_data.status} → ${data.status}`,
+             'outro', sev, '/PRAD');
+           if (consultorEmail) {
+             addNotif(consultorEmail, 'Status do PRAD Alterado - Cliente',
+               `"${data.project_name}": ${old_data.status} → ${data.status}`,
+               'outro', sev, '/PRAD');
+           }
+         }
+         const oldP = old_data?.pipeline_status || [], newP = data?.pipeline_status || [];
+         for (let i = 0; i < newP.length; i++) {
+           if (oldP[i] && oldP[i].current_status !== newP[i].current_status) {
+             const sev = newP[i].current_status === 'Concluído' ? 'success' : 'info';
+             addNotif(owner, 'Andamento no PRAD',
+               `Etapa "${newP[i].stage_name}": ${oldP[i].current_status} → ${newP[i].current_status}`,
+               'outro', sev, '/PRAD');
+             if (consultorEmail) {
+               addNotif(consultorEmail, 'Andamento no PRAD - Cliente',
+                 `Etapa "${newP[i].stage_name}" progrediu.`,
+                 'outro', sev, '/PRAD');
+             }
+           }
+         }
+         const oldR = old_data?.annual_reports || [], newR = data?.annual_reports || [];
+         for (let i = 0; i < newR.length; i++) {
+           if (oldR[i] && oldR[i].status !== newR[i].status) {
+             addNotif(owner, 'Relatório Anual do PRAD Atualizado',
+               `Relatório Ano ${newR[i].year}: ${oldR[i].status} → ${newR[i].status}`,
+               'outro', 'info', '/PRAD');
+             if (consultorEmail) {
+               addNotif(consultorEmail, 'Relatório Anual do PRAD - Cliente',
+                 `Relatório Ano ${newR[i].year} atualizado.`,
+                 'outro', 'info', '/PRAD');
+             }
+           }
+         }
+       }
+     }
 
     // ─── MAPPING (Agricultura de Precisão) ───────────────────────────────
     if (event.entity_name === 'Mapping') {

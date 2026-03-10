@@ -23,6 +23,7 @@ import { subDays, isAfter, isBefore } from 'date-fns';
 import ConsultorOverview from '../components/dashboard/ConsultorOverview';
 
 export default function Home() {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [selectedPropertyId, setSelectedPropertyId] = useState(null);
   const [filters, setFilters] = useState({

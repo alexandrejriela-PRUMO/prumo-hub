@@ -233,6 +233,28 @@ export default function Processes() {
               <p className="text-gray-900">{process.subject}</p>
             </div>
             
+            {process.location && (
+              <div className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 text-emerald-600 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-700">Localização</p>
+                  <p className="text-sm text-gray-600">{process.location}</p>
+                </div>
+              </div>
+            )}
+
+            {process.fine_value && (
+              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <DollarSign className="w-4 h-4 text-red-600" />
+                <div>
+                  <p className="text-sm font-medium text-red-700">Valor da Multa Arbitrada</p>
+                  <p className="text-lg font-bold text-red-800">
+                    {Number(process.fine_value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {process.parties && (
               <div className="flex items-start gap-2">
                 <Users className="w-4 h-4 text-gray-500 mt-0.5" />

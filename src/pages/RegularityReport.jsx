@@ -54,10 +54,21 @@ export default function RegularityReport() {
     enabled: !!user?.email
   });
 
+  const propertyIds = properties.map(p => p.id);
+
   const { data: documents = [] } = useQuery({
-    queryKey: ['documents', user?.email],
-    queryFn: () => base44.entities.Document.filter({ owner_email: user.email }),
-    enabled: !!user?.email
+    queryKey: ['documents', user?.email, propertyIds.join(',')],
+    queryFn: async () => {
+      if (isConsultor && propertyIds.length > 0) {
+        // Consultor: buscar documentos de todas as propriedades gerenciadas
+        const results = await Promise.all(
+          propertyIds.map(pid => base44.entities.Document.filter({ property_id: pid }))
+        );
+        return results.flat();
+      }
+      return base44.entities.Document.filter({ owner_email: user.email });
+    },
+    enabled: !!user?.email && (isConsultor ? properties.length > 0 : true)
   });
 
   const { data: processes = [] } = useQuery({

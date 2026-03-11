@@ -267,12 +267,33 @@ export default function RegularityReport() {
     return { score, status, details };
   };
 
-  const analyzeGeoreferencing = (property) => {
-    if (!property?.coordinates) {
+  const analyzeGeoreferencing = (property, geoRecords = []) => {
+    const hasCoordinates = !!property?.coordinates;
+    const hasGeoRecord = geoRecords.length > 0;
+    const regularGeo = geoRecords.find(g => g.status === 'Regular');
+
+    if (!hasCoordinates && !hasGeoRecord) {
       return {
         score: 0,
         status: 'warning',
         details: ['Coordenadas não cadastradas']
+      };
+    }
+
+    if (regularGeo) {
+      return {
+        score: 15,
+        status: 'ok',
+        details: ['✓ Georreferenciamento regular cadastrado']
+      };
+    }
+
+    if (hasGeoRecord) {
+      const geo = geoRecords[0];
+      return {
+        score: 10,
+        status: 'warning',
+        details: [`⚠ Georreferenciamento ${geo.status || 'cadastrado'} (não regular)`]
       };
     }
 

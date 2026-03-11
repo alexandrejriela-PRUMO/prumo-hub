@@ -104,11 +104,11 @@ export default function PRAD() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 p-3 sm:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Consultor Selector */}
         {isConsultor && (
-          <div className="mb-6">
+          <div className="mb-4 sm:mb-6">
             <ConsultorPropertySelector
               properties={properties}
               selectedPropertyId={selectedProperty?.id || null}
@@ -119,13 +119,13 @@ export default function PRAD() {
         )}
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-green-900 flex items-center gap-3">
-              <Sprout className="w-10 h-10" />
-              Projetos de Recuperação de Área Degradada (PRAD)
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 sm:mb-8">
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-green-900 flex items-center gap-2 sm:gap-3">
+              <Sprout className="w-7 sm:w-9 h-7 sm:h-9 flex-shrink-0" />
+              <span>PRAD - Recuperação de Área Degradada</span>
             </h1>
-            <p className="text-gray-600 mt-2">
+            <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">
               Gerencie os PRADs da propriedade - da identificação ao monitoramento
             </p>
           </div>
@@ -133,7 +133,7 @@ export default function PRAD() {
             <DialogTrigger asChild>
               <Button
                 onClick={() => setCurrentPRAD(null)}
-                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 w-full sm:w-auto"
               >
                 <Plus className="w-5 h-5 mr-2" />
                 Novo PRAD

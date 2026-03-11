@@ -154,18 +154,20 @@ export default function Properties() {
             >
               <MapIcon className="w-4 h-4" />
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setSelectedProperty(property);
-                setUsersDialogOpen(true);
-              }}
-              title="Gerenciar usuários"
-              className="flex-1 sm:flex-none"
-            >
-              <Users className="w-4 h-4" />
-            </Button>
+            {isConsultor && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedProperty(property);
+                  setUsersDialogOpen(true);
+                }}
+                title="Gerenciar usuários"
+                className="flex-1 sm:flex-none"
+              >
+                <Users className="w-4 h-4" />
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"

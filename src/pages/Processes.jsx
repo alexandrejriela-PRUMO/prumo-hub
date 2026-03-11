@@ -126,7 +126,11 @@ export default function Processes() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const data = { ...formData, client_email: user.email };
+    const data = {
+      ...formData,
+      client_email: user.email,
+      fine_value: formData.fine_value !== '' ? parseFloat(formData.fine_value) : undefined,
+    };
     
     if (editingProcess) {
       updateMutation.mutate({ id: editingProcess.id, data });

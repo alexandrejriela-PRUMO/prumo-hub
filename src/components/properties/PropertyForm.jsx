@@ -53,6 +53,12 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
     activities: [],
     client_name: '',
     client_contact: '',
+    owner_names: '',
+    car_number: '',
+    registration_numbers: '',
+    contact_phone: '',
+    contact_email: '',
+    fiscal_address: '',
   });
 
   const [activityInput, setActivityInput] = useState('');

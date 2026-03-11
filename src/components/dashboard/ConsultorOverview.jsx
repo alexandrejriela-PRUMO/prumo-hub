@@ -13,6 +13,8 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
   const navigate = useNavigate();
 
 
+  const propertyIds = properties.map(p => p.id);
+
   const { data: licenses = [] } = useQuery({
     queryKey: ['licenses', user?.email],
     queryFn: () => base44.entities.License.filter({ owner_email: { $in: properties.map(p => p.owner_email) } }),
@@ -21,21 +23,91 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
 
   const { data: alerts = [] } = useQuery({
     queryKey: ['alerts', user?.email],
-    queryFn: () => base44.entities.EnvironmentalAlert.filter({ property_id: { $in: properties.map(p => p.id) } }),
+    queryFn: () => base44.entities.EnvironmentalAlert.filter({ property_id: { $in: propertyIds } }),
     enabled: properties.length > 0,
   });
 
-  // Calcula regularidade
+  const { data: allDocuments = [] } = useQuery({
+    queryKey: ['documents-overview', user?.email],
+    queryFn: async () => {
+      const results = await Promise.all(
+        propertyIds.map(pid => Promise.all([
+          base44.entities.Document.filter({ property_id: pid }),
+          base44.entities.UnifiedDocument.filter({ entity_id: pid })
+        ]))
+      );
+      return results.flat(2);
+    },
+    enabled: properties.length > 0,
+  });
+
+  const { data: allGeo = [] } = useQuery({
+    queryKey: ['geo-overview', user?.email],
+    queryFn: async () => {
+      const results = await Promise.all(
+        propertyIds.map(pid => base44.entities.Georeferencing.filter({ property_id: pid }))
+      );
+      return results.flat();
+    },
+    enabled: properties.length > 0,
+  });
+
+  const { data: allProcesses = [] } = useQuery({
+    queryKey: ['processes-overview', user?.email],
+    queryFn: async () => {
+      const results = await Promise.all(
+        propertyIds.map(pid => base44.entities.Process.filter({ property_id: pid }))
+      );
+      return results.flat();
+    },
+    enabled: properties.length > 0,
+  });
+
+  // Calcula regularidade usando a mesma lógica do termômetro
   const calcRegularity = (propertyId) => {
+    const property = properties.find(p => p.id === propertyId);
+    let score = 0;
+
+    // Licenças (40 pts)
     const propLicenses = licenses.filter(l => l.property_id === propertyId);
-    if (propLicenses.length === 0) return 100;
-    
-    const validLicenses = propLicenses.filter(l => {
-      const expiryDate = new Date(l.expiry_date);
-      return expiryDate > new Date();
-    });
-    
-    return Math.round((validLicenses.length / propLicenses.length) * 100);
+    if (propLicenses.length === 0) {
+      score += 0;
+    } else {
+      const now = new Date();
+      const expired = propLicenses.filter(l => !l.expiry_date || new Date(l.expiry_date) <= now);
+      const expiringSoon = propLicenses.filter(l => {
+        if (!l.expiry_date) return false;
+        const days = Math.floor((new Date(l.expiry_date) - now) / (1000 * 60 * 60 * 24));
+        return days > 0 && days <= 30;
+      });
+      if (expired.length === 0 && expiringSoon.length === 0) score += 40;
+      else if (expired.length === 0) score += 28;
+      else score += 12;
+    }
+
+    // Documentos (30 pts)
+    const propDocs = allDocuments.filter(d => d.property_id === propertyId || d.entity_id === propertyId);
+    const hasCAR = propDocs.some(d => d.document_type === 'CAR');
+    const hasCCIR = propDocs.some(d => d.document_type === 'CCIR');
+    const hasGeoDoc = propDocs.some(d => d.document_type === 'Georreferenciamento');
+    if (hasCAR) score += 12;
+    if (hasCCIR) score += 9;
+    if (hasGeoDoc) score += 9;
+
+    // Georreferenciamento (15 pts)
+    const propGeo = allGeo.filter(g => g.property_id === propertyId);
+    const regularGeo = propGeo.find(g => g.status === 'Regular');
+    if (regularGeo) score += 15;
+    else if (propGeo.length > 0) score += 10;
+    else if (property?.coordinates) score += 15;
+
+    // Processos (15 pts)
+    const propProcesses = allProcesses.filter(p => p.property_id === propertyId);
+    const activeProcesses = propProcesses.filter(p => p.status === 'Em Andamento');
+    if (activeProcesses.length === 0) score += 15;
+    else score += 7;
+
+    return score;
   };
 
   // Conta alertas por propriedade

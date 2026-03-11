@@ -65,23 +65,89 @@ Deno.serve(async (req) => {
     // ─── PROCESS ─────────────────────────────────────────────────────────
     if (event.entity_name === 'Process') {
       const client = data.client_email;
-      if (event.type === 'create') {
-        addNotif(client, 'Novo Processo Registrado',
-          `Processo ${data.process_number}: ${data.subject}`,
-          'novo_processo', 'info', '/Processes');
+      let consultorEmail = null;
+
+      // Buscar consultor responsável pela propriedade
+      if (data.property_id) {
+        try {
+          const props = await base44.asServiceRole.entities.Property.filter({ id: data.property_id });
+          if (props.length > 0) consultorEmail = props[0].consultor_email;
+        } catch (e) { /* ignore */ }
       }
+
+      if (event.type === 'create') {
+        const title = 'Novo Processo Registrado';
+        const message = `Processo ${data.process_number} (${data.process_type}): ${data.subject}`;
+        addNotif(client, title, message, 'novo_processo', 'info', '/Processes');
+        if (consultorEmail) addNotif(consultorEmail, `Novo Processo - Cliente`, message, 'novo_processo', 'info', '/Processes');
+
+        // Email para o produtor
+        if (client) {
+          try {
+            await base44.asServiceRole.integrations.Core.SendEmail({
+              to: client,
+              subject: `[PRUMO Hub] Novo Processo Registrado: ${data.process_number}`,
+              body: `<p>Olá,</p>
+<p>Um novo processo foi cadastrado na plataforma PRUMO Hub:</p>
+<ul>
+  <li><strong>Número:</strong> ${data.process_number}</li>
+  <li><strong>Tipo:</strong> ${data.process_type}</li>
+  <li><strong>Matéria:</strong> ${data.subject}</li>
+  <li><strong>Status:</strong> ${data.status}</li>
+  ${data.parties ? `<li><strong>Partes:</strong> ${data.parties}</li>` : ''}
+  ${data.location ? `<li><strong>Localização:</strong> ${data.location}</li>` : ''}
+</ul>
+<p>Acesse a plataforma para mais detalhes.</p>
+<p>Equipe PRUMO Hub</p>`
+            });
+          } catch (e) { console.error('Erro ao enviar email de processo:', e); }
+        }
+      }
+
       if (event.type === 'update') {
         const oldU = old_data?.updates || [], newU = data?.updates || [];
         if (newU.length > oldU.length) {
           const latest = newU[newU.length - 1];
-          addNotif(client, 'Novo Andamento em Processo',
-            `Processo ${data.process_number}: ${latest.description?.substring(0, 120) || 'Nova movimentação'}`,
-            'atualizacao_processo', 'info', '/Processes');
+          const movMessage = `Processo ${data.process_number}: ${latest.description?.substring(0, 120) || 'Nova movimentação'}`;
+          addNotif(client, 'Novo Andamento em Processo', movMessage, 'atualizacao_processo', 'info', '/Processes');
+          if (consultorEmail) addNotif(consultorEmail, 'Andamento em Processo - Cliente', movMessage, 'atualizacao_processo', 'info', '/Processes');
+
+          // Email para o produtor
+          if (client) {
+            try {
+              await base44.asServiceRole.integrations.Core.SendEmail({
+                to: client,
+                subject: `[PRUMO Hub] Novo Andamento no Processo ${data.process_number}`,
+                body: `<p>Olá,</p>
+<p>Houve uma nova movimentação no processo <strong>${data.process_number}</strong>:</p>
+<blockquote style="background:#f5f5f5;padding:12px;border-left:4px solid #2d6a4f;">${latest.description || 'Nova movimentação registrada'}</blockquote>
+${latest.date ? `<p><strong>Data:</strong> ${latest.date}</p>` : ''}
+${latest.responsible ? `<p><strong>Responsável:</strong> ${latest.responsible}</p>` : ''}
+<p>Acesse a plataforma para mais detalhes.</p>
+<p>Equipe PRUMO Hub</p>`
+              });
+            } catch (e) { console.error('Erro ao enviar email de andamento:', e); }
+          }
         }
         if (old_data?.status && old_data.status !== data.status) {
-          addNotif(client, 'Status de Processo Alterado',
-            `Processo ${data.process_number}: ${old_data.status} → ${data.status}`,
-            'atualizacao_processo', 'warning', '/Processes');
+          const statusMsg = `Processo ${data.process_number}: ${old_data.status} → ${data.status}`;
+          addNotif(client, 'Status de Processo Alterado', statusMsg, 'atualizacao_processo', 'warning', '/Processes');
+          if (consultorEmail) addNotif(consultorEmail, 'Status de Processo Alterado - Cliente', statusMsg, 'atualizacao_processo', 'warning', '/Processes');
+
+          // Email para o produtor
+          if (client) {
+            try {
+              await base44.asServiceRole.integrations.Core.SendEmail({
+                to: client,
+                subject: `[PRUMO Hub] Status do Processo ${data.process_number} Alterado`,
+                body: `<p>Olá,</p>
+<p>O status do processo <strong>${data.process_number}</strong> foi alterado:</p>
+<p><strong>${old_data.status}</strong> → <strong>${data.status}</strong></p>
+<p>Acesse a plataforma para mais detalhes.</p>
+<p>Equipe PRUMO Hub</p>`
+              });
+            } catch (e) { console.error('Erro ao enviar email de status:', e); }
+          }
         }
       }
     }

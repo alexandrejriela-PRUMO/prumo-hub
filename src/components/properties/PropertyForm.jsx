@@ -52,6 +52,7 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
     main_activity: '',
     activities: [],
     client_name: '',
+    client_email: '',
     client_contact: '',
     owner_names: '',
     owner_names_list: [],

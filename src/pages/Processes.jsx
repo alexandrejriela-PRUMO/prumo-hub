@@ -174,23 +174,24 @@ export default function Processes() {
     
     return (
       <Card className="border-emerald-100 hover:shadow-lg transition-shadow">
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="space-y-2 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge className={`${typeConfig[process.process_type]?.color} border font-semibold`}>
+        <CardHeader className="p-3 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div className="space-y-2 flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <Badge className={`${typeConfig[process.process_type]?.color} border font-semibold text-xs sm:text-sm`}>
                   {process.process_type}
                 </Badge>
-                <Badge className={`${statusConfig[process.status]?.color} border`}>
-                  <StatusIcon className="w-3 h-3 mr-1" />
-                  {process.status}
+                <Badge className={`${statusConfig[process.status]?.color} border text-xs sm:text-sm`}>
+                  <StatusIcon className="w-3 h-3 mr-0.5 sm:mr-1" />
+                  <span className="hidden sm:inline">{process.status}</span>
+                  <span className="sm:hidden">{process.status.substring(0, 6)}</span>
                 </Badge>
               </div>
-              <CardTitle className="text-lg text-gray-900">
+              <CardTitle className="text-base sm:text-lg text-gray-900 break-all">
                 {process.process_number}
               </CardTitle>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-1 sm:gap-2 w-full sm:w-auto">
               <Button
                 variant="outline"
                 size="sm"
@@ -198,18 +199,20 @@ export default function Processes() {
                   setSelectedProcess(process);
                   setShowHistory(true);
                 }}
-                className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                className="flex-1 sm:flex-none border-blue-300 text-blue-700 hover:bg-blue-50 text-xs sm:text-sm"
               >
-                <Clock className="w-4 h-4 mr-1" />
-                Histórico
+                <Clock className="w-3.5 sm:w-4 h-3.5 sm:h-4 mr-1" />
+                <span className="hidden sm:inline">Histórico</span>
+                <span className="sm:hidden">Hist.</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => handleEdit(process)}
-                className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                className="flex-1 sm:flex-none border-emerald-300 text-emerald-700 hover:bg-emerald-50 text-xs sm:text-sm"
               >
-                Editar
+                <span className="hidden sm:inline">Editar</span>
+                <span className="sm:hidden">Ed.</span>
               </Button>
               <Button
                 variant="outline"
@@ -219,9 +222,9 @@ export default function Processes() {
                     deleteMutation.mutate(process.id);
                   }
                 }}
-                className="border-red-200 text-red-600 hover:bg-red-50"
+                className="flex-1 sm:flex-none border-red-200 text-red-600 hover:bg-red-50"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
               </Button>
             </div>
           </div>

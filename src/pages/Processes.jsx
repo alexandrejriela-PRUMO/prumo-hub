@@ -508,7 +508,7 @@ export default function Processes() {
                 {editingProcess ? 'Editar Processo' : 'Cadastrar Novo Processo'}
               </DialogTitle>
             </DialogHeader>
-            <ProcessForm />
+            {ProcessForm()}
           </DialogContent>
         </Dialog>
       </div>

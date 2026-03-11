@@ -49,9 +49,17 @@ export default function RegularityReport() {
   });
 
   const { data: licenses = [] } = useQuery({
-    queryKey: ['licenses', user?.email],
-    queryFn: () => base44.entities.License.filter({ owner_email: user.email }),
-    enabled: !!user?.email
+    queryKey: ['licenses', user?.email, propertyIds.join(',')],
+    queryFn: async () => {
+      if (isConsultor && propertyIds.length > 0) {
+        const results = await Promise.all(
+          propertyIds.map(pid => base44.entities.License.filter({ property_id: pid }))
+        );
+        return results.flat();
+      }
+      return base44.entities.License.filter({ owner_email: user.email });
+    },
+    enabled: !!user?.email && (isConsultor ? properties.length > 0 : true)
   });
 
   const propertyIds = properties.map(p => p.id);

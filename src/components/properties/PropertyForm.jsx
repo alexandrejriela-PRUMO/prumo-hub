@@ -132,7 +132,7 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
     e.preventDefault();
     const submitData = {
       ...formData,
-      owner_email: property?.owner_email || user.email,
+      owner_email: property?.owner_email || (isConsultor ? formData.client_email : user.email),
       total_hectares: !isUrban && formData.total_hectares ? parseFloat(formData.total_hectares) : undefined,
       app_hectares: !isUrban && formData.app_hectares ? parseFloat(formData.app_hectares) : undefined,
       legal_reserve_hectares: !isUrban && formData.legal_reserve_hectares ? parseFloat(formData.legal_reserve_hectares) : undefined,

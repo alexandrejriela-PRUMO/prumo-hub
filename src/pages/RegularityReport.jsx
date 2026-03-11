@@ -172,7 +172,10 @@ export default function RegularityReport() {
     totalScore += geoAnalysis.score;
 
     // Processos (15 pontos)
-    const processAnalysis = analyzeProcesses(processes);
+    const propertyProcesses = isConsultor
+      ? processes.filter(p => p.property_id === selectedPropertyId)
+      : processes;
+    const processAnalysis = analyzeProcesses(propertyProcesses);
     categories.push({
       name: 'Situação Processual',
       icon: Scale,

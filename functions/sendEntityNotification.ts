@@ -420,28 +420,47 @@ Deno.serve(async (req) => {
     }
 
     // ─── SAVE ALL NOTIFICATIONS ──────────────────────────────────────────
-    if (notifications.length === 0) {
+    if (notifications.length === 0 && emailsToSend.length === 0) {
       return Response.json({ success: true, message: 'Evento não requer notificação' });
     }
 
+    // Salvar notificações in-app (push) respeitando preferências
     for (const notif of notifications) {
-      await base44.asServiceRole.entities.InAppNotification.create({
-        user_email: notif.user_email,
-        title: notif.title,
-        message: notif.message,
-        event_type: notif.event_type,
-        severity: notif.severity,
-        read: false,
-        link: notif.link,
-        metadata: {
-          entity_name: event.entity_name,
-          entity_id: event.entity_id,
-          timestamp: new Date().toISOString()
-        }
-      });
+      const prefs = await getUserPrefs(notif.user_email);
+      const pref = prefs[notif.event_type] || prefs['todos'];
+      // Salva push se não há preferência (default true) ou se push_enabled = true
+      if (!pref || pref.push_enabled !== false) {
+        await base44.asServiceRole.entities.InAppNotification.create({
+          user_email: notif.user_email,
+          title: notif.title,
+          message: notif.message,
+          event_type: notif.event_type,
+          severity: notif.severity,
+          read: false,
+          link: notif.link,
+          metadata: {
+            entity_name: event.entity_name,
+            entity_id: event.entity_id,
+            timestamp: new Date().toISOString()
+          }
+        });
+      }
     }
 
-    return Response.json({ success: true, notifications_sent: notifications.length });
+    // Enviar emails
+    for (const email of emailsToSend) {
+      try {
+        await base44.asServiceRole.integrations.Core.SendEmail({
+          to: email.to,
+          subject: email.subject,
+          body: email.body
+        });
+      } catch (e) {
+        console.error('Erro ao enviar email:', e.message);
+      }
+    }
+
+    return Response.json({ success: true, notifications_sent: notifications.length, emails_sent: emailsToSend.length });
 
   } catch (error) {
     console.error('Erro ao processar notificação:', error);

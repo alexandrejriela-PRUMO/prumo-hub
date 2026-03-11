@@ -68,7 +68,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
     const property = properties.find(p => p.id === propertyId);
     let score = 0;
 
-    // Licenças (40 pts)
+    // Licenças (35 pts)
     const propLicenses = licenses.filter(l => l.property_id === propertyId);
     if (propLicenses.length === 0) {
       score += 0;
@@ -80,19 +80,19 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
         const days = Math.floor((new Date(l.expiry_date) - now) / (1000 * 60 * 60 * 24));
         return days > 0 && days <= 30;
       });
-      if (expired.length === 0 && expiringSoon.length === 0) score += 40;
-      else if (expired.length === 0) score += 28;
-      else score += 12;
+      if (expired.length === 0 && expiringSoon.length === 0) score += 35;
+      else if (expired.length === 0) score += 22;
+      else score += 10;
     }
 
-    // Documentos (30 pts)
+    // Documentos (25 pts)
     const propDocs = allDocuments.filter(d => d.property_id === propertyId || d.entity_id === propertyId);
     const hasCAR = propDocs.some(d => d.document_type === 'CAR');
     const hasCCIR = propDocs.some(d => d.document_type === 'CCIR');
     const hasGeoDoc = propDocs.some(d => d.document_type === 'Georreferenciamento');
-    if (hasCAR) score += 12;
-    if (hasCCIR) score += 9;
-    if (hasGeoDoc) score += 9;
+    if (hasCAR) score += 10;
+    if (hasCCIR) score += 8;
+    if (hasGeoDoc) score += 7;
 
     // Georreferenciamento (15 pts)
     const propGeo = allGeo.filter(g => g.property_id === propertyId);

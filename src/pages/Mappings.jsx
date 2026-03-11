@@ -222,16 +222,16 @@ export default function Mappings() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-3 sm:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-emerald-900 flex items-center gap-3">
-              <Map className="w-10 h-10" />
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 sm:mb-8">
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-4xl font-bold text-emerald-900 flex items-center gap-2 sm:gap-3">
+              <Map className="w-7 sm:w-10 h-7 sm:h-10 flex-shrink-0" />
               Mapeamentos
             </h1>
-            <p className="text-gray-600 mt-2">
+            <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">
               Gerencie mapeamentos multiespectrais, obstáculos, relevo, frutíferas e pastagens
             </p>
           </div>
@@ -239,7 +239,7 @@ export default function Mappings() {
             <DialogTrigger asChild>
               <Button
                 onClick={() => setCurrentMapping(null)}
-                className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
+                className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 w-full sm:w-auto"
               >
                 <Plus className="w-5 h-5 mr-2" />
                 Novo Mapeamento

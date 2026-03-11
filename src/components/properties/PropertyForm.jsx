@@ -461,19 +461,62 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
         </div>
       )}
 
+      {/* Dados dos Proprietários e Documentação */}
+      <div className="space-y-4 pt-4 border-t border-dashed border-emerald-200">
+        <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Dados dos Proprietários e Documentação</p>
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="space-y-2 md:col-span-2">
+            <Label>Nome(s) do(s) Proprietário(s)</Label>
+            <Input value={formData.owner_names || ''}
+              onChange={(e) => setFormData({ ...formData, owner_names: e.target.value })}
+              placeholder="Ex: João da Silva, Maria da Silva" />
+          </div>
+          <div className="space-y-2">
+            <Label>Número do CAR</Label>
+            <Input value={formData.car_number || ''}
+              onChange={(e) => setFormData({ ...formData, car_number: e.target.value })}
+              placeholder="Ex: RS-4300000-XXXX..." />
+          </div>
+          <div className="space-y-2">
+            <Label>Número(s) da(s) Matrícula(s)</Label>
+            <Input value={formData.registration_numbers || ''}
+              onChange={(e) => setFormData({ ...formData, registration_numbers: e.target.value })}
+              placeholder="Ex: 12.345, 12.346" />
+          </div>
+          <div className="space-y-2">
+            <Label>Telefone para Contato</Label>
+            <Input value={formData.contact_phone || ''}
+              onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
+              placeholder="Ex: (51) 99999-9999" />
+          </div>
+          <div className="space-y-2">
+            <Label>Email de Contato</Label>
+            <Input type="email" value={formData.contact_email || ''}
+              onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
+              placeholder="Ex: joao@email.com" />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label>Endereço Fiscal</Label>
+            <Input value={formData.fiscal_address || ''}
+              onChange={(e) => setFormData({ ...formData, fiscal_address: e.target.value })}
+              placeholder="Ex: Rua das Flores, 123 - Centro - Porto Alegre/RS" />
+          </div>
+        </div>
+      </div>
+
       {isConsultor && (
         <div className="space-y-4 pt-4 border-t border-dashed border-emerald-200">
           <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Dados do Cliente Responsável</p>
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Nome do Cliente / Produtor</Label>
-              <Input value={formData.client_name}
+              <Input value={formData.client_name || ''}
                 onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
                 placeholder="Ex: João da Silva" />
             </div>
             <div className="space-y-2">
               <Label>Contato do Cliente</Label>
-              <Input value={formData.client_contact}
+              <Input value={formData.client_contact || ''}
                 onChange={(e) => setFormData({ ...formData, client_contact: e.target.value })}
                 placeholder="Telefone ou email" />
             </div>

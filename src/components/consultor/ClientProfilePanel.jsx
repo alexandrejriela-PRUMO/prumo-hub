@@ -360,7 +360,7 @@ export default function ClientProfilePanel({ client }) {
               <p className="text-sm font-semibold text-gray-700 mb-3">Contato e Endereço</p>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="E-mail">
-                  <Input value={personalData.email} disabled className="bg-gray-50 text-gray-500" />
+                  <Input value={personalData.email} onChange={e => set('email', e.target.value)} placeholder="email@exemplo.com" />
                 </Field>
                 <Field label="Telefone / WhatsApp">
                   <Input value={personalData.phone} onChange={e => set('phone', e.target.value)} placeholder="(00) 00000-0000" />

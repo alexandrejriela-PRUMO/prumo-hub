@@ -70,13 +70,19 @@ export default function RegularityReport() {
     queryKey: ['documents', user?.email, propertyIds.join(',')],
     queryFn: async () => {
       if (isConsultor && propertyIds.length > 0) {
-        // Consultor: buscar documentos de todas as propriedades gerenciadas
         const results = await Promise.all(
-          propertyIds.map(pid => base44.entities.Document.filter({ property_id: pid }))
+          propertyIds.map(pid => Promise.all([
+            base44.entities.Document.filter({ property_id: pid }),
+            base44.entities.UnifiedDocument.filter({ entity_id: pid })
+          ]))
         );
-        return results.flat();
+        return results.flat(2);
       }
-      return base44.entities.Document.filter({ owner_email: user.email });
+      const [docs, unified] = await Promise.all([
+        base44.entities.Document.filter({ owner_email: user.email }),
+        base44.entities.UnifiedDocument.filter({ uploaded_by: user.email })
+      ]);
+      return [...docs, ...unified];
     },
     enabled: !!user?.email && (isConsultor ? properties.length > 0 : true)
   });

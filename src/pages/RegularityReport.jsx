@@ -240,16 +240,16 @@ export default function RegularityReport() {
     let status = 'ok';
 
     if (expired.length === 0 && expiringSoon.length === 0) {
-      score = 40;
+      score = 35;
       status = 'ok';
       details.push(`✓ Todas as ${licenses.length} licenças válidas`);
     } else if (expired.length === 0) {
-      score = 28;
+      score = 22;
       status = 'warning';
       details.push(`⚠ ${expiringSoon.length} licença(s) vencendo em até 30 dias`);
       details.push(`✓ ${valid.length - expiringSoon.length} licença(s) válidas`);
     } else {
-      score = 12;
+      score = 10;
       status = 'critical';
       details.push(`✗ ${expired.length} licença(s) vencida(s)`);
       if (valid.length > 0) details.push(`✓ ${valid.length} licença(s) válidas`);

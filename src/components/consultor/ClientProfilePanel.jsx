@@ -123,6 +123,7 @@ export default function ClientProfilePanel({ client }) {
           client_name: name,
           client_contact: contactInfo,
           authorized_users: authorizedUsersJson,
+          owner_email: personalData.email || p.owner_email,
         })
       );
       await Promise.all(updates);

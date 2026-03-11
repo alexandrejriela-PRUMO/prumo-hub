@@ -219,7 +219,7 @@ export default function Home() {
       </div>
 
       {/* Property Selector */}
-      {!isLoading && properties.length > 1 &&
+      {properties.length > 1 && (
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 sm:p-5 bg-gradient-to-r from-white to-emerald-50/40 rounded-xl border border-emerald-100/60 shadow-sm hover:shadow-md transition-all duration-300 hover:border-emerald-200">
           <div className="flex items-center gap-3 min-w-0">
             <div className="p-2 bg-emerald-100/60 rounded-lg">
@@ -229,7 +229,7 @@ export default function Home() {
               Propriedade:
             </span>
           </div>
-          <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
+          <Select value={selectedPropertyId || ''} onValueChange={setSelectedPropertyId} disabled={loadingProperties}>
             <SelectTrigger className="w-full sm:w-80 bg-white border-emerald-200 text-sm font-medium hover:border-emerald-300 transition-colors">
               <SelectValue placeholder="Selecione uma propriedade" />
             </SelectTrigger>
@@ -242,7 +242,7 @@ export default function Home() {
             </SelectContent>
           </Select>
         </div>
-      }
+      )}
 
       {/* Property Card */}
       {isLoading ?

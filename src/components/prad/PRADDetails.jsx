@@ -52,14 +52,14 @@ export default function PRADDetails({ prad }) {
   });
   return (
     <Tabs defaultValue="identification" className="w-full">
-      <div className="overflow-x-auto -mx-1 px-1">
-        <TabsList className="flex w-max min-w-full sm:grid sm:w-full sm:grid-cols-6 mb-1">
-          <TabsTrigger value="identification" className="text-xs whitespace-nowrap">Identificação</TabsTrigger>
-          <TabsTrigger value="diagnosis" className="text-xs whitespace-nowrap">Diagnóstico</TabsTrigger>
-          <TabsTrigger value="execution" className="text-xs whitespace-nowrap">Execução</TabsTrigger>
-          <TabsTrigger value="monitoring" className="text-xs whitespace-nowrap">Monitoramento</TabsTrigger>
-          <TabsTrigger value="documents" className="text-xs whitespace-nowrap">Documentos</TabsTrigger>
-          <TabsTrigger value="timeline" className="text-xs whitespace-nowrap">Timeline</TabsTrigger>
+      <div className="w-full overflow-x-auto pb-1">
+        <TabsList className="inline-flex w-max h-auto gap-1 p-1 rounded-lg bg-muted">
+          <TabsTrigger value="identification" className="text-xs px-3 py-1.5 whitespace-nowrap rounded-md">Identificação</TabsTrigger>
+          <TabsTrigger value="diagnosis" className="text-xs px-3 py-1.5 whitespace-nowrap rounded-md">Diagnóstico</TabsTrigger>
+          <TabsTrigger value="execution" className="text-xs px-3 py-1.5 whitespace-nowrap rounded-md">Execução</TabsTrigger>
+          <TabsTrigger value="monitoring" className="text-xs px-3 py-1.5 whitespace-nowrap rounded-md">Monitoramento</TabsTrigger>
+          <TabsTrigger value="documents" className="text-xs px-3 py-1.5 whitespace-nowrap rounded-md">Documentos</TabsTrigger>
+          <TabsTrigger value="timeline" className="text-xs px-3 py-1.5 whitespace-nowrap rounded-md">Timeline</TabsTrigger>
         </TabsList>
       </div>
 

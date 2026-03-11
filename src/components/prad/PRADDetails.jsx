@@ -52,14 +52,16 @@ export default function PRADDetails({ prad }) {
   });
   return (
     <Tabs defaultValue="identification" className="w-full">
-      <TabsList className="grid w-full grid-cols-6">
-        <TabsTrigger value="identification" className="text-xs">Identificação</TabsTrigger>
-        <TabsTrigger value="diagnosis" className="text-xs">Diagnóstico</TabsTrigger>
-        <TabsTrigger value="execution" className="text-xs">Execução</TabsTrigger>
-        <TabsTrigger value="monitoring" className="text-xs">Monitoramento</TabsTrigger>
-        <TabsTrigger value="documents" className="text-xs">Documentos</TabsTrigger>
-        <TabsTrigger value="timeline" className="text-xs">Timeline</TabsTrigger>
-      </TabsList>
+      <div className="overflow-x-auto -mx-1 px-1">
+        <TabsList className="flex w-max min-w-full sm:grid sm:w-full sm:grid-cols-6 mb-1">
+          <TabsTrigger value="identification" className="text-xs whitespace-nowrap">Identificação</TabsTrigger>
+          <TabsTrigger value="diagnosis" className="text-xs whitespace-nowrap">Diagnóstico</TabsTrigger>
+          <TabsTrigger value="execution" className="text-xs whitespace-nowrap">Execução</TabsTrigger>
+          <TabsTrigger value="monitoring" className="text-xs whitespace-nowrap">Monitoramento</TabsTrigger>
+          <TabsTrigger value="documents" className="text-xs whitespace-nowrap">Documentos</TabsTrigger>
+          <TabsTrigger value="timeline" className="text-xs whitespace-nowrap">Timeline</TabsTrigger>
+        </TabsList>
+      </div>
 
       {/* Identificação */}
       <TabsContent value="identification" className="space-y-4">

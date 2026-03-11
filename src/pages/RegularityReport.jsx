@@ -206,7 +206,7 @@ export default function RegularityReport() {
     const alertAnalysis = analyzeAlerts(propertyAlerts);
     categories.push({
       name: 'Alertas de Infrações',
-      icon: AlertTriangle,
+      icon: ShieldAlert,
       weight: 15,
       score: alertAnalysis.score,
       status: alertAnalysis.status,

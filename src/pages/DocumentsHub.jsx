@@ -181,13 +181,15 @@ export default function DocumentsHub() {
 
       {/* Produtor Property Selector */}
       {!isConsultor && properties.length > 1 && (
-        <div className="flex items-center gap-3 p-4 bg-white rounded-xl border border-emerald-100 shadow-sm">
-          <Filter className="w-4 h-4 text-gray-500 flex-shrink-0" />
-          <span className="text-gray-700 font-medium whitespace-nowrap">Propriedade ou Empreendimento:</span>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-white rounded-xl border border-emerald-100 shadow-sm">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Filter className="w-4 h-4 text-gray-500" />
+            <span className="text-gray-700 font-medium text-sm sm:text-base">Propriedade ou Empreendimento:</span>
+          </div>
           <select
             value={selectedPropertyId || ''}
             onChange={(e) => setSelectedPropertyId(e.target.value || null)}
-            className="w-full sm:w-96 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+            className="w-full px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
           >
             <option value="">Todas as Propriedades e Empreendimentos</option>
             {properties.map(prop => (

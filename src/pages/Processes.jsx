@@ -521,18 +521,21 @@ export default function Processes() {
       ) : null}
 
       <Tabs defaultValue="Administrativo" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
-          <TabsTrigger value="Administrativo" className="flex items-center gap-2">
-            <FileText className="w-4 h-4" />
-            Administrativos ({filteredProcesses('Administrativo').length})
+        <TabsList className="grid w-full grid-cols-3 mb-4 sm:mb-6 gap-1 sm:gap-0">
+          <TabsTrigger value="Administrativo" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
+            <FileText className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+            <span className="hidden sm:inline">Administrativos</span>
+            <span className="sm:hidden">Admin</span> ({filteredProcesses('Administrativo').length})
           </TabsTrigger>
-          <TabsTrigger value="Civil" className="flex items-center gap-2">
-            <Scale className="w-4 h-4" />
-            Civis ({filteredProcesses('Civil').length})
+          <TabsTrigger value="Civil" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
+            <Scale className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+            <span className="hidden sm:inline">Civis</span>
+            <span className="sm:hidden">Civil</span> ({filteredProcesses('Civil').length})
           </TabsTrigger>
-          <TabsTrigger value="Criminal" className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4" />
-            Criminais ({filteredProcesses('Criminal').length})
+          <TabsTrigger value="Criminal" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
+            <AlertCircle className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+            <span className="hidden sm:inline">Criminais</span>
+            <span className="sm:hidden">Crim</span> ({filteredProcesses('Criminal').length})
           </TabsTrigger>
         </TabsList>
 

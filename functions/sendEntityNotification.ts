@@ -106,27 +106,11 @@ Deno.serve(async (req) => {
         addNotif(client, title, message, 'novo_processo', 'info', '/Processes');
         if (consultorEmail) addNotif(consultorEmail, `Novo Processo - Cliente`, message, 'novo_processo', 'info', '/Processes');
 
-        // Email para o produtor
-        if (client) {
-          try {
-            await base44.asServiceRole.integrations.Core.SendEmail({
-              to: client,
-              subject: `[PRUMO Hub] Novo Processo Registrado: ${data.process_number}`,
-              body: `<p>Olá,</p>
-<p>Um novo processo foi cadastrado na plataforma PRUMO Hub:</p>
-<ul>
-  <li><strong>Número:</strong> ${data.process_number}</li>
-  <li><strong>Tipo:</strong> ${data.process_type}</li>
-  <li><strong>Matéria:</strong> ${data.subject}</li>
-  <li><strong>Status:</strong> ${data.status}</li>
-  ${data.parties ? `<li><strong>Partes:</strong> ${data.parties}</li>` : ''}
-  ${data.location ? `<li><strong>Localização:</strong> ${data.location}</li>` : ''}
-</ul>
-<p>Acesse a plataforma para mais detalhes.</p>
-<p>Equipe PRUMO Hub</p>`
-            });
-          } catch (e) { console.error('Erro ao enviar email de processo:', e); }
-        }
+        await addEmail(client,
+          `[PRUMO Hub] Novo Processo Registrado: ${data.process_number}`,
+          `<p>Olá,</p><p>Um novo processo foi cadastrado na plataforma PRUMO Hub:</p><ul><li><strong>Número:</strong> ${data.process_number}</li><li><strong>Tipo:</strong> ${data.process_type}</li><li><strong>Matéria:</strong> ${data.subject}</li><li><strong>Status:</strong> ${data.status}</li>${data.parties ? `<li><strong>Partes:</strong> ${data.parties}</li>` : ''}${data.location ? `<li><strong>Localização:</strong> ${data.location}</li>` : ''}</ul><p>Acesse a plataforma para mais detalhes.</p><p>Equipe PRUMO Hub</p>`,
+          'novo_processo'
+        );
       }
 
       if (event.type === 'update') {

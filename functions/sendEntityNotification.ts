@@ -121,22 +121,11 @@ Deno.serve(async (req) => {
           addNotif(client, 'Novo Andamento em Processo', movMessage, 'atualizacao_processo', 'info', '/Processes');
           if (consultorEmail) addNotif(consultorEmail, 'Andamento em Processo - Cliente', movMessage, 'atualizacao_processo', 'info', '/Processes');
 
-          // Email para o produtor
-          if (client) {
-            try {
-              await base44.asServiceRole.integrations.Core.SendEmail({
-                to: client,
-                subject: `[PRUMO Hub] Novo Andamento no Processo ${data.process_number}`,
-                body: `<p>Olá,</p>
-<p>Houve uma nova movimentação no processo <strong>${data.process_number}</strong>:</p>
-<blockquote style="background:#f5f5f5;padding:12px;border-left:4px solid #2d6a4f;">${latest.description || 'Nova movimentação registrada'}</blockquote>
-${latest.date ? `<p><strong>Data:</strong> ${latest.date}</p>` : ''}
-${latest.responsible ? `<p><strong>Responsável:</strong> ${latest.responsible}</p>` : ''}
-<p>Acesse a plataforma para mais detalhes.</p>
-<p>Equipe PRUMO Hub</p>`
-              });
-            } catch (e) { console.error('Erro ao enviar email de andamento:', e); }
-          }
+          await addEmail(client,
+            `[PRUMO Hub] Novo Andamento no Processo ${data.process_number}`,
+            `<p>Olá,</p><p>Houve uma nova movimentação no processo <strong>${data.process_number}</strong>:</p><blockquote style="background:#f5f5f5;padding:12px;border-left:4px solid #2d6a4f;">${latest.description || 'Nova movimentação registrada'}</blockquote>${latest.date ? `<p><strong>Data:</strong> ${latest.date}</p>` : ''}${latest.responsible ? `<p><strong>Responsável:</strong> ${latest.responsible}</p>` : ''}<p>Acesse a plataforma para mais detalhes.</p><p>Equipe PRUMO Hub</p>`,
+            'atualizacao_processo'
+          );
         }
         if (old_data?.status && old_data.status !== data.status) {
           const statusMsg = `Processo ${data.process_number}: ${old_data.status} → ${data.status}`;

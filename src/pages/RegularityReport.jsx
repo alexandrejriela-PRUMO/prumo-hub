@@ -345,7 +345,7 @@ export default function RegularityReport() {
   const analyzeProcesses = (processes) => {
     if (!processes || processes.length === 0) {
       return {
-        score: 15,
+        score: 10,
         status: 'ok',
         details: ['✓ Sem processos registrados']
       };
@@ -355,19 +355,57 @@ export default function RegularityReport() {
     
     if (active.length === 0) {
       return {
-        score: 15,
+        score: 10,
         status: 'ok',
         details: [`✓ ${processes.length} processo(s) arquivado(s) ou finalizado(s)`]
       };
     }
 
     return {
-      score: 7,
+      score: 4,
       status: 'warning',
       details: [
         `⚠ ${active.length} processo(s) ativo(s)`,
         `${processes.length - active.length} processo(s) encerrado(s)`
       ]
+    };
+  };
+
+  const analyzeAlerts = (alerts) => {
+    if (!alerts || alerts.length === 0) {
+      return {
+        score: 15,
+        status: 'ok',
+        details: ['✓ Sem alertas de infrações']
+      };
+    }
+
+    const open = alerts.filter(a => a.status === 'Aberto' || a.status === 'Em Análise');
+    const critical = open.filter(a => a.severity === 'Crítica' || a.severity === 'Alta');
+
+    if (open.length === 0) {
+      return {
+        score: 15,
+        status: 'ok',
+        details: [`✓ ${alerts.length} alerta(s) resolvido(s)`]
+      };
+    }
+
+    if (critical.length > 0) {
+      return {
+        score: 0,
+        status: 'critical',
+        details: [
+          `✗ ${critical.length} alerta(s) crítico(s)/alto(s) em aberto`,
+          `⚠ ${open.length - critical.length} outro(s) alerta(s) em aberto`
+        ]
+      };
+    }
+
+    return {
+      score: 8,
+      status: 'warning',
+      details: [`⚠ ${open.length} alerta(s) de infração em aberto`]
     };
   };
 

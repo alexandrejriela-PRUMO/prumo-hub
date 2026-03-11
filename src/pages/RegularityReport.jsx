@@ -103,9 +103,17 @@ export default function RegularityReport() {
   });
 
   const { data: processes = [] } = useQuery({
-    queryKey: ['processes', user?.email],
-    queryFn: () => base44.entities.Process.filter({ client_email: user.email }),
-    enabled: !!user?.email
+    queryKey: ['processes', user?.email, propertyIds.join(',')],
+    queryFn: async () => {
+      if (isConsultor && propertyIds.length > 0) {
+        const results = await Promise.all(
+          propertyIds.map(pid => base44.entities.Process.filter({ property_id: pid }))
+        );
+        return results.flat();
+      }
+      return base44.entities.Process.filter({ client_email: user.email });
+    },
+    enabled: !!user?.email && (isConsultor ? properties.length > 0 : true)
   });
 
   useEffect(() => {

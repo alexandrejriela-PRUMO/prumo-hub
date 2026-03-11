@@ -572,6 +572,13 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
                 placeholder="Ex: João da Silva" />
             </div>
             <div className="space-y-2">
+              <Label>Email do Cliente *</Label>
+              <Input type="email" value={formData.client_email || ''}
+                onChange={(e) => setFormData({ ...formData, client_email: e.target.value })}
+                placeholder="Ex: joao@email.com"
+                required={isConsultor && !property} />
+            </div>
+            <div className="space-y-2">
               <Label>Contato do Cliente</Label>
               <Input value={formData.client_contact || ''}
                 onChange={(e) => setFormData({ ...formData, client_contact: e.target.value })}

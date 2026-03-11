@@ -478,24 +478,25 @@ export default function Processes() {
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <Scale className="w-8 h-8 text-emerald-600" />
-            Tríplice Responsabilidade Ambiental
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2 sm:gap-3 flex-wrap">
+            <Scale className="w-6 sm:w-8 h-6 sm:h-8 text-emerald-600 flex-shrink-0" />
+            <span>Tríplice Resp. Ambiental</span>
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">
             Acompanhamento de processos administrativos, civis e criminais
           </p>
         </div>
         <Dialog open={showDialog} onOpenChange={setShowDialog}>
           <DialogTrigger asChild>
             <Button 
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto whitespace-nowrap"
               onClick={() => resetForm()}
             >
               <Plus className="w-5 h-5 mr-2" />
-              Novo Processo
+              <span className="hidden sm:inline">Novo Processo</span>
+              <span className="sm:hidden">Novo</span>
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">

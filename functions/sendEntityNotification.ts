@@ -132,20 +132,11 @@ Deno.serve(async (req) => {
           addNotif(client, 'Status de Processo Alterado', statusMsg, 'atualizacao_processo', 'warning', '/Processes');
           if (consultorEmail) addNotif(consultorEmail, 'Status de Processo Alterado - Cliente', statusMsg, 'atualizacao_processo', 'warning', '/Processes');
 
-          // Email para o produtor
-          if (client) {
-            try {
-              await base44.asServiceRole.integrations.Core.SendEmail({
-                to: client,
-                subject: `[PRUMO Hub] Status do Processo ${data.process_number} Alterado`,
-                body: `<p>Olá,</p>
-<p>O status do processo <strong>${data.process_number}</strong> foi alterado:</p>
-<p><strong>${old_data.status}</strong> → <strong>${data.status}</strong></p>
-<p>Acesse a plataforma para mais detalhes.</p>
-<p>Equipe PRUMO Hub</p>`
-              });
-            } catch (e) { console.error('Erro ao enviar email de status:', e); }
-          }
+          await addEmail(client,
+            `[PRUMO Hub] Status do Processo ${data.process_number} Alterado`,
+            `<p>Olá,</p><p>O status do processo <strong>${data.process_number}</strong> foi alterado:</p><p><strong>${old_data.status}</strong> → <strong>${data.status}</strong></p><p>Acesse a plataforma para mais detalhes.</p><p>Equipe PRUMO Hub</p>`,
+            'atualizacao_processo'
+          );
         }
       }
     }

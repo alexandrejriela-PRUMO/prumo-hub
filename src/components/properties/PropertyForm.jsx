@@ -489,9 +489,32 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
         <div className="grid md:grid-cols-2 gap-4">
           <div className="space-y-2 md:col-span-2">
             <Label>Nome(s) do(s) Proprietário(s)</Label>
-            <Input value={formData.owner_names || ''}
-              onChange={(e) => setFormData({ ...formData, owner_names: e.target.value })}
-              placeholder="Ex: João da Silva, Maria da Silva" />
+            {ownersList.length > 0 && (
+              <div className="space-y-1.5 mb-2">
+                {ownersList.map((name, idx) => (
+                  <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-sm">
+                    <span className="flex-1 text-emerald-900 font-medium">{name}</span>
+                    <button type="button" onClick={() => removeOwner(idx)} className="text-red-400 hover:text-red-600">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Input
+                value={newOwnerName}
+                onChange={(e) => setNewOwnerName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addOwner(); }}}
+                placeholder="Ex: João da Silva"
+                className="flex-1"
+              />
+              <Button type="button" variant="outline" onClick={addOwner}
+                className="border-emerald-500 text-emerald-700 hover:bg-emerald-50 shrink-0 gap-1">
+                <UserPlus className="w-4 h-4" />
+                Adicionar
+              </Button>
+            </div>
           </div>
           <div className="space-y-2">
             <Label>Número do CAR</Label>

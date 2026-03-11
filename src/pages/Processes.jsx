@@ -229,11 +229,11 @@ export default function Processes() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
+        <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
+          <div className="space-y-2 sm:space-y-3">
             <div>
-              <p className="text-sm font-medium text-gray-700 mb-1">Matéria</p>
-              <p className="text-gray-900">{process.subject}</p>
+              <p className="text-xs sm:text-sm font-medium text-gray-700 mb-0.5 sm:mb-1">Matéria</p>
+              <p className="text-gray-900 text-sm">{process.subject}</p>
             </div>
             
             {process.location && (

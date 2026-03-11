@@ -62,6 +62,25 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
     fiscal_address: '',
   });
 
+  // Lista de proprietários
+  const parseOwnersList = () => {
+    if (property?.owner_names_list) {
+      try { return typeof property.owner_names_list === 'string' ? JSON.parse(property.owner_names_list) : property.owner_names_list; } catch { return []; }
+    }
+    // fallback: se vier como string antiga, transforma em lista
+    if (property?.owner_names) return property.owner_names.split(',').map(n => n.trim()).filter(Boolean);
+    return [];
+  };
+  const [ownersList, setOwnersList] = useState(parseOwnersList());
+  const [newOwnerName, setNewOwnerName] = useState('');
+
+  const addOwner = () => {
+    if (!newOwnerName.trim()) return;
+    setOwnersList([...ownersList, newOwnerName.trim()]);
+    setNewOwnerName('');
+  };
+  const removeOwner = (idx) => setOwnersList(ownersList.filter((_, i) => i !== idx));
+
   const [activityInput, setActivityInput] = useState('');
 
   // Dados extras rurais

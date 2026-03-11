@@ -516,12 +516,22 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
               </Button>
             </div>
           </div>
-          <div className="space-y-2">
-            <Label>Número do CAR</Label>
-            <Input value={formData.car_number || ''}
-              onChange={(e) => setFormData({ ...formData, car_number: e.target.value })}
-              placeholder="Ex: RS-4300000-XXXX..." />
-          </div>
+          {!isUrban && (
+            <div className="space-y-2">
+              <Label>Número do CAR</Label>
+              <Input value={formData.car_number || ''}
+                onChange={(e) => setFormData({ ...formData, car_number: e.target.value })}
+                placeholder="Ex: RS-4300000-XXXX..." />
+            </div>
+          )}
+          {isUrban && (
+            <div className="space-y-2">
+              <Label>Número do IPTU</Label>
+              <Input value={formData.iptu_number || ''}
+                onChange={(e) => setFormData({ ...formData, iptu_number: e.target.value })}
+                placeholder="Ex: 0000.000.000.000" />
+            </div>
+          )}
           <div className="space-y-2">
             <Label>Número(s) da(s) Matrícula(s)</Label>
             <Input value={formData.registration_numbers || ''}

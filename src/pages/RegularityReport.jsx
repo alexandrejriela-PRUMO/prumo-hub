@@ -148,12 +148,12 @@ export default function RegularityReport() {
     let totalScore = 0;
     let maxScore = 100;
 
-    // Licenças (40 pontos)
+    // Licenças (35 pontos)
     const licenseAnalysis = analyzeLicenses(propertyLicenses);
     categories.push({
       name: 'Licenças Ambientais',
       icon: FileCheck,
-      weight: 40,
+      weight: 35,
       score: licenseAnalysis.score,
       status: licenseAnalysis.status,
       details: licenseAnalysis.details

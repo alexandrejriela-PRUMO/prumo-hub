@@ -185,7 +185,7 @@ export default function RegularityReport() {
     });
     totalScore += geoAnalysis.score;
 
-    // Processos (15 pontos)
+    // Processos (10 pontos)
     const propertyProcesses = isConsultor
       ? processes.filter(p => p.property_id === selectedPropertyId)
       : processes;
@@ -193,12 +193,25 @@ export default function RegularityReport() {
     categories.push({
       name: 'Situação Processual',
       icon: Scale,
-      weight: 15,
+      weight: 10,
       score: processAnalysis.score,
       status: processAnalysis.status,
       details: processAnalysis.details
     });
     totalScore += processAnalysis.score;
+
+    // Alertas de Infrações (15 pontos)
+    const propertyAlerts = environmentalAlerts.filter(a => a.property_id === selectedPropertyId);
+    const alertAnalysis = analyzeAlerts(propertyAlerts);
+    categories.push({
+      name: 'Alertas de Infrações',
+      icon: AlertTriangle,
+      weight: 15,
+      score: alertAnalysis.score,
+      status: alertAnalysis.status,
+      details: alertAnalysis.details
+    });
+    totalScore += alertAnalysis.score;
 
     const percentage = Math.round(totalScore);
     return { percentage, categories };

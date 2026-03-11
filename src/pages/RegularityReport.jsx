@@ -276,7 +276,7 @@ export default function RegularityReport() {
     let status = 'ok';
 
     if (hasCAR) {
-      score += 12;
+      score += 10;
       details.push('✓ CAR cadastrado');
     } else {
       details.push('✗ CAR não cadastrado');
@@ -284,7 +284,7 @@ export default function RegularityReport() {
     }
 
     if (hasCCIR) {
-      score += 9;
+      score += 8;
       details.push('✓ CCIR cadastrado');
     } else {
       details.push('✗ CCIR não cadastrado');
@@ -292,15 +292,15 @@ export default function RegularityReport() {
     }
 
     if (hasGeo) {
-      score += 9;
+      score += 7;
       details.push('✓ Georreferenciamento cadastrado');
     } else {
       details.push('✗ Georreferenciamento não cadastrado');
       status = 'warning';
     }
 
-    if (score === 30) status = 'ok';
-    else if (score < 15) status = 'critical';
+    if (score === 25) status = 'ok';
+    else if (score < 12) status = 'critical';
 
     return { score, status, details };
   };

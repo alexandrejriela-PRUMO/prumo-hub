@@ -160,12 +160,12 @@ export default function RegularityReport() {
     });
     totalScore += licenseAnalysis.score;
 
-    // Documentos (30 pontos)
+    // Documentos (25 pontos)
     const docAnalysis = analyzeDocuments(propertyDocuments);
     categories.push({
       name: 'Documentação Cadastral',
       icon: FileText,
-      weight: 30,
+      weight: 25,
       score: docAnalysis.score,
       status: docAnalysis.status,
       details: docAnalysis.details

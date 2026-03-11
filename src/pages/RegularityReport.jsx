@@ -48,8 +48,10 @@ export default function RegularityReport() {
     enabled: !!user?.email
   });
 
+  const propertyIdsForLicenses = properties.map(p => p.id);
+
   const { data: licenses = [] } = useQuery({
-    queryKey: ['licenses', user?.email, propertyIds.join(',')],
+    queryKey: ['licenses', user?.email, propertyIdsForLicenses.join(',')],
     queryFn: async () => {
       if (isConsultor && propertyIds.length > 0) {
         const results = await Promise.all(

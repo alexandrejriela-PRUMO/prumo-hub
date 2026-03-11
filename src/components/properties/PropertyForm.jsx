@@ -138,6 +138,8 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
       built_area_m2: isUrban && formData.built_area_m2 ? parseFloat(formData.built_area_m2) : undefined,
       activities: formData.activities.length > 0 ? formData.activities.join(', ') : '',
       authorized_users: '',
+      owner_names: ownersList.join(', '),
+      owner_names_list: JSON.stringify(ownersList),
       neighbors: !isUrban ? JSON.stringify(neighbors) : '[]',
       rural_extra: !isUrban ? JSON.stringify(ruralExtra) : '{}',
       ...(isConsultor && !property ? { consultor_email: user.email } : {}),

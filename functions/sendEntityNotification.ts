@@ -7,9 +7,34 @@ Deno.serve(async (req) => {
     const { event, data, old_data } = payload;
 
     const notifications = [];
+    const emailsToSend = []; // { to, subject, body }
+
+    // Cache de preferências por email
+    const prefCache = {};
+    const getUserPrefs = async (email) => {
+      if (!email) return {};
+      if (prefCache[email]) return prefCache[email];
+      try {
+        const prefs = await base44.asServiceRole.entities.NotificationPreference.filter({ user_email: email });
+        const map = {};
+        prefs.forEach(p => { map[p.event_type] = p; });
+        prefCache[email] = map;
+        return map;
+      } catch (e) { return {}; }
+    };
 
     const addNotif = (userEmail, title, message, eventType, severity = 'info', link = null) => {
       if (userEmail) notifications.push({ user_email: userEmail, title, message, event_type: eventType, severity, link });
+    };
+
+    const addEmail = async (userEmail, subject, body, eventType) => {
+      if (!userEmail) return;
+      const prefs = await getUserPrefs(userEmail);
+      const pref = prefs[eventType] || prefs['todos'];
+      // Envia email se não há preferência salva (default true) ou se email_enabled = true
+      if (!pref || pref.email_enabled !== false) {
+        emailsToSend.push({ to: userEmail, subject, body });
+      }
     };
 
     // ─── LICENSE ─────────────────────────────────────────────────────────

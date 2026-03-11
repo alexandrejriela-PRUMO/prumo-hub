@@ -51,7 +51,7 @@ export default function PRADDetails({ prad }) {
     },
   });
   return (
-    <Tabs defaultValue="identification" className="w-full">
+    <Tabs defaultValue="identification" className="w-full overflow-hidden">
       <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full h-auto gap-1 p-1 mb-1">
         <TabsTrigger value="identification" className="text-xs py-1.5 leading-tight">Identificação</TabsTrigger>
         <TabsTrigger value="diagnosis" className="text-xs py-1.5 leading-tight">Diagnóstico</TabsTrigger>

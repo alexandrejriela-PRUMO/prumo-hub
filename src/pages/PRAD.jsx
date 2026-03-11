@@ -324,13 +324,13 @@ export default function PRAD() {
 
         {/* Details Dialog */}
         <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-          <DialogContent className="max-w-6xl w-[95vw] max-h-[90vh] overflow-y-auto p-3 sm:p-6">
+          <DialogContent className="w-full max-w-6xl sm:w-[95vw] h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-y-auto p-3 sm:p-6 rounded-none sm:rounded-xl m-0 sm:m-auto top-0 sm:top-auto translate-y-0 sm:translate-y-[-50%]">
             <DialogHeader>
-              <DialogTitle className="text-base sm:text-lg pr-6 leading-tight">{currentPRAD?.project_name}</DialogTitle>
+              <DialogTitle className="text-sm sm:text-lg pr-6 leading-tight line-clamp-2">{currentPRAD?.project_name}</DialogTitle>
             </DialogHeader>
             {currentPRAD && (
               <div className="space-y-3 sm:space-y-4">
-                <div className="flex justify-center sm:justify-end">
+                <div className="flex justify-start sm:justify-end">
                   <PRADReportGenerator prad={currentPRAD} />
                 </div>
                 <PRADDetails prad={currentPRAD} />

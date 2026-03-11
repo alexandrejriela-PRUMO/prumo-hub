@@ -40,20 +40,18 @@ export default function NotificationPreferences({ userEmail }) {
 
   const eventTypes = [
     { key: 'novo_alerta_ambiental', label: 'Novo Alerta Ambiental', icon: '🌍' },
+    { key: 'alerta_resolvido', label: 'Alerta Ambiental Resolvido', icon: '✅' },
     { key: 'licenca_vencendo', label: 'Licença Vencendo', icon: '📋' },
-    { key: 'licenca_vencida', label: 'Licença Vencida', icon: '⚠️' },
+    { key: 'licenca_vencida', label: 'Licença Vencida / Status Alterado', icon: '⚠️' },
+    { key: 'atualizacao_licenca', label: 'Andamento / Histórico em Licença', icon: '📋' },
     { key: 'documento_vencendo', label: 'Documento/Certificado Vencendo', icon: '📄' },
     { key: 'novo_processo', label: 'Novo Processo Legal', icon: '⚖️' },
-    { key: 'atualizacao_processo', label: 'Atualização em Processo', icon: '⚖️' },
+    { key: 'atualizacao_processo', label: 'Atualização / Andamento em Processo', icon: '⚖️' },
     { key: 'novo_requerimento', label: 'Novo Requerimento', icon: '💬' },
     { key: 'resposta_requerimento', label: 'Resposta a Requerimento', icon: '💬' },
     { key: 'nova_fatura', label: 'Nova Fatura', icon: '💳' },
     { key: 'fatura_vencendo', label: 'Fatura Vencendo', icon: '⏰' },
-    { key: 'alerta_resolvido', label: 'Alerta Resolvido', icon: '✅' },
-    { key: 'green_loan_status', label: 'Status de Empréstimo Verde', icon: '💚' },
-    { key: 'tax_incentive_status', label: 'Status de Incentivo Fiscal', icon: '📊' },
-    { key: 'certification_status', label: 'Status de Certificação', icon: '✅' },
-    { key: 'outro', label: 'Outras Notificações', icon: '🔔' }
+    { key: 'outro', label: 'Outras Notificações (PRAD, Georreferenciamento, etc)', icon: '🔔' }
   ];
 
   const toggleNotification = (eventType, channel) => {

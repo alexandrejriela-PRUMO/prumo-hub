@@ -101,11 +101,18 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
     else if (propGeo.length > 0) score += 10;
     else if (property?.coordinates) score += 15;
 
-    // Processos (15 pts)
+    // Processos (10 pts)
     const propProcesses = allProcesses.filter(p => p.property_id === propertyId);
     const activeProcesses = propProcesses.filter(p => p.status === 'Em Andamento');
-    if (activeProcesses.length === 0) score += 15;
-    else score += 7;
+    if (activeProcesses.length === 0) score += 10;
+    else score += 4;
+
+    // Alertas de Infrações (15 pts)
+    const propAlerts = alerts.filter(a => a.property_id === propertyId && (a.status === 'Aberto' || a.status === 'Em Análise'));
+    const criticalAlerts2 = propAlerts.filter(a => a.severity === 'Crítica' || a.severity === 'Alta');
+    if (propAlerts.length === 0) score += 15;
+    else if (criticalAlerts2.length > 0) score += 0;
+    else score += 8;
 
     return score;
   };

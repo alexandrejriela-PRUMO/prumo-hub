@@ -102,7 +102,9 @@ export default function RegularityReport() {
 
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
   const propertyLicenses = licenses.filter(l => l.property_id === selectedPropertyId);
-  const propertyDocuments = documents.filter(d => d.property_id === selectedPropertyId);
+  const propertyDocuments = documents.filter(d => 
+    d.property_id === selectedPropertyId || d.entity_id === selectedPropertyId
+  );
 
   // Cálculo de pontuação detalhado
   const calculateDetailedScore = () => {

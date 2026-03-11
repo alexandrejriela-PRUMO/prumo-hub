@@ -151,7 +151,8 @@ export default function RegularityReport() {
     totalScore += docAnalysis.score;
 
     // Georreferenciamento (15 pontos)
-    const geoAnalysis = analyzeGeoreferencing(selectedProperty);
+    const propertyGeo = georeferencing.filter(g => g.property_id === selectedPropertyId);
+    const geoAnalysis = analyzeGeoreferencing(selectedProperty, propertyGeo);
     categories.push({
       name: 'Georreferenciamento',
       icon: MapPin,

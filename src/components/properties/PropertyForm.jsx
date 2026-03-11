@@ -56,6 +56,7 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
     owner_names: '',
     owner_names_list: [],
     car_number: '',
+    iptu_number: '',
     registration_numbers: '',
     contact_phone: '',
     contact_email: '',

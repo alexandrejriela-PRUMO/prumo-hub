@@ -42,7 +42,6 @@ Deno.serve(async (req) => {
        const owner = data.owner_email;
        let consultorEmail = null;
 
-       // Buscar consultor responsável pela propriedade
        if (data.property_id) {
          try {
            const props = await base44.asServiceRole.entities.Property.filter({ id: data.property_id });
@@ -51,38 +50,39 @@ Deno.serve(async (req) => {
        }
 
        if (event.type === 'create') {
-         addNotif(owner, 'Nova Licença Cadastrada',
-           `Licença ${data.license_type}${data.license_number ? ` nº ${data.license_number}` : ''} foi registrada.`,
-           'licenca_vencendo', 'info', '/Licenses');
-         if (consultorEmail) {
-           addNotif(consultorEmail, 'Nova Licença - Cliente',
-             `Licença ${data.license_type} registrada para propriedade.`,
-             'licenca_vencendo', 'info', '/Licenses');
-         }
+         const msgCreate = `Licença ${data.license_type}${data.license_number ? ` nº ${data.license_number}` : ''} foi registrada.`;
+         addNotif(owner, 'Nova Licença Cadastrada', msgCreate, 'licenca_vencendo', 'info', '/Licenses');
+         await addEmail(owner,
+           `[PRUMO Hub] Nova Licença Cadastrada: ${data.license_type}`,
+           `<p>Olá,</p><p>Uma nova licença foi cadastrada na plataforma PRUMO Hub:</p><ul><li><strong>Tipo:</strong> ${data.license_type}</li>${data.license_number ? `<li><strong>Número:</strong> ${data.license_number}</li>` : ''}<li><strong>Status:</strong> ${data.status || 'N/A'}</li></ul><p>Acesse a plataforma para mais detalhes.</p><p>Equipe PRUMO Hub</p>`,
+           'licenca_vencendo'
+         );
+         if (consultorEmail) addNotif(consultorEmail, 'Nova Licença - Cliente', msgCreate, 'licenca_vencendo', 'info', '/Licenses');
        }
+
        if (event.type === 'update') {
          const oldU = old_data?.updates || [], newU = data?.updates || [];
          if (newU.length > oldU.length) {
            const latest = newU[newU.length - 1];
-           addNotif(owner, 'Novo Andamento em Licença',
-             `Licença ${data.license_type}: ${latest.description?.substring(0, 120) || 'Nova movimentação registrada'}`,
-             'atualizacao_processo', 'info', '/Licenses');
-           if (consultorEmail) {
-             addNotif(consultorEmail, 'Andamento em Licença - Cliente',
-               `${latest.description?.substring(0, 100) || 'Nova movimentação em licença'}`,
-               'atualizacao_processo', 'info', '/Licenses');
-           }
+           const andamentoMsg = `Licença ${data.license_type}${data.license_number ? ` nº ${data.license_number}` : ''}: ${latest.description?.substring(0, 120) || 'Nova movimentação registrada'}`;
+           addNotif(owner, 'Novo Andamento em Licença', andamentoMsg, 'atualizacao_licenca', 'info', '/Licenses');
+           await addEmail(owner,
+             `[PRUMO Hub] Novo Andamento na Licença ${data.license_type}${data.license_number ? ` nº ${data.license_number}` : ''}`,
+             `<p>Olá,</p><p>Houve uma nova movimentação na licença <strong>${data.license_type}${data.license_number ? ` nº ${data.license_number}` : ''}</strong>:</p><blockquote style="background:#f5f5f5;padding:12px;border-left:4px solid #2d6a4f;">${latest.description || 'Nova movimentação registrada'}</blockquote>${latest.date ? `<p><strong>Data:</strong> ${latest.date}</p>` : ''}${latest.responsible ? `<p><strong>Responsável:</strong> ${latest.responsible}</p>` : ''}<p>Acesse a plataforma para mais detalhes.</p><p>Equipe PRUMO Hub</p>`,
+             'atualizacao_licenca'
+           );
+           if (consultorEmail) addNotif(consultorEmail, 'Andamento em Licença - Cliente', andamentoMsg, 'atualizacao_licenca', 'info', '/Licenses');
          }
          if (old_data?.status && old_data.status !== data.status) {
            const sev = data.status === 'Vencida' ? 'error' : 'warning';
-           addNotif(owner, 'Status de Licença Alterado',
-             `Licença ${data.license_type}: ${old_data.status} → ${data.status}`,
-             'licenca_vencida', sev, '/Licenses');
-           if (consultorEmail) {
-             addNotif(consultorEmail, 'Status de Licença Alterado - Cliente',
-               `Licença ${data.license_type}: ${old_data.status} → ${data.status}`,
-               'licenca_vencida', sev, '/Licenses');
-           }
+           const statusMsg = `Licença ${data.license_type}: ${old_data.status} → ${data.status}`;
+           addNotif(owner, 'Status de Licença Alterado', statusMsg, 'licenca_vencida', sev, '/Licenses');
+           await addEmail(owner,
+             `[PRUMO Hub] Status da Licença ${data.license_type} Alterado`,
+             `<p>Olá,</p><p>O status da licença <strong>${data.license_type}${data.license_number ? ` nº ${data.license_number}` : ''}</strong> foi alterado:</p><p><strong>${old_data.status}</strong> → <strong>${data.status}</strong></p><p>Acesse a plataforma para mais detalhes.</p><p>Equipe PRUMO Hub</p>`,
+             'licenca_vencida'
+           );
+           if (consultorEmail) addNotif(consultorEmail, 'Status de Licença Alterado - Cliente', statusMsg, 'licenca_vencida', sev, '/Licenses');
          }
        }
      }

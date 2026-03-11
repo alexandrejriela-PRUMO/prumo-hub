@@ -324,7 +324,7 @@ export default function PRAD() {
 
         {/* Details Dialog */}
         <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-          <DialogContent className="w-full max-w-6xl sm:w-[95vw] h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-y-auto p-3 sm:p-6 rounded-none sm:rounded-xl m-0 sm:m-auto top-0 sm:top-auto translate-y-0 sm:translate-y-[-50%]">
+          <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-y-auto p-3 sm:p-6">
             <DialogHeader>
               <DialogTitle className="text-sm sm:text-lg pr-6 leading-tight line-clamp-2">{currentPRAD?.project_name}</DialogTitle>
             </DialogHeader>

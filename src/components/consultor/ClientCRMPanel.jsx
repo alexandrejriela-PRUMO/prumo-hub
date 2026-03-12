@@ -416,6 +416,13 @@ export default function ClientCRMPanel({ property, onClose }) {
                       <p className="text-xs text-gray-400 mt-1.5">
                         {interaction.date ? format(new Date(interaction.date), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : ''}
                       </p>
+                      <CRMThread
+                        item={interaction}
+                        itemType="interaction"
+                        teamMembers={teamMembers}
+                        currentUser={currentUser}
+                        onSaveThread={(thread) => saveInteractionThread(interaction.id, thread)}
+                      />
                     </div>
                   </div>
                 );

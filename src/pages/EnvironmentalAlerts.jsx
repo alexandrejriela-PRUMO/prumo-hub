@@ -332,7 +332,13 @@ export default function EnvironmentalAlerts() {
     );
   };
 
+  const handleRefresh = async () => {
+    await queryClient.invalidateQueries(['environmental-alerts']);
+    await queryClient.invalidateQueries(['properties', user?.email]);
+  };
+
   return (
+    <PullToRefresh onRefresh={handleRefresh}>
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Consultor Selector */}
       {isConsultor && (

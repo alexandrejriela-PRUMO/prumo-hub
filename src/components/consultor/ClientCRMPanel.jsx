@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Phone, Mail, MessageCircle, Users, Calendar, CheckSquare, Square,
-  Plus, Briefcase, Clock, ChevronDown, ChevronRight, Trash2, Edit3, Share2, Loader
+  Plus, Briefcase, Clock, ChevronDown, ChevronRight, Trash2, Edit3, Share2, Loader, UserCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';

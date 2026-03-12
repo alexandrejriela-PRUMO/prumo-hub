@@ -425,6 +425,25 @@ export default function ClientCRMPanel({ property, onClose }) {
                       </SelectContent>
                     </Select>
                   </div>
+                  {teamMembers.length > 0 && (
+                    <div className="sm:col-span-2">
+                      <Label className="text-xs text-gray-600 mb-1 block flex items-center gap-1"><UserCheck className="w-3 h-3" /> Responsável</Label>
+                      <Select value={newTask.responsible_email} onValueChange={v => {
+                        const member = teamMembers.find(m => m.member_email === v);
+                        setNewTask(p => ({ ...p, responsible_email: v, responsible_name: member?.member_name || v }));
+                      }}>
+                        <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione o responsável (opcional)" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={null}>— Sem responsável —</SelectItem>
+                          {teamMembers.map(m => (
+                            <SelectItem key={m.member_email} value={m.member_email}>
+                              {m.member_name || m.member_email} · {m.member_role}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
                 <div className="flex justify-end gap-2 pt-1">
                   <Button size="sm" variant="outline" onClick={() => { setShowTaskForm(false); setEditingTask(null); }}>Cancelar</Button>

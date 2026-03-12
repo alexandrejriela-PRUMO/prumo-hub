@@ -374,6 +374,7 @@ export default function Home() {
           <DashboardFullExport user={user} />
         </div>
       )}
-      </div>);
+      </div>
+  </PullToRefresh>);
 
       }

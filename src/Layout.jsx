@@ -494,9 +494,12 @@ export default function Layout({ children, currentPageName }) {
         </div>
       </aside>
 
+      {/* Bottom Tab Bar (mobile only) */}
+      <BottomTabBar currentPageName={currentPageName} userType={user?.user_type} />
+
       {/* Main Content */}
       <main className="lg:ml-72 pt-20 lg:pt-16 min-h-screen">
-        <div className="p-3 sm:p-4 lg:p-8">
+        <div className="p-3 sm:p-4 lg:p-8 pb-safe lg:pb-8">
           <ErrorBoundary>
             {children}
           </ErrorBoundary>

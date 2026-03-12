@@ -597,6 +597,30 @@ export default function ClientCRMPanel({ property, onClose }) {
             </Card>
           )}
 
+          {/* Resumo financeiro */}
+          {(crm?.services || []).length > 0 && (() => {
+            const services = crm.services || [];
+            const total = services.reduce((s, svc) => s + (parseFloat(svc.value) || 0), 0);
+            const received = services.filter(s => s.received).reduce((s, svc) => s + (parseFloat(svc.value) || 0), 0);
+            const pending = total - received;
+            return (
+              <div className="grid grid-cols-3 gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100 mb-2">
+                <div className="text-center">
+                  <p className="text-xs text-gray-500">Total Contratado</p>
+                  <p className="text-sm font-bold text-gray-800">R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-gray-500">Recebido</p>
+                  <p className="text-sm font-bold text-emerald-700">R$ {received.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-gray-500">A Receber</p>
+                  <p className={`text-sm font-bold ${pending > 0 ? 'text-amber-700' : 'text-gray-500'}`}>R$ {pending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                </div>
+              </div>
+            );
+          })()}
+
           <div className="space-y-2">
             {(crm?.services || []).length === 0 ? (
               <div className="text-center py-10">

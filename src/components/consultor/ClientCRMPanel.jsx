@@ -222,6 +222,20 @@ export default function ClientCRMPanel({ property, onClose }) {
 
   const updateStatus = (status) => upsertCRM.mutate({ status });
 
+  const saveInteractionThread = (interactionId, thread) => {
+    const interactions = (crm?.interactions || []).map(i =>
+      i.id === interactionId ? { ...i, thread } : i
+    );
+    return upsertCRM.mutateAsync({ interactions });
+  };
+
+  const saveTaskThread = (taskId, thread) => {
+    const tasks = (crm?.tasks || []).map(t =>
+      t.id === taskId ? { ...t, thread } : t
+    );
+    return upsertCRM.mutateAsync({ tasks });
+  };
+
   const syncToGoogleCalendar = async (interaction) => {
     setSyncingInteractionId(interaction.id);
     try {

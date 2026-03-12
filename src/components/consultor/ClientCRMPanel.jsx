@@ -130,6 +130,8 @@ export default function ClientCRMPanel({ property, onClose }) {
       description: interaction.description || '',
       next_action: interaction.next_action || '',
       next_action_date: interaction.next_action_date || '',
+      responsible_email: interaction.responsible_email || '',
+      responsible_name: interaction.responsible_name || '',
     });
     setShowInteractionForm(true);
   };

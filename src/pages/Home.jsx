@@ -27,6 +27,7 @@ import PullToRefresh from '../components/mobile/PullToRefresh';
 
 export default function Home() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [user, setUser] = useState(null);
   const [selectedPropertyId, setSelectedPropertyId] = useState(null);
   const [filters, setFilters] = useState({

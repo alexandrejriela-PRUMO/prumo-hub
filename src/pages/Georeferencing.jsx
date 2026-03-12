@@ -362,7 +362,7 @@ function GeoreferencingForm({ properties, user, onSubmit, isLoading }) {
       <div className="grid md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Cliente *</Label>
-          <Select value={formData.property_id} onValueChange={(v) => setFormData({ ...formData, property_id: v })}>
+          <Select value={formData.property_id} onValueChange={handlePropertyChange}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>

@@ -145,7 +145,12 @@ export default function ClientCRMPanel({ property, onClose }) {
       tasks = [...(crm?.tasks || []), { id: Date.now().toString(), done: false, ...newTask }];
     }
     upsertCRM.mutate({ tasks });
-    setNewTask({ title: '', due_date: '', priority: 'Média' });
+    if (!editingTask && newTask.responsible_email) {
+      notifyAssignment(newTask.responsible_email, newTask.responsible_name, 'task', newTask.title);
+    } else if (editingTask && newTask.responsible_email && newTask.responsible_email !== editingTask.responsible_email) {
+      notifyAssignment(newTask.responsible_email, newTask.responsible_name, 'task', newTask.title);
+    }
+    setNewTask({ title: '', due_date: '', priority: 'Média', responsible_email: '', responsible_name: '' });
     setShowTaskForm(false);
     setEditingTask(null);
     toast.success(editingTask ? 'Tarefa atualizada!' : 'Tarefa adicionada!');

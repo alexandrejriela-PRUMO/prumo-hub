@@ -54,6 +54,7 @@ import Blog from './pages/Blog';
 import CarbonCredits from './pages/CarbonCredits';
 import Certifications from './pages/Certifications';
 import ChatRute from './pages/ChatRute';
+import ClientConsultorPortal from './pages/ClientConsultorPortal';
 import ClimateMonitoring from './pages/ClimateMonitoring';
 import CommodityAnalysis from './pages/CommodityAnalysis';
 import ConsolidatedReports from './pages/ConsolidatedReports';
@@ -83,7 +84,7 @@ import Reports from './pages/Reports';
 import Requests from './pages/Requests';
 import Support from './pages/Support';
 import TaxIncentives from './pages/TaxIncentives';
-import ClientConsultorPortal from './pages/ClientConsultorPortal';
+import Contracts from './pages/Contracts';
 import __Layout from './Layout.jsx';
 
 
@@ -95,6 +96,7 @@ export const PAGES = {
     "CarbonCredits": CarbonCredits,
     "Certifications": Certifications,
     "ChatRute": ChatRute,
+    "ClientConsultorPortal": ClientConsultorPortal,
     "ClimateMonitoring": ClimateMonitoring,
     "CommodityAnalysis": CommodityAnalysis,
     "ConsolidatedReports": ConsolidatedReports,
@@ -124,7 +126,7 @@ export const PAGES = {
     "Requests": Requests,
     "Support": Support,
     "TaxIncentives": TaxIncentives,
-    "ClientConsultorPortal": ClientConsultorPortal,
+    "Contracts": Contracts,
 }
 
 export const pagesConfig = {

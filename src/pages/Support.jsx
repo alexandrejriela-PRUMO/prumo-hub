@@ -218,6 +218,47 @@ export default function Support() {
           )}
         </CardContent>
       </Card>
+      {/* Delete Account Section */}
+      <Card className="border-red-200 bg-red-50">
+        <CardContent className="p-5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h3 className="font-semibold text-red-900 flex items-center gap-2">
+                <Trash2 className="w-4 h-4" /> Excluir Conta
+              </h3>
+              <p className="text-sm text-red-700 mt-1">
+                Esta ação é permanente e não pode ser desfeita. Todos os seus dados serão removidos.
+              </p>
+            </div>
+            <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" className="shrink-0">
+                  Excluir minha conta
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta ação não pode ser revertida. Sua conta e todos os dados associados serão permanentemente excluídos. Para prosseguir com a exclusão, entre em contato com o suporte em <strong>contato@santarute.com.br</strong> informando seu e-mail cadastrado.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-red-600 hover:bg-red-700"
+                    onClick={() => {
+                      window.location.href = `mailto:contato@santarute.com.br?subject=Solicita%C3%A7%C3%A3o%20de%20exclus%C3%A3o%20de%20conta&body=Ol%C3%A1%2C%20gostaria%20de%20solicitar%20a%20exclus%C3%A3o%20da%20minha%20conta%20com%20e-mail%3A%20${user?.email}`;
+                    }}
+                  >
+                    Confirmar e enviar solicitação
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

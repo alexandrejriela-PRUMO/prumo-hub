@@ -380,6 +380,11 @@ export default function ClientCRMPanel({ property, onClose }) {
                           → {interaction.next_action}{interaction.next_action_date && ` · ${interaction.next_action_date}`}
                         </p>
                       )}
+                      {interaction.responsible_name && (
+                        <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
+                          <UserCheck className="w-3 h-3" /> {interaction.responsible_name}
+                        </p>
+                      )}
                       <p className="text-xs text-gray-400 mt-1.5">
                         {interaction.date ? format(new Date(interaction.date), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : ''}
                       </p>

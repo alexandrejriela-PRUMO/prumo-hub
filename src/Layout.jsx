@@ -227,6 +227,18 @@ export default function Layout({ children, currentPageName }) {
           --color-primary-light: #40916C;
           --color-accent: #C9A227;
         }
+        html, body {
+          overscroll-behavior: none;
+          overscroll-behavior-y: none;
+          -webkit-overflow-scrolling: touch;
+        }
+        button, a, [role="button"] {
+          -webkit-user-select: none;
+          user-select: none;
+          -webkit-tap-highlight-color: transparent;
+        }
+        svg { -webkit-user-select: none; user-select: none; }
+        .pb-safe { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 4.5rem) !important; }
       `}</style>
 
       {/* Mobile Header */}

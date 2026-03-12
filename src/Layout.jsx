@@ -358,23 +358,41 @@ export default function Layout({ children, currentPageName }) {
           {/* Logo */}
           <div className="p-6 border-b border-emerald-800/50">
             <div className="flex flex-col items-center gap-3 w-full">
-              <p className="text-xs font-semibold italic tracking-widest uppercase" style={{fontFamily: 'Georgia, serif', backgroundImage: user?.user_type === 'consultor' ? 'linear-gradient(135deg, #fbbf24, #f59e0b, #d97706)' : 'linear-gradient(135deg, #e5e7eb, #a1a5b4, #6b7280)', backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
-                {user?.user_type === 'consultor' ? 'Consultor' : 'Produtor'}
-              </p>
-              <img 
-                src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/9e64158f0_PRUMO1.png" 
-                alt="PRUMO Hub" 
-                className="w-48 h-auto object-contain"
-              />
-              {user?.user_type === 'consultor' ? (
-                <p className="text-xs italic font-light tracking-wide text-center" style={{fontFamily: 'Georgia, serif', backgroundImage: 'linear-gradient(135deg, #fbbf24, #f59e0b, #d97706)', backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
-                  Ferramentas e oportunidades para quem orienta
-                </p>
-              ) : (
-                <p className="text-xs italic font-light tracking-wide text-center" style={{fontFamily: 'Georgia, serif', backgroundImage: 'linear-gradient(135deg, #e5e7eb, #a1a5b4, #6b7280)', backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
-                  Direção e estratégia para quem produz
-                </p>
-              )}
+              {(() => {
+                const typeLabel = {
+                  consultor: 'Consultor',
+                  equipe: 'Equipe',
+                  client_consultor: 'Cliente',
+                  produtor: 'Produtor',
+                }[user?.user_type] || 'Produtor';
+                const isConsultorFamily = user?.user_type === 'consultor' || user?.user_type === 'equipe';
+                const isClient = user?.user_type === 'client_consultor';
+                const gradient = isConsultorFamily
+                  ? 'linear-gradient(135deg, #fbbf24, #f59e0b, #d97706)'
+                  : isClient
+                  ? 'linear-gradient(135deg, #60a5fa, #3b82f6, #2563eb)'
+                  : 'linear-gradient(135deg, #e5e7eb, #a1a5b4, #6b7280)';
+                const subtitle = isConsultorFamily
+                  ? 'Ferramentas e oportunidades para quem orienta'
+                  : isClient
+                  ? 'Acesso à sua propriedade'
+                  : 'Direção e estratégia para quem produz';
+                return (
+                  <>
+                    <p className="text-xs font-semibold italic tracking-widest uppercase" style={{fontFamily: 'Georgia, serif', backgroundImage: gradient, backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
+                      {typeLabel}
+                    </p>
+                    <img 
+                      src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/9e64158f0_PRUMO1.png" 
+                      alt="PRUMO Hub" 
+                      className="w-48 h-auto object-contain"
+                    />
+                    <p className="text-xs italic font-light tracking-wide text-center" style={{fontFamily: 'Georgia, serif', backgroundImage: gradient, backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
+                      {subtitle}
+                    </p>
+                  </>
+                );
+              })()}
               <button
                onClick={() => setSidebarOpen(false)}
                className="lg:hidden absolute right-6 top-6 p-2 rounded-xl hover:bg-emerald-800/50 transition-colors"

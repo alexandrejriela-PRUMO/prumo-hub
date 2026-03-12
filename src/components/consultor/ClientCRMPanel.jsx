@@ -104,7 +104,13 @@ export default function ClientCRMPanel({ property, onClose }) {
       }];
     }
     upsertCRM.mutate({ interactions });
-    setNewInteraction({ type: 'Ligação', title: '', description: '', next_action: '', next_action_date: '' });
+    // Notifica responsável apenas em criação ou se trocou de responsável
+    if (!editingInteraction && newInteraction.responsible_email) {
+      notifyAssignment(newInteraction.responsible_email, newInteraction.responsible_name, 'interaction', newInteraction.title);
+    } else if (editingInteraction && newInteraction.responsible_email && newInteraction.responsible_email !== editingInteraction.responsible_email) {
+      notifyAssignment(newInteraction.responsible_email, newInteraction.responsible_name, 'interaction', newInteraction.title);
+    }
+    setNewInteraction({ type: 'Ligação', title: '', description: '', next_action: '', next_action_date: '', responsible_email: '', responsible_name: '' });
     setShowInteractionForm(false);
     setEditingInteraction(null);
     toast.success(editingInteraction ? 'Interação atualizada!' : 'Interação registrada!');

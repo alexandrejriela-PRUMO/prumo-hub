@@ -34,6 +34,7 @@ const statusConfig = {
 export default function Support() {
   const [user, setUser] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [formData, setFormData] = useState({
     subject: '',
     message: '',

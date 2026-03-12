@@ -43,6 +43,8 @@ export default function Georeferencing() {
   const [viewingGeo, setViewingGeo] = useState(null);
   const [uploading, setUploading] = useState(false);
 
+  const queryClient = useQueryClient();
+
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Georeferencing.update(id, data),
     onSuccess: (_, { id, data }) => {
@@ -51,8 +53,6 @@ export default function Georeferencing() {
       toast.success('Atualizado com sucesso!');
     },
   });
-
-  const queryClient = useQueryClient();
 
   useEffect(() => {
     const loadUser = async () => {

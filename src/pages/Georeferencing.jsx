@@ -335,9 +335,10 @@ export default function Georeferencing() {
 
 // Form Component
 function GeoreferencingForm({ properties, user, onSubmit, isLoading }) {
+  const defaultProp = properties[0];
   const [formData, setFormData] = useState({
-    property_id: properties[0]?.id || '',
-    owner_email: user.email,
+    property_id: defaultProp?.id || '',
+    owner_email: defaultProp?.owner_email || user.email,
     municipality: '',
     registration_number: '',
     coordinate_system: 'SIRGAS2000',
@@ -345,6 +346,11 @@ function GeoreferencingForm({ properties, user, onSubmit, isLoading }) {
     legal_risk: 'Baixo',
     notes: '',
   });
+
+  const handlePropertyChange = (pid) => {
+    const prop = properties.find(p => p.id === pid);
+    setFormData(prev => ({ ...prev, property_id: pid, owner_email: prop?.owner_email || user.email }));
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();

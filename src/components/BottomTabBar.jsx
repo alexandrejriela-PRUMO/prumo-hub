@@ -1,0 +1,55 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
+import { LayoutDashboard, Building2, FileText, AlertTriangle, Users } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const tabs = [
+  { name: 'Dashboard', page: 'Home', icon: LayoutDashboard, label: 'Início' },
+  { name: 'Properties', page: 'Properties', icon: Building2, label: 'Propriedades' },
+  { name: 'DocumentsHub', page: 'DocumentsHub', icon: FileText, label: 'Documentos' },
+  { name: 'EnvironmentalAlerts', page: 'EnvironmentalAlerts', icon: AlertTriangle, label: 'Alertas' },
+];
+
+export default function BottomTabBar({ currentPageName, userType }) {
+  const tabList = userType === 'client_consultor'
+    ? tabs.filter(t => t.page !== 'Properties')
+    : userType === 'consultor' || userType === 'equipe'
+    ? [
+        { name: 'Dashboard', page: 'Home', icon: LayoutDashboard, label: 'Início' },
+        { name: 'ConsultorClients', page: 'ConsultorClients', icon: Users, label: 'Clientes' },
+        { name: 'Properties', page: 'Properties', icon: Building2, label: 'Propriedades' },
+        { name: 'EnvironmentalAlerts', page: 'EnvironmentalAlerts', icon: AlertTriangle, label: 'Alertas' },
+      ]
+    : tabs;
+
+  return (
+    <nav
+      className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-emerald-100 z-50 flex"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+    >
+      {tabList.map((tab) => {
+        const isActive = currentPageName === tab.page;
+        const Icon = tab.icon;
+        return (
+          <Link
+            key={tab.page}
+            to={createPageUrl(tab.page)}
+            className={cn(
+              'flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors',
+              isActive ? 'text-emerald-700' : 'text-gray-400'
+            )}
+          >
+            <Icon className={cn('w-5 h-5', isActive && 'text-emerald-700')} strokeWidth={isActive ? 2.5 : 1.8} />
+            <span className={cn('text-[10px] font-medium', isActive ? 'text-emerald-700' : 'text-gray-400')}>
+              {tab.label}
+            </span>
+            {isActive && (
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-emerald-600 rounded-full" />
+            )}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}

@@ -40,8 +40,8 @@ export default function ClientCRMPanel({ property, onClose }) {
   const [editingInteraction, setEditingInteraction] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
   const [editingServiceIndex, setEditingServiceIndex] = useState(null);
-  const [newInteraction, setNewInteraction] = useState({ type: 'Ligação', title: '', description: '', next_action: '', next_action_date: '' });
-  const [newTask, setNewTask] = useState({ title: '', due_date: '', priority: 'Média' });
+  const [newInteraction, setNewInteraction] = useState({ type: 'Ligação', title: '', description: '', next_action: '', next_action_date: '', responsible_email: '', responsible_name: '' });
+  const [newTask, setNewTask] = useState({ title: '', due_date: '', priority: 'Média', responsible_email: '', responsible_name: '' });
   const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', received: false });
 
   // Se vier do ConsultorClients, property é um objeto "client" com .properties[]

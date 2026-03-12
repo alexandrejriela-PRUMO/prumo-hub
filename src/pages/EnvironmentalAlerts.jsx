@@ -135,6 +135,17 @@ export default function EnvironmentalAlerts() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.EnvironmentalAlert.update(id, data),
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries(['environmental-alerts']);
+      const previous = queryClient.getQueryData(['environmental-alerts']);
+      queryClient.setQueryData(['environmental-alerts'], (old = []) =>
+        old.map((a) => (a.id === id ? { ...a, ...data } : a))
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['environmental-alerts'], ctx.previous);
+    },
     onSuccess: async (updatedAlert) => {
       queryClient.invalidateQueries(['environmental-alerts']);
       setFormDialogOpen(false);

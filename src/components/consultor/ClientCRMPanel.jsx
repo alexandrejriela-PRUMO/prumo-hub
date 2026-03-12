@@ -16,6 +16,7 @@ import {
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import CRMThread from './CRMThread';
 
 const STATUS_COLORS = {
   'Prospect': 'bg-purple-100 text-purple-700 border-purple-200',

@@ -191,6 +191,13 @@ export default function Home() {
     });
   };
 
+  // Redireciona client_consultor para o portal dedicado
+  useEffect(() => {
+    if (user?.user_type === 'client_consultor') {
+      navigate(createPageUrl('ClientConsultorPortal'));
+    }
+  }, [user]);
+
   // Se é consultor E está na view de overview (sem property_id), mostra painel de consultoria
   if (isConsultor && !isDashboardView) {
     return <ConsultorOverview user={user} properties={properties} isLoading={isLoading} />;

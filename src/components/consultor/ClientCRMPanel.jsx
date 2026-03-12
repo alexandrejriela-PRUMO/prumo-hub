@@ -486,6 +486,11 @@ export default function ClientCRMPanel({ property, onClose }) {
                           {isOverdue ? '⚠ Atrasado · ' : '📅 '}{task.due_date}
                         </p>
                       )}
+                      {task.responsible_name && (
+                        <p className="text-xs text-emerald-600 mt-0.5 flex items-center gap-1">
+                          <UserCheck className="w-3 h-3" /> {task.responsible_name}
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <span className={`text-xs font-medium px-1.5 py-0.5 rounded-md ${priorityBadge}`}>{task.priority}</span>

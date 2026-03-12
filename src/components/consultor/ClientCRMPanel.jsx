@@ -317,6 +317,25 @@ export default function ClientCRMPanel({ property, onClose }) {
                     <Input className="h-9 text-sm" type="date" value={newInteraction.next_action_date} onChange={e => setNewInteraction(p => ({ ...p, next_action_date: e.target.value }))} />
                   </div>
                 </div>
+                {teamMembers.length > 0 && (
+                  <div>
+                    <Label className="text-xs text-gray-600 mb-1 block flex items-center gap-1"><UserCheck className="w-3 h-3" /> Responsável</Label>
+                    <Select value={newInteraction.responsible_email} onValueChange={v => {
+                      const member = teamMembers.find(m => m.member_email === v);
+                      setNewInteraction(p => ({ ...p, responsible_email: v, responsible_name: member?.member_name || v }));
+                    }}>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione o responsável (opcional)" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={null}>— Sem responsável —</SelectItem>
+                        {teamMembers.map(m => (
+                          <SelectItem key={m.member_email} value={m.member_email}>
+                            {m.member_name || m.member_email} · {m.member_role}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="flex justify-end gap-2 pt-1">
                   <Button size="sm" variant="outline" onClick={() => { setShowInteractionForm(false); setEditingInteraction(null); }}>Cancelar</Button>
                   <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={addInteraction}>Salvar</Button>

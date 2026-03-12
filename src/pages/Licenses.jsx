@@ -42,6 +42,7 @@ export default function Licenses() {
   const [formData, setFormData] = useState({
     property_id: '',
     license_type: '',
+    other_license_description: '',
     license_number: '',
     issue_date: '',
     expiry_date: '',

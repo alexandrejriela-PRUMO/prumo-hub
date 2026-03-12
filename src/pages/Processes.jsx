@@ -254,7 +254,9 @@ export default function Processes() {
               <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
                 <DollarSign className="w-4 h-4 text-red-600" />
                 <div>
-                  <p className="text-sm font-medium text-red-700">Valor da Multa Arbitrada</p>
+                  <p className="text-sm font-medium text-red-700">
+                    {process.process_type === 'Civil' ? 'Valor da Indenização Ambiental' : 'Valor da Multa Arbitrada'}
+                  </p>
                   <p className="text-lg font-bold text-red-800">
                     {Number(process.fine_value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </p>
@@ -394,7 +396,7 @@ export default function Processes() {
       </div>
 
       <div>
-        <Label>Valor da Multa Arbitrada (R$)</Label>
+        <Label>{formData.process_type === 'Civil' ? 'Valor da Indenização Ambiental (R$)' : 'Valor da Multa Arbitrada (R$)'}</Label>
         <Input
           type="number"
           min="0"

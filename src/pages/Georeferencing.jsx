@@ -66,7 +66,7 @@ export default function Georeferencing() {
     loadUser();
   }, []);
 
-  const isConsultor = user?.user_type === 'consultor';
+  const isConsultor = user?.user_type === 'consultor' || user?.user_type === 'equipe';
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
     queryKey: ['properties', user?.email],

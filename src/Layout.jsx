@@ -516,10 +516,13 @@ export default function Layout({ children, currentPageName }) {
       <main className="lg:ml-72 pt-20 lg:pt-16 min-h-screen">
         <div className="p-3 sm:p-4 lg:p-8 pb-safe lg:pb-8">
           <ErrorBoundary>
-            {children}
+            <RouteTransition>
+              {children}
+            </RouteTransition>
           </ErrorBoundary>
         </div>
       </main>
     </div>
+    </ThemeProvider>
   );
 }

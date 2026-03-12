@@ -39,13 +39,17 @@ import {
                     } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// ── Menus por perfil ────────────────────────────────────────────────────────
+
+// Consultor: topo do menu
 const consultorNavItems = [
   { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
   { name: 'Meus Clientes', page: 'ConsultorClients', icon: Users },
   { name: 'Gestão de Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
 ];
 
-const navItems = [
+// Produtor Rural: menu completo
+const produtorNavItems = [
   { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
   { name: 'Minhas Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
   { name: 'Documentos', page: 'DocumentsHub', icon: FileText },
@@ -53,7 +57,7 @@ const navItems = [
   { name: 'Processos', page: 'Processes', icon: Scale },
   { name: 'Alertas de Infrações', page: 'EnvironmentalAlerts', icon: AlertTriangle },
   { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: FileCheck },
-  { name: 'Consultoria e Requerimentos', page: 'Requests', icon: Users, hideForConsultor: true, adminOnly: false },
+  { name: 'Consultoria e Requerimentos', page: 'Requests', icon: Users },
   { name: 'PRAD - Recuperação de Área', page: 'PRAD', icon: Leaf },
   { 
     name: 'Agricultura de Precisão', 
@@ -79,7 +83,105 @@ const navItems = [
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
   { name: 'Minha Equipe', page: 'MyTeam', icon: Users },
-  ];
+];
+
+// Equipe do consultor: igual ao consultor, sem "Minha Equipe"
+const equipeNavItems = [
+  { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
+  { name: 'Meus Clientes', page: 'ConsultorClients', icon: Users },
+  { name: 'Gestão de Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
+  { name: 'Documentos', page: 'DocumentsHub', icon: FileText },
+  { name: 'Licenças Ambientais', page: 'Licenses', icon: FileCheck },
+  { name: 'Processos', page: 'Processes', icon: Scale },
+  { name: 'Alertas de Infrações', page: 'EnvironmentalAlerts', icon: AlertTriangle },
+  { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: FileCheck },
+  { name: 'PRAD - Recuperação de Área', page: 'PRAD', icon: Leaf },
+  { 
+    name: 'Agricultura de Precisão', 
+    icon: Sparkles,
+    children: [
+      { name: 'Mapeamentos', page: 'Mappings', icon: Map },
+      { name: 'Monitoramento Climático', page: 'ClimateMonitoring', icon: Cloud },
+    ]
+  },
+  { 
+    name: 'Ativos Ambientais', 
+    icon: TrendingUp,
+    children: [
+      { name: 'Créditos de Carbono', page: 'CarbonCredits', icon: Leaf },
+      { name: 'PSA - Serviços Ambientais', page: 'PSAContracts', icon: Droplets },
+      { name: 'Servidão Ambiental', page: 'EnvironmentalEasements', icon: Shield },
+      { name: 'ESG para o Agro', page: 'ESGAgro', icon: TrendingUp },
+    ]
+  },
+  { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
+  { name: 'Relatórios', page: 'Reports', icon: FileText },
+  { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
+  { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
+];
+
+// Cliente do consultor (Enterprise): somente leitura/download, sem IA, notificações ou equipe
+const clientConsultorNavItems = [
+  { name: 'Minha Propriedade', page: 'ClientConsultorPortal', icon: Building2 },
+  { name: 'Documentos', page: 'DocumentsHub', icon: FileText },
+  { name: 'Licenças Ambientais', page: 'Licenses', icon: FileCheck },
+  { name: 'Processos', page: 'Processes', icon: Scale },
+  { name: 'Alertas de Infrações', page: 'EnvironmentalAlerts', icon: AlertTriangle },
+  { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: FileCheck },
+  { name: 'PRAD - Recuperação de Área', page: 'PRAD', icon: Leaf },
+  { 
+    name: 'Agricultura de Precisão', 
+    icon: Sparkles,
+    children: [
+      { name: 'Mapeamentos', page: 'Mappings', icon: Map },
+      { name: 'Monitoramento Climático', page: 'ClimateMonitoring', icon: Cloud },
+    ]
+  },
+  { 
+    name: 'Ativos Ambientais', 
+    icon: TrendingUp,
+    children: [
+      { name: 'Créditos de Carbono', page: 'CarbonCredits', icon: Leaf },
+      { name: 'PSA - Serviços Ambientais', page: 'PSAContracts', icon: Droplets },
+      { name: 'Servidão Ambiental', page: 'EnvironmentalEasements', icon: Shield },
+    ]
+  },
+  { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
+];
+
+// Consultor: itens adicionais abaixo dos fixos (consultorNavItems)
+const navItems = [
+  { name: 'Documentos', page: 'DocumentsHub', icon: FileText },
+  { name: 'Licenças Ambientais', page: 'Licenses', icon: FileCheck },
+  { name: 'Processos', page: 'Processes', icon: Scale },
+  { name: 'Alertas de Infrações', page: 'EnvironmentalAlerts', icon: AlertTriangle },
+  { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: FileCheck },
+  { name: 'PRAD - Recuperação de Área', page: 'PRAD', icon: Leaf },
+  { 
+    name: 'Agricultura de Precisão', 
+    icon: Sparkles,
+    children: [
+      { name: 'Mapeamentos', page: 'Mappings', icon: Map },
+      { name: 'Monitoramento Climático', page: 'ClimateMonitoring', icon: Cloud },
+      { name: 'Análise de Commodities', page: 'CommodityAnalysis', icon: BarChart3 },
+    ]
+  },
+  { 
+    name: 'Ativos Ambientais', 
+    icon: TrendingUp,
+    children: [
+      { name: 'Créditos de Carbono', page: 'CarbonCredits', icon: Leaf },
+      { name: 'PSA - Serviços Ambientais', page: 'PSAContracts', icon: Droplets },
+      { name: 'Servidão Ambiental', page: 'EnvironmentalEasements', icon: Shield },
+      { name: 'ESG para o Agro', page: 'ESGAgro', icon: TrendingUp },
+    ]
+  },
+  { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
+  { name: 'Relatórios', page: 'Reports', icon: FileText },
+  { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
+  { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
+  { name: 'Minha Equipe', page: 'MyTeam', icon: Users },
+];
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);

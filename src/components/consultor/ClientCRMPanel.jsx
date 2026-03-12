@@ -174,13 +174,24 @@ export default function ClientCRMPanel({ property, onClose }) {
 
   const addService = () => {
     if (!newService.name) { toast.error('Informe o nome do serviço.'); return; }
+    const serviceValue = parseFloat(newService.value) || 0;
     let services;
     if (editingServiceIndex !== null) {
+      const prevService = crm?.services?.[editingServiceIndex];
+      const wasReceived = prevService?.received || false;
+      const nowReceived = newService.received;
+      // Se passou a ser recebido agora, registra received_at
+      const received_at = nowReceived && !wasReceived
+        ? new Date().toISOString()
+        : (nowReceived ? (prevService?.received_at || new Date().toISOString()) : null);
       services = (crm?.services || []).map((s, i) =>
-        i === editingServiceIndex ? { ...s, ...newService, value: parseFloat(newService.value) || 0 } : s
+        i === editingServiceIndex
+          ? { ...s, ...newService, value: serviceValue, received_at }
+          : s
       );
     } else {
-      services = [...(crm?.services || []), { ...newService, value: parseFloat(newService.value) || 0 }];
+      const received_at = newService.received ? new Date().toISOString() : null;
+      services = [...(crm?.services || []), { ...newService, value: serviceValue, received_at }];
     }
     upsertCRM.mutate({ services });
     setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', received: false });

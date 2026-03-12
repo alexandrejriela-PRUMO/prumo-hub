@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { MapPin, BarChart3, ChevronLeft } from 'lucide-react';
 import { subDays, isAfter, isBefore } from 'date-fns';
 import { createPageUrl } from '@/utils';
+import { useNavigate } from 'react-router-dom';
 import ConsultorOverview from '../components/dashboard/ConsultorOverview';
 
 export default function Home() {

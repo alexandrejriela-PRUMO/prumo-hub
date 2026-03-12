@@ -658,6 +658,18 @@ export default function Licenses() {
               </div>
             </div>
 
+            {formData.license_type === 'Outro' && (
+              <div className="space-y-2">
+                <Label>Descrição da Natureza da Licença *</Label>
+                <Input
+                  value={formData.other_license_description}
+                  onChange={(e) => setFormData({ ...formData, other_license_description: e.target.value })}
+                  placeholder="Ex: Licença de Pesca, Autorização de Supressão Vegetal..."
+                  required
+                />
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Data de Emissão</Label>

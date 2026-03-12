@@ -463,32 +463,36 @@ export default function EnvironmentalAlerts() {
               <span className="text-sm font-medium text-gray-700">Filtros:</span>
             </div>
             
-            <Select value={filterSeverity} onValueChange={setFilterSeverity}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Gravidade" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                <SelectItem value="Crítica">Crítica</SelectItem>
-                <SelectItem value="Alta">Alta</SelectItem>
-                <SelectItem value="Média">Média</SelectItem>
-                <SelectItem value="Baixa">Baixa</SelectItem>
-              </SelectContent>
-            </Select>
+            <MobileSelect
+              value={filterSeverity}
+              onValueChange={setFilterSeverity}
+              placeholder="Gravidade"
+              title="Filtrar por Gravidade"
+              triggerClassName="w-40"
+              options={[
+                { value: 'all', label: 'Todas' },
+                { value: 'Crítica', label: 'Crítica' },
+                { value: 'Alta', label: 'Alta' },
+                { value: 'Média', label: 'Média' },
+                { value: 'Baixa', label: 'Baixa' },
+              ]}
+            />
 
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-56">
-                <SelectValue placeholder="Tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Tipos</SelectItem>
-                <SelectItem value="Desmatamento">Desmatamento</SelectItem>
-                <SelectItem value="Mudança de Uso da Terra">Mudança de Uso da Terra</SelectItem>
-                <SelectItem value="Índice de Vegetação">Índice de Vegetação</SelectItem>
-                <SelectItem value="APP">APP</SelectItem>
-                <SelectItem value="Reserva Legal">Reserva Legal</SelectItem>
-              </SelectContent>
-            </Select>
+            <MobileSelect
+              value={filterType}
+              onValueChange={setFilterType}
+              placeholder="Tipo"
+              title="Filtrar por Tipo"
+              triggerClassName="w-56"
+              options={[
+                { value: 'all', label: 'Todos os Tipos' },
+                { value: 'Desmatamento', label: 'Desmatamento' },
+                { value: 'Mudança de Uso da Terra', label: 'Mudança de Uso da Terra' },
+                { value: 'Índice de Vegetação', label: 'Índice de Vegetação' },
+                { value: 'APP', label: 'APP' },
+                { value: 'Reserva Legal', label: 'Reserva Legal' },
+              ]}
+            />
           </div>
         </CardContent>
       </Card>

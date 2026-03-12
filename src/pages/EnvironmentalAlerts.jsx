@@ -712,5 +712,6 @@ export default function EnvironmentalAlerts() {
         </DialogContent>
       </Dialog>
     </div>
+    </PullToRefresh>
   );
 }

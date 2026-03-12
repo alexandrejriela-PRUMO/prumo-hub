@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { 
   Headphones, 
   Plus, 
@@ -17,7 +18,8 @@ import {
   AlertCircle,
   Phone,
   Mail,
-  MapPin
+  MapPin,
+  Trash2
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';

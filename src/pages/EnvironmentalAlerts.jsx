@@ -88,6 +88,18 @@ export default function EnvironmentalAlerts() {
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.EnvironmentalAlert.create(data),
+    onMutate: async (newData) => {
+      await queryClient.cancelQueries(['environmental-alerts']);
+      const previous = queryClient.getQueryData(['environmental-alerts']);
+      queryClient.setQueryData(['environmental-alerts'], (old = []) => [
+        { ...newData, id: `temp-${Date.now()}` },
+        ...old,
+      ]);
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['environmental-alerts'], ctx.previous);
+    },
     onSuccess: async (newAlert) => {
       queryClient.invalidateQueries(['environmental-alerts']);
       setFormDialogOpen(false);

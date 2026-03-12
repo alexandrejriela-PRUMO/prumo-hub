@@ -4,6 +4,7 @@ import { createPageUrl } from './utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import ErrorBoundary from './components/ErrorBoundary';
+import BottomTabBar from './components/BottomTabBar';
 import NotificationCenter from './components/notifications/NotificationCenter';
 import RealtimeNotificationCenter from './components/notifications/RealtimeNotificationCenter';
 import { Badge } from '@/components/ui/badge';

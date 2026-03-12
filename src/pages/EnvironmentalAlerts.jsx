@@ -37,6 +37,7 @@ import MapLayers from '../components/alerts/MapLayers';
 import MapLegend from '../components/alerts/MapLegend';
 import AlertForm from '../components/alerts/AlertForm';
 import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
+import PullToRefresh from '../components/mobile/PullToRefresh';
 
 // Fix Leaflet default marker icon
 delete L.Icon.Default.prototype._getIconUrl;

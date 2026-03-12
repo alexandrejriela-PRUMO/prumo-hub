@@ -44,6 +44,28 @@ export default function ClientCRMPanel({ property, onClose }) {
   const [newTask, setNewTask] = useState({ title: '', due_date: '', priority: 'Média', responsible_email: '', responsible_name: '' });
   const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', received: false });
 
+  // Membros da equipe do consultor
+  const { data: teamMembers = [] } = useQuery({
+    queryKey: ['team-members', crmConsultorEmail],
+    queryFn: () => base44.entities.TeamMember.filter({ primary_user_email: crmConsultorEmail, status: 'Ativo' }),
+    enabled: !!crmConsultorEmail,
+  });
+
+  const notifyAssignment = async (responsible_email, responsible_name, type, title) => {
+    if (!responsible_email) return;
+    try {
+      await base44.functions.invoke('notifyCRMAssignment', {
+        responsible_email,
+        assigner_name: crmConsultorEmail,
+        type,
+        title,
+        client_name: property?.client_name || property?.property_name,
+      });
+    } catch (e) {
+      console.warn('Erro ao notificar responsável:', e.message);
+    }
+  };
+
   // Se vier do ConsultorClients, property é um objeto "client" com .properties[]
   // Usa a primeira propriedade real para associar o CRM
   const firstRealProperty = property?.properties?.find(p => !p.is_client_only) || property?.properties?.[0];

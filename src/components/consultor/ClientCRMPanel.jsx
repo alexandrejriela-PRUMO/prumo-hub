@@ -653,7 +653,9 @@ export default function ClientCRMPanel({ property, onClose }) {
                         {service.payment_method && <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded-md">{service.payment_method}</span>}
                         {service.payment_type === 'avista' && <span className="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-md">À Vista</span>}
                         {service.received
-                          ? <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded-md font-medium">✓ Recebido</span>
+                          ? <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded-md font-medium">
+                              ✓ Recebido{service.received_at ? ` em ${format(new Date(service.received_at), 'dd/MM/yy')}` : ''}
+                            </span>
                           : <span className="text-xs px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded-md">Aguardando</span>
                         }
                       </div>

@@ -211,6 +211,7 @@ export default function Home() {
   }
 
   return (
+  <PullToRefresh onRefresh={handleRefresh}>
   <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
       {/* Header with back button if viewing specific property */}
       <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">

@@ -1,172 +1,378 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, Zap, CreditCard, Settings } from 'lucide-react';
-import { format, addDays } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { Check, Zap, CreditCard, Settings, Users, Building2, Star, Crown, Leaf, Info } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 
+// ── Planos ──────────────────────────────────────────────────────────────────
+
+const PRODUTOR_PLAN = {
+  name: 'Plano Único Completo',
+  monthlyPrice: 497,
+  annualPrice: 4473,
+  annualMonthly: 372.75,
+  savings: '3 meses grátis',
+  features: [
+    'Gestão completa de propriedades e empreendimentos',
+    'Licenças ambientais, documentos e processos',
+    'Alertas de infrações e PRAD',
+    'Agricultura de precisão (mapeamentos, clima, commodities)',
+    'Ativos ambientais (carbono, PSA, servidão, ESG)',
+    'Georreferenciamento e relatórios detalhados',
+    'Chat IA Rute para assistência inteligente',
+    'Notificações ilimitadas e personalizadas',
+    'Acesso a materiais de autoatendimento',
+  ],
+};
+
+const CONSULTOR_PLANS = [
+  {
+    id: 'start',
+    name: 'Start',
+    icon: Leaf,
+    color: 'emerald',
+    monthlyPrice: 99,
+    annualPrice: 891,
+    annualMonthly: 74.25,
+    users: '1 usuário',
+    properties: 'Até 5 propriedades',
+    notifications: 'Notificação pessoal (consultor)',
+    clientAccess: '—',
+    training: 'Autoatendimento',
+    features: [
+      '1 usuário consultor',
+      'Até 5 propriedades de clientes',
+      'Notificação pessoal para o consultor',
+      'Materiais de autoatendimento',
+    ],
+  },
+  {
+    id: 'pro',
+    name: 'Pro',
+    icon: Star,
+    color: 'blue',
+    monthlyPrice: 199,
+    annualPrice: 1791,
+    annualMonthly: 149.25,
+    users: 'Até 2 usuários',
+    properties: 'Até 10 propriedades',
+    notifications: 'Consultor + equipe',
+    clientAccess: '—',
+    training: 'Autoatendimento + Webinars',
+    features: [
+      'Até 2 usuários (consultor + equipe)',
+      'Até 10 propriedades de clientes',
+      'Notificação para o consultor e equipe',
+      'Autoatendimento + Webinars periódicos',
+    ],
+    highlight: true,
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    icon: Crown,
+    color: 'amber',
+    monthlyPrice: 397,
+    annualPrice: 3573,
+    annualMonthly: 297.75,
+    users: 'Ilimitado',
+    properties: 'Ilimitado',
+    notifications: 'Consultor, equipe e cliente',
+    clientAccess: 'Visualizar e baixar documentos',
+    training: 'Autoatendimento + Webinars + Treinamentos personalizados',
+    features: [
+      'Usuários ilimitados (consultor + equipe)',
+      'Propriedades ilimitadas',
+      'Notificação para consultor, equipe e clientes',
+      'Relatórios de gestão para clientes',
+      'Portal do cliente (visualizar e baixar documentos)',
+      'Autoatendimento + Webinars + Treinamentos personalizados',
+    ],
+  },
+];
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function colorClasses(color) {
+  const map = {
+    emerald: { bg: 'bg-emerald-50', border: 'border-emerald-200', badge: 'bg-emerald-600', text: 'text-emerald-700', btn: 'bg-emerald-600 hover:bg-emerald-700', icon: 'text-emerald-600' },
+    blue: { bg: 'bg-blue-50', border: 'border-blue-300', badge: 'bg-blue-600', text: 'text-blue-700', btn: 'bg-blue-600 hover:bg-blue-700', icon: 'text-blue-600' },
+    amber: { bg: 'bg-amber-50', border: 'border-amber-200', badge: 'bg-amber-500', text: 'text-amber-700', btn: 'bg-amber-500 hover:bg-amber-600', icon: 'text-amber-600' },
+  };
+  return map[color] || map.emerald;
+}
+
+// ── Produtor Plan Card ────────────────────────────────────────────────────────
+
+function ProdutorPlanCard({ billing, onSubscribe, loading }) {
+  const price = billing === 'annual' ? PRODUTOR_PLAN.annualMonthly : PRODUTOR_PLAN.monthlyPrice;
+  const totalLabel = billing === 'annual'
+    ? `R$ ${PRODUTOR_PLAN.annualPrice.toLocaleString('pt-BR')}/ano por propriedade`
+    : null;
+
+  return (
+    <Card className="border-2 border-emerald-300 shadow-lg relative overflow-hidden">
+      <div className="absolute top-0 right-0 bg-emerald-600 text-white text-xs px-3 py-1 rounded-bl-lg font-medium">
+        {billing === 'annual' ? '🎉 3 meses grátis' : 'Plano Único'}
+      </div>
+      <CardHeader className="pb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-emerald-100 rounded-xl">
+            <Building2 className="w-6 h-6 text-emerald-700" />
+          </div>
+          <div>
+            <CardTitle className="text-lg">{PRODUTOR_PLAN.name}</CardTitle>
+            <p className="text-sm text-gray-500">Produtor Rural — Serviço Integrado</p>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <div>
+          <div className="flex items-end gap-1">
+            <span className="text-4xl font-bold text-gray-900">
+              R$ {price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </span>
+            <span className="text-gray-500 mb-1">/mês por propriedade</span>
+          </div>
+          {totalLabel && (
+            <p className="text-sm text-emerald-600 font-medium mt-1">{totalLabel}</p>
+          )}
+        </div>
+
+        <ul className="space-y-2">
+          {PRODUTOR_PLAN.features.map((f, i) => (
+            <li key={i} className="flex items-start gap-2">
+              <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+              <span className="text-sm text-gray-700">{f}</span>
+            </li>
+          ))}
+        </ul>
+
+        <div className="flex flex-col gap-2 pt-2">
+          <Button
+            onClick={onSubscribe}
+            disabled={loading}
+            className="w-full bg-emerald-600 hover:bg-emerald-700"
+          >
+            <CreditCard className="w-4 h-4 mr-2" />
+            {loading ? 'Processando...' : 'Assinar Agora'}
+          </Button>
+          <Button
+            onClick={() => base44.functions.invoke('createStripePortal', {}).then(r => r.data?.url && (window.location.href = r.data.url))}
+            variant="outline"
+            className="w-full"
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            Gerenciar Assinatura
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Consultor Plan Card ───────────────────────────────────────────────────────
+
+function ConsultorPlanCard({ plan, billing, onSubscribe, loading }) {
+  const c = colorClasses(plan.color);
+  const price = billing === 'annual' ? plan.annualMonthly : plan.monthlyPrice;
+  const Icon = plan.icon;
+
+  return (
+    <Card className={`border-2 ${c.border} relative overflow-hidden ${plan.highlight ? 'shadow-xl scale-105' : 'shadow-sm'}`}>
+      {plan.highlight && (
+        <div className={`absolute top-0 right-0 ${c.badge} text-white text-xs px-3 py-1 rounded-bl-lg font-medium`}>
+          Mais Popular
+        </div>
+      )}
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-2">
+          <div className={`p-2 ${c.bg} rounded-xl`}>
+            <Icon className={`w-5 h-5 ${c.icon}`} />
+          </div>
+          <div>
+            <CardTitle className="text-base">{plan.name}</CardTitle>
+            <Badge className={`${c.badge} text-white text-xs mt-0.5`}>Consultor</Badge>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div>
+          <div className="flex items-end gap-1">
+            <span className="text-3xl font-bold text-gray-900">
+              R$ {price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </span>
+            <span className="text-gray-500 text-sm mb-0.5">/mês</span>
+          </div>
+          {billing === 'annual' && (
+            <p className={`text-xs ${c.text} font-medium mt-0.5`}>
+              R$ {plan.annualPrice.toLocaleString('pt-BR')}/ano — 3 meses grátis
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-1.5 text-sm">
+          <div className="flex items-center gap-2">
+            <Users className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+            <span className="text-gray-700">{plan.users}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Building2 className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+            <span className="text-gray-700">{plan.properties}</span>
+          </div>
+        </div>
+
+        <ul className="space-y-1.5">
+          {plan.features.map((f, i) => (
+            <li key={i} className="flex items-start gap-2">
+              <Check className={`w-3.5 h-3.5 ${c.icon} flex-shrink-0 mt-0.5`} />
+              <span className="text-xs text-gray-700">{f}</span>
+            </li>
+          ))}
+        </ul>
+
+        <Button
+          onClick={() => onSubscribe(plan.id)}
+          disabled={loading}
+          className={`w-full text-white ${c.btn}`}
+        >
+          <CreditCard className="w-4 h-4 mr-2" />
+          {loading ? 'Processando...' : 'Assinar'}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Main Component ─────────────────────────────────────────────────────────────
+
 export default function SubscriptionStatus() {
-  const [subscription] = useState({
-    status: 'active',
-    plan: 'campo-nobre',
-    monthlyValue: 497.00,
-    nextBillingDate: addDays(new Date(), 30),
-    createdAt: new Date()
-  });
+  const [user, setUser] = useState(null);
+  const [billing, setBilling] = useState('monthly');
   const [loading, setLoading] = useState(false);
 
-  const handleSubscribe = async () => {
+  useEffect(() => {
+    base44.auth.me().then(setUser).catch(() => {});
+  }, []);
+
+  const handleSubscribe = async (planId) => {
     setLoading(true);
     try {
-      const { data } = await base44.functions.invoke('createStripeCheckout', {});
-      if (data.url) {
-        window.location.href = data.url;
-      }
+      const { data } = await base44.functions.invoke('createStripeCheckout', { plan: planId, billing });
+      if (data?.url) window.location.href = data.url;
     } catch (error) {
-      console.error('Error creating checkout:', error);
       toast.error('Erro ao iniciar pagamento. Tente novamente.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleManageSubscription = async () => {
-    setLoading(true);
-    try {
-      const { data } = await base44.functions.invoke('createStripePortal', {});
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch (error) {
-      console.error('Error opening portal:', error);
-      toast.error('Erro ao abrir portal. Tente novamente.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const userType = user?.user_type;
 
-
-
-  return (
-    <div className="space-y-6">
-      {/* Current Subscription Status */}
-      <Card className="border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-white">
-        <CardHeader className="border-b border-emerald-100">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="w-6 h-6 text-emerald-600" />
-              Status da Assinatura
-            </CardTitle>
-            <Badge className="bg-emerald-600">
-              Plano Campo Nobre
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Active Status */}
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-4">Plano Campo Nobre Ativo</h3>
-              
-              <div className="space-y-4">
-                <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Check className="w-4 h-4 text-emerald-600" />
-                    <p className="text-sm text-emerald-700 font-medium">Ativo Desde</p>
-                  </div>
-                  <p className="text-lg font-semibold text-emerald-900">
-                    {format(subscription.createdAt, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                  </p>
-                </div>
-
-                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <p className="text-sm text-blue-700 font-medium mb-1">Próximo Faturamento</p>
-                  <p className="text-lg font-semibold text-blue-900">
-                    {format(subscription.nextBillingDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Button
-                    onClick={handleSubscribe}
-                    disabled={loading}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700"
-                  >
-                    <CreditCard className="w-4 h-4 mr-2" />
-                    {loading ? 'Processando...' : 'Assinar Plano'}
-                  </Button>
-                  <Button
-                    onClick={handleManageSubscription}
-                    disabled={loading}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    <Settings className="w-4 h-4 mr-2" />
-                    Gerenciar Assinatura
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* Plan Details */}
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-4">Detalhes do Plano</h3>
-              <div className="space-y-3">
-                <div className="p-3 rounded-lg bg-gray-50 border border-gray-200">
-                  <p className="text-xs text-gray-600 mb-1">VALOR MENSAL POR PROPRIEDADE</p>
-                  <p className="text-2xl font-bold text-gray-900">R$ 497,00</p>
-                  <p className="text-xs text-gray-600 mt-1">Permanência mínima: 12 meses</p>
-                </div>
-                
-                <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
-                  <p className="text-xs text-blue-700 font-medium mb-1">FORMAS DE PAGAMENTO</p>
-                  <div className="space-y-1 text-sm text-blue-900">
-                    <p>• Cartão de crédito recorrente (Stripe)</p>
-                    <p>• PIX</p>
-                    <p>• Boleto bancário</p>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-sm text-gray-700">Monitoramento Ambiental Contínuo</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-sm text-gray-700">Gerenciamento completo de propriedades</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-sm text-gray-700">Suporte técnico prioritário</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-sm text-gray-700">Relatórios e análises avançadas</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-sm text-gray-700">Alertas e notificações personalizadas</span>
-                  </div>
-                </div>
-
-                <div className="mt-4 p-3 bg-emerald-50 rounded-lg border border-emerald-200">
-                  <div className="flex items-start gap-2">
-                    <Zap className="w-4 h-4 text-emerald-600 mt-0.5" />
-                    <div className="text-sm">
-                      <p className="text-emerald-700 font-medium">Implantação Assistida Gratuita</p>
-                      <p className="text-emerald-600 text-xs mt-1">Oferta por tempo limitado</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+  // Equipe e cliente do consultor: sem tela de assinatura
+  if (userType === 'equipe' || userType === 'client_consultor') {
+    return (
+      <Card className="border-blue-200 bg-blue-50">
+        <CardContent className="p-6 flex items-start gap-3">
+          <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold text-blue-900">Assinatura gerenciada pelo Consultor</p>
+            <p className="text-sm text-blue-700 mt-1">
+              {userType === 'equipe'
+                ? 'Seu acesso é gerenciado pelo consultor responsável pela equipe.'
+                : 'Seu acesso à propriedade é gerenciado pelo consultor responsável.'}
+            </p>
           </div>
         </CardContent>
       </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Billing Toggle */}
+      <div className="flex items-center justify-center gap-2">
+        <button
+          onClick={() => setBilling('monthly')}
+          className={`px-5 py-2 rounded-l-full border text-sm font-medium transition-all ${billing === 'monthly' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+        >
+          Mensal
+        </button>
+        <button
+          onClick={() => setBilling('annual')}
+          className={`px-5 py-2 rounded-r-full border text-sm font-medium transition-all ${billing === 'annual' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+        >
+          Anual 🎉 <span className="text-xs">(3 meses grátis)</span>
+        </button>
+      </div>
+
+      {/* Produtor */}
+      {(!userType || userType === 'produtor') && (
+        <ProdutorPlanCard billing={billing} onSubscribe={() => handleSubscribe('produtor')} loading={loading} />
+      )}
+
+      {/* Consultor */}
+      {userType === 'consultor' && (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 items-start">
+            {CONSULTOR_PLANS.map((plan) => (
+              <ConsultorPlanCard
+                key={plan.id}
+                plan={plan}
+                billing={billing}
+                onSubscribe={handleSubscribe}
+                loading={loading}
+              />
+            ))}
+          </div>
+
+          {/* Comparison table */}
+          <Card className="border-gray-200">
+            <CardHeader>
+              <CardTitle className="text-base">Comparativo de Planos</CardTitle>
+            </CardHeader>
+            <CardContent className="overflow-x-auto p-0">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    <th className="text-left p-3 font-semibold text-gray-700">Recurso</th>
+                    <th className="text-center p-3 font-semibold text-emerald-700">Start</th>
+                    <th className="text-center p-3 font-semibold text-blue-700">Pro</th>
+                    <th className="text-center p-3 font-semibold text-amber-700">Enterprise</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {[
+                    ['Usuários', '1', 'Até 2', 'Ilimitado'],
+                    ['Propriedades', 'Até 5', 'Até 10', 'Ilimitado'],
+                    ['Notificação Consultor', '✅', '✅', '✅'],
+                    ['Notificação Equipe', '—', '✅', '✅'],
+                    ['Notificação Cliente', '—', '—', '✅'],
+                    ['Relatórios de Gestão', '—', '—', '✅'],
+                    ['Portal do Cliente', '—', '—', '✅'],
+                    ['Webinars Periódicos', '—', '✅', '✅'],
+                    ['Treinamentos Personalizados', '—', '—', '✅'],
+                  ].map(([feature, start, pro, enterprise]) => (
+                    <tr key={feature} className="hover:bg-gray-50">
+                      <td className="p-3 text-gray-700">{feature}</td>
+                      <td className="p-3 text-center text-emerald-700 font-medium">{start}</td>
+                      <td className="p-3 text-center text-blue-700 font-medium">{pro}</td>
+                      <td className="p-3 text-center text-amber-700 font-medium">{enterprise}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      {/* Payment methods note */}
+      <p className="text-xs text-center text-gray-400">
+        Aceitamos cartão de crédito, PIX e boleto bancário. Cancelamento a qualquer momento.
+      </p>
     </div>
   );
 }

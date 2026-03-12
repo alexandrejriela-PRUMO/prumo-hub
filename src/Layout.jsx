@@ -38,7 +38,8 @@ import {
               Cloud,
               Sparkles,
               Map,
-              ClipboardList
+              ClipboardList,
+              ScrollText
                     } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

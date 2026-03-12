@@ -23,6 +23,7 @@ import { useNavigate } from 'react-router-dom';
 import { subDays, isAfter, isBefore } from 'date-fns';
 import { createPageUrl } from '@/utils';
 import ConsultorOverview from '../components/dashboard/ConsultorOverview';
+import { useNavigate } from 'react-router-dom';
 
 export default function Home() {
   const navigate = useNavigate();

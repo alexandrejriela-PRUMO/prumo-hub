@@ -19,7 +19,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { MapPin, BarChart3, ChevronLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { subDays, isAfter, isBefore } from 'date-fns';
 import { createPageUrl } from '@/utils';
 import ConsultorOverview from '../components/dashboard/ConsultorOverview';

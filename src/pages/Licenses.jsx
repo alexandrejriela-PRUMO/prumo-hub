@@ -105,8 +105,10 @@ export default function Licenses() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.License.update(id, data),
-    onSuccess: () => {
+    onSuccess: (_, { id, data }) => {
       queryClient.invalidateQueries(['licenses']);
+      // Atualiza selectedLicense em tempo real para o histórico aparecer sem sair da aba
+      setSelectedLicense(prev => prev?.id === id ? { ...prev, ...data } : prev);
     },
   });
 

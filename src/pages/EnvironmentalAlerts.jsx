@@ -177,6 +177,15 @@ export default function EnvironmentalAlerts() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.EnvironmentalAlert.delete(id),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries(['environmental-alerts']);
+      const previous = queryClient.getQueryData(['environmental-alerts']);
+      queryClient.setQueryData(['environmental-alerts'], (old = []) => old.filter((a) => a.id !== id));
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['environmental-alerts'], ctx.previous);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['environmental-alerts']);
       setSelectedAlert(null);

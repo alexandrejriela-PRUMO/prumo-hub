@@ -526,6 +526,13 @@ export default function ClientCRMPanel({ property, onClose }) {
                           <UserCheck className="w-3 h-3" /> {task.responsible_name}
                         </p>
                       )}
+                      <CRMThread
+                        item={task}
+                        itemType="task"
+                        teamMembers={teamMembers}
+                        currentUser={currentUser}
+                        onSaveThread={(thread) => saveTaskThread(task.id, thread)}
+                      />
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <span className={`text-xs font-medium px-1.5 py-0.5 rounded-md ${priorityBadge}`}>{task.priority}</span>

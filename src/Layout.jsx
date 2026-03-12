@@ -186,6 +186,7 @@ const navItems = [
   { name: 'Relatórios', page: 'Reports', icon: FileText },
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
+  { name: 'Meus Contratos', page: 'Contracts', icon: ScrollText },
   { name: 'Minha Equipe', page: 'MyTeam', icon: Users },
 ];
 

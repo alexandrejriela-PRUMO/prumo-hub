@@ -122,6 +122,7 @@ export default function Licenses() {
     setFormData({
       property_id: properties.length > 0 ? properties[0].id : '',
       license_type: '',
+      other_license_description: '',
       license_number: '',
       issue_date: '',
       expiry_date: '',
@@ -137,6 +138,7 @@ export default function Licenses() {
     setFormData({
       property_id: license.property_id || '',
       license_type: license.license_type || '',
+      other_license_description: license.other_license_description || '',
       license_number: license.license_number || '',
       issue_date: license.issue_date || '',
       expiry_date: license.expiry_date || '',

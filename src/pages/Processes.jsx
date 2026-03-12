@@ -93,8 +93,10 @@ export default function Processes() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Process.update(id, data),
-    onSuccess: () => {
+    onSuccess: (_, { id, data }) => {
       queryClient.invalidateQueries({ queryKey: ['processes'] });
+      // Atualiza selectedProcess em tempo real para o histórico aparecer sem sair da aba
+      setSelectedProcess(prev => prev?.id === id ? { ...prev, ...data } : prev);
       setShowDialog(false);
       resetForm();
     }

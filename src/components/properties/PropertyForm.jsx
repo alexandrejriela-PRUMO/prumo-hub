@@ -431,36 +431,131 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
             )}
           </div>
 
-          {/* Pecuária intensiva (Suinocultura / Bovinocultura / Avicultura) */}
-          {formData.activities.some(a => LIVESTOCK_ACTIVITIES.includes(a)) && (
+          {/* Pecuária intensiva — por tipo de animal */}
+          {formData.activities.includes('Suinocultura') && (
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-3">
               <div className="flex items-center gap-2">
-                <span className="text-lg">🐄</span>
-                <Label className="font-semibold text-amber-800">Dados de Criação Animal</Label>
+                <span className="text-lg">🐷</span>
+                <Label className="font-semibold text-amber-800">Suinocultura</Label>
               </div>
-              <p className="text-xs text-amber-600">
-                Atividades: {formData.activities.filter(a => LIVESTOCK_ACTIVITIES.includes(a)).join(', ')}
-              </p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-xs text-amber-700">Capacidade total de animais</Label>
+                  <Label className="text-xs text-amber-700">Nº de suínos</Label>
                   <Input type="number" min="0" className="h-8"
-                    value={ruralExtra.livestock_capacity || ''}
-                    onChange={(e) => setExtra('livestock_capacity', e.target.value)}
-                    placeholder="Ex: 5000" />
+                    value={ruralExtra.swine_count || ''}
+                    onChange={(e) => setExtra('swine_count', e.target.value)}
+                    placeholder="Ex: 2000" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-amber-700">Nº de galpões de criação</Label>
+                  <Label className="text-xs text-amber-700">Capacidade máxima</Label>
                   <Input type="number" min="0" className="h-8"
-                    value={ruralExtra.livestock_sheds || ''}
-                    onChange={(e) => setExtra('livestock_sheds', e.target.value)}
-                    placeholder="Ex: 4" />
+                    value={ruralExtra.swine_capacity || ''}
+                    onChange={(e) => setExtra('swine_capacity', e.target.value)}
+                    placeholder="Ex: 2400" />
                 </div>
-                <div className="space-y-1 col-span-2">
+                <div className="space-y-1">
+                  <Label className="text-xs text-amber-700">Nº de galpões</Label>
+                  <Input type="number" min="0" className="h-8"
+                    value={ruralExtra.swine_sheds || ''}
+                    onChange={(e) => setExtra('swine_sheds', e.target.value)}
+                    placeholder="Ex: 2" />
+                </div>
+                <div className="space-y-1">
                   <Label className="text-xs text-amber-700">Nº de esterqueiras</Label>
                   <Input type="number" min="0" className="h-8"
-                    value={ruralExtra.manure_pits || ''}
-                    onChange={(e) => setExtra('manure_pits', e.target.value)}
+                    value={ruralExtra.swine_manure_pits || ''}
+                    onChange={(e) => setExtra('swine_manure_pits', e.target.value)}
+                    placeholder="Ex: 1" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {formData.activities.includes('Bovinocultura') && (
+            <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🐄</span>
+                <Label className="font-semibold text-orange-800">Bovinocultura</Label>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-orange-700">Nº de bovinos (total)</Label>
+                  <Input type="number" min="0" className="h-8"
+                    value={ruralExtra.cattle_count || ''}
+                    onChange={(e) => setExtra('cattle_count', e.target.value)}
+                    placeholder="Ex: 150" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-orange-700">Matrizes (vacas)</Label>
+                  <Input type="number" min="0" className="h-8"
+                    value={ruralExtra.cattle_cows || ''}
+                    onChange={(e) => setExtra('cattle_cows', e.target.value)}
+                    placeholder="Ex: 60" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-orange-700">Tipo de criação</Label>
+                  <select className="h-8 w-full border border-gray-300 rounded px-2 text-sm"
+                    value={ruralExtra.cattle_type || ''}
+                    onChange={(e) => setExtra('cattle_type', e.target.value)}>
+                    <option value="">Selecione...</option>
+                    <option value="Corte">Corte</option>
+                    <option value="Leite">Leite</option>
+                    <option value="Misto">Misto (Corte/Leite)</option>
+                    <option value="Cria">Cria</option>
+                    <option value="Recria">Recria</option>
+                    <option value="Engorda">Engorda</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-orange-700">UA (Unidades Animais)</Label>
+                  <Input type="number" min="0" step="0.1" className="h-8"
+                    value={ruralExtra.cattle_ua || ''}
+                    onChange={(e) => setExtra('cattle_ua', e.target.value)}
+                    placeholder="Ex: 120" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {formData.activities.includes('Avicultura') && (
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🐔</span>
+                <Label className="font-semibold text-yellow-800">Avicultura</Label>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-yellow-700">Nº de aves</Label>
+                  <Input type="number" min="0" className="h-8"
+                    value={ruralExtra.poultry_count || ''}
+                    onChange={(e) => setExtra('poultry_count', e.target.value)}
+                    placeholder="Ex: 20000" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-yellow-700">Capacidade do aviário</Label>
+                  <Input type="number" min="0" className="h-8"
+                    value={ruralExtra.poultry_capacity || ''}
+                    onChange={(e) => setExtra('poultry_capacity', e.target.value)}
+                    placeholder="Ex: 24000" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-yellow-700">Tipo de ave</Label>
+                  <select className="h-8 w-full border border-gray-300 rounded px-2 text-sm"
+                    value={ruralExtra.poultry_type || ''}
+                    onChange={(e) => setExtra('poultry_type', e.target.value)}>
+                    <option value="">Selecione...</option>
+                    <option value="Frango de Corte">Frango de Corte</option>
+                    <option value="Poedeira">Poedeira</option>
+                    <option value="Peru">Peru</option>
+                    <option value="Pato">Pato</option>
+                    <option value="Misto">Misto</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-yellow-700">Nº de aviários</Label>
+                  <Input type="number" min="0" className="h-8"
+                    value={ruralExtra.poultry_sheds || ''}
+                    onChange={(e) => setExtra('poultry_sheds', e.target.value)}
                     placeholder="Ex: 2" />
                 </div>
               </div>

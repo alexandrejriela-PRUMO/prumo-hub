@@ -158,7 +158,7 @@ export default function ClientCRMPanel({ property, onClose }) {
 
   const startEditTask = (task) => {
     setEditingTask(task);
-    setNewTask({ title: task.title, due_date: task.due_date || '', priority: task.priority || 'Média' });
+    setNewTask({ title: task.title, due_date: task.due_date || '', priority: task.priority || 'Média', responsible_email: task.responsible_email || '', responsible_name: task.responsible_name || '' });
     setShowTaskForm(true);
   };
 

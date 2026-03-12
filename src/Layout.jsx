@@ -222,6 +222,7 @@ export default function Layout({ children, currentPageName }) {
   };
 
   return (
+    <ThemeProvider>
     <div className="min-h-screen bg-gradient-to-br from-stone-50 via-white to-emerald-50/30">
       <style>{`
         :root {

@@ -39,6 +39,7 @@ import ConsultorPropertySelector from '../components/consultor/ConsultorProperty
 export default function Georeferencing() {
   const [user, setUser] = useState(null);
   const [selectedProperty, setSelectedProperty] = useState(null);
+  const [consultorPropertyId, setConsultorPropertyId] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewingGeo, setViewingGeo] = useState(null);
   const [uploading, setUploading] = useState(false);

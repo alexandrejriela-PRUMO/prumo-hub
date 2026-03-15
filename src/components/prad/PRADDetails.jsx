@@ -407,11 +407,9 @@ export default function PRADDetails({ prad }) {
       </TabsContent>
 
       {/* Timeline */}
-      <TabsContent value="timeline" className="space-y-4">
-        <div className="grid lg:grid-cols-2 gap-6">
-          <PRADTimelineCreative prad={prad} onUpdate={() => queryClient.invalidateQueries(['prad'])} />
-          <PRADAnnualReports prad={prad} onUpdate={() => queryClient.invalidateQueries(['prad'])} />
-        </div>
+      <TabsContent value="timeline" className="space-y-6">
+        <PRADTimelineCreative prad={prad} onUpdate={() => queryClient.invalidateQueries(['prad'])} />
+        <PRADAnnualReports prad={prad} onUpdate={() => queryClient.invalidateQueries(['prad'])} />
       </TabsContent>
       </Tabs>
   );

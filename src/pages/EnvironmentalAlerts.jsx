@@ -83,9 +83,9 @@ export default function EnvironmentalAlerts() {
   });
 
   const { data: allAlerts = [] } = useQuery({
-    queryKey: ['environmental-alerts'],
+    queryKey: ['environmental-alerts', selectedPropertyId],
     queryFn: () => base44.entities.EnvironmentalAlert.list('-detection_date'),
-    enabled: true
+    enabled: !!selectedPropertyId
   });
 
   const createMutation = useMutation({

@@ -201,6 +201,13 @@ export default function EnvironmentalAlerts() {
     }
   }, [properties, selectedPropertyId, isConsultor]);
 
+  useEffect(() => {
+    // Invalidate mapbiomas-alerts cache when selectedPropertyId changes
+    if (selectedPropertyId) {
+      queryClient.invalidateQueries(['mapbiomas-alerts']);
+    }
+  }, [selectedPropertyId, queryClient]);
+
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
   const propertyAlerts = allAlerts.filter(a => a.property_id === selectedPropertyId);
 

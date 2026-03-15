@@ -80,6 +80,21 @@ Deno.serve(async (req) => {
     let body = {};
     try { body = await req.json(); } catch (_) {}
 
+    // Debug: explore a type
+    if (body.mode === 'explore_type') {
+      const token = await signIn();
+      const data = await gql(token, `
+        query($name: String!) {
+          __type(name: $name) {
+            name
+            fields { name type { name kind ofType { name kind } } }
+          }
+        }
+      `, { name: body.type || 'AlertData' });
+      const fields = data.data?.__type?.fields?.map(f => f.name) || data;
+      return Response.json({ fields });
+    }
+
     // Debug: test real alerts query with minimal fields
     if (body.mode === 'test_real') {
       const token = await signIn();

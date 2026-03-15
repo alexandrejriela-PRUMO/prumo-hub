@@ -47,18 +47,13 @@ export default function PSAContractsPage() {
     loadUser();
   }, []);
 
+  const isConsultor = user?.user_type === 'consultor' || user?.user_type === 'equipe';
+
   const { data: properties = [] } = useQuery({
     queryKey: ['properties', user?.email],
-    queryFn: () => {
-      if (user?.role === 'admin') {
-        return base44.entities.Property.list('-created_date', 1000);
-      }
-      return base44.entities.Property.filter(
-        { owner_email: user.email },
-        '-created_date',
-        100
-      );
-    },
+    queryFn: () => isConsultor
+      ? base44.entities.Property.filter({ consultor_email: user.email })
+      : base44.entities.Property.filter({ owner_email: user.email }),
     enabled: !!user?.email
   });
 

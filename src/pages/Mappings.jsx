@@ -225,6 +225,18 @@ export default function Mappings() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-3 sm:p-6">
       <div className="max-w-7xl mx-auto">
+        {/* Consultor Property Selector */}
+        {isConsultor && (
+          <div className="mb-6">
+            <ConsultorPropertySelector
+              properties={properties}
+              selectedPropertyId={selectedProperty?.id}
+              onSelect={(id) => setSelectedProperty(properties.find(p => p.id === id) || null)}
+              isLoading={propertiesLoading}
+            />
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 sm:mb-8">
           <div className="min-w-0">

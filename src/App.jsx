@@ -6,6 +6,7 @@ import { pagesConfig } from './pages.config'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import CARModule from './pages/CARModule';
+import PropertyMapView from './pages/PropertyMapView';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
@@ -60,6 +61,7 @@ const AuthenticatedApp = () => {
         />
       ))}
       <Route path="/CARModule" element={<LayoutWrapper currentPageName="CARModule"><CARModule /></LayoutWrapper>} />
+      <Route path="/PropertyMapView" element={<LayoutWrapper currentPageName="PropertyMapView"><PropertyMapView /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

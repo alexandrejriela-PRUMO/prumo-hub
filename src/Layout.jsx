@@ -60,6 +60,7 @@ const produtorNavItems = [
   { name: 'Meus Contratos', page: 'Contracts', icon: ScrollText },
   { name: 'Documentos', page: 'DocumentsHub', icon: FileText },
   { name: 'Licenças Ambientais', page: 'Licenses', icon: FileCheck },
+  { name: 'Gestão do CAR', page: 'CARModule', icon: TreePine },
   { name: 'Processos', page: 'Processes', icon: Scale },
   { name: 'Alertas de Infrações', page: 'EnvironmentalAlerts', icon: AlertTriangle },
   { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: FileCheck },

@@ -164,6 +164,35 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Cleanup: Remove orphaned alerts (CARs no longer in property)
+    log('🧹 Limpando alertas órfãos...');
+    for (const property of propertiesWithCAR) {
+      const currentCars = [
+        ...(property.car_numbers?.map(c => c.trim().toUpperCase()) || []),
+        ...(property.car_number ? [property.car_number.trim().toUpperCase()] : [])
+      ];
+      
+      const allPropertyAlerts = await base44.entities.EnvironmentalAlert.filter({
+        property_id: property.id,
+        data_source: 'MapBiomas'
+      });
+      
+      for (const existingAlert of allPropertyAlerts) {
+        // Try to extract CAR from description or title
+        const alertText = `${existingAlert.title} ${existingAlert.description}`;
+        const hasMatchingCar = currentCars.some(car => alertText.toUpperCase().includes(car));
+        
+        if (!hasMatchingCar) {
+          try {
+            await base44.entities.EnvironmentalAlert.delete(existingAlert.id);
+            log(`🗑️ Deletado alerta órfão: ${existingAlert.title}`);
+          } catch (e) {
+            log(`⚠️ Erro ao deletar órfão ${existingAlert.id}: ${e.message}`);
+          }
+        }
+      }
+    }
+
     let totalNew = 0;
 
     for (const alert of alerts) {

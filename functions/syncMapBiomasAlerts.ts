@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
       return Response.json({ fields });
     }
 
-    // Debug: test real alerts query with minimal fields
+    // Debug: test real alerts query with correct fields
     if (body.mode === 'test_real') {
       const token = await signIn();
       const carCodes = body.cars || [];
@@ -110,12 +110,9 @@ Deno.serve(async (req) => {
               sources
               statusName
               ruralProperties {
-                code
                 carCode
-              }
-              territories {
-                name
-                category
+                areaHa
+                stateAcronym
               }
             }
             metadata { totalCount }

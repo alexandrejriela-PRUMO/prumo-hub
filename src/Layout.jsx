@@ -156,6 +156,7 @@ const clientConsultorNavItems = [
 
 // Consultor: itens adicionais abaixo dos fixos (consultorNavItems)
 const navItems = [
+  { name: 'Meus Contratos', page: 'Contracts', icon: ScrollText },
   { name: 'Documentos', page: 'DocumentsHub', icon: FileText },
   { name: 'Licenças Ambientais', page: 'Licenses', icon: FileCheck },
   { name: 'Processos', page: 'Processes', icon: Scale },

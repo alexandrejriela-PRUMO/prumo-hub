@@ -47,6 +47,13 @@ export default function ClientCRMPanel({ property, onClose }) {
   const [newTask, setNewTask] = useState({ title: '', due_date: '', priority: 'Média', responsible_email: '', responsible_name: '' });
   const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', received: false });
 
+  // Se vier do ConsultorClients, property é um objeto "client" com .properties[]
+  // Usa a primeira propriedade real para associar o CRM
+  const firstRealProperty = property?.properties?.find(p => !p.is_client_only) || property?.properties?.[0];
+  const crmPropertyId = firstRealProperty?.id || property?.id;
+  const crmConsultorEmail = firstRealProperty?.consultor_email || property?.consultor_email;
+  const crmOwnerEmail = firstRealProperty?.owner_email || property?.owner_email;
+
   // Membros da equipe do consultor
   const { data: teamMembers = [] } = useQuery({
     queryKey: ['team-members', crmConsultorEmail],
@@ -68,13 +75,6 @@ export default function ClientCRMPanel({ property, onClose }) {
       console.warn('Erro ao notificar responsável:', e.message);
     }
   };
-
-  // Se vier do ConsultorClients, property é um objeto "client" com .properties[]
-  // Usa a primeira propriedade real para associar o CRM
-  const firstRealProperty = property?.properties?.find(p => !p.is_client_only) || property?.properties?.[0];
-  const crmPropertyId = firstRealProperty?.id || property?.id;
-  const crmConsultorEmail = firstRealProperty?.consultor_email || property?.consultor_email;
-  const crmOwnerEmail = firstRealProperty?.owner_email || property?.owner_email;
 
   const { data: crm, isLoading } = useQuery({
     queryKey: ['client-crm', crmPropertyId],

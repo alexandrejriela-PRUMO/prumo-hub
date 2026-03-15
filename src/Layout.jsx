@@ -40,7 +40,9 @@ import {
               Map,
               ClipboardList,
               ScrollText,
-              TreePine
+              TreePine,
+              Briefcase,
+              Building
                     } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

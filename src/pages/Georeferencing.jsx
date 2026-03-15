@@ -239,7 +239,7 @@ export default function Georeferencing() {
         <div className="grid md:grid-cols-2 gap-6">
           {[1, 2].map((i) => <Skeleton key={i} className="h-96 rounded-xl" />)}
         </div>
-      ) : georeferences.length === 0 ? (
+      ) : !effectivePropertyId ? null : georeferences.length === 0 ? (
         <Card className="border-dashed border-2 border-emerald-200">
           <CardContent className="py-16 text-center">
             <MapPin className="w-16 h-16 mx-auto text-emerald-300 mb-4" />

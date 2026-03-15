@@ -44,8 +44,9 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { searchParams } = new URL(req.url);
-    const mode = searchParams.get('mode') || 'sync';
+    let body = {};
+    try { body = await req.json(); } catch (_) {}
+    const mode = body.mode || 'sync';
 
     const token = await signIn();
 

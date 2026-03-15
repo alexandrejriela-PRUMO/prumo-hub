@@ -490,7 +490,7 @@ export default function Layout({ children, currentPageName }) {
                 const Icon = item.icon;
                 return (
                   <Link
-                    key={item.page}
+                    key={itemKey}
                     to={createPageUrl(item.page)}
                     onClick={() => setSidebarOpen(false)}
                     className={cn(

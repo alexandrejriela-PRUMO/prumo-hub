@@ -106,24 +106,35 @@ Deno.serve(async (req) => {
 
     for (const alert of alerts) {
       const alertTitle = `Alerta MapBiomas #${alert.alertCode}`;
+      console.log(`⚠️ Processando alerta: ${alertTitle}`);
 
       // Find matching property by CAR code
       const matchingCarCode = (alert.ruralProperties || [])
         .map(r => r.carCode?.trim())
         .find(code => carCodes.includes(code));
 
+      console.log(`🏠 CAR encontrado: ${matchingCarCode}`);
+
       const property = matchingCarCode
         ? propertiesWithCAR.find(p => p.car_number.trim() === matchingCarCode)
         : propertiesWithCAR[0];
 
-      if (!property) continue;
+      if (!property) {
+        console.log('❌ Propriedade não encontrada para CAR:', matchingCarCode);
+        continue;
+      }
+
+      console.log(`✓ Propriedade: ${property.property_name} (${property.id})`);
 
       // Skip if already synced
       const existing = await base44.entities.EnvironmentalAlert.filter({
         title: alertTitle,
         property_id: property.id
       });
-      if (existing.length > 0) continue;
+      if (existing.length > 0) {
+        console.log('⏭️ Alerta já sincronizado, pulando...');
+        continue;
+      }
 
       const areaHa = parseFloat(alert.areaHa || 0);
       const sources = Array.isArray(alert.sources) ? alert.sources.join(', ') : (alert.sources || 'MapBiomas');

@@ -41,10 +41,15 @@ const actions = [
   },
 ];
 
-export default function QuickActions() {
+export default function QuickActions({ userType }) {
+  const visibleActions = actions.filter(a => {
+    if (a.page === 'Requests' && ['consultor', 'equipe', 'client_consultor'].includes(userType)) return false;
+    return true;
+  });
+
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-      {actions.map((action, index) => (
+      {visibleActions.map((action, index) => (
         <Link 
           key={index} 
           to={createPageUrl(action.page)}

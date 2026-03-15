@@ -38,6 +38,39 @@ async function gql(token, query, variables = {}) {
   return await res.json();
 }
 
+async function fetchAlertsByCAR(token, carCodes, startDate, endDate) {
+  const data = await gql(token, `
+    query($propertyCodes: [ID!], $startDate: BaseDate, $endDate: BaseDate) {
+      alerts(propertyCodes: $propertyCodes, startDate: $startDate, endDate: $endDate, limit: 100) {
+        collection {
+          alertCode
+          areaHa
+          publishedAt
+          detectedAt
+          sources
+          statusName
+          deforestationClass
+          city
+          state
+          biome
+          ruralProperties {
+            propertyCode
+          }
+        }
+        metadata {
+          currentPage
+          limitValue
+          totalCount
+          totalPages
+        }
+      }
+    }
+  `, { propertyCodes: carCodes, startDate, endDate });
+
+  if (data.errors) throw new Error('Alerts query failed: ' + JSON.stringify(data.errors));
+  return data.data?.alerts?.collection || [];
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -46,146 +79,80 @@ Deno.serve(async (req) => {
 
     let body = {};
     try { body = await req.json(); } catch (_) {}
-    const mode = body.mode || 'sync';
 
-    const token = await signIn();
-
-    // Mode: explore — list all query fields (names only)
-    if (mode === 'explore') {
-      const data = await gql(token, `{
-        __schema {
-          queryType {
-            fields { name description args { name type { name kind ofType { name } } } }
-          }
-        }
-      }`);
-      const fields = data.data.__schema.queryType.fields.map(f => ({
-        name: f.name,
-        args: f.args.map(a => a.name)
-      }));
-      return Response.json({ fields });
-    }
-
-    // Mode: test_alerts_query — test alerts query with propertyCodes
-    if (mode === 'test_alerts_query') {
-      const carCode = body.car || '';
-      const data = await gql(token, `
-        query($propertyCodes: [String!], $startDate: BaseDate, $endDate: BaseDate) {
-          alerts(propertyCodes: $propertyCodes, startDate: $startDate, endDate: $endDate, limit: 5) {
-            alertCode
-            areaHa
-            publishedAt
-            detectedAt
-            sources
-            statusName
-            deforestationClass
-          }
-        }
-      `, {
-        propertyCodes: carCode ? [carCode] : [],
-        startDate: '2024-01-01',
-        endDate: '2026-03-15'
-      });
-      return Response.json(data);
-    }
-
-    // Mode: test_property_query — try alertsByPublishDate with propertyCode
-    if (mode === 'test_property_query') {
-      const carCode = body.car || 'RS-4318408-7C3F9C94C26940E9B84DE5E6F6C11B36';
-      const data = await gql(token, `
-        query($propertyCode: String!, $startDate: BaseDate!, $endDate: BaseDate!) {
-          alertsByPublishDate(propertyCode: $propertyCode, startDate: $startDate, endDate: $endDate) {
-            alertCode
-            areaHa
-            publishedAt
-            detectedAt
-            source
-          }
-        }
-      `, { propertyCode: carCode, startDate: '2024-01-01', endDate: '2026-03-15' });
-      return Response.json(data);
-    }
-
-    // Mode: explore_type — introspect a specific type
-    if (mode === 'explore_type') {
-      const typeName = body.type || 'AlertsByPublishDate';
-      const data = await gql(token, `
-        query($name: String!) {
-          __type(name: $name) {
-            name
-            fields { name type { name kind ofType { name kind } } }
-          }
-        }
-      `, { name: typeName });
-      return Response.json(data);
-    }
-
-    // Mode: sync — actual sync logic
     const filter = user.role === 'admin' ? {} : { owner_email: user.email };
     const properties = await base44.entities.Property.filter(filter);
     const propertiesWithCAR = properties.filter(p => p.car_number);
 
     if (propertiesWithCAR.length === 0) {
-      return Response.json({ message: 'Nenhum CAR cadastrado.', synced: 0 });
+      return Response.json({ message: 'Nenhum CAR cadastrado para monitorar.', synced: 0 });
     }
+
+    const carCodes = propertiesWithCAR.map(p => p.car_number.trim());
+
+    // Default: last 12 months
+    const endDate = new Date().toISOString().split('T')[0];
+    const startDateObj = new Date();
+    startDateObj.setFullYear(startDateObj.getFullYear() - 1);
+    const startDate = startDateObj.toISOString().split('T')[0];
+
+    const token = await signIn();
+    const alerts = await fetchAlertsByCAR(token, carCodes, startDate, endDate);
 
     let totalNew = 0;
 
-    for (const property of propertiesWithCAR) {
-      const carCode = property.car_number.trim();
+    for (const alert of alerts) {
+      const alertTitle = `Alerta MapBiomas #${alert.alertCode}`;
 
-      const data = await gql(token, `
-        query($propertyCode: String!, $startDate: BaseDate!, $endDate: BaseDate!) {
-          alertsByPublishDate(propertyCode: $propertyCode, startDate: $startDate, endDate: $endDate) {
-            alertCode
-            areaHa
-            publishedAt
-            detectedAt
-            source
-          }
-        }
-      `, {
-        propertyCode: carCode,
-        startDate: '2024-01-01',
-        endDate: new Date().toISOString().split('T')[0]
+      // Find matching property
+      const matchingCode = (alert.ruralProperties || [])
+        .map(r => r.propertyCode?.trim())
+        .find(code => carCodes.includes(code));
+
+      const property = matchingCode
+        ? propertiesWithCAR.find(p => p.car_number.trim() === matchingCode)
+        : propertiesWithCAR[0];
+
+      if (!property) continue;
+
+      // Skip if already synced
+      const existing = await base44.entities.EnvironmentalAlert.filter({
+        title: alertTitle,
+        property_id: property.id
+      });
+      if (existing.length > 0) continue;
+
+      const areaHa = parseFloat(alert.areaHa || 0);
+      const sources = Array.isArray(alert.sources) ? alert.sources.join(', ') : (alert.sources || 'MapBiomas');
+
+      await base44.entities.EnvironmentalAlert.create({
+        property_id: property.id,
+        alert_type: 'Desmatamento',
+        severity: areaHa > 50 ? 'Crítica' : areaHa > 10 ? 'Alta' : areaHa > 3 ? 'Média' : 'Baixa',
+        title: alertTitle,
+        description: `Área: ${areaHa.toFixed(2)} ha | Classe: ${alert.deforestationClass || 'N/A'} | Fontes: ${sources} | ${alert.city || ''}, ${alert.state || ''} | Bioma: ${alert.biome || 'N/A'}`,
+        affected_area_hectares: areaHa,
+        detection_date: (alert.detectedAt || alert.publishedAt || new Date().toISOString()).split('T')[0],
+        status: 'Aberto',
+        data_source: 'MapBiomas',
+        responsible_email: property.owner_email || property.consultor_email || user.email,
+        notification_sent: false,
+        recommended_actions: [
+          'Verificar imagens de satélite na plataforma MapBiomas Alerta',
+          'Avaliar necessidade de PRAD',
+          'Consultar órgão ambiental competente se necessário'
+        ]
       });
 
-      if (data.errors || !data.data) continue;
-
-      const alerts = data.data.alertsByPublishDate || [];
-
-      for (const alert of alerts) {
-        const alertTitle = `Alerta MapBiomas #${alert.alertCode}`;
-        const existing = await base44.entities.EnvironmentalAlert.filter({
-          title: alertTitle,
-          property_id: property.id
-        });
-        if (existing.length > 0) continue;
-
-        const areaHa = parseFloat(alert.areaHa || 0);
-
-        await base44.entities.EnvironmentalAlert.create({
-          property_id: property.id,
-          alert_type: 'Desmatamento',
-          severity: areaHa > 50 ? 'Crítica' : areaHa > 10 ? 'Alta' : areaHa > 3 ? 'Média' : 'Baixa',
-          title: alertTitle,
-          description: `Área: ${areaHa.toFixed(2)} ha | Fonte: ${alert.source || 'MapBiomas'} | CAR: ${carCode}`,
-          affected_area_hectares: areaHa,
-          detection_date: (alert.detectedAt || alert.publishedAt || new Date().toISOString()).split('T')[0],
-          status: 'Aberto',
-          data_source: 'MapBiomas',
-          responsible_email: property.owner_email || property.consultor_email || user.email,
-          notification_sent: false,
-        });
-
-        totalNew++;
-      }
+      totalNew++;
     }
 
     return Response.json({
       success: true,
       synced: totalNew,
-      cars_monitored: propertiesWithCAR.length
+      total_alerts_found: alerts.length,
+      cars_monitored: carCodes.length,
+      period: `${startDate} → ${endDate}`
     });
 
   } catch (error) {

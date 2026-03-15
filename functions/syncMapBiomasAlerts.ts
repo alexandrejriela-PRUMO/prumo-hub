@@ -139,8 +139,8 @@ Deno.serve(async (req) => {
     const token = await signIn();
     log('✅ Autenticação MapBiomas OK');
     
-    const alerts = await fetchAlertsByCAR(token, carCodes, startDate, endDate);
-    log(`📡 Alertas retornados pela API: ${alerts.length}`);
+    const alerts = await fetchAlertsByCAR(token, carCodes, startDate, endDate, log);
+    log(`📡 Total de alertas retornados: ${alerts.length}`);
 
     let totalNew = 0;
 

@@ -195,24 +195,27 @@ Deno.serve(async (req) => {
 
     let totalNew = 0;
 
+    // Normalize CAR for comparison (remove hyphens, dots, spaces)
+    const normalizeCar = (car) => car?.toUpperCase().replace(/[-.\s]/g, '') || '';
+
     for (const alert of alerts) {
       const alertTitle = `Alerta MapBiomas #${alert.alertCode}`;
       console.log(`⚠️ Processando alerta: ${alertTitle}`);
 
-      // Find matching property by CAR code - case insensitive
-      const apiCars = (alert.ruralProperties || []).map(r => r.carCode?.trim().toUpperCase()).filter(Boolean);
-      const matchingCarCode = apiCars.find(code => 
-        allCars.some(item => item.car.toUpperCase() === code)
+      // Find matching property by CAR code - normalized comparison
+      const apiCars = (alert.ruralProperties || []).map(r => r.carCode?.trim()).filter(Boolean);
+      const normalizedApiCars = apiCars.map(normalizeCar);
+      const normalizedAllCars = allCars.map(item => ({ ...item, normalized: normalizeCar(item.car) }));
+      
+      const matchingCarItem = normalizedAllCars.find(item => 
+        normalizedApiCars.includes(item.normalized)
       );
 
-      console.log(`🏠 CARs da API: [${apiCars.join(', ')}] | Encontrado: ${matchingCarCode || 'não'}`);
+      console.log(`🏠 CARs da API: [${apiCars.join(', ')}] | Normalizado: [${normalizedApiCars.join(', ')}] | Encontrado: ${matchingCarItem?.car || 'não'}`);
 
-      const property = matchingCarCode
-       ? propertiesWithCAR.find(p => 
-           (p.car_numbers?.some(c => c.trim().toUpperCase() === matchingCarCode)) || 
-           (p.car_number?.trim().toUpperCase() === matchingCarCode)
-         )
-       : propertiesWithCAR[0];
+      const property = matchingCarItem
+       ? propertiesWithCAR.find(p => p.id === matchingCarItem.propertyId)
+       : null;
 
       if (!property) {
         console.log('❌ Propriedade não encontrada para CAR:', matchingCarCode);

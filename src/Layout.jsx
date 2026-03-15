@@ -531,15 +531,20 @@ export default function Layout({ children, currentPageName }) {
                     to={createPageUrl(item.page)}
                     onClick={() => setSidebarOpen(false)}
                     className={cn(
-                      "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
+                      "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group border",
                       isActive
-                        ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30"
-                        : "text-emerald-200 hover:bg-emerald-800/50 hover:text-white"
+                        ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30 border-amber-400/30"
+                        : "text-emerald-200 hover:bg-emerald-800/50 hover:text-white border-transparent hover:border-emerald-700/40"
                     )}
                   >
-                    <Icon className={cn("w-5 h-5", isActive ? "text-white" : "text-emerald-400 group-hover:text-amber-400")} />
+                    <div className={cn(
+                      "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0",
+                      isActive ? "bg-white/20" : "bg-emerald-800/60 group-hover:bg-emerald-700/60"
+                    )}>
+                      <Icon className={cn("w-4 h-4", isActive ? "text-white" : "text-emerald-400 group-hover:text-amber-400")} />
+                    </div>
                     <span className="font-medium text-sm">{item.name}</span>
-                    {isActive && <ChevronRight className="w-4 h-4 ml-auto" />}
+                    {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white flex-shrink-0" />}
                   </Link>
                 );
               });

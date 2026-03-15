@@ -201,10 +201,12 @@ Deno.serve(async (req) => {
       synced: totalNew,
       total_alerts_found: alerts.length,
       cars_monitored: carCodes.length,
-      period: `${startDate} → ${endDate}`
+      period: `${startDate} → ${endDate}`,
+      logs
     });
 
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    log(`❌ ERRO: ${error.message}`);
+    return Response.json({ error: error.message, logs }, { status: 500 });
   }
 });

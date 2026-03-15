@@ -16,8 +16,13 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
   const propertyIds = properties.map(p => p.id);
 
   const { data: licenses = [] } = useQuery({
-    queryKey: ['licenses', user?.email],
-    queryFn: () => base44.entities.License.filter({ owner_email: { $in: properties.map(p => p.owner_email) } }),
+    queryKey: ['licenses', user?.email, propertyIds.join(',')],
+    queryFn: async () => {
+      const results = await Promise.all(
+        propertyIds.map(pid => base44.entities.License.filter({ property_id: pid }))
+      );
+      return results.flat();
+    },
     enabled: !!user?.email && properties.length > 0,
   });
 

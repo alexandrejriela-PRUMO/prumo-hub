@@ -140,26 +140,30 @@ Deno.serve(async (req) => {
       const sources = Array.isArray(alert.sources) ? alert.sources.join(', ') : (alert.sources || 'MapBiomas');
       const propertyState = (alert.ruralProperties?.[0]?.stateAcronym || '').toUpperCase();
 
-      await base44.entities.EnvironmentalAlert.create({
-        property_id: property.id,
-        alert_type: 'Desmatamento',
-        severity: areaHa > 50 ? 'Crítica' : areaHa > 10 ? 'Alta' : areaHa > 3 ? 'Média' : 'Baixa',
-        title: alertTitle,
-        description: `Área: ${areaHa.toFixed(2)} ha | Fontes: ${sources} | Estado: ${propertyState} | Status: ${alert.statusName || 'N/A'}`,
-        affected_area_hectares: areaHa,
-        detection_date: (alert.detectedAt || alert.publishedAt || new Date().toISOString()).split('T')[0],
-        status: 'Aberto',
-        data_source: 'MapBiomas',
-        responsible_email: property.owner_email || property.consultor_email || user.email,
-        notification_sent: false,
-        recommended_actions: [
-          'Verificar imagens de satélite na plataforma MapBiomas Alerta',
-          'Avaliar necessidade de PRAD',
-          'Consultar órgão ambiental competente se necessário'
-        ]
-      });
-
-      totalNew++;
+      try {
+        await base44.entities.EnvironmentalAlert.create({
+          property_id: property.id,
+          alert_type: 'Desmatamento',
+          severity: areaHa > 50 ? 'Crítica' : areaHa > 10 ? 'Alta' : areaHa > 3 ? 'Média' : 'Baixa',
+          title: alertTitle,
+          description: `Área: ${areaHa.toFixed(2)} ha | Fontes: ${sources} | Estado: ${propertyState} | Status: ${alert.statusName || 'N/A'}`,
+          affected_area_hectares: areaHa,
+          detection_date: (alert.detectedAt || alert.publishedAt || new Date().toISOString()).split('T')[0],
+          status: 'Aberto',
+          data_source: 'MapBiomas',
+          responsible_email: property.owner_email || property.consultor_email || user.email,
+          notification_sent: false,
+          recommended_actions: [
+            'Verificar imagens de satélite na plataforma MapBiomas Alerta',
+            'Avaliar necessidade de PRAD',
+            'Consultar órgão ambiental competente se necessário'
+          ]
+        });
+        console.log(`✅ Alerta criado: ${alertTitle}`);
+        totalNew++;
+      } catch (createError) {
+        console.log(`❌ Erro ao criar alerta ${alertTitle}:`, createError.message);
+      }
     }
 
     return Response.json({

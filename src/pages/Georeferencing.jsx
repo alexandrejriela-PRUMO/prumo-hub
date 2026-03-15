@@ -40,16 +40,15 @@ export default function Georeferencing() {
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [consultorPropertyId, setConsultorPropertyId] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [viewingGeo, setViewingGeo] = useState(null);
+  const [viewingGeoId, setViewingGeoId] = useState(null);
   const [uploading, setUploading] = useState(false);
 
   const queryClient = useQueryClient();
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Georeferencing.update(id, data),
-    onSuccess: (_, { id, data }) => {
+    onSuccess: () => {
       queryClient.invalidateQueries(['georeferencing']);
-      setViewingGeo(prev => prev?.id === id ? { ...prev, ...data } : prev);
       toast.success('Atualizado com sucesso!');
     },
   });

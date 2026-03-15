@@ -27,6 +27,7 @@ async function signIn() {
 }
 
 async function gql(token, query, variables = {}) {
+  console.log('📤 GraphQL Request:', { query: query.substring(0, 100) + '...', variables });
   const res = await fetch(GRAPHQL_URL, {
     method: 'POST',
     headers: {
@@ -35,7 +36,12 @@ async function gql(token, query, variables = {}) {
     },
     body: JSON.stringify({ query, variables })
   });
-  return await res.json();
+  const data = await res.json();
+  console.log('📥 GraphQL Response Status:', res.status);
+  if (data.errors) {
+    console.log('❌ GraphQL Errors:', JSON.stringify(data.errors));
+  }
+  return data;
 }
 
 async function fetchAlertsByCAR(token, carCodes, startDate, endDate) {

@@ -13,7 +13,7 @@ export default function MapBiomasAlerts({ selectedProperty, selectedPropertyId }
   const queryClient = useQueryClient();
 
   const { data: mapbiomasAlerts = [], isLoading } = useQuery({
-    queryKey: ['mapbiomas-alerts', selectedPropertyId, selectedProperty?.car_number],
+    queryKey: ['mapbiomas-alerts', selectedPropertyId],
     queryFn: () => base44.entities.EnvironmentalAlert.filter(
       { property_id: selectedPropertyId, data_source: 'MapBiomas' },
       '-detection_date'

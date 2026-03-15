@@ -65,9 +65,13 @@ export default function ESGAgro() {
     enabled: !!user?.email
   });
 
+  const isConsultor = user?.user_type === 'consultor' || user?.user_type === 'equipe';
+
   const { data: properties = [] } = useQuery({
     queryKey: ['properties', user?.email],
-    queryFn: () => base44.entities.Property.filter({ owner_email: user.email }),
+    queryFn: () => isConsultor
+      ? base44.entities.Property.filter({ consultor_email: user.email })
+      : base44.entities.Property.filter({ owner_email: user.email }),
     enabled: !!user?.email
   });
 

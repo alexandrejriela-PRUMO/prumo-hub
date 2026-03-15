@@ -80,6 +80,20 @@ Deno.serve(async (req) => {
     let body = {};
     try { body = await req.json(); } catch (_) {}
 
+    // Debug: explore a type
+    if (body.mode === 'explore_type') {
+      const token = await signIn();
+      const data = await gql(token, `
+        query($name: String!) {
+          __type(name: $name) {
+            name
+            fields { name type { name kind ofType { name kind } } }
+          }
+        }
+      `, { name: body.type || 'AlertData' });
+      return Response.json(data);
+    }
+
     const filter = user.role === 'admin' ? {} : { owner_email: user.email };
     const properties = await base44.entities.Property.filter(filter);
     const propertiesWithCAR = properties.filter(p => p.car_number);

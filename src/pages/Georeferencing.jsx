@@ -357,7 +357,7 @@ export default function Georeferencing() {
 }
 
 // Form Component
-function GeoreferencingForm({ properties, user, onSubmit, isLoading }) {
+function GeoreferencingForm({ properties, user, isConsultor, preselectedPropertyId, onSubmit, isLoading }) {
   const [formData, setFormData] = useState({
     property_id: '',
     owner_email: user.email,
@@ -370,15 +370,17 @@ function GeoreferencingForm({ properties, user, onSubmit, isLoading }) {
   });
 
   useEffect(() => {
-    if (properties.length > 0 && !formData.property_id) {
-      const defaultProp = properties[0];
+    // Pre-seleciona propriedade: para consultor usa a propriedade selecionada no seletor, para produtor usa a primeira
+    const targetId = preselectedPropertyId || (properties.length > 0 ? properties[0].id : '');
+    if (targetId && targetId !== formData.property_id) {
+      const prop = properties.find(p => p.id === targetId);
       setFormData(prev => ({
         ...prev,
-        property_id: defaultProp.id,
-        owner_email: defaultProp.owner_email || user.email,
+        property_id: targetId,
+        owner_email: prop?.owner_email || user.email,
       }));
     }
-  }, [properties]);
+  }, [properties, preselectedPropertyId]);
 
   const handlePropertyChange = (pid) => {
     const prop = properties.find(p => p.id === pid);

@@ -470,64 +470,61 @@ export default function EnvironmentalAlerts() {
         })}
       </div>
 
-      {/* Filters (só mostram para aba manual) */}
-      {/* Removed filter card - filters now inside the manual tab */}
-
       {/* Filters - only for manual tab */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Filter className="w-5 h-5 text-gray-500" />
-                  <span className="text-sm font-medium text-gray-700">Filtros:</span>
-                </div>
-                
-                <MobileSelect
-                  value={filterSeverity}
-                  onValueChange={setFilterSeverity}
-                  placeholder="Gravidade"
-                  title="Filtrar por Gravidade"
-                  triggerClassName="w-40"
-                  options={[
-                    { value: 'all', label: 'Todas' },
-                    { value: 'Crítica', label: 'Crítica' },
-                    { value: 'Alta', label: 'Alta' },
-                    { value: 'Média', label: 'Média' },
-                    { value: 'Baixa', label: 'Baixa' },
-                  ]}
-                />
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Filter className="w-5 h-5 text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">Filtros:</span>
+            </div>
 
-                <MobileSelect
-                  value={filterType}
-                  onValueChange={setFilterType}
-                  placeholder="Tipo"
-                  title="Filtrar por Tipo"
-                  triggerClassName="w-56"
-                  options={[
-                    { value: 'all', label: 'Todos os Tipos' },
-                    { value: 'Desmatamento', label: 'Desmatamento' },
-                    { value: 'Mudança de Uso da Terra', label: 'Mudança de Uso da Terra' },
-                    { value: 'Índice de Vegetação', label: 'Índice de Vegetação' },
-                    { value: 'APP', label: 'APP' },
-                    { value: 'Reserva Legal', label: 'Reserva Legal' },
-                  ]}
-                />
-              </div>
-            </CardContent>
-          </Card>
+            <MobileSelect
+              value={filterSeverity}
+              onValueChange={setFilterSeverity}
+              placeholder="Gravidade"
+              title="Filtrar por Gravidade"
+              triggerClassName="w-40"
+              options={[
+                { value: 'all', label: 'Todas' },
+                { value: 'Crítica', label: 'Crítica' },
+                { value: 'Alta', label: 'Alta' },
+                { value: 'Média', label: 'Média' },
+                { value: 'Baixa', label: 'Baixa' },
+              ]}
+            />
 
-          {/* Tabs for Active/Resolved */}
-          <Tabs defaultValue="active" className="space-y-4">
-            <TabsList className="grid w-full max-w-md grid-cols-2">
-              <TabsTrigger value="active">
-                Ativos ({activeAlerts.length})
-              </TabsTrigger>
-              <TabsTrigger value="resolved">
-                Resolvidos ({resolvedAlerts.length})
-              </TabsTrigger>
-            </TabsList>
+            <MobileSelect
+              value={filterType}
+              onValueChange={setFilterType}
+              placeholder="Tipo"
+              title="Filtrar por Tipo"
+              triggerClassName="w-56"
+              options={[
+                { value: 'all', label: 'Todos os Tipos' },
+                { value: 'Desmatamento', label: 'Desmatamento' },
+                { value: 'Mudança de Uso da Terra', label: 'Mudança de Uso da Terra' },
+                { value: 'Índice de Vegetação', label: 'Índice de Vegetação' },
+                { value: 'APP', label: 'APP' },
+                { value: 'Reserva Legal', label: 'Reserva Legal' },
+              ]}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
-            <TabsContent value="active" className="space-y-4">
+      {/* Tabs for Active/Resolved */}
+      <Tabs defaultValue="active" className="space-y-4">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="active">
+            Ativos ({activeAlerts.length})
+          </TabsTrigger>
+          <TabsTrigger value="resolved">
+            Resolvidos ({resolvedAlerts.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="active" className="space-y-4">
           {activeAlerts.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
@@ -561,12 +558,10 @@ export default function EnvironmentalAlerts() {
               ))}
             </div>
           )}
-          </TabsContent>
-          </Tabs>
-          </TabsContent>
-          </Tabs>
+        </TabsContent>
+      </Tabs>
 
-          {/* Alert Detail Modal */}
+      {/* Alert Detail Modal */}
       {selectedAlert && selectedProperty && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <Card className="max-w-4xl w-full max-h-[90vh] overflow-y-auto">

@@ -68,29 +68,60 @@ export default function MapBiomasAlerts({ selectedProperty, selectedPropertyId }
       {/* Info Card */}
       <Card className="border-emerald-200 bg-emerald-50">
         <CardContent className="pt-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-3 flex-1">
-              <Leaf className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <h3 className="font-semibold text-emerald-900">Integração MapBiomas Alerta</h3>
-                <p className="text-sm text-emerald-800 mt-1">
-                  Sincronização automática mensal de alertas de desmatamento da plataforma MapBiomas Alerta para o CAR <strong>{selectedProperty.car_number}</strong>.
-                </p>
-                <p className="text-xs text-emerald-700 mt-2">
-                  ⏰ Próxima sincronização automática: 1º de cada mês às 01h00 (horário de São Paulo)
-                </p>
+          <div className="space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3 flex-1">
+                <Leaf className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h3 className="font-semibold text-emerald-900">Integração MapBiomas Alerta</h3>
+                  <p className="text-sm text-emerald-800 mt-1">
+                    Sincronização automática mensal de alertas de desmatamento da plataforma MapBiomas Alerta para o CAR <strong>{selectedProperty.car_number}</strong>.
+                  </p>
+                  <p className="text-xs text-emerald-700 mt-2">
+                    ⏰ Próxima sincronização automática: 1º de cada mês às 01h00 (horário de São Paulo)
+                  </p>
+                </div>
+              </div>
+              <Button 
+                onClick={handleManualSync}
+                disabled={isManualSyncRunning}
+                variant="outline"
+                size="sm"
+                className="whitespace-nowrap"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${isManualSyncRunning ? 'animate-spin' : ''}`} />
+                Sincronizar Agora
+              </Button>
+            </div>
+            
+            {/* Manual Alert Registration */}
+            <div className="border-t pt-4 mt-4">
+              <p className="text-xs font-medium text-emerald-700 mb-3">
+                💡 Não consegue sincronizar? Registre manualmente o alerta PDF:
+              </p>
+              <div className="flex gap-2">
+                <input 
+                  type="file" 
+                  id="pdf-upload"
+                  accept=".pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      toast.info('Funcionalidade em desenvolvimento - envie o PDF para análise manual');
+                    }
+                  }}
+                />
+                <Button 
+                  onClick={() => document.getElementById('pdf-upload').click()}
+                  variant="ghost"
+                  size="sm"
+                  className="text-emerald-700 hover:bg-emerald-100"
+                >
+                  📄 Importar PDF do Alerta
+                </Button>
               </div>
             </div>
-            <Button 
-              onClick={handleManualSync}
-              disabled={isManualSyncRunning}
-              variant="outline"
-              size="sm"
-              className="whitespace-nowrap"
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${isManualSyncRunning ? 'animate-spin' : ''}`} />
-              Sincronizar Agora
-            </Button>
           </div>
         </CardContent>
       </Card>

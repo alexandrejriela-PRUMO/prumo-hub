@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
 
     const token = await signIn();
 
-    // Mode: explore — list all query fields
+    // Mode: explore — list all query fields (names only)
     if (mode === 'explore') {
       const data = await gql(token, `{
         __schema {
@@ -59,16 +59,18 @@ Deno.serve(async (req) => {
           }
         }
       }`);
-      return Response.json(data);
+      const fields = data.data.__schema.queryType.fields.map(f => ({
+        name: f.name,
+        args: f.args.map(a => a.name)
+      }));
+      return Response.json({ fields });
     }
 
-    // Mode: test_property — try fetching alerts with a CAR code
-    if (mode === 'test_property') {
-      const carCode = body.car || '';
-      // Try alertsByPublishDate with propertyCode filter
+    // Mode: test_alerts_by_date
+    if (mode === 'test_alerts_by_date') {
       const data = await gql(token, `
         query {
-          alertsByPublishDate(startDate: "2024-01-01", endDate: "2026-03-15") {
+          alertsByPublishDate(startDate: "2025-01-01", endDate: "2026-03-15") {
             alertCode
             areaHa
             publishedAt
@@ -77,6 +79,37 @@ Deno.serve(async (req) => {
           }
         }
       `);
+      return Response.json(data);
+    }
+
+    // Mode: test_property_query — try alertsByPublishDate with propertyCode
+    if (mode === 'test_property_query') {
+      const carCode = body.car || 'RS-4318408-7C3F9C94C26940E9B84DE5E6F6C11B36';
+      const data = await gql(token, `
+        query($propertyCode: String!, $startDate: BaseDate!, $endDate: BaseDate!) {
+          alertsByPublishDate(propertyCode: $propertyCode, startDate: $startDate, endDate: $endDate) {
+            alertCode
+            areaHa
+            publishedAt
+            detectedAt
+            source
+          }
+        }
+      `, { propertyCode: carCode, startDate: '2024-01-01', endDate: '2026-03-15' });
+      return Response.json(data);
+    }
+
+    // Mode: explore_type — introspect a specific type
+    if (mode === 'explore_type') {
+      const typeName = body.type || 'AlertsByPublishDate';
+      const data = await gql(token, `
+        query($name: String!) {
+          __type(name: $name) {
+            name
+            fields { name type { name kind ofType { name kind } } }
+          }
+        }
+      `, { name: typeName });
       return Response.json(data);
     }
 
@@ -94,10 +127,9 @@ Deno.serve(async (req) => {
     for (const property of propertiesWithCAR) {
       const carCode = property.car_number.trim();
 
-      // Query alerts for this specific property CAR
       const data = await gql(token, `
-        query getAlertsByProperty($propertyCode: String!) {
-          alertsByPublishDate(propertyCode: $propertyCode, startDate: "2024-01-01", endDate: "2026-12-31") {
+        query($propertyCode: String!, $startDate: BaseDate!, $endDate: BaseDate!) {
+          alertsByPublishDate(propertyCode: $propertyCode, startDate: $startDate, endDate: $endDate) {
             alertCode
             areaHa
             publishedAt
@@ -105,7 +137,11 @@ Deno.serve(async (req) => {
             source
           }
         }
-      `, { propertyCode: carCode });
+      `, {
+        propertyCode: carCode,
+        startDate: '2024-01-01',
+        endDate: new Date().toISOString().split('T')[0]
+      });
 
       if (data.errors || !data.data) continue;
 

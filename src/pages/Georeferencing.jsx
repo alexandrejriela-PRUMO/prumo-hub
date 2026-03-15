@@ -78,10 +78,13 @@ export default function Georeferencing() {
     initialData: [],
   });
 
+  // Para consultor usa consultorPropertyId, para produtor usa selectedProperty
+  const effectivePropertyId = isConsultor ? consultorPropertyId : selectedProperty;
+
   const { data: georeferences = [], isLoading } = useQuery({
-    queryKey: ['georeferencing', selectedProperty],
-    queryFn: () => base44.entities.Georeferencing.filter({ property_id: selectedProperty }),
-    enabled: !!selectedProperty,
+    queryKey: ['georeferencing', effectivePropertyId],
+    queryFn: () => base44.entities.Georeferencing.filter({ property_id: effectivePropertyId }),
+    enabled: !!effectivePropertyId,
     initialData: [],
   });
 

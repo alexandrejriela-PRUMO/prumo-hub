@@ -92,6 +92,12 @@ async function fetchAlertsByCAR(token, carCodes, startDate, endDate) {
 }
 
 Deno.serve(async (req) => {
+  const logs = [];
+  const log = (msg) => {
+    console.log(msg);
+    logs.push(msg);
+  };
+
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
@@ -101,12 +107,16 @@ Deno.serve(async (req) => {
     const properties = await base44.entities.Property.filter(filter);
     const propertiesWithCAR = properties.filter(p => p.car_number);
 
+    log(`✓ Usuário: ${user.email}`);
+    log(`✓ Total de propriedades: ${properties.length}`);
+    log(`✓ Propriedades com CAR: ${propertiesWithCAR.length}`);
+
     if (propertiesWithCAR.length === 0) {
-      return Response.json({ message: 'Nenhum CAR cadastrado para monitorar.', synced: 0 });
+      return Response.json({ message: 'Nenhum CAR cadastrado para monitorar.', synced: 0, logs });
     }
 
     const carCodes = propertiesWithCAR.map(p => p.car_number.trim());
-    console.log('🔍 CARs a monitorar:', carCodes);
+    log(`🔍 CARs a monitorar: ${carCodes.join(', ')}`);
 
     // Default: last 12 months
     const endDate = new Date().toISOString().split('T')[0];
@@ -114,13 +124,13 @@ Deno.serve(async (req) => {
     startDateObj.setFullYear(startDateObj.getFullYear() - 1);
     const startDate = startDateObj.toISOString().split('T')[0];
 
-    console.log(`📅 Período de busca: ${startDate} a ${endDate}`);
+    log(`📅 Período de busca: ${startDate} a ${endDate}`);
 
     const token = await signIn();
-    console.log('✅ Autenticação MapBiomas OK');
+    log('✅ Autenticação MapBiomas OK');
     
     const alerts = await fetchAlertsByCAR(token, carCodes, startDate, endDate);
-    console.log(`📡 Alertas retornados pela API: ${alerts.length}`);
+    log(`📡 Alertas retornados pela API: ${alerts.length}`);
 
     let totalNew = 0;
 

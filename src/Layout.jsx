@@ -102,17 +102,30 @@ const produtorNavItems = [
 
 // Equipe do consultor: igual ao consultor, sem "Minha Equipe"
 const equipeNavItems = [
-  { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
-  { name: 'Meus Clientes', page: 'ConsultorClients', icon: Users },
-  { name: 'Gestão de Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
-  { name: 'Meus Contratos', page: 'Contracts', icon: ScrollText },
-  { name: 'Documentos', page: 'DocumentsHub', icon: FileText },
-  { name: 'Licenças Ambientais', page: 'Licenses', icon: FileCheck },
-  { name: 'Gestão do CAR', page: 'CARModule', icon: TreePine },
-  { name: 'Processos', page: 'Processes', icon: Scale },
-  { name: 'Alertas de Infrações', page: 'EnvironmentalAlerts', icon: AlertTriangle },
-  { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: FileCheck },
-  { name: 'PRAD - Recuperação de Área', page: 'PRAD', icon: Leaf },
+  {
+    name: 'Meu Escritório',
+    icon: Briefcase,
+    children: [
+      { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
+      { name: 'Meus Clientes', page: 'ConsultorClients', icon: Users },
+      { name: 'Gestão de Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
+      { name: 'Meus Contratos', page: 'Contracts', icon: ScrollText },
+    ]
+  },
+  {
+    name: 'Central da Propriedade',
+    icon: Building,
+    children: [
+      { name: 'Documentos', page: 'DocumentsHub', icon: FileText },
+      { name: 'Licenças Ambientais', page: 'Licenses', icon: FileCheck },
+      { name: 'Gestão do CAR', page: 'CARModule', icon: TreePine },
+      { name: 'Processos', page: 'Processes', icon: Scale },
+      { name: 'Alertas de Infrações', page: 'EnvironmentalAlerts', icon: AlertTriangle },
+      { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: FileCheck },
+      { name: 'PRAD - Recuperação de Área', page: 'PRAD', icon: Leaf },
+      { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
+    ]
+  },
   { 
     name: 'Agricultura de Precisão', 
     icon: Sparkles,
@@ -131,7 +144,6 @@ const equipeNavItems = [
       { name: 'ESG para o Agro', page: 'ESGAgro', icon: TrendingUp },
     ]
   },
-  { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
   { name: 'Relatórios', page: 'Reports', icon: FileText },
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },

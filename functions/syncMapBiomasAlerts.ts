@@ -59,41 +59,50 @@ async function gql(token, query, variables = {}) {
 }
 
 async function fetchAlertsByCAR(token, carCodes, startDate, endDate, log) {
-  const data = await gql(token, `
-    query($carCodes: [ID!], $startDate: BaseDate, $endDate: BaseDate) {
-      alerts(carCodes: $carCodes, startDate: $startDate, endDate: $endDate, limit: 100) {
-        collection {
-          alertCode
-          areaHa
-          publishedAt
-          detectedAt
-          sources
-          statusName
-          ruralProperties {
-            carCode
+  let allAlerts = [];
+
+  // Fazer queries individuais por CAR para maior precisão
+  for (const carCode of carCodes) {
+    log(`🔍 Buscando alertas para CAR: ${carCode}`);
+    
+    const data = await gql(token, `
+      query($carCode: ID!, $startDate: BaseDate, $endDate: BaseDate) {
+        alerts(carCode: $carCode, startDate: $startDate, endDate: $endDate, limit: 100) {
+          collection {
+            alertCode
             areaHa
-            stateAcronym
+            publishedAt
+            detectedAt
+            sources
+            statusName
+            ruralProperties {
+              carCode
+              areaHa
+              stateAcronym
+            }
+          }
+          metadata {
+            currentPage
+            limitValue
+            totalCount
+            totalPages
           }
         }
-        metadata {
-          currentPage
-          limitValue
-          totalCount
-          totalPages
-        }
       }
-    }
-  `, { carCodes, startDate, endDate });
+    `, { carCode, startDate, endDate });
 
-  if (data.errors) {
-    log(`❌ Erro na query GraphQL: ${JSON.stringify(data.errors)}`);
-    throw new Error('Alerts query failed: ' + JSON.stringify(data.errors));
+    if (data.errors) {
+      log(`⚠️ Erro para CAR ${carCode}: ${JSON.stringify(data.errors)}`);
+      continue;
+    }
+    
+    const alerts = data.data?.alerts?.collection || [];
+    log(`  ✓ ${alerts.length} alerta(s) encontrado(s)`);
+    allAlerts = allAlerts.concat(alerts);
   }
-  
-  const alerts = data.data?.alerts?.collection || [];
-  log(`✓ API retornou ${alerts.length} alerta(s) para ${carCodes.length} CAR(s)`);
-  
-  return alerts;
+
+  log(`✓ Total de alertas após busca individual: ${allAlerts.length}`);
+  return allAlerts;
 }
 
 Deno.serve(async (req) => {

@@ -664,7 +664,10 @@ function GeneralInfoCard({ localGeo, editingSection, setEditingSection, saveMult
               </div>
               <div className="md:col-span-2"><Label className="text-xs">Observações</Label><Textarea value={form.notes} onChange={e => setForm(p => ({...p, notes: e.target.value}))} rows={2} /></div>
             </div>
-            <div className="flex justify-end gap-2"><Button size="sm" variant="outline" onClick={() => setEditingSection(null)}>Cancelar</Button><Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => saveMulti(form)}>Salvar</Button></div>
+            <div className="flex justify-end gap-2"><Button size="sm" variant="outline" onClick={() => setEditingSection(null)}>Cancelar</Button><Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => saveMulti({
+              ...form,
+              georeferenced_perimeter: form.georeferenced_perimeter !== '' ? parseFloat(form.georeferenced_perimeter) : null,
+            })}>Salvar</Button></div>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 gap-4">

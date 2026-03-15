@@ -155,6 +155,14 @@ Deno.serve(async (req) => {
     
     const alerts = await fetchAlertsByCAR(token, carCodes, startDate, endDate, log);
     log(`📡 Total de alertas retornados: ${alerts.length}`);
+    
+    if (alerts.length > 0) {
+      log(`📋 Exemplos de CARs retornados pela API:`);
+      alerts.slice(0, 3).forEach(a => {
+        const apiCars = (a.ruralProperties || []).map(r => r.carCode).join(', ');
+        log(`  - ${a.alertCode}: ${apiCars}`);
+      });
+    }
 
     let totalNew = 0;
 
@@ -162,19 +170,20 @@ Deno.serve(async (req) => {
       const alertTitle = `Alerta MapBiomas #${alert.alertCode}`;
       console.log(`⚠️ Processando alerta: ${alertTitle}`);
 
-      // Find matching property by CAR code
-      const matchingCarCode = (alert.ruralProperties || [])
-        .map(r => r.carCode?.trim())
-        .find(code => allCars.some(item => item.car === code));
+      // Find matching property by CAR code - case insensitive
+      const apiCars = (alert.ruralProperties || []).map(r => r.carCode?.trim().toUpperCase()).filter(Boolean);
+      const matchingCarCode = apiCars.find(code => 
+        allCars.some(item => item.car.toUpperCase() === code)
+      );
 
-      console.log(`🏠 CAR encontrado: ${matchingCarCode}`);
+      console.log(`🏠 CARs da API: [${apiCars.join(', ')}] | Encontrado: ${matchingCarCode || 'não'}`);
 
       const property = matchingCarCode
-        ? propertiesWithCAR.find(p => 
-            (p.car_numbers?.some(c => c.trim() === matchingCarCode)) || 
-            (p.car_number?.trim() === matchingCarCode)
-          )
-        : propertiesWithCAR[0];
+       ? propertiesWithCAR.find(p => 
+           (p.car_numbers?.some(c => c.trim().toUpperCase() === matchingCarCode)) || 
+           (p.car_number?.trim().toUpperCase() === matchingCarCode)
+         )
+       : propertiesWithCAR[0];
 
       if (!property) {
         console.log('❌ Propriedade não encontrada para CAR:', matchingCarCode);

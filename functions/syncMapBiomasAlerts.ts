@@ -40,8 +40,8 @@ async function gql(token, query, variables = {}) {
 
 async function fetchAlertsByCAR(token, carCodes, startDate, endDate) {
   const data = await gql(token, `
-    query($propertyCodes: [ID!], $startDate: BaseDate, $endDate: BaseDate) {
-      alerts(propertyCodes: $propertyCodes, startDate: $startDate, endDate: $endDate, limit: 100) {
+    query($carCodes: [ID!], $startDate: BaseDate, $endDate: BaseDate) {
+      alerts(carCodes: $carCodes, startDate: $startDate, endDate: $endDate, limit: 100) {
         collection {
           alertCode
           areaHa
@@ -63,7 +63,7 @@ async function fetchAlertsByCAR(token, carCodes, startDate, endDate) {
         }
       }
     }
-  `, { propertyCodes: carCodes, startDate, endDate });
+  `, { carCodes: carCodes, startDate, endDate });
 
   if (data.errors) throw new Error('Alerts query failed: ' + JSON.stringify(data.errors));
   return data.data?.alerts?.collection || [];

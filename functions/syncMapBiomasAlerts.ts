@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
 
     const filter = user.role === 'admin' ? {} : { owner_email: user.email };
     const properties = await base44.entities.Property.filter(filter);
-    const propertiesWithCAR = properties.filter(p => p.car_number);
+    const propertiesWithCAR = properties.filter(p => p.car_numbers?.length > 0 || p.car_number);
 
     log(`✓ Usuário: ${user.email}`);
     log(`✓ Total de propriedades: ${properties.length}`);
@@ -123,9 +123,17 @@ Deno.serve(async (req) => {
     }
 
     // Filtrar apenas CARs válidos (formato: RS-NNNNNNN-XXXX.XXXX.XXXX.XXXX.XXXX.XXXX.XXXX.XXXX)
-    const carCodes = propertiesWithCAR
-      .map(p => p.car_number.trim())
-      .filter(car => /^[A-Z]{2}-\d{7}-[A-F0-9]{4}\.[A-F0-9]{4}\.[A-F0-9]{4}\.[A-F0-9]{4}\.[A-F0-9]{4}\.[A-F0-9]{4}\.[A-F0-9]{4}\.[A-F0-9]{4}$/.test(car));
+    const allCars = [];
+    for (const p of propertiesWithCAR) {
+      if (p.car_numbers?.length > 0) {
+        allCars.push(...p.car_numbers.map(c => ({ car: c.trim(), propertyId: p.id })));
+      } else if (p.car_number) {
+        allCars.push({ car: p.car_number.trim(), propertyId: p.id });
+      }
+    }
+    const carCodes = allCars
+      .filter(item => /^[A-Z]{2}-\d{7}-[A-F0-9]{4}\.[A-F0-9]{4}\.[A-F0-9]{4}\.[A-F0-9]{4}\.[A-F0-9]{4}\.[A-F0-9]{4}\.[A-F0-9]{4}\.[A-F0-9]{4}$/.test(item.car))
+      .map(item => item.car);
     
     log(`🔍 CARs válidos: ${carCodes.length}/${propertiesWithCAR.length}`);
     if (carCodes.length === 0) {
@@ -157,12 +165,15 @@ Deno.serve(async (req) => {
       // Find matching property by CAR code
       const matchingCarCode = (alert.ruralProperties || [])
         .map(r => r.carCode?.trim())
-        .find(code => carCodes.includes(code));
+        .find(code => allCars.some(item => item.car === code));
 
       console.log(`🏠 CAR encontrado: ${matchingCarCode}`);
 
       const property = matchingCarCode
-        ? propertiesWithCAR.find(p => p.car_number.trim() === matchingCarCode)
+        ? propertiesWithCAR.find(p => 
+            (p.car_numbers?.some(c => c.trim() === matchingCarCode)) || 
+            (p.car_number?.trim() === matchingCarCode)
+          )
         : propertiesWithCAR[0];
 
       if (!property) {

@@ -49,12 +49,10 @@ async function fetchAlertsByCAR(token, carCodes, startDate, endDate) {
           detectedAt
           sources
           statusName
-          deforestationClass
-          city
-          state
-          biome
           ruralProperties {
-            propertyCode
+            carCode
+            areaHa
+            stateAcronym
           }
         }
         metadata {
@@ -76,51 +74,6 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
-    let body = {};
-    try { body = await req.json(); } catch (_) {}
-
-    // Debug: explore a type
-    if (body.mode === 'explore_type') {
-      const token = await signIn();
-      const data = await gql(token, `
-        query($name: String!) {
-          __type(name: $name) {
-            name
-            fields { name type { name kind ofType { name kind } } }
-          }
-        }
-      `, { name: body.type || 'AlertData' });
-      const fields = data.data?.__type?.fields?.map(f => f.name) || data;
-      return Response.json({ fields });
-    }
-
-    // Debug: test real alerts query with correct fields
-    if (body.mode === 'test_real') {
-      const token = await signIn();
-      const carCodes = body.cars || [];
-      const data = await gql(token, `
-        query($propertyCodes: [ID!], $startDate: BaseDate, $endDate: BaseDate) {
-          alerts(propertyCodes: $propertyCodes, startDate: $startDate, endDate: $endDate, limit: 3) {
-            collection {
-              alertCode
-              areaHa
-              publishedAt
-              detectedAt
-              sources
-              statusName
-              ruralProperties {
-                carCode
-                areaHa
-                stateAcronym
-              }
-            }
-            metadata { totalCount }
-          }
-        }
-      `, { propertyCodes: carCodes, startDate: '2023-01-01', endDate: '2026-03-15' });
-      return Response.json(data);
-    }
 
     const filter = user.role === 'admin' ? {} : { owner_email: user.email };
     const properties = await base44.entities.Property.filter(filter);
@@ -146,13 +99,13 @@ Deno.serve(async (req) => {
     for (const alert of alerts) {
       const alertTitle = `Alerta MapBiomas #${alert.alertCode}`;
 
-      // Find matching property
-      const matchingCode = (alert.ruralProperties || [])
-        .map(r => r.propertyCode?.trim())
+      // Find matching property by CAR code
+      const matchingCarCode = (alert.ruralProperties || [])
+        .map(r => r.carCode?.trim())
         .find(code => carCodes.includes(code));
 
-      const property = matchingCode
-        ? propertiesWithCAR.find(p => p.car_number.trim() === matchingCode)
+      const property = matchingCarCode
+        ? propertiesWithCAR.find(p => p.car_number.trim() === matchingCarCode)
         : propertiesWithCAR[0];
 
       if (!property) continue;
@@ -166,13 +119,14 @@ Deno.serve(async (req) => {
 
       const areaHa = parseFloat(alert.areaHa || 0);
       const sources = Array.isArray(alert.sources) ? alert.sources.join(', ') : (alert.sources || 'MapBiomas');
+      const propertyState = (alert.ruralProperties?.[0]?.stateAcronym || '').toUpperCase();
 
       await base44.entities.EnvironmentalAlert.create({
         property_id: property.id,
         alert_type: 'Desmatamento',
         severity: areaHa > 50 ? 'Crítica' : areaHa > 10 ? 'Alta' : areaHa > 3 ? 'Média' : 'Baixa',
         title: alertTitle,
-        description: `Área: ${areaHa.toFixed(2)} ha | Classe: ${alert.deforestationClass || 'N/A'} | Fontes: ${sources} | ${alert.city || ''}, ${alert.state || ''} | Bioma: ${alert.biome || 'N/A'}`,
+        description: `Área: ${areaHa.toFixed(2)} ha | Fontes: ${sources} | Estado: ${propertyState} | Status: ${alert.statusName || 'N/A'}`,
         affected_area_hectares: areaHa,
         detection_date: (alert.detectedAt || alert.publishedAt || new Date().toISOString()).split('T')[0],
         status: 'Aberto',

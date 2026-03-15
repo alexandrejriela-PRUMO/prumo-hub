@@ -475,20 +475,27 @@ export default function Layout({ children, currentPageName }) {
                   const hasActiveChild = item.children.some(child => child.page === currentPageName);
                   const Icon = item.icon;
                   return (
-                    <div key={itemKey}>
+                    <div key={itemKey} className="mb-1">
                       <button
                         onClick={() => setExpandedMenus(prev => ({ ...prev, [item.name]: !prev[item.name] }))}
                         className={cn(
-                          "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
-                          hasActiveChild ? "bg-emerald-800/50 text-white" : "text-emerald-200 hover:bg-emerald-800/50 hover:text-white"
+                          "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group border",
+                          hasActiveChild
+                            ? "bg-emerald-700/60 text-white border-emerald-600/60 shadow-sm"
+                            : "text-emerald-100 hover:bg-emerald-800/60 hover:text-white border-emerald-800/40 hover:border-emerald-600/40"
                         )}
                       >
-                        <Icon className={cn("w-5 h-5", hasActiveChild ? "text-amber-400" : "text-emerald-400 group-hover:text-amber-400")} />
-                        <span className="font-medium text-sm">{item.name}</span>
-                        <ChevronDown className={cn("w-4 h-4 ml-auto transition-transform", isExpanded && "rotate-180")} />
+                        <div className={cn(
+                          "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0",
+                          hasActiveChild ? "bg-amber-500/20" : "bg-emerald-800/60 group-hover:bg-emerald-700/60"
+                        )}>
+                          <Icon className={cn("w-4 h-4", hasActiveChild ? "text-amber-400" : "text-emerald-400 group-hover:text-amber-400")} />
+                        </div>
+                        <span className="font-semibold text-xs uppercase tracking-wider">{item.name}</span>
+                        <ChevronDown className={cn("w-3.5 h-3.5 ml-auto transition-transform text-emerald-400", isExpanded && "rotate-180")} />
                       </button>
                       {isExpanded && (
-                        <div className="mt-1 space-y-1">
+                        <div className="mt-1 ml-3 pl-3 border-l-2 border-emerald-700/50 space-y-0.5 py-1">
                           {item.children.map((child) => {
                             const isActive = currentPageName === child.page;
                             const ChildIcon = child.icon;
@@ -498,15 +505,15 @@ export default function Layout({ children, currentPageName }) {
                                 to={createPageUrl(child.page)}
                                 onClick={() => setSidebarOpen(false)}
                                 className={cn(
-                                  "flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 group",
+                                  "flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-200 group",
                                   isActive
-                                    ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30"
-                                    : "text-emerald-200 hover:bg-emerald-800/30 hover:text-white"
+                                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                                    : "text-emerald-300 hover:bg-emerald-800/40 hover:text-white border border-transparent"
                                 )}
                               >
-                                <ChildIcon className={cn("w-4 h-4", isActive ? "text-white" : "text-emerald-400 group-hover:text-amber-400")} />
-                                <span className="font-medium text-xs">{child.name}</span>
-                                {isActive && <ChevronRight className="w-3 h-3 ml-auto" />}
+                                <ChildIcon className={cn("w-3.5 h-3.5 flex-shrink-0", isActive ? "text-amber-400" : "text-emerald-500 group-hover:text-emerald-300")} />
+                                <span className={cn("text-xs leading-tight", isActive ? "font-semibold" : "font-normal")}>{child.name}</span>
+                                {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />}
                               </Link>
                             );
                           })}

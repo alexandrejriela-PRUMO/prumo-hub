@@ -6,6 +6,8 @@ async function signIn() {
   const email = Deno.env.get('MAPBIOMAS_EMAIL');
   const password = Deno.env.get('MAPBIOMAS_PASSWORD');
 
+  console.log('🔐 Tentando autenticar MapBiomas...');
+
   const res = await fetch(GRAPHQL_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -22,7 +24,19 @@ async function signIn() {
   });
 
   const data = await res.json();
-  if (data.errors) throw new Error('Auth failed: ' + JSON.stringify(data.errors));
+  console.log('📋 Auth Response:', { status: res.status, hasErrors: !!data.errors, hasToken: !!data.data?.signIn?.token });
+  
+  if (data.errors) {
+    console.log('❌ Auth Errors:', JSON.stringify(data.errors));
+    throw new Error('Auth failed: ' + JSON.stringify(data.errors));
+  }
+  
+  if (!data.data?.signIn?.token) {
+    console.log('❌ Nenhum token retornado');
+    throw new Error('No token in response: ' + JSON.stringify(data));
+  }
+  
+  console.log('✅ Token obtido com sucesso');
   return data.data.signIn.token;
 }
 

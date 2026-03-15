@@ -146,7 +146,7 @@ export default function Home() {
     let filteredLicenses = licenses.filter(l => l.property_id === selectedPropertyId);
     let filteredDocuments = documents.filter(d => d.property_id === selectedPropertyId);
     let filteredAlerts = environmentalAlerts.filter(a => a.property_id === selectedPropertyId);
-    let filteredProcesses = [...processes];
+    let filteredProcesses = processes.filter(p => p.property_id === selectedPropertyId);
 
     // Date filter
     if (filters.period !== 'all') {

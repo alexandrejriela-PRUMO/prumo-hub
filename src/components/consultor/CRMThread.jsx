@@ -6,14 +6,6 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
 
-function renderMessage(text) {
-  const parts = text.split(/(@[\w\s]+)/g);
-  return parts.map((part, i) =>
-    part.startsWith('@')
-      ? <span key={i} className="font-semibold text-amber-300">{part}</span>
-      : <span key={i}>{part}</span>
-  );
-}
 
 export default function CRMThread({ item, itemType, teamMembers = [], currentUser, onSaveThread }) {
   const [open, setOpen] = useState(false);

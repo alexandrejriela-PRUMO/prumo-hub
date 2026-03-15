@@ -80,17 +80,33 @@ Deno.serve(async (req) => {
     let body = {};
     try { body = await req.json(); } catch (_) {}
 
-    // Debug: explore a type
-    if (body.mode === 'explore_type') {
+    // Debug: test real alerts query with minimal fields
+    if (body.mode === 'test_real') {
       const token = await signIn();
+      const carCodes = body.cars || [];
       const data = await gql(token, `
-        query($name: String!) {
-          __type(name: $name) {
-            name
-            fields { name type { name kind ofType { name kind } } }
+        query($propertyCodes: [ID!], $startDate: BaseDate, $endDate: BaseDate) {
+          alerts(propertyCodes: $propertyCodes, startDate: $startDate, endDate: $endDate, limit: 3) {
+            collection {
+              alertCode
+              areaHa
+              publishedAt
+              detectedAt
+              sources
+              statusName
+              ruralProperties {
+                code
+                carCode
+              }
+              territories {
+                name
+                category
+              }
+            }
+            metadata { totalCount }
           }
         }
-      `, { name: body.type || 'AlertData' });
+      `, { propertyCodes: carCodes, startDate: '2023-01-01', endDate: '2026-03-15' });
       return Response.json(data);
     }
 

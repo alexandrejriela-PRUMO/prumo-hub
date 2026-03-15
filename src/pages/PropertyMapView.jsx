@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, GeoJSON, LayersControl, useMap, Marker, Popup, FeatureGroup } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, useMap, Marker, Popup } from 'react-leaflet';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MapPin, Layers, Info, AlertTriangle, TreePine, Droplets, RefreshCw } from 'lucide-react';
+import { MapPin, Layers, Info, TreePine, Droplets, Upload, Download, X, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { kml } from '@tmcw/togeojson';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-// Fix leaflet default icon
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -20,12 +20,15 @@ L.Icon.Default.mergeOptions({
 });
 
 const LAYER_STYLES = {
-  car: { color: '#f59e0b', weight: 3, fillOpacity: 0.08, fillColor: '#f59e0b', dashArray: null },
+  car: { color: '#f59e0b', weight: 3, fillOpacity: 0.08, fillColor: '#f59e0b' },
   app: { color: '#3b82f6', weight: 2, fillOpacity: 0.2, fillColor: '#3b82f6' },
   legalReserve: { color: '#10b981', weight: 2, fillOpacity: 0.2, fillColor: '#10b981' },
   recovery: { color: '#ef4444', weight: 2, fillOpacity: 0.2, fillColor: '#ef4444' },
   consolidated: { color: '#8b5cf6', weight: 2, fillOpacity: 0.15, fillColor: '#8b5cf6' },
 };
+
+// Random colors for user-uploaded KML layers
+const KML_COLORS = ['#e11d48', '#0284c7', '#7c3aed', '#b45309', '#0f766e', '#be123c', '#1d4ed8'];
 
 function FitBoundsLayer({ geoJson }) {
   const map = useMap();
@@ -40,24 +43,32 @@ function FitBoundsLayer({ geoJson }) {
   return null;
 }
 
-function LayerLegend({ activeLayers }) {
-  const items = [
-    { key: 'car', label: 'CAR (Limite da Propriedade)', color: '#f59e0b' },
-    { key: 'app', label: 'APP (Área de Preservação)', color: '#3b82f6' },
+function LayerLegend({ activeLayers, kmlLayers }) {
+  const builtins = [
+    { key: 'car', label: 'CAR (Limite)', color: '#f59e0b' },
+    { key: 'app', label: 'APP', color: '#3b82f6' },
     { key: 'legalReserve', label: 'Reserva Legal', color: '#10b981' },
-    { key: 'recovery', label: 'Área em Recuperação', color: '#ef4444' },
-    { key: 'consolidated', label: 'Área Consolidada', color: '#8b5cf6' },
-  ];
-  const visible = items.filter(i => activeLayers[i.key]);
-  if (!visible.length) return null;
+    { key: 'recovery', label: 'Recuperação', color: '#ef4444' },
+    { key: 'consolidated', label: 'Consolidada', color: '#8b5cf6' },
+  ].filter(i => activeLayers[i.key]);
+
+  const kmlVisible = kmlLayers.filter(l => l.visible);
+  if (!builtins.length && !kmlVisible.length) return null;
+
   return (
-    <div className="absolute bottom-8 left-4 z-[1000] bg-white/95 backdrop-blur rounded-xl shadow-lg p-3 border border-gray-200 max-w-[200px]">
+    <div className="absolute bottom-8 left-4 z-[1000] bg-white/95 backdrop-blur rounded-xl shadow-lg p-3 border border-gray-200 max-w-[220px]">
       <p className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Legenda</p>
       <div className="space-y-1.5">
-        {visible.map(i => (
+        {builtins.map(i => (
           <div key={i.key} className="flex items-center gap-2">
             <div className="w-4 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: i.color, opacity: 0.7 }} />
             <span className="text-xs text-gray-600 leading-tight">{i.label}</span>
+          </div>
+        ))}
+        {kmlVisible.map(l => (
+          <div key={l.id} className="flex items-center gap-2">
+            <div className="w-4 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: l.color, opacity: 0.7 }} />
+            <span className="text-xs text-gray-600 leading-tight truncate max-w-[150px]">{l.name}</span>
           </div>
         ))}
       </div>
@@ -65,17 +76,58 @@ function LayerLegend({ activeLayers }) {
   );
 }
 
+// Convert GeoJSON to KML string
+function geojsonToKml(geojson, name = 'Camada') {
+  const features = geojson.type === 'FeatureCollection' ? geojson.features : [geojson];
+  const placemarks = features.map((f, i) => {
+    const geom = f.geometry || f;
+    const coordsToKml = (coords) => coords.map(c => `${c[0]},${c[1]},0`).join(' ');
+    let geomKml = '';
+    if (geom.type === 'Polygon') {
+      const outer = coordsToKml(geom.coordinates[0]);
+      geomKml = `<Polygon><outerBoundaryIs><LinearRing><coordinates>${outer}</coordinates></LinearRing></outerBoundaryIs></Polygon>`;
+    } else if (geom.type === 'MultiPolygon') {
+      geomKml = geom.coordinates.map(poly => {
+        const outer = coordsToKml(poly[0]);
+        return `<Polygon><outerBoundaryIs><LinearRing><coordinates>${outer}</coordinates></LinearRing></outerBoundaryIs></Polygon>`;
+      }).join('');
+    } else if (geom.type === 'LineString') {
+      geomKml = `<LineString><coordinates>${coordsToKml(geom.coordinates)}</coordinates></LineString>`;
+    } else if (geom.type === 'Point') {
+      geomKml = `<Point><coordinates>${geom.coordinates[0]},${geom.coordinates[1]},0</coordinates></Point>`;
+    }
+    return `<Placemark><name>${name} ${i + 1}</name>${geomKml}</Placemark>`;
+  });
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document><name>${name}</name>${placemarks.join('')}</Document>
+</kml>`;
+}
+
+function downloadKml(content, filename) {
+  const blob = new Blob([content], { type: 'application/vnd.google-earth.kml+xml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function PropertyMapView() {
   const [user, setUser] = useState(null);
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
   const [activeLayers, setActiveLayers] = useState({
-    satellite: false,
+    satellite: true,
     car: true,
     app: true,
     legalReserve: true,
     recovery: false,
     consolidated: false,
   });
+  const [kmlLayers, setKmlLayers] = useState([]); // { id, name, geojson, color, visible }
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -108,6 +160,8 @@ export default function PropertyMapView() {
   });
 
   const toggleLayer = (key) => setActiveLayers(prev => ({ ...prev, [key]: !prev[key] }));
+  const toggleKmlLayer = (id) => setKmlLayers(prev => prev.map(l => l.id === id ? { ...l, visible: !l.visible } : l));
+  const removeKmlLayer = (id) => setKmlLayers(prev => prev.filter(l => l.id !== id));
 
   const parseGeoJson = (str) => {
     if (!str) return null;
@@ -122,11 +176,49 @@ export default function PropertyMapView() {
     return [-15.7801, -47.9292];
   };
 
+  // Handle KML file upload
+  const handleKmlUpload = (e) => {
+    const files = Array.from(e.target.files);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(ev.target.result, 'text/xml');
+        const geojson = kml(doc);
+        if (geojson && geojson.features?.length > 0) {
+          const color = KML_COLORS[kmlLayers.length % KML_COLORS.length];
+          setKmlLayers(prev => [...prev, {
+            id: Date.now() + Math.random(),
+            name: file.name.replace('.kml', ''),
+            geojson,
+            color,
+            visible: true,
+            file,
+          }]);
+        }
+      };
+      reader.readAsText(file);
+    });
+    e.target.value = '';
+  };
+
+  // Export a specific builtin layer as KML
+  const exportBuiltinKml = (key, label) => {
+    let gj = null;
+    if (key === 'car') gj = parseGeoJson(selectedProperty?.boundaries);
+    else if (key === 'app') gj = parseGeoJson(carData?.map_layers?.app_layer_url);
+    else if (key === 'legalReserve') gj = parseGeoJson(carData?.map_layers?.legal_reserve_url);
+    else if (key === 'recovery') gj = parseGeoJson(carData?.map_layers?.recovery_area_url);
+    else if (key === 'consolidated') gj = parseGeoJson(carData?.map_layers?.consolidated_area_url);
+    if (!gj) return alert('Nenhum dado disponível para exportar esta camada.');
+    const kmlStr = geojsonToKml(gj, label);
+    downloadKml(kmlStr, `${selectedProperty?.property_name || 'propriedade'}_${label}.kml`);
+  };
+
   const carGeoJson = parseGeoJson(selectedProperty?.boundaries);
   const carLayers = carData?.map_layers;
 
-  const layerButtons = [
-    { key: 'satellite', label: 'Satélite', icon: '🛰️' },
+  const builtinLayerButtons = [
     { key: 'car', label: 'CAR', icon: '📋' },
     { key: 'app', label: 'APP', icon: '💧' },
     { key: 'legalReserve', label: 'Reserva Legal', icon: '🌳' },
@@ -143,7 +235,7 @@ export default function PropertyMapView() {
             <MapPin className="w-6 h-6 text-emerald-600" />
             Mapa Interativo da Propriedade
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">Visualize e analise camadas ambientais sobrepostas</p>
+          <p className="text-sm text-gray-500 mt-0.5">Visualize camadas ambientais com imagens de satélite</p>
         </div>
         {properties.length > 1 && (
           <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
@@ -172,15 +264,29 @@ export default function PropertyMapView() {
         </div>
       )}
 
-      {/* Layer Toggle Controls */}
+      {/* Layer Controls */}
       <Card className="border-gray-200">
-        <CardContent className="p-3">
+        <CardContent className="p-3 space-y-3">
+          {/* Satellite toggle + builtin layers */}
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5 mr-2">
+            <div className="flex items-center gap-1.5 mr-1">
               <Layers className="w-4 h-4 text-gray-500" />
-              <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Camadas:</span>
+              <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Base:</span>
             </div>
-            {layerButtons.map(({ key, label, icon }) => (
+            <button
+              onClick={() => toggleLayer('satellite')}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border",
+                activeLayers.satellite
+                  ? "bg-blue-600 text-white border-blue-500 shadow-sm"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-700"
+              )}
+            >
+              🛰️ Satélite Google
+            </button>
+            <div className="h-4 w-px bg-gray-200 mx-1" />
+            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Camadas:</span>
+            {builtinLayerButtons.map(({ key, label, icon }) => (
               <button
                 key={key}
                 onClick={() => toggleLayer(key)}
@@ -191,30 +297,73 @@ export default function PropertyMapView() {
                     : "bg-white text-gray-600 border-gray-200 hover:border-emerald-400 hover:text-emerald-700"
                 )}
               >
-                <span>{icon}</span>
-                {label}
+                <span>{icon}</span>{label}
               </button>
             ))}
+          </div>
+
+          {/* KML layers row */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide mr-1">KML:</span>
+            <input ref={fileInputRef} type="file" accept=".kml" multiple className="hidden" onChange={handleKmlUpload} />
+            <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5 border-dashed" onClick={() => fileInputRef.current?.click()}>
+              <Upload className="w-3 h-3" /> Importar KML
+            </Button>
+
+            {/* Uploaded KML layer chips */}
+            {kmlLayers.map(layer => (
+              <div
+                key={layer.id}
+                className="flex items-center gap-1 px-2 py-1 rounded-lg border text-xs font-medium cursor-pointer transition-all"
+                style={{
+                  backgroundColor: layer.visible ? layer.color + '22' : '#f9fafb',
+                  borderColor: layer.visible ? layer.color : '#e5e7eb',
+                  color: layer.visible ? layer.color : '#6b7280',
+                }}
+                onClick={() => toggleKmlLayer(layer.id)}
+              >
+                <FileText className="w-3 h-3" />
+                <span className="max-w-[120px] truncate">{layer.name}</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); removeKmlLayer(layer.id); }}
+                  className="ml-0.5 hover:opacity-70"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+
+            {/* Export buttons */}
+            {selectedProperty && (
+              <div className="ml-auto flex items-center gap-1.5">
+                <span className="text-xs text-gray-500">Exportar:</span>
+                {builtinLayerButtons.map(({ key, label }) => (
+                  <button
+                    key={key}
+                    onClick={() => exportBuiltinKml(key, label)}
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg border border-gray-200 text-xs text-gray-600 hover:border-emerald-400 hover:text-emerald-700 transition-all"
+                    title={`Exportar ${label} como KML`}
+                  >
+                    <Download className="w-3 h-3" />{label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
 
       {/* Map */}
-      <div className="relative rounded-2xl overflow-hidden border border-gray-200 shadow-lg" style={{ height: '520px' }}>
+      <div className="relative rounded-2xl overflow-hidden border border-gray-200 shadow-lg" style={{ height: '560px' }}>
         {selectedProperty ? (
           <>
-            <MapContainer
-              center={getCenter()}
-              zoom={13}
-              style={{ height: '100%', width: '100%' }}
-              zoomControl={true}
-            >
-              {/* Base Layers */}
+            <MapContainer center={getCenter()} zoom={13} style={{ height: '100%', width: '100%' }} zoomControl>
+              {/* Base layer: Google Satellite or OpenStreetMap */}
               {activeLayers.satellite ? (
                 <TileLayer
-                  url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                  attribution="Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community"
-                  maxZoom={19}
+                  url="https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
+                  attribution='&copy; <a href="https://maps.google.com">Google Earth</a>'
+                  maxZoom={20}
                 />
               ) : (
                 <TileLayer
@@ -223,64 +372,52 @@ export default function PropertyMapView() {
                 />
               )}
 
-              {/* CAR Boundary from property.boundaries */}
+              {/* CAR */}
               {activeLayers.car && carGeoJson && (
-                <GeoJSON
-                  key={`car-${selectedPropertyId}`}
-                  data={carGeoJson}
-                  style={LAYER_STYLES.car}
-                  onEachFeature={(feature, layer) => {
-                    layer.bindPopup(`<b>Limite CAR</b><br/>CAR: ${selectedProperty?.car_number || 'N/D'}`);
-                  }}
-                />
+                <GeoJSON key={`car-${selectedPropertyId}`} data={carGeoJson} style={LAYER_STYLES.car}
+                  onEachFeature={(_, layer) => layer.bindPopup(`<b>Limite CAR</b><br/>CAR: ${selectedProperty?.car_number || 'N/D'}`)} />
               )}
 
-              {/* APP Layer */}
-              {activeLayers.app && carLayers?.app_layer_url && (() => {
-                const gj = parseGeoJson(carLayers.app_layer_url);
-                return gj ? <GeoJSON key={`app-${selectedPropertyId}`} data={gj} style={LAYER_STYLES.app} onEachFeature={(_, l) => l.bindPopup('<b>APP</b><br/>Área de Preservação Permanente')} /> : null;
-              })()}
+              {/* APP */}
+              {activeLayers.app && (() => { const gj = parseGeoJson(carLayers?.app_layer_url); return gj ? <GeoJSON key={`app-${selectedPropertyId}`} data={gj} style={LAYER_STYLES.app} onEachFeature={(_, l) => l.bindPopup('<b>APP</b>')} /> : null; })()}
 
-              {/* Legal Reserve Layer */}
-              {activeLayers.legalReserve && carLayers?.legal_reserve_url && (() => {
-                const gj = parseGeoJson(carLayers.legal_reserve_url);
-                return gj ? <GeoJSON key={`rl-${selectedPropertyId}`} data={gj} style={LAYER_STYLES.legalReserve} onEachFeature={(_, l) => l.bindPopup('<b>Reserva Legal</b>')} /> : null;
-              })()}
+              {/* Reserva Legal */}
+              {activeLayers.legalReserve && (() => { const gj = parseGeoJson(carLayers?.legal_reserve_url); return gj ? <GeoJSON key={`rl-${selectedPropertyId}`} data={gj} style={LAYER_STYLES.legalReserve} onEachFeature={(_, l) => l.bindPopup('<b>Reserva Legal</b>')} /> : null; })()}
 
-              {/* Recovery Area Layer */}
-              {activeLayers.recovery && carLayers?.recovery_area_url && (() => {
-                const gj = parseGeoJson(carLayers.recovery_area_url);
-                return gj ? <GeoJSON key={`rec-${selectedPropertyId}`} data={gj} style={LAYER_STYLES.recovery} onEachFeature={(_, l) => l.bindPopup('<b>Área em Recuperação (PRAD)</b>')} /> : null;
-              })()}
+              {/* Recuperação */}
+              {activeLayers.recovery && (() => { const gj = parseGeoJson(carLayers?.recovery_area_url); return gj ? <GeoJSON key={`rec-${selectedPropertyId}`} data={gj} style={LAYER_STYLES.recovery} onEachFeature={(_, l) => l.bindPopup('<b>Área em Recuperação</b>')} /> : null; })()}
 
-              {/* Consolidated Area Layer */}
-              {activeLayers.consolidated && carLayers?.consolidated_area_url && (() => {
-                const gj = parseGeoJson(carLayers.consolidated_area_url);
-                return gj ? <GeoJSON key={`cons-${selectedPropertyId}`} data={gj} style={LAYER_STYLES.consolidated} onEachFeature={(_, l) => l.bindPopup('<b>Área Consolidada</b>')} /> : null;
-              })()}
+              {/* Consolidada */}
+              {activeLayers.consolidated && (() => { const gj = parseGeoJson(carLayers?.consolidated_area_url); return gj ? <GeoJSON key={`cons-${selectedPropertyId}`} data={gj} style={LAYER_STYLES.consolidated} onEachFeature={(_, l) => l.bindPopup('<b>Área Consolidada</b>')} /> : null; })()}
 
-              {/* Property center marker */}
+              {/* KML layers uploaded by user */}
+              {kmlLayers.filter(l => l.visible).map(layer => (
+                <GeoJSON
+                  key={layer.id}
+                  data={layer.geojson}
+                  style={{ color: layer.color, weight: 2, fillOpacity: 0.18, fillColor: layer.color }}
+                  onEachFeature={(feature, l) => {
+                    const name = feature.properties?.name || layer.name;
+                    const desc = feature.properties?.description || '';
+                    l.bindPopup(`<b>${name}</b>${desc ? `<br/>${desc}` : ''}`);
+                  }}
+                />
+              ))}
+
+              {/* Center marker */}
               {selectedProperty?.coordinates && (() => {
                 const [lat, lng] = selectedProperty.coordinates.split(',').map(Number);
-                if (!isNaN(lat) && !isNaN(lng)) {
-                  return (
-                    <Marker position={[lat, lng]}>
-                      <Popup>
-                        <b>{selectedProperty.property_name}</b><br />
-                        {selectedProperty.city}, {selectedProperty.state}
-                      </Popup>
-                    </Marker>
-                  );
-                }
-                return null;
+                if (!isNaN(lat) && !isNaN(lng)) return (
+                  <Marker position={[lat, lng]}>
+                    <Popup><b>{selectedProperty.property_name}</b><br />{selectedProperty.city}, {selectedProperty.state}</Popup>
+                  </Marker>
+                );
               })()}
 
-              {/* Auto-fit bounds */}
               {carGeoJson && <FitBoundsLayer geoJson={carGeoJson} />}
             </MapContainer>
 
-            {/* Legend */}
-            <LayerLegend activeLayers={activeLayers} />
+            <LayerLegend activeLayers={activeLayers} kmlLayers={kmlLayers} />
           </>
         ) : (
           <div className="h-full flex items-center justify-center bg-gray-50">
@@ -330,13 +467,12 @@ export default function PropertyMapView() {
         </Card>
       </div>
 
-      {/* Help Note */}
+      {/* Help */}
       <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-700">
         <Info className="w-4 h-4 mt-0.5 flex-shrink-0 text-blue-500" />
         <p>
-          Para exibir as camadas de APP, Reserva Legal e Recuperação, cadastre os polígonos GeoJSON na seção 
-          <strong> Gestão do CAR &gt; Camadas do Mapa</strong> da propriedade selecionada. 
-          O limite geral (CAR) é carregado automaticamente do campo <strong>Limites Geográficos</strong> da propriedade.
+          Importe arquivos <strong>.KML</strong> (ex: do Google Earth, SICAR, CAR) para sobrepor camadas diretamente no mapa. 
+          Use os botões <strong>Exportar</strong> para baixar qualquer camada cadastrada como KML compatível com o Google Earth.
         </p>
       </div>
     </div>

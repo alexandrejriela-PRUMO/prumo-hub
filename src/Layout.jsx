@@ -56,6 +56,7 @@ const consultorNavItems = [
 const produtorNavItems = [
   { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
   { name: 'Minhas Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
+  { name: 'Meus Contratos', page: 'Contracts', icon: ScrollText },
   { name: 'Documentos', page: 'DocumentsHub', icon: FileText },
   { name: 'Licenças Ambientais', page: 'Licenses', icon: FileCheck },
   { name: 'Processos', page: 'Processes', icon: Scale },

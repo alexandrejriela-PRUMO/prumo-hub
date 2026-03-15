@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 
-export default function RegularityThermometer({ property, licenses, documents, processes }) {
+export default function RegularityThermometer({ property, licenses, documents, processes, georeferencing = [] }) {
   const score = useMemo(() => {
     let totalScore = 0;
     let maxScore = 0;
@@ -19,40 +19,28 @@ export default function RegularityThermometer({ property, licenses, documents, p
     
     if (licenses && licenses.length > 0) {
       const now = new Date();
-      const validLicenses = licenses.filter(lic => {
-        if (!lic.expiry_date) return false;
-        const expiryDate = new Date(lic.expiry_date);
-        return expiryDate > now;
-      });
-      
       const expiredLicenses = licenses.filter(lic => {
         if (!lic.expiry_date) return true;
-        const expiryDate = new Date(lic.expiry_date);
-        return expiryDate <= now;
+        return new Date(lic.expiry_date) <= now;
       });
-
       const soonToExpire = licenses.filter(lic => {
         if (!lic.expiry_date) return false;
-        const expiryDate = new Date(lic.expiry_date);
-        const daysUntilExpiry = Math.floor((expiryDate - now) / (1000 * 60 * 60 * 24));
-        return daysUntilExpiry > 0 && daysUntilExpiry <= 30;
+        const days = Math.floor((new Date(lic.expiry_date) - now) / (1000 * 60 * 60 * 24));
+        return days > 0 && days <= 30;
       });
 
-      let licenseScore = 0;
       if (expiredLicenses.length === 0) {
         if (soonToExpire.length === 0) {
-          licenseScore = licenseWeight; // 100%
+          totalScore += licenseWeight;
           details.push({ category: 'Licenças', status: 'ok', message: 'Todas as licenças válidas' });
         } else {
-          licenseScore = licenseWeight * 0.7; // 70%
+          totalScore += licenseWeight * 0.7;
           details.push({ category: 'Licenças', status: 'warning', message: `${soonToExpire.length} licença(s) vencendo em breve` });
         }
       } else {
-        licenseScore = licenseWeight * 0.3; // 30%
+        totalScore += licenseWeight * 0.3;
         details.push({ category: 'Licenças', status: 'critical', message: `${expiredLicenses.length} licença(s) vencida(s)` });
       }
-      
-      totalScore += licenseScore;
     } else {
       details.push({ category: 'Licenças', status: 'critical', message: 'Nenhuma licença cadastrada' });
     }
@@ -64,19 +52,14 @@ export default function RegularityThermometer({ property, licenses, documents, p
     if (documents && documents.length > 0) {
       const hasCAR = documents.some(doc => doc.document_type === 'CAR');
       const hasCCIR = documents.some(doc => doc.document_type === 'CCIR');
-      const hasGeo = documents.some(doc => doc.document_type === 'Georreferenciamento');
+      const hasGeoDoc = documents.some(doc => doc.document_type === 'Georreferenciamento');
       
       let docScore = 0;
       const missingDocs = [];
       
-      if (hasCAR) docScore += docWeight * 0.4;
-      else missingDocs.push('CAR');
-      
-      if (hasCCIR) docScore += docWeight * 0.3;
-      else missingDocs.push('CCIR');
-      
-      if (hasGeo) docScore += docWeight * 0.3;
-      else missingDocs.push('Georreferenciamento');
+      if (hasCAR) docScore += docWeight * 0.4; else missingDocs.push('CAR');
+      if (hasCCIR) docScore += docWeight * 0.3; else missingDocs.push('CCIR');
+      if (hasGeoDoc) docScore += docWeight * 0.3; else missingDocs.push('Georreferenciamento');
       
       totalScore += docScore;
       
@@ -89,15 +72,25 @@ export default function RegularityThermometer({ property, licenses, documents, p
       details.push({ category: 'Documentos', status: 'critical', message: 'Nenhum documento cadastrado' });
     }
 
-    // 3. Análise de Georreferenciamento (peso 15)
+    // 3. Análise de Georreferenciamento (peso 15) — usa registros reais se disponíveis
     const geoWeight = 15;
     maxScore += geoWeight;
     
-    if (property?.coordinates) {
+    const regularGeo = georeferencing.find(g => g.status === 'Regular');
+    const hasAnyGeo = georeferencing.length > 0;
+    
+    if (regularGeo) {
+      totalScore += geoWeight;
+      details.push({ category: 'Georreferenciamento', status: 'ok', message: 'Georreferenciamento regular cadastrado' });
+    } else if (hasAnyGeo) {
+      const geo = georeferencing[0];
+      totalScore += geoWeight * 0.67;
+      details.push({ category: 'Georreferenciamento', status: 'warning', message: `Georreferenciamento ${geo.status || 'cadastrado'} (não regular)` });
+    } else if (property?.coordinates) {
       totalScore += geoWeight;
       details.push({ category: 'Georreferenciamento', status: 'ok', message: 'Coordenadas cadastradas' });
     } else {
-      details.push({ category: 'Georreferenciamento', status: 'warning', message: 'Coordenadas não cadastradas' });
+      details.push({ category: 'Georreferenciamento', status: 'warning', message: 'Georreferenciamento não cadastrado' });
     }
 
     // 4. Análise de Processos (peso 15)
@@ -121,7 +114,7 @@ export default function RegularityThermometer({ property, licenses, documents, p
     const percentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
     
     return { percentage, details, totalScore, maxScore };
-  }, [property, licenses, documents, processes]);
+  }, [property, licenses, documents, processes, georeferencing]);
 
   const getStatus = (percentage) => {
     if (percentage >= 80) return { color: 'green', label: 'Regular', icon: CheckCircle2, bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200' };

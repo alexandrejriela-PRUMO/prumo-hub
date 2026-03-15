@@ -23,6 +23,7 @@ import {
   Trees,
   Activity
 } from 'lucide-react';
+import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
 import { toast } from 'sonner';
 
 export default function Mappings() {

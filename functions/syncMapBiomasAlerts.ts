@@ -132,7 +132,7 @@ Deno.serve(async (req) => {
       }
     }
     const carCodes = allCars
-      .filter(item => /^[A-Z]{2}-\d{7}-[A-F0-9]{4}\.[A-F0-9]{4}\.[A-F0-9]{4}\.[A-F0-9]{4}\.[A-F0-9]{4}\.[A-F0-9]{4}\.[A-F0-9]{4}\.[A-F0-9]{4}$/.test(item.car))
+      .filter(item => /^[A-Z]{2}-\d{7}/.test(item.car))
       .map(item => item.car);
     
     log(`🔍 CARs válidos: ${carCodes.length}/${propertiesWithCAR.length}`);

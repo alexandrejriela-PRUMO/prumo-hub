@@ -364,6 +364,10 @@ function GeoreferencingForm({ properties, user, onSubmit, isLoading }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!formData.property_id) {
+      toast.error('Selecione uma propriedade/cliente');
+      return;
+    }
     onSubmit(formData);
   };
 

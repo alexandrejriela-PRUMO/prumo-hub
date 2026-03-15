@@ -561,10 +561,12 @@ export default function EnvironmentalAlerts() {
               ))}
             </div>
           )}
-        </TabsContent>
-      </Tabs>
+          </TabsContent>
+          </Tabs>
+          </TabsContent>
+          </Tabs>
 
-      {/* Alert Detail Modal */}
+          {/* Alert Detail Modal */}
       {selectedAlert && selectedProperty && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <Card className="max-w-4xl w-full max-h-[90vh] overflow-y-auto">

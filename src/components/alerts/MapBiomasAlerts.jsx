@@ -25,8 +25,9 @@ export default function MapBiomasAlerts({ selectedProperty, selectedPropertyId }
     setIsManualSyncRunning(true);
     try {
       const response = await base44.functions.invoke('syncMapBiomasAlerts', {});
+      console.log('syncMapBiomasAlerts response:', response);
       
-      if (response.data.success) {
+      if (response?.data?.success) {
         const { synced, cars_monitored, total_alerts_found } = response.data;
         if (synced > 0) {
           toast.success(`✅ ${synced} alerta(s) sincronizado(s)! ${cars_monitored} CAR(s) monitorado(s).`);
@@ -36,9 +37,10 @@ export default function MapBiomasAlerts({ selectedProperty, selectedPropertyId }
           toast.info(`ℹ️ Sincronização concluída. ${cars_monitored} CAR(s) monitorado(s), ${total_alerts_found} alerta(s) encontrado(s). Nenhum novo alerta para adicionar.`);
         }
       } else {
-        toast.info(response.data.message || 'Nenhum novo alerta detectado');
+        toast.info(response?.data?.message || 'Nenhum novo alerta detectado');
       }
     } catch (error) {
+      console.error('syncMapBiomasAlerts error:', error);
       toast.error('Erro ao sincronizar: ' + error.message);
     } finally {
       setIsManualSyncRunning(false);

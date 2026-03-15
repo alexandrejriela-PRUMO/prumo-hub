@@ -196,6 +196,8 @@ export default function Georeferencing() {
             <GeoreferencingForm
               properties={properties}
               user={user}
+              isConsultor={isConsultor}
+              preselectedPropertyId={effectivePropertyId}
               onSubmit={(data) => createMutation.mutate(data)}
               isLoading={createMutation.isPending}
             />

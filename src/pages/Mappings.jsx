@@ -41,9 +41,9 @@ export default function Mappings() {
     loadUser();
   }, []);
 
-  const isConsultor = user?.user_type === 'consultor';
+  const isConsultor = user?.user_type === 'consultor' || user?.user_type === 'equipe';
 
-  const { data: properties = [] } = useQuery({
+  const { data: properties = [], isLoading: propertiesLoading } = useQuery({
     queryKey: ['properties', user?.email],
     queryFn: () => isConsultor
       ? base44.entities.Property.filter({ consultor_email: user.email })

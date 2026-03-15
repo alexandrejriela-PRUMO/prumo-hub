@@ -266,7 +266,7 @@ export default function Home() {
       }
 
       {/* Quick Actions */}
-      <QuickActions />
+      <QuickActions userType={user?.user_type} />
 
       {/* Tabs for Overview and Analytics */}
       <Tabs defaultValue="overview" className="space-y-6 mt-8">

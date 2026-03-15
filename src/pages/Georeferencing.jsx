@@ -336,7 +336,7 @@ export default function Georeferencing() {
 
       {/* Detail View Dialog */}
       {viewingGeo && (
-        <Dialog open={!!viewingGeo} onOpenChange={() => setViewingGeo(null)}>
+        <Dialog open={!!viewingGeo} onOpenChange={() => setViewingGeoId(null)}>
           <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">

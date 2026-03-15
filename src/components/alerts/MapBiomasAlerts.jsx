@@ -27,9 +27,14 @@ export default function MapBiomasAlerts({ selectedProperty, selectedPropertyId }
       const response = await base44.functions.invoke('syncMapBiomasAlerts', {});
       
       if (response.data.success) {
-        toast.success(`✅ ${response.data.synced} alerta(s) sincronizado(s)! ${response.data.cars_monitored} CAR(s) monitorado(s).`);
-        await queryClient.invalidateQueries(['mapbiomas-alerts']);
-        await queryClient.invalidateQueries(['environmental-alerts']);
+        const { synced, cars_monitored, total_alerts_found } = response.data;
+        if (synced > 0) {
+          toast.success(`✅ ${synced} alerta(s) sincronizado(s)! ${cars_monitored} CAR(s) monitorado(s).`);
+          await queryClient.invalidateQueries(['mapbiomas-alerts']);
+          await queryClient.invalidateQueries(['environmental-alerts']);
+        } else {
+          toast.info(`ℹ️ Sincronização concluída. ${cars_monitored} CAR(s) monitorado(s), ${total_alerts_found} alerta(s) encontrado(s). Nenhum novo alerta para adicionar.`);
+        }
       } else {
         toast.info(response.data.message || 'Nenhum novo alerta detectado');
       }

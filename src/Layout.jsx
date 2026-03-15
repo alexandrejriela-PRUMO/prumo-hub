@@ -122,6 +122,7 @@ const equipeNavItems = [
     ]
   },
   { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
+  { name: 'Gestão do CAR', page: 'CARModule', icon: TreePine },
   { name: 'Relatórios', page: 'Reports', icon: FileText },
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },

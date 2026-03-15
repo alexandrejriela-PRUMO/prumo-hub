@@ -352,28 +352,43 @@ export default function EnvironmentalAlerts() {
         />
       )}
 
-      {/* Info Card */}
-      <Card className="bg-orange-50 border-orange-200">
-        <CardContent className="pt-6">
-          <div className="space-y-3">
-            <div className="flex items-start gap-2">
-              <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <h3 className="font-semibold text-orange-900">Sistema de Alertas de Infrações</h3>
+      {/* Tabs for Manual and MapBiomas Alerts */}
+      <Tabs defaultValue="manual" className="space-y-4">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="manual">
+            Alertas Manuais
+          </TabsTrigger>
+          <TabsTrigger value="mapbiomas">
+            🗺️ MapBiomas
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="manual" className="space-y-4">
+          {/* Info Card */}
+          <Card className="bg-orange-50 border-orange-200">
+            <CardContent className="pt-6">
+              <div className="space-y-3">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold text-orange-900">Alertas Manuais de Infrações</h3>
+                  </div>
+                </div>
+                <p className="text-orange-800 text-sm">
+                  <strong>Registre manualmente</strong> alertas de infrações detectadas por você ou sua equipe. Você pode criar, acompanhar e resolver alertas (desmatamento, mudança de uso da terra, APP, Reserva Legal, etc.).
+                </p>
+                <p className="text-orange-800 text-sm">
+                  Use este módulo para documentar alertas conhecidos e gerenciar as ações de resolução necessárias.
+                </p>
               </div>
-            </div>
-            <p className="text-orange-800 text-sm">
-              <strong>Alertas Manuais:</strong> Sistema atual baseado no registro manual de alertas de infrações detectadas por você ou sua equipe. Você pode criar, acompanhar e resolver alertas (desmatamento, mudança de uso da terra, APP, Reserva Legal, etc.).
-            </p>
-            <p className="text-orange-800 text-sm">
-              <strong>⚠️ Integração Automatizada:</strong> Integração com sistemas de detecção automática (PRODES, DETER, MapBiomas) ainda não está disponível. Esta será uma funcionalidade futura que trará alertas automatizados em tempo real.
-            </p>
-            <p className="text-orange-800 text-sm">
-              Use este módulo para documentar alertas conhecidos e gerenciar as ações de resolução necessárias.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="mapbiomas" className="space-y-4">
+          <MapBiomasAlerts selectedProperty={selectedProperty} selectedPropertyId={selectedPropertyId} />
+        </TabsContent>
+      </Tabs>
 
       {/* Header */}
       <div className="flex items-center justify-between">

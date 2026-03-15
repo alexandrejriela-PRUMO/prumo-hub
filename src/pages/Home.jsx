@@ -105,6 +105,13 @@ export default function Home() {
     initialData: []
   });
 
+  const { data: prads = [] } = useQuery({
+    queryKey: ['prads', selectedPropertyId],
+    queryFn: () => base44.entities.PRAD.filter({ property_id: selectedPropertyId }),
+    enabled: !!selectedPropertyId,
+    initialData: []
+  });
+
   const { data: environmentalAlerts, isLoading: loadingAlerts } = useQuery({
     queryKey: ['environmental-alerts'],
     queryFn: () => base44.entities.EnvironmentalAlert.list(),

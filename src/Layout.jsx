@@ -445,7 +445,7 @@ export default function Layout({ children, currentPageName }) {
                   const hasActiveChild = item.children.some(child => child.page === currentPageName);
                   const Icon = item.icon;
                   return (
-                    <div key={item.name}>
+                    <div key={itemKey}>
                       <button
                         onClick={() => setExpandedMenus(prev => ({ ...prev, [item.name]: !prev[item.name] }))}
                         className={cn(

@@ -98,6 +98,13 @@ export default function Home() {
     initialData: []
   });
 
+  const { data: georeferencing = [] } = useQuery({
+    queryKey: ['georeferencing', selectedPropertyId],
+    queryFn: () => base44.entities.Georeferencing.filter({ property_id: selectedPropertyId }),
+    enabled: !!selectedPropertyId,
+    initialData: []
+  });
+
   const { data: environmentalAlerts, isLoading: loadingAlerts } = useQuery({
     queryKey: ['environmental-alerts'],
     queryFn: () => base44.entities.EnvironmentalAlert.list(),

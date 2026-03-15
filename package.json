@@ -78,7 +78,8 @@
     "vaul": "^1.1.2",
     "zod": "^3.24.2",
     "leaflet-draw": "^1.0.4",
-    "react-leaflet-draw": "^0.20.4"
+    "react-leaflet-draw": "^0.20.4",
+    "@tmcw/togeojson": "^5.8.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",

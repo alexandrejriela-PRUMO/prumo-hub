@@ -318,6 +318,8 @@ export default function Home() {
               licenses={filteredData.licenses}
               documents={filteredData.documents}
               processes={filteredData.processes}
+              georeferencing={georeferencing}
+              prads={prads}
             />
           )}
 

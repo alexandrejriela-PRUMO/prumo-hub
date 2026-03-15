@@ -86,6 +86,9 @@ export default function Georeferencing() {
     initialData: [],
   });
 
+  // Sempre derivado do cache atualizado — nunca desatualizado
+  const viewingGeo = viewingGeoId ? georeferences.find(g => g.id === viewingGeoId) || null : null;
+
   useEffect(() => {
     if (properties.length > 0 && !selectedProperty && !isConsultor) {
       setSelectedProperty(properties[0].id);

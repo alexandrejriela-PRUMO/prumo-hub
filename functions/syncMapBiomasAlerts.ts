@@ -65,6 +65,8 @@ async function fetchAlertsByCAR(token, carCodes, startDate, endDate) {
     }
   `, { carCodes: carCodes, startDate, endDate });
 
+  console.log('🔗 GraphQL Response:', JSON.stringify(data, null, 2));
+
   if (data.errors) throw new Error('Alerts query failed: ' + JSON.stringify(data.errors));
   return data.data?.alerts?.collection || [];
 }

@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, Send, AtSign, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';

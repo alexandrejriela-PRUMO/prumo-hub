@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
 
     // Mode: test_property — try fetching alerts with a CAR code
     if (mode === 'test_property') {
-      const carCode = searchParams.get('car') || '';
+      const carCode = body.car || '';
       // Try alertsByPublishDate with propertyCode filter
       const data = await gql(token, `
         query {

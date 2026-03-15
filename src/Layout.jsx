@@ -61,7 +61,6 @@ const produtorNavItems = [
   { name: 'Processos', page: 'Processes', icon: Scale },
   { name: 'Alertas de Infrações', page: 'EnvironmentalAlerts', icon: AlertTriangle },
   { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: FileCheck },
-  { name: 'Consultoria e Requerimentos', page: 'Requests', icon: Users },
   { name: 'PRAD - Recuperação de Área', page: 'PRAD', icon: Leaf },
   { 
     name: 'Agricultura de Precisão', 

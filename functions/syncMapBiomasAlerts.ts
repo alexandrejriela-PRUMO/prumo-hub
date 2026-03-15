@@ -84,6 +84,7 @@ Deno.serve(async (req) => {
     }
 
     const carCodes = propertiesWithCAR.map(p => p.car_number.trim());
+    console.log('🔍 CARs a monitorar:', carCodes);
 
     // Default: last 12 months
     const endDate = new Date().toISOString().split('T')[0];
@@ -91,8 +92,13 @@ Deno.serve(async (req) => {
     startDateObj.setFullYear(startDateObj.getFullYear() - 1);
     const startDate = startDateObj.toISOString().split('T')[0];
 
+    console.log(`📅 Período de busca: ${startDate} a ${endDate}`);
+
     const token = await signIn();
+    console.log('✅ Autenticação MapBiomas OK');
+    
     const alerts = await fetchAlertsByCAR(token, carCodes, startDate, endDate);
+    console.log(`📡 Alertas retornados pela API: ${alerts.length}`);
 
     let totalNew = 0;
 

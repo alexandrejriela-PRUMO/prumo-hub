@@ -59,46 +59,41 @@ async function gql(token, query, variables = {}) {
 }
 
 async function fetchAlertsByCAR(token, carCodes, startDate, endDate, log) {
-  // Fazer requisição por CAR individual para melhor diagnóstico
-  let allAlerts = [];
-  
-  for (const carCode of carCodes) {
-    const data = await gql(token, `
-      query($carCode: ID!, $startDate: BaseDate, $endDate: BaseDate) {
-        alerts(carCode: $carCode, startDate: $startDate, endDate: $endDate, limit: 100) {
-          collection {
-            alertCode
+  const data = await gql(token, `
+    query($carCodes: [ID!], $startDate: BaseDate, $endDate: BaseDate) {
+      alerts(carCodes: $carCodes, startDate: $startDate, endDate: $endDate, limit: 100) {
+        collection {
+          alertCode
+          areaHa
+          publishedAt
+          detectedAt
+          sources
+          statusName
+          ruralProperties {
+            carCode
             areaHa
-            publishedAt
-            detectedAt
-            sources
-            statusName
-            ruralProperties {
-              carCode
-              areaHa
-              stateAcronym
-            }
-          }
-          metadata {
-            currentPage
-            limitValue
-            totalCount
-            totalPages
+            stateAcronym
           }
         }
+        metadata {
+          currentPage
+          limitValue
+          totalCount
+          totalPages
+        }
       }
-    `, { carCode, startDate, endDate });
-
-    if (data.errors) {
-      log(`⚠️ Erro ao buscar CAR ${carCode}: ${JSON.stringify(data.errors)}`);
-    } else {
-      const alerts = data.data?.alerts?.collection || [];
-      log(`🔗 CAR ${carCode}: ${alerts.length} alerta(s)`);
-      allAlerts = allAlerts.concat(alerts);
     }
+  `, { carCodes, startDate, endDate });
+
+  if (data.errors) {
+    log(`❌ Erro na query GraphQL: ${JSON.stringify(data.errors)}`);
+    throw new Error('Alerts query failed: ' + JSON.stringify(data.errors));
   }
   
-  return allAlerts;
+  const alerts = data.data?.alerts?.collection || [];
+  log(`✓ API retornou ${alerts.length} alerta(s) para ${carCodes.length} CAR(s)`);
+  
+  return alerts;
 }
 
 Deno.serve(async (req) => {

@@ -359,16 +359,16 @@ export default function PRADReportGenerator({ prad }) {
         doc.setFont(undefined, 'normal');
         doc.setFontSize(9);
 
-        prad.documents.forEach(doc => {
+        prad.documents.forEach(docItem => {
           checkPageSpace(10);
           doc.setFont(undefined, 'bold');
-          doc.text(`• ${doc.name}`, margin + 5, yPosition);
+          doc.text(`• ${docItem.name}`, margin + 5, yPosition);
           yPosition += 4;
           doc.setFont(undefined, 'normal');
-          doc.text(`Tipo: ${doc.type}`, margin + 10, yPosition);
+          doc.text(`Tipo: ${docItem.type}`, margin + 10, yPosition);
           yPosition += 3;
-          if (doc.observations) {
-            doc.text(`Obs: ${doc.observations}`, margin + 10, yPosition);
+          if (docItem.observations) {
+            doc.text(`Obs: ${docItem.observations}`, margin + 10, yPosition);
             yPosition += 3;
           }
           yPosition += 2;

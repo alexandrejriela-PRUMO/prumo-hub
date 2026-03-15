@@ -277,30 +277,14 @@ export default function PRADReportGenerator({ prad }) {
         doc.setFont(undefined, 'normal');
         doc.setFontSize(9);
 
-        const scheduleData = [['Etapa', 'Prazo', 'Status', 'Responsável']];
         prad.execution_schedule.forEach(stage => {
-          scheduleData.push([
-            stage.stage || '-',
-            stage.deadline ? format(parseISO(stage.deadline), 'dd/MM/yyyy') : '-',
-            stage.status || '-',
-            stage.responsible || '-'
-          ]);
-        });
-
-        doc.autoTable({
-          head: [scheduleData[0]],
-          body: scheduleData.slice(1),
-          startY: yPosition,
-          margin: margin,
-          columnStyles: {
-            0: { cellWidth: 50 },
-            1: { cellWidth: 30 },
-            2: { cellWidth: 30 },
-            3: { cellWidth: 40 }
-          },
-          didDrawPage: (data) => {
-            yPosition = data.lastAutoTable.finalY + 5;
-          }
+          checkPageSpace(15);
+          doc.setFont(undefined, 'bold');
+          doc.text(`• ${stage.stage || '-'}`, margin + 5, yPosition);
+          yPosition += 4;
+          doc.setFont(undefined, 'normal');
+          doc.text(`Prazo: ${stage.deadline ? format(parseISO(stage.deadline), 'dd/MM/yyyy') : '-'}  |  Status: ${stage.status || '-'}  |  Responsável: ${stage.responsible || '-'}`, margin + 10, yPosition);
+          yPosition += 5;
         });
       }
 

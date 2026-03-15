@@ -66,19 +66,26 @@ Deno.serve(async (req) => {
       return Response.json({ fields });
     }
 
-    // Mode: test_alerts_by_date
-    if (mode === 'test_alerts_by_date') {
+    // Mode: test_alerts_query — test alerts query with propertyCodes
+    if (mode === 'test_alerts_query') {
+      const carCode = body.car || '';
       const data = await gql(token, `
-        query {
-          alertsByPublishDate(startDate: "2025-01-01", endDate: "2026-03-15") {
+        query($propertyCodes: [String!], $startDate: BaseDate, $endDate: BaseDate) {
+          alerts(propertyCodes: $propertyCodes, startDate: $startDate, endDate: $endDate, limit: 5) {
             alertCode
             areaHa
             publishedAt
             detectedAt
-            source
+            sources
+            statusName
+            deforestationClass
           }
         }
-      `);
+      `, {
+        propertyCodes: carCode ? [carCode] : [],
+        startDate: '2024-01-01',
+        endDate: '2026-03-15'
+      });
       return Response.json(data);
     }
 

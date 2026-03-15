@@ -39,7 +39,8 @@ import {
               Sparkles,
               Map,
               ClipboardList,
-              ScrollText
+              ScrollText,
+              TreePine
                     } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

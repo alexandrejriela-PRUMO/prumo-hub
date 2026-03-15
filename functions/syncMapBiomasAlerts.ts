@@ -132,13 +132,13 @@ Deno.serve(async (req) => {
     }
     log(`📋 CARs: ${carCodes.join(', ')}`);
 
-    // Default: last 12 months
+    // Default: last 24 months (período expandido para garantir cobertura)
     const endDate = new Date().toISOString().split('T')[0];
     const startDateObj = new Date();
-    startDateObj.setFullYear(startDateObj.getFullYear() - 1);
+    startDateObj.setFullYear(startDateObj.getFullYear() - 2);
     const startDate = startDateObj.toISOString().split('T')[0];
 
-    log(`📅 Período de busca: ${startDate} a ${endDate}`);
+    log(`📅 Período de busca: ${startDate} a ${endDate} (últimos 24 meses)`);
 
     const token = await signIn();
     log('✅ Autenticação MapBiomas OK');

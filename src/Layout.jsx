@@ -438,7 +438,8 @@ export default function Layout({ children, currentPageName }) {
                 menuItems = produtorNavItems;
               }
 
-              return menuItems.map((item) => {
+              return menuItems.map((item, index) => {
+                const itemKey = item.page || `${item.name}-${index}`;
                 if (item.children) {
                   const isExpanded = expandedMenus[item.name];
                   const hasActiveChild = item.children.some(child => child.page === currentPageName);

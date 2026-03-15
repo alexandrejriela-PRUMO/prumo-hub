@@ -47,7 +47,11 @@ export default function MapBiomasAlerts({ selectedProperty, selectedPropertyId }
     }
   };
 
-  if (!selectedProperty?.car_number) {
+  const carNumbers = selectedProperty?.car_numbers?.filter(c => c?.trim()) || [];
+  const legacyCar = selectedProperty?.car_number?.trim();
+  const allCars = [...carNumbers, ...(legacyCar ? [legacyCar] : [])];
+
+  if (allCars.length === 0) {
     return (
       <Card className="border-amber-200 bg-amber-50">
         <CardContent className="pt-6">
@@ -71,14 +75,14 @@ export default function MapBiomasAlerts({ selectedProperty, selectedPropertyId }
       <Card className="border-emerald-200 bg-emerald-50">
         <CardContent className="pt-6">
           <div className="space-y-4">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-3 flex-1">
-                <Leaf className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <h3 className="font-semibold text-emerald-900">Integração MapBiomas Alerta</h3>
-                  <p className="text-sm text-emerald-800 mt-1">
-                    Sincronização automática mensal de alertas de desmatamento da plataforma MapBiomas Alerta para o CAR <strong>{selectedProperty.car_number}</strong>.
-                  </p>
+           <div className="flex items-start justify-between gap-4">
+             <div className="flex items-start gap-3 flex-1">
+               <Leaf className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+               <div>
+                 <h3 className="font-semibold text-emerald-900">Integração MapBiomas Alerta</h3>
+                 <p className="text-sm text-emerald-800 mt-1">
+                   Sincronização automática mensal de alertas de desmatamento da plataforma MapBiomas Alerta para {allCars.length} CAR(s): {allCars.map(c => <strong key={c}>{c}</strong>).reduce((acc, el, idx) => idx === 0 ? [el] : [...acc, ', ', el], [])}.
+                 </p>
                   <p className="text-xs text-emerald-700 mt-2">
                     ⏰ Próxima sincronização automática: 1º de cada mês às 01h00 (horário de São Paulo)
                   </p>

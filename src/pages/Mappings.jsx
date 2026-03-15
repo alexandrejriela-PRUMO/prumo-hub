@@ -209,10 +209,10 @@ export default function Mappings() {
   };
 
   useEffect(() => {
-    if (properties.length > 0 && !selectedProperty) {
+    if (properties.length > 0 && !selectedProperty && !isConsultor) {
       setSelectedProperty(properties[0]);
     }
-  }, [properties, selectedProperty]);
+  }, [properties, selectedProperty, isConsultor]);
 
   if (!user) {
     return (

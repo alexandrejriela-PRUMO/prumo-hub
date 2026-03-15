@@ -1,11 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Send, AtSign, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { MessageSquare, Send, AtSign, ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { toast } from 'sonner';
 
+function renderMessage(text) {
+  const parts = text.split(/(@[\w\s]+)/g);
+  return parts.map((part, i) =>
+    part.startsWith('@')
+      ? <span key={i} className="font-semibold text-amber-300">{part}</span>
+      : <span key={i}>{part}</span>
+  );
+}
 
 export default function CRMThread({ item, itemType, teamMembers = [], currentUser, onSaveThread }) {
   const [open, setOpen] = useState(false);
@@ -26,7 +33,7 @@ export default function CRMThread({ item, itemType, teamMembers = [], currentUse
     const val = e.target.value;
     setMessage(val);
     const lastAt = val.lastIndexOf('@');
-    if (lastAt !== -1 && lastAt === val.length - 1 || (lastAt !== -1 && !val.slice(lastAt + 1).includes(' '))) {
+    if (lastAt !== -1 && (lastAt === val.length - 1 || !val.slice(lastAt + 1).includes(' '))) {
       setShowMentions(true);
       setMentionQuery(val.slice(lastAt + 1));
     } else {
@@ -69,7 +76,6 @@ export default function CRMThread({ item, itemType, teamMembers = [], currentUse
     await onSaveThread(updatedThread);
     setMessage('');
     setShowMentions(false);
-    // Notifica mencionados
     if (mentions.length > 0) {
       mentions.forEach(email => {
         base44.functions.invoke('notifyCRMAssignment', {
@@ -88,10 +94,7 @@ export default function CRMThread({ item, itemType, teamMembers = [], currentUse
   );
 
   const getInitials = (name) => name ? name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase() : '?';
-
-  const avatarColors = [
-    'bg-emerald-500', 'bg-blue-500', 'bg-purple-500', 'bg-amber-500', 'bg-rose-500', 'bg-cyan-500'
-  ];
+  const avatarColors = ['bg-emerald-500', 'bg-blue-500', 'bg-purple-500', 'bg-amber-500', 'bg-rose-500', 'bg-cyan-500'];
   const getColor = (email) => avatarColors[(email?.charCodeAt(0) || 0) % avatarColors.length];
 
   return (
@@ -107,7 +110,6 @@ export default function CRMThread({ item, itemType, teamMembers = [], currentUse
 
       {open && (
         <div className="mt-2 space-y-2">
-          {/* Thread messages */}
           <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
             {thread.length === 0 && (
               <p className="text-xs text-gray-400 text-center py-2">Nenhum comentário ainda. Inicie a conversa!</p>
@@ -134,7 +136,6 @@ export default function CRMThread({ item, itemType, teamMembers = [], currentUse
             <div ref={bottomRef} />
           </div>
 
-          {/* Input */}
           <div className="relative flex gap-2 items-end">
             <div className="flex-1 relative">
               <input
@@ -142,7 +143,7 @@ export default function CRMThread({ item, itemType, teamMembers = [], currentUse
                 value={message}
                 onChange={handleInput}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }}}
-                placeholder={`Comentar... (use @ para mencionar)`}
+                placeholder="Comentar... (use @ para mencionar)"
                 className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 pr-8 focus:outline-none focus:ring-1 focus:ring-emerald-400 bg-white"
               />
               {teamMembers.length > 0 && (
@@ -155,7 +156,6 @@ export default function CRMThread({ item, itemType, teamMembers = [], currentUse
                   <AtSign className="w-3.5 h-3.5" />
                 </button>
               )}
-              {/* Mentions dropdown */}
               {showMentions && filteredMembers.length > 0 && (
                 <div className="absolute bottom-full mb-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-32 overflow-y-auto">
                   {filteredMembers.map(m => (
@@ -186,14 +186,5 @@ export default function CRMThread({ item, itemType, teamMembers = [], currentUse
         </div>
       )}
     </div>
-  );
-}
-
-function renderMessage(text) {
-  const parts = text.split(/(@[\w\s]+)/g);
-  return parts.map((part, i) =>
-    part.startsWith('@')
-      ? <span key={i} className="font-semibold text-amber-300">{part}</span>
-      : <span key={i}>{part}</span>
   );
 }

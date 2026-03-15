@@ -86,7 +86,6 @@ const produtorNavItems = [
   { name: 'Relatórios', page: 'Reports', icon: FileText },
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
-  { name: 'Meus Contratos', page: 'Contracts', icon: ScrollText },
   { name: 'Minha Equipe', page: 'MyTeam', icon: Users },
 ];
 
@@ -95,6 +94,7 @@ const equipeNavItems = [
   { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
   { name: 'Meus Clientes', page: 'ConsultorClients', icon: Users },
   { name: 'Gestão de Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
+  { name: 'Meus Contratos', page: 'Contracts', icon: ScrollText },
   { name: 'Documentos', page: 'DocumentsHub', icon: FileText },
   { name: 'Licenças Ambientais', page: 'Licenses', icon: FileCheck },
   { name: 'Processos', page: 'Processes', icon: Scale },

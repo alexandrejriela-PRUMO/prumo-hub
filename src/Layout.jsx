@@ -123,7 +123,6 @@ const equipeNavItems = [
   { name: 'Relatórios', page: 'Reports', icon: FileText },
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
-  { name: 'Meus Contratos', page: 'Contracts', icon: ScrollText },
 ];
 
 // Cliente do consultor (Enterprise): somente leitura/download, sem IA, notificações ou equipe

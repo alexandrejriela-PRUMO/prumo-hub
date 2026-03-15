@@ -120,8 +120,17 @@ Deno.serve(async (req) => {
       return Response.json({ message: 'Nenhum CAR cadastrado para monitorar.', synced: 0, logs });
     }
 
-    const carCodes = propertiesWithCAR.map(p => p.car_number.trim());
-    log(`🔍 CARs a monitorar: ${carCodes.join(', ')}`);
+    // Filtrar apenas CARs válidos (formato: RS-NNNNNNN-XXXX.XXXX.XXXX.XXXX.XXXX.XXXX.XXXX.XXXX)
+    const carCodes = propertiesWithCAR
+      .map(p => p.car_number.trim())
+      .filter(car => /^[A-Z]{2}-\d{7}-[A-F0-9]{4}\.[A-F0-9]{4}\.[A-F0-9]{4}\.[A-F0-9]{4}\.[A-F0-9]{4}\.[A-F0-9]{4}\.[A-F0-9]{4}\.[A-F0-9]{4}$/.test(car));
+    
+    log(`🔍 CARs válidos: ${carCodes.length}/${propertiesWithCAR.length}`);
+    if (carCodes.length === 0) {
+      log('⚠️ Nenhum CAR com formato válido encontrado');
+      return Response.json({ message: 'Nenhum CAR com formato válido.', synced: 0, logs });
+    }
+    log(`📋 CARs: ${carCodes.join(', ')}`);
 
     // Default: last 12 months
     const endDate = new Date().toISOString().split('T')[0];

@@ -245,7 +245,7 @@ export default function ESGAgro() {
       </div>
 
       {/* Property Selector */}
-      {properties.length > 1 && (
+      {(properties.length > 1 || isConsultor) && (
         <div className="flex items-center gap-3 p-4 bg-white rounded-xl border border-green-100 shadow-sm">
           <Filter className="w-4 h-4 text-gray-500 flex-shrink-0" />
           <span className="text-gray-700 font-medium whitespace-nowrap">Propriedade ou Empreendimento:</span>

@@ -75,16 +75,33 @@ export default function CARModule() {
   const carRecord = carRecords[0] || null;
 
   const saveMutation = useMutation({
-    mutationFn: (data) => carRecord
-      ? base44.entities.CARManagement.update(carRecord.id, data)
-      : base44.entities.CARManagement.create({
-          ...data,
-          property_id: effectivePropertyId,
-          owner_email: selectedProperty?.owner_email || user.email,
-          consultor_email: isConsultor ? user.email : undefined,
-        }),
+    mutationFn: async (data) => {
+      const carData = carRecord
+        ? await base44.entities.CARManagement.update(carRecord.id, data)
+        : await base44.entities.CARManagement.create({
+            ...data,
+            property_id: effectivePropertyId,
+            owner_email: selectedProperty?.owner_email || user.email,
+            consultor_email: isConsultor ? user.email : undefined,
+          });
+      
+      // Atualizar Property com o CAR cadastrado
+      if (data.car_number && selectedProperty) {
+        const existingCars = selectedProperty.car_numbers || [];
+        const newCars = existingCars.includes(data.car_number) 
+          ? existingCars 
+          : [...existingCars, data.car_number];
+        
+        await base44.entities.Property.update(selectedProperty.id, {
+          car_numbers: newCars
+        });
+      }
+      
+      return carData;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['car', effectivePropertyId]);
+      queryClient.invalidateQueries(['properties', user?.email, user?.user_type]);
       setEditOpen(false);
       toast.success('CAR salvo com sucesso!');
     },

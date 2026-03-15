@@ -57,6 +57,14 @@ export default function PRAD() {
     enabled: !!selectedProperty?.id,
   });
 
+  // Mantém currentPRAD sincronizado com dados frescos após qualquer mutation
+  useEffect(() => {
+    if (currentPRAD && prads.length > 0) {
+      const updated = prads.find(p => p.id === currentPRAD.id);
+      if (updated) setCurrentPRAD(updated);
+    }
+  }, [prads]);
+
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.PRAD.delete(id),
     onSuccess: () => {

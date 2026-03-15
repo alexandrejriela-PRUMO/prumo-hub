@@ -50,9 +50,16 @@ import { cn } from '@/lib/utils';
 
 // Consultor: topo do menu
 const consultorNavItems = [
-  { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
-  { name: 'Meus Clientes', page: 'ConsultorClients', icon: Users },
-  { name: 'Gestão de Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
+  {
+    name: 'Meu Escritório',
+    icon: Briefcase,
+    children: [
+      { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
+      { name: 'Meus Clientes', page: 'ConsultorClients', icon: Users },
+      { name: 'Gestão de Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
+      { name: 'Meus Contratos', page: 'Contracts', icon: ScrollText },
+    ]
+  },
 ];
 
 // Produtor Rural: menu completo

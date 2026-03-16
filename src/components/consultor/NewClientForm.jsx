@@ -19,8 +19,7 @@ export default function NewClientForm({ isOpen, onClose, consultorEmail, onSucce
   const queryClient = useQueryClient();
 
   const [clientType, setClientType] = useState('pf'); // 'pf' | 'pj'
-  const [step, setStep] = useState(1); // 1: dados cliente, 2: vincular propriedade
-  const [createdPropertyId, setCreatedPropertyId] = useState(null);
+  const [step, setStep] = useState(1);
 
   // Dados cliente
   const [clientData, setClientData] = useState({

@@ -218,7 +218,7 @@ export default function CRMBoard() {
         </div>
         <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowNewClientForm(true)}>
           <Plus className="w-4 h-4 mr-2" />
-          Novo Cliente
+          Novo Lead
         </Button>
       </div>
 

@@ -8,7 +8,40 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MapPin, Layers, Info, TreePine, Droplets, Upload, Download, X, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { kml } from '@tmcw/togeojson';
+// KML to GeoJSON inline parser (no external dependency)
+function kml(doc) {
+  const features = [];
+  const placemarks = doc.querySelectorAll('Placemark');
+  placemarks.forEach(pm => {
+    const name = pm.querySelector('name')?.textContent || '';
+    const desc = pm.querySelector('description')?.textContent || '';
+    const parseCoords = (str) => str.trim().split(/\s+/).map(c => {
+      const parts = c.split(',').map(Number);
+      return [parts[0], parts[1]];
+    }).filter(c => !isNaN(c[0]) && !isNaN(c[1]));
+    
+    let geometry = null;
+    const polygon = pm.querySelector('Polygon');
+    const lineString = pm.querySelector('LineString');
+    const point = pm.querySelector('Point');
+    
+    if (polygon) {
+      const outer = polygon.querySelector('outerBoundaryIs coordinates');
+      if (outer) geometry = { type: 'Polygon', coordinates: [parseCoords(outer.textContent)] };
+    } else if (lineString) {
+      const coords = lineString.querySelector('coordinates');
+      if (coords) geometry = { type: 'LineString', coordinates: parseCoords(coords.textContent) };
+    } else if (point) {
+      const coords = point.querySelector('coordinates');
+      if (coords) {
+        const c = parseCoords(coords.textContent)[0];
+        if (c) geometry = { type: 'Point', coordinates: c };
+      }
+    }
+    if (geometry) features.push({ type: 'Feature', geometry, properties: { name, description: desc } });
+  });
+  return { type: 'FeatureCollection', features };
+}
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 

@@ -67,7 +67,7 @@ export default function NewClientForm({ isOpen, onClose, consultorEmail, onSucce
       setCreatedPropertyId(result.id);
       queryClient.invalidateQueries({ queryKey: ['consultor-properties'] });
       toast.success('Cliente e propriedade cadastrados com sucesso!');
-      onSuccess?.();
+      onSuccess?.(result);
       handleClose();
     },
     onError: () => toast.error('Erro ao cadastrar propriedade.')

@@ -133,10 +133,20 @@ function ClientCard({ crm, property, index, onClick }) {
   );
 }
 
+const ESTADOS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+const ATIVIDADES_RURAIS = ['Agricultura','Pecuária','Silvicultura','Aquicultura','Extrativismo','Agroindústria','Turismo Rural','Outro'];
+
 export default function CRMBoard() {
   const [user, setUser] = useState(null);
   const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [selectedCRM, setSelectedCRM] = useState(null);
+  const [linkPropertyModal, setLinkPropertyModal] = useState(null); // { crmId, pendingStatus }
+  const [propertyData, setPropertyData] = useState({
+    property_name: '', property_type: 'rural', location: '',
+    city: '', state: '', total_hectares: '', app_hectares: '',
+    legal_reserve_hectares: '', total_area_m2: '', built_area_m2: '',
+    main_activity: '', activities: '',
+  });
   const queryClient = useQueryClient();
 
   useEffect(() => {

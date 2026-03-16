@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Send, Loader2, TreeDeciduous, Leaf, FileText, Download } from 'lucide-react';
+import { Send, Loader2, TreeDeciduous, Leaf, FileText, Download, CheckCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
 import RuteAvatar from '../RuteAvatar';
@@ -23,6 +23,8 @@ export default function RuteAIChat({ user, property, isOpen, onClose }) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [auditGenerated, setAuditGenerated] = useState(false);
+  const [auditData, setAuditData] = useState(null);
+  const [downloadLoading, setDownloadLoading] = useState(null);
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -88,6 +90,7 @@ Pergunta: ${userMessage}`,
       });
 
       setAuditGenerated(true);
+      setAuditData(audit?.data || audit);
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: '✅ **Auditoria Ambiental e Jurídica Completa Gerada!**\n\nSeu relatório inclui:\n- Análise CAR e Reserva Legal\n- APPs e Passivos Ambientais\n- Alertas Geoespaciais\n- Conformidade Jurídica\n- Recomendações de Regularização\n\nVocê pode fazer download em PDF ou Excel.'
@@ -106,6 +109,54 @@ Pergunta: ${userMessage}`,
       e.preventDefault();
       sendMessage();
     }
+  };
+
+  const downloadPDF = async () => {
+    setDownloadLoading('pdf');
+    try {
+      const response = await base44.functions.invoke('generateEnvironmentalAuditPDF', {
+        property_id: property?.id,
+        owner_email: user?.email,
+        audit_data: auditData
+      });
+      
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `auditoria-${property?.property_name.replace(/\s+/g, '-')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Erro ao baixar PDF:', error);
+    }
+    setDownloadLoading(null);
+  };
+
+  const downloadExcel = async () => {
+    setDownloadLoading('excel');
+    try {
+      const response = await base44.functions.invoke('generateEnvironmentalAuditExcel', {
+        property_id: property?.id,
+        owner_email: user?.email,
+        audit_data: auditData
+      });
+      
+      const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `auditoria-${property?.property_name.replace(/\s+/g, '-')}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Erro ao baixar Excel:', error);
+    }
+    setDownloadLoading(null);
   };
 
   return (
@@ -225,19 +276,34 @@ Pergunta: ${userMessage}`,
           )}
 
           {auditGenerated && (
-            <div className="px-6 py-3 border-t border-blue-200 bg-blue-50 space-y-3">
-              <div className="flex items-center gap-2">
-                <Badge className="bg-blue-600">Auditoria Gerada</Badge>
-              </div>
-              <div className="flex gap-2 text-xs">
-                <Button size="sm" variant="outline" className="flex-1" disabled>
-                  <Download className="w-3 h-3 mr-1" /> PDF
-                </Button>
-                <Button size="sm" variant="outline" className="flex-1" disabled>
-                  <Download className="w-3 h-3 mr-1" /> Excel
-                </Button>
-              </div>
-            </div>
+           <div className="px-6 py-3 border-t border-blue-200 bg-blue-50 space-y-3">
+             <div className="flex items-center gap-2">
+               <CheckCircle className="w-4 h-4 text-blue-600" />
+               <Badge className="bg-blue-600">Auditoria Gerada</Badge>
+             </div>
+             <div className="flex gap-2 text-xs">
+               <Button 
+                 size="sm" 
+                 variant="outline" 
+                 className="flex-1" 
+                 onClick={downloadPDF}
+                 disabled={downloadLoading === 'pdf'}
+               >
+                 <Download className="w-3 h-3 mr-1" /> 
+                 {downloadLoading === 'pdf' ? 'Baixando...' : 'PDF'}
+               </Button>
+               <Button 
+                 size="sm" 
+                 variant="outline" 
+                 className="flex-1"
+                 onClick={downloadExcel}
+                 disabled={downloadLoading === 'excel'}
+               >
+                 <Download className="w-3 h-3 mr-1" /> 
+                 {downloadLoading === 'excel' ? 'Baixando...' : 'Excel'}
+               </Button>
+             </div>
+           </div>
           )}
 
           {/* Input Area */}

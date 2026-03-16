@@ -6,6 +6,7 @@ import { pagesConfig } from './pages.config'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import CARModule from './pages/CARModule';
+import PaymentSettings from './pages/PaymentSettings';
 import PropertyMapView from './pages/PropertyMapView';
 import Agenda from './pages/Agenda';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';

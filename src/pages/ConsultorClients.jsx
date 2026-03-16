@@ -264,10 +264,11 @@ export default function ConsultorClients() {
           </DialogHeader>
           {crmProperty && (
             <Tabs defaultValue="perfil">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="perfil">Perfil</TabsTrigger>
                 <TabsTrigger value="crm">CRM</TabsTrigger>
                 <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
+                <TabsTrigger value="cobranças">Cobranças</TabsTrigger>
               </TabsList>
               <TabsContent value="perfil" className="mt-4">
                 <ClientProfilePanel client={crmProperty} />
@@ -277,6 +278,9 @@ export default function ConsultorClients() {
               </TabsContent>
               <TabsContent value="financeiro" className="mt-4">
                 <ClientFinancialSummary client={crmProperty} />
+              </TabsContent>
+              <TabsContent value="cobranças" className="mt-4">
+                <ClientChargesPanel client={crmProperty} />
               </TabsContent>
             </Tabs>
           )}

@@ -250,7 +250,7 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
             <Select value={form.account_id} onValueChange={v => setF('account_id', v)}>
               <SelectTrigger><SelectValue placeholder="Caixa Manual (padrão)" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value={null}>Caixa Manual</SelectItem>
+                <SelectItem value="__caixa__">Caixa Manual</SelectItem>
                 {accounts.filter(a => !a.is_stripe).map(a => <SelectItem key={a.id} value={a.id}>{a.name} · {a.account_type}</SelectItem>)}
               </SelectContent>
             </Select>

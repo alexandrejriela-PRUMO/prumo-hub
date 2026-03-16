@@ -185,7 +185,7 @@ export default function FinancialDashboard() {
 
   // Account filter options
   const accountFilterOptions = useMemo(() => [
-    { value: '', label: 'Todas as contas' },
+    { value: '__all', label: 'Todas as contas' },
     { value: '__stripe', label: 'Conta Stripe' },
     { value: '__caixa', label: 'Caixa Manual' },
     ...accounts.filter(a=>!a.is_stripe).map(a=>({ value: a.id, label: a.name })),

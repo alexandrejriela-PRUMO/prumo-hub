@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, Suspense } from 'react'
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -8,17 +8,19 @@ import OnlineStatusIndicator from '@/components/OnlineStatusIndicator'
 import { pagesConfig } from './pages.config'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
-import CARModule from './pages/CARModule';
-import PaymentSettings from './pages/PaymentSettings';
-import PropertyMapView from './pages/PropertyMapView';
-import Agenda from './pages/Agenda';
-import CRMBoard from './pages/CRMBoard';
-import FinancialTransactions from './pages/FinancialTransactions';
-import FinancialDashboard from './pages/FinancialDashboard';
-import RuralCredit from './pages/RuralCredit';
-import HarvestLoss from './pages/HarvestLoss';
-import CRA from './pages/CRA';
-import CampMode from './pages/CampMode';
+
+// Lazy load pages
+const CARModule = React.lazy(() => import('./pages/CARModule'));
+const PaymentSettings = React.lazy(() => import('./pages/PaymentSettings'));
+const PropertyMapView = React.lazy(() => import('./pages/PropertyMapView'));
+const Agenda = React.lazy(() => import('./pages/Agenda'));
+const CRMBoard = React.lazy(() => import('./pages/CRMBoard'));
+const FinancialTransactions = React.lazy(() => import('./pages/FinancialTransactions'));
+const FinancialDashboard = React.lazy(() => import('./pages/FinancialDashboard'));
+const RuralCredit = React.lazy(() => import('./pages/RuralCredit'));
+const HarvestLoss = React.lazy(() => import('./pages/HarvestLoss'));
+const CRA = React.lazy(() => import('./pages/CRA'));
+const CampMode = React.lazy(() => import('./pages/CampMode'));
 import OfflineIndicator from '@/components/offline/OfflineIndicator';
 import { useOfflineSync } from '@/components/offline/OfflineSyncHook';
 import { initializeOfflineDB } from '@/components/offline/OfflineStorageManager';
@@ -28,6 +30,12 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
+
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center w-full h-screen">
+    <div className="w-8 h-8 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+  </div>
+);
 
 const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   <Layout currentPageName={currentPageName}>{children}</Layout>
@@ -83,17 +91,17 @@ const AuthenticatedApp = () => {
           }
         />
       ))}
-      <Route path="/CARModule" element={<LayoutWrapper currentPageName="CARModule"><CARModule /></LayoutWrapper>} />
-      <Route path="/PropertyMapView" element={<LayoutWrapper currentPageName="PropertyMapView"><PropertyMapView /></LayoutWrapper>} />
-      <Route path="/Agenda" element={<LayoutWrapper currentPageName="Agenda"><Agenda /></LayoutWrapper>} />
-      <Route path="/CRMBoard" element={<LayoutWrapper currentPageName="CRMBoard"><CRMBoard /></LayoutWrapper>} />
-      <Route path="/PaymentSettings" element={<LayoutWrapper currentPageName="PaymentSettings"><PaymentSettings /></LayoutWrapper>} />
-      <Route path="/FinancialTransactions" element={<LayoutWrapper currentPageName="FinancialTransactions"><FinancialTransactions /></LayoutWrapper>} />
-      <Route path="/FinancialDashboard" element={<LayoutWrapper currentPageName="FinancialDashboard"><FinancialDashboard /></LayoutWrapper>} />
-      <Route path="/RuralCredit" element={<LayoutWrapper currentPageName="RuralCredit"><RuralCredit /></LayoutWrapper>} />
-      <Route path="/HarvestLoss" element={<LayoutWrapper currentPageName="HarvestLoss"><HarvestLoss /></LayoutWrapper>} />
-      <Route path="/CRA" element={<LayoutWrapper currentPageName="CRA"><CRA /></LayoutWrapper>} />
-      <Route path="/CampMode" element={<LayoutWrapper currentPageName="CampMode"><CampMode /></LayoutWrapper>} />
+      <Route path="/CARModule" element={<LayoutWrapper currentPageName="CARModule"><Suspense fallback={<LoadingSpinner />}><CARModule /></Suspense></LayoutWrapper>} />
+      <Route path="/PropertyMapView" element={<LayoutWrapper currentPageName="PropertyMapView"><Suspense fallback={<LoadingSpinner />}><PropertyMapView /></Suspense></LayoutWrapper>} />
+      <Route path="/Agenda" element={<LayoutWrapper currentPageName="Agenda"><Suspense fallback={<LoadingSpinner />}><Agenda /></Suspense></LayoutWrapper>} />
+      <Route path="/CRMBoard" element={<LayoutWrapper currentPageName="CRMBoard"><Suspense fallback={<LoadingSpinner />}><CRMBoard /></Suspense></LayoutWrapper>} />
+      <Route path="/PaymentSettings" element={<LayoutWrapper currentPageName="PaymentSettings"><Suspense fallback={<LoadingSpinner />}><PaymentSettings /></Suspense></LayoutWrapper>} />
+      <Route path="/FinancialTransactions" element={<LayoutWrapper currentPageName="FinancialTransactions"><Suspense fallback={<LoadingSpinner />}><FinancialTransactions /></Suspense></LayoutWrapper>} />
+      <Route path="/FinancialDashboard" element={<LayoutWrapper currentPageName="FinancialDashboard"><Suspense fallback={<LoadingSpinner />}><FinancialDashboard /></Suspense></LayoutWrapper>} />
+      <Route path="/RuralCredit" element={<LayoutWrapper currentPageName="RuralCredit"><Suspense fallback={<LoadingSpinner />}><RuralCredit /></Suspense></LayoutWrapper>} />
+      <Route path="/HarvestLoss" element={<LayoutWrapper currentPageName="HarvestLoss"><Suspense fallback={<LoadingSpinner />}><HarvestLoss /></Suspense></LayoutWrapper>} />
+      <Route path="/CRA" element={<LayoutWrapper currentPageName="CRA"><Suspense fallback={<LoadingSpinner />}><CRA /></Suspense></LayoutWrapper>} />
+      <Route path="/CampMode" element={<LayoutWrapper currentPageName="CampMode"><Suspense fallback={<LoadingSpinner />}><CampMode /></Suspense></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
     </>

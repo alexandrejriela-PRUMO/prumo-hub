@@ -69,34 +69,14 @@ export default function FinancialTransactions() {
   const propertyMap = useMemo(() => { const m={}; properties.forEach(p=>{m[p.id]=p;}); return m; }, [properties]);
   const accountMap  = useMemo(() => { const m={}; accounts.forEach(a=>{m[a.id]=a;}); return m; }, [accounts]);
 
-  const createMutation = useMutation({
-    mutationFn: (d) => base44.entities.Expense.create(d),
-    onSuccess: () => { qc.invalidateQueries(['fin-manual']); handleClose(); toast.success('Transação adicionada!'); },
-  });
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Expense.update(id, data),
-    onSuccess: () => { qc.invalidateQueries(['fin-manual']); handleClose(); toast.success('Transação atualizada!'); },
-  });
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Expense.delete(id),
     onSuccess: () => { qc.invalidateQueries(['fin-manual']); toast.success('Transação removida!'); },
   });
 
   const handleOpen = (entry = null) => {
-    if (entry) { setEditing(entry); setForm({ ...EMPTY_FORM, ...entry, amount: String(entry.amount), account_id: entry.account_id || '' }); }
-    else { setEditing(null); setForm({ ...EMPTY_FORM, date: format(new Date(), 'yyyy-MM-dd') }); }
+    setEditing(entry || null);
     setShowForm(true);
-  };
-  const handleClose = () => { setShowForm(false); setEditing(null); setForm(EMPTY_FORM); };
-
-  const handleSubmit = () => {
-    if (!form.description || !form.amount || !form.date) { toast.error('Preencha descrição, valor e data.'); return; }
-    const acc = accounts.find(a => a.id === form.account_id);
-    const payload = { ...form, amount: parseFloat(form.amount), consultor_email: user.email,
-      competencia: form.date.substring(0,7), is_stripe: false,
-      account_name: acc?.name || (form.account_id ? '' : 'Caixa Manual') };
-    if (editing) updateMutation.mutate({ id: editing.id, data: payload });
-    else createMutation.mutate(payload);
   };
 
   const allTransactions = useMemo(() => {

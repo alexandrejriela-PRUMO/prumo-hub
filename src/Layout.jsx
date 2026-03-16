@@ -114,10 +114,10 @@ const equipeNavItems = [
     children: [
       { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
       { name: 'Agenda', page: 'Agenda', icon: CalendarDays },
+      { name: 'CRM Prumo', page: 'CRMBoard', icon: ClipboardList },
       { name: 'Meus Clientes', page: 'ConsultorClients', icon: Users },
-      { name: 'Gestão de Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
+      { name: 'Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
       { name: 'Meus Contratos', page: 'Contracts', icon: ScrollText },
-      { name: 'CRM de Clientes', page: 'CRMBoard', icon: ClipboardList },
     ]
   },
   {

@@ -130,6 +130,13 @@ export default function RuralCreditPage() {
         </Button>
       </div>
 
+      <ConsultorPropertySelector
+        properties={properties}
+        selectedPropertyId={selectedPropertyId}
+        onSelect={setSelectedPropertyId}
+        isLoading={!user}
+      />
+
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[

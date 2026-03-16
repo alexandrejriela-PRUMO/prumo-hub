@@ -17,6 +17,10 @@ import FinancialDashboard from './pages/FinancialDashboard';
 import RuralCredit from './pages/RuralCredit';
 import HarvestLoss from './pages/HarvestLoss';
 import CRA from './pages/CRA';
+import CampMode from './pages/CampMode';
+import OfflineIndicator from '@/components/offline/OfflineIndicator';
+import { useOfflineSync } from '@/components/offline/OfflineSyncHook';
+import { initializeOfflineDB } from '@/components/offline/OfflineStorageManager';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
@@ -30,6 +34,12 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isOnline, syncInProgress, syncStats } = useOfflineSync();
+
+  // Inicializar offline DB
+  React.useEffect(() => {
+    initializeOfflineDB().catch(err => console.error('[App] Erro ao inicializar offline DB:', err));
+  }, []);
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -53,7 +63,9 @@ const AuthenticatedApp = () => {
 
   // Render the main app
   return (
-    <Routes>
+    <>
+      <OfflineIndicator isOnline={isOnline} syncInProgress={syncInProgress} syncStats={syncStats} />
+      <Routes>
       <Route path="/" element={
         <LayoutWrapper currentPageName={mainPageKey}>
           <MainPage />
@@ -80,8 +92,10 @@ const AuthenticatedApp = () => {
       <Route path="/RuralCredit" element={<LayoutWrapper currentPageName="RuralCredit"><RuralCredit /></LayoutWrapper>} />
       <Route path="/HarvestLoss" element={<LayoutWrapper currentPageName="HarvestLoss"><HarvestLoss /></LayoutWrapper>} />
       <Route path="/CRA" element={<LayoutWrapper currentPageName="CRA"><CRA /></LayoutWrapper>} />
+      <Route path="/CampMode" element={<LayoutWrapper currentPageName="CampMode"><CampMode /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
+    </>
   );
 };
 

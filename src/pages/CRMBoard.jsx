@@ -370,6 +370,108 @@ export default function CRMBoard() {
         }}
       />
 
+      {/* Link Property Modal (when moving to Cliente) */}
+      <Dialog open={!!linkPropertyModal} onOpenChange={() => setLinkPropertyModal(null)}>
+        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-emerald-800">
+              <MapPin className="w-5 h-5" />
+              Vincular Propriedade / Empreendimento
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-500 -mt-2 mb-2">Para converter em <strong>Cliente</strong>, vincule uma propriedade ou empreendimento.</p>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <Label>Nome da Propriedade / Empreendimento *</Label>
+                <Input value={propertyData.property_name} onChange={e => setProp('property_name', e.target.value)} placeholder="Ex: Fazenda São João" />
+              </div>
+              <div>
+                <Label>Tipo</Label>
+                <Select value={propertyData.property_type} onValueChange={val => setProp('property_type', val)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="rural">Rural</SelectItem>
+                    <SelectItem value="urbano">Urbano / Empreendimento</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Atividade Principal</Label>
+                {propertyData.property_type === 'rural' ? (
+                  <Select value={propertyData.main_activity} onValueChange={val => setProp('main_activity', val)}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      {ATIVIDADES_RURAIS.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input value={propertyData.main_activity} onChange={e => setProp('main_activity', e.target.value)} placeholder="Ex: Condomínio" />
+                )}
+              </div>
+              <div className="col-span-2">
+                <Label>Endereço / Localização</Label>
+                <Input value={propertyData.location} onChange={e => setProp('location', e.target.value)} placeholder="Endereço completo" />
+              </div>
+              <div>
+                <Label>Cidade</Label>
+                <Input value={propertyData.city} onChange={e => setProp('city', e.target.value)} placeholder="Cidade" />
+              </div>
+              <div>
+                <Label>Estado</Label>
+                <Select value={propertyData.state} onValueChange={val => setProp('state', val)}>
+                  <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
+                  <SelectContent>
+                    {ESTADOS.map(uf => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              {propertyData.property_type === 'rural' ? (
+                <>
+                  <div>
+                    <Label>Área Total (ha)</Label>
+                    <Input type="number" value={propertyData.total_hectares} onChange={e => setProp('total_hectares', e.target.value)} placeholder="0" />
+                  </div>
+                  <div>
+                    <Label>APP (ha)</Label>
+                    <Input type="number" value={propertyData.app_hectares} onChange={e => setProp('app_hectares', e.target.value)} placeholder="0" />
+                  </div>
+                  <div>
+                    <Label>Reserva Legal (ha)</Label>
+                    <Input type="number" value={propertyData.legal_reserve_hectares} onChange={e => setProp('legal_reserve_hectares', e.target.value)} placeholder="0" />
+                  </div>
+                  <div>
+                    <Label>Atividades</Label>
+                    <Input value={propertyData.activities} onChange={e => setProp('activities', e.target.value)} placeholder="Ex: Soja, Milho" />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <Label>Área Total (m²)</Label>
+                    <Input type="number" value={propertyData.total_area_m2} onChange={e => setProp('total_area_m2', e.target.value)} placeholder="0" />
+                  </div>
+                  <div>
+                    <Label>Área Construída (m²)</Label>
+                    <Input type="number" value={propertyData.built_area_m2} onChange={e => setProp('built_area_m2', e.target.value)} placeholder="0" />
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="outline" onClick={() => setLinkPropertyModal(null)}>Cancelar</Button>
+              <Button
+                className="bg-emerald-600 hover:bg-emerald-700"
+                onClick={handleLinkPropertySubmit}
+                disabled={createPropertyMutation.isPending}
+              >
+                {createPropertyMutation.isPending ? 'Salvando...' : 'Converter para Cliente'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Client Detail Modal */}
       <Dialog open={!!selectedCRM} onOpenChange={() => setSelectedCRM(null)}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">

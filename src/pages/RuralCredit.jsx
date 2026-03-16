@@ -14,6 +14,7 @@ import {
   Building2, Calendar, AlertTriangle, CheckCircle2, Clock, DollarSign,
   TrendingDown, ChevronDown, ChevronUp, Paperclip
 } from 'lucide-react';
+import ConsultorPropertySelector from '@/components/consultor/ConsultorPropertySelector';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { toast } from 'sonner';
 

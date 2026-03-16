@@ -13,6 +13,7 @@ import {
   Plus, Pencil, Trash2, Upload, FileText, X, Loader2,
   Wheat, AlertTriangle, Image as ImageIcon, ChevronDown, ChevronUp, Paperclip
 } from 'lucide-react';
+import ConsultorPropertySelector from '@/components/consultor/ConsultorPropertySelector';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+
 const STATUS_COLOR = {
   Pendente: 'bg-amber-100 text-amber-700',
   Pago: 'bg-green-100 text-green-700',

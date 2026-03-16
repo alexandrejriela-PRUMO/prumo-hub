@@ -222,7 +222,46 @@ export default function CRMBoard() {
     const { destination, source, draggableId } = result;
     if (!destination) return;
     if (destination.droppableId === source.droppableId) return;
-    updateStatusMutation.mutate({ id: draggableId, status: destination.droppableId });
+    const destStatus = destination.droppableId;
+    if (destStatus === 'Ativo') {
+      // Check if already has a real property linked
+      const crm = crmList.find(c => c.id === draggableId);
+      const prop = crm ? propertyMap[crm.property_id] : null;
+      if (!prop || prop.is_client_only) {
+        // Need to link a property first
+        setLinkPropertyModal({ crmId: draggableId });
+        return;
+      }
+    }
+    updateStatusMutation.mutate({ id: draggableId, status: destStatus });
+  };
+
+  const setProp = (field, val) => setPropertyData(prev => ({ ...prev, [field]: val }));
+
+  const handleLinkPropertySubmit = () => {
+    if (!propertyData.property_name) {
+      toast.error('Informe o nome da propriedade/empreendimento.');
+      return;
+    }
+    const crm = crmList.find(c => c.id === linkPropertyModal.crmId);
+    const prop = crm ? propertyMap[crm.property_id] : null;
+    createPropertyMutation.mutate({
+      owner_email: crm?.client_email || '',
+      property_name: propertyData.property_name,
+      property_type: propertyData.property_type,
+      location: propertyData.location,
+      city: propertyData.city,
+      state: propertyData.state,
+      total_hectares: propertyData.property_type === 'rural' ? (parseFloat(propertyData.total_hectares) || 0) : undefined,
+      app_hectares: propertyData.property_type === 'rural' ? (parseFloat(propertyData.app_hectares) || 0) : undefined,
+      legal_reserve_hectares: propertyData.property_type === 'rural' ? (parseFloat(propertyData.legal_reserve_hectares) || 0) : undefined,
+      total_area_m2: propertyData.property_type === 'urbano' ? (parseFloat(propertyData.total_area_m2) || 0) : undefined,
+      built_area_m2: propertyData.property_type === 'urbano' ? (parseFloat(propertyData.built_area_m2) || 0) : undefined,
+      main_activity: propertyData.main_activity,
+      activities: propertyData.activities,
+      consultor_email: user?.email,
+      client_name: prop?.client_name || crm?.client_email?.split('@')[0] || '',
+    });
   };
 
   // Find the selected CRM's property for modal

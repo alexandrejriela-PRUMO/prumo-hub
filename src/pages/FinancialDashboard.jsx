@@ -46,7 +46,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export default function FinancialDashboard() {
   const [user, setUser] = useState(null);
-  const [filterAccount, setFilterAccount] = useState('');
+  const [filterAccount, setFilterAccount] = useState('__all');
 
   useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);
 

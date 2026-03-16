@@ -69,7 +69,7 @@ const consultorNavItems = [
     ]
   },
   {
-    name: 'Financeiro Geral',
+    name: 'Financeiro',
     icon: Wallet,
     children: [
       { name: 'Painel Financeiro', page: 'FinancialDashboard', icon: BarChart3 },

@@ -12,7 +12,8 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { propertyId } = await req.json();
+    const { propertyId, planType } = await req.json();
+    const resolvedPlanType = planType || user.user_type || 'produtor';
 
     // Criar ou buscar o produto
     const products = await stripe.products.list({ limit: 1 });

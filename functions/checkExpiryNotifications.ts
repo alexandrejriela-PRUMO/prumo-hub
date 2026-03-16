@@ -20,21 +20,31 @@ Deno.serve(async (req) => {
         );
         if (recent.length > 0) {
           const hrs = (today - new Date(recent[0].created_date)) / (1000 * 60 * 60);
-          if (hrs < 20) return;
+          if (hrs < 20) {
+            console.log(`[Expiry] Notificação duplicada evitada para ${userEmail}: "${title}"`);
+            return;
+          }
         }
-      } catch (e) { /* ignore */ }
+      } catch (e) { 
+        console.warn('[Expiry] Erro ao verificar duplicatas:', e.message);
+      }
 
-      await base44.asServiceRole.entities.InAppNotification.create({
-        user_email: userEmail,
-        title,
-        message,
-        event_type: eventType,
-        severity,
-        read: false,
-        link,
-        metadata: { type: 'expiry_check', checked_at: today.toISOString() }
-      });
-      totalSent++;
+      try {
+        await base44.asServiceRole.entities.InAppNotification.create({
+          user_email: userEmail,
+          title,
+          message,
+          event_type: eventType,
+          severity,
+          read: false,
+          link,
+          metadata: { type: 'expiry_check', checked_at: today.toISOString() }
+        });
+        totalSent++;
+        console.log(`[Expiry] Notificação enviada para ${userEmail}: "${title}"`);
+      } catch (e) {
+        console.error('[Expiry] Erro ao criar notificação:', e.message);
+      }
     };
 
     // ─── LICENSES ────────────────────────────────────────────────────────

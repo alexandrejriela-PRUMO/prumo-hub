@@ -50,15 +50,15 @@ Deno.serve(async (req) => {
        }
 
        if (event.type === 'create') {
-         const msgCreate = `Licença ${data.license_type}${data.license_number ? ` nº ${data.license_number}` : ''} foi registrada.`;
-         addNotif(owner, 'Nova Licença Cadastrada', msgCreate, 'licenca_vencendo', 'info', '/Licenses');
-         await addEmail(owner,
-           `[PRUMO Hub] Nova Licença Cadastrada: ${data.license_type}`,
-           `<p>Olá,</p><p>Uma nova licença foi cadastrada na plataforma PRUMO Hub:</p><ul><li><strong>Tipo:</strong> ${data.license_type}</li>${data.license_number ? `<li><strong>Número:</strong> ${data.license_number}</li>` : ''}<li><strong>Status:</strong> ${data.status || 'N/A'}</li></ul><p>Acesse a plataforma para mais detalhes.</p><p>Equipe PRUMO Hub</p>`,
-           'licenca_vencendo'
-         );
-         if (consultorEmail) addNotif(consultorEmail, 'Nova Licença - Cliente', msgCreate, 'licenca_vencendo', 'info', '/Licenses');
-       }
+           const msgCreate = `Licença ${data.license_type}${data.license_number ? ` nº ${data.license_number}` : ''} foi registrada.`;
+           addNotif(owner, 'Nova Licença Cadastrada', msgCreate, 'nova_licenca', 'info', '/Licenses');
+           await addEmail(owner,
+             `[PRUMO Hub] Nova Licença Cadastrada: ${data.license_type}`,
+             `<p>Olá,</p><p>Uma nova licença foi cadastrada na plataforma PRUMO Hub:</p><ul><li><strong>Tipo:</strong> ${data.license_type}</li>${data.license_number ? `<li><strong>Número:</strong> ${data.license_number}</li>` : ''}<li><strong>Status:</strong> ${data.status || 'N/A'}</li></ul><p>Acesse a plataforma para mais detalhes.</p><p>Equipe PRUMO Hub</p>`,
+             'nova_licenca'
+           );
+           if (consultorEmail) addNotif(consultorEmail, 'Nova Licença - Cliente', msgCreate, 'nova_licenca', 'info', '/Licenses');
+         }
 
        if (event.type === 'update') {
          const oldU = old_data?.updates || [], newU = data?.updates || [];

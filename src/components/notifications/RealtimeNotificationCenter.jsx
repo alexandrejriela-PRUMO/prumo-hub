@@ -73,11 +73,17 @@ export default function RealtimeNotificationCenter({ user, isOpen, onClose }) {
   const displayed = filter === 'unread' ? notifications.filter(n => !n.read) : notifications;
 
   const handleClick = async (notif) => {
-    if (!notif.read) await markAsRead(notif.id);
-    if (notif.link) {
-      const pageName = notif.link.replace('/', '');
-      navigate(createPageUrl(pageName));
-      onClose();
+    try {
+      if (!notif.read) await markAsRead(notif.id);
+      if (notif.link) {
+        const pageName = notif.link.replace(/^\//, '');
+        if (pageName) {
+          navigate(createPageUrl(pageName));
+          onClose();
+        }
+      }
+    } catch (error) {
+      console.error('[Notif] Erro ao processar clique:', error);
     }
   };
 

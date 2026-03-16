@@ -88,40 +88,52 @@ async function getResponsibleEmails(base44, data, entityName) {
 
 // ─── Verifica preferências e envia notificação ───────────────────────────────
 async function dispatchNotification(base44, email, eventType, title, message, severity, link, metadata) {
-  // Verifica preferência específica ou global "todos"
-  const [prefs, globalPrefs] = await Promise.all([
-    base44.asServiceRole.entities.NotificationPreference.filter({ user_email: email, event_type: eventType }),
-    base44.asServiceRole.entities.NotificationPreference.filter({ user_email: email, event_type: 'todos' }),
-  ]);
+  try {
+    // Verifica preferência específica ou global "todos"
+    const [prefs, globalPrefs] = await Promise.all([
+      base44.asServiceRole.entities.NotificationPreference.filter({ user_email: email, event_type: eventType }),
+      base44.asServiceRole.entities.NotificationPreference.filter({ user_email: email, event_type: 'todos' }),
+    ]);
 
-  const allPrefs = [...prefs, ...globalPrefs];
+    const allPrefs = [...prefs, ...globalPrefs];
 
-  // Se não há nenhuma preferência configurada, assume push habilitado por padrão
-  const pushEnabled  = allPrefs.length === 0 ? true  : allPrefs.some(p => p.push_enabled);
-  const emailEnabled = allPrefs.some(p => p.email_enabled);
+    // Se não há nenhuma preferência configurada, assume push habilitado por padrão
+    const pushEnabled  = allPrefs.length === 0 ? true  : allPrefs.some(p => p.push_enabled);
+    const emailEnabled = allPrefs.length === 0 ? false : allPrefs.some(p => p.email_enabled);
 
-  if (pushEnabled) {
-    await base44.asServiceRole.entities.InAppNotification.create({
-      user_email: email,
-      title,
-      message,
-      event_type: eventType,
-      severity,
-      read: false,
-      link,
-      metadata,
-    });
-    console.log(`[Hub] Push → ${email} | ${eventType}`);
-  }
+    if (pushEnabled) {
+      try {
+        await base44.asServiceRole.entities.InAppNotification.create({
+          user_email: email,
+          title,
+          message,
+          event_type: eventType,
+          severity,
+          read: false,
+          link,
+          metadata,
+        });
+        console.log(`[Hub] Push → ${email} | ${eventType}`);
+      } catch (err) {
+        console.error(`[Hub] Erro ao criar push para ${email}:`, err.message);
+      }
+    }
 
-  if (emailEnabled) {
-    await base44.asServiceRole.integrations.Core.SendEmail({
-      from_name: 'PRUMO Hub',
-      to: email,
-      subject: title,
-      body: `Olá,\n\n${message}\n\nAcesse o aplicativo para mais detalhes: https://prumo.app\n\nAtenciosamente,\nEquipe PRUMO`,
-    });
-    console.log(`[Hub] Email → ${email} | ${eventType}`);
+    if (emailEnabled) {
+      try {
+        await base44.asServiceRole.integrations.Core.SendEmail({
+          from_name: 'PRUMO Hub',
+          to: email,
+          subject: title,
+          body: `Olá,\n\n${message}\n\nAcesse o aplicativo para mais detalhes: https://prumo.app\n\nAtenciosamente,\nEquipe PRUMO`,
+        });
+        console.log(`[Hub] Email → ${email} | ${eventType}`);
+      } catch (err) {
+        console.error(`[Hub] Erro ao enviar email para ${email}:`, err.message);
+      }
+    }
+  } catch (error) {
+    console.error(`[Hub] Erro ao disparar notificação para ${email}:`, error.message);
   }
 }
 

@@ -9,11 +9,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, FileText, Trash2, Download } from 'lucide-react';
+import { Plus, FileText, Trash2, Download, File } from 'lucide-react';
 
 export default function ClientARTPanel({ client }) {
   const [showForm, setShowForm] = useState(false);
   const [artToDelete, setArtToDelete] = useState(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
   const [formData, setFormData] = useState({
     art_number: '',
     art_type: '',
@@ -23,9 +24,30 @@ export default function ClientARTPanel({ client }) {
     expiry_date: '',
     description: '',
     document_url: '',
+    document_name: '',
     notes: ''
   });
   const queryClient = useQueryClient();
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setUploadingFile(true);
+    try {
+      const response = await base44.integrations.Core.UploadFile({ file });
+      setFormData(prev => ({
+        ...prev,
+        document_url: response.file_url,
+        document_name: file.name
+      }));
+    } catch (error) {
+      console.error('Erro ao fazer upload:', error);
+      alert('Erro ao fazer upload do arquivo');
+    } finally {
+      setUploadingFile(false);
+    }
+  };
 
   const { data: arts = [] } = useQuery({
     queryKey: ['client-arts', client?.id],
@@ -51,6 +73,7 @@ export default function ClientARTPanel({ client }) {
         expiry_date: '',
         description: '',
         document_url: '',
+        document_name: '',
         notes: ''
       });
     }
@@ -250,13 +273,34 @@ export default function ClientARTPanel({ client }) {
               />
             </div>
             <div>
-              <Label className="text-sm font-medium">URL do Documento</Label>
-              <Input
-                value={formData.document_url}
-                onChange={(e) => setFormData({ ...formData, document_url: e.target.value })}
-                placeholder="https://..."
-                className="mt-1"
-              />
+              <Label className="text-sm font-medium">Documento</Label>
+              {formData.document_name ? (
+                <div className="mt-1 p-3 bg-green-50 rounded-lg border border-green-200 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <File className="w-4 h-4 text-green-600" />
+                    <span className="text-sm text-green-800 truncate">{formData.document_name}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, document_url: '', document_name: '' }))}
+                    className="text-xs text-green-600 hover:text-green-800 font-medium"
+                  >
+                    Remover
+                  </button>
+                </div>
+              ) : (
+                <label className="mt-1 flex items-center justify-center gap-2 p-3 border border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                  <FileText className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-600">Clique para selecionar arquivo</span>
+                  <input
+                    type="file"
+                    onChange={handleFileUpload}
+                    disabled={uploadingFile}
+                    className="hidden"
+                  />
+                </label>
+              )}
+              {uploadingFile && <p className="text-xs text-gray-500 mt-2">Enviando arquivo...</p>}
             </div>
             <div className="flex gap-2 pt-4">
               <Button

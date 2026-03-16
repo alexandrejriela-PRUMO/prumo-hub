@@ -604,8 +604,8 @@ export default function Layout({ children, currentPageName }) {
       <BottomTabBar currentPageName={currentPageName} userType={user?.user_type} />
 
       {/* Main Content */}
-      <main className="lg:ml-72 pt-20 lg:pt-16 min-h-screen">
-        <div className="p-3 sm:p-4 lg:p-8 pb-safe lg:pb-8">
+      <main className="lg:ml-72 pt-20 lg:pt-16 min-h-screen bg-gradient-to-br from-stone-50 via-white to-emerald-50/20">
+        <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 pb-safe lg:pb-8">
           <ErrorBoundary>
             <RouteTransition>
               {children}

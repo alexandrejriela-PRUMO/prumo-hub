@@ -28,7 +28,6 @@ function normalizeStatus(s) {
   if (s === 'Cancelada') return 'Cancelado';
   return s;
 }
-const EMPTY_FORM = { transaction_type:'despesa', description:'', amount:'', date:'', category:'Outros', account_id:'', client_name:'', status:'Pago', payment_method:'PIX', notes:'' };
 
 export default function FinancialTransactions() {
   const [user, setUser] = useState(null);

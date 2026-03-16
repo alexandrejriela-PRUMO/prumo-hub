@@ -14,6 +14,7 @@ import FinancialTransactions from './pages/FinancialTransactions';
 import FinancialDashboard from './pages/FinancialDashboard';
 import RuralCredit from './pages/RuralCredit';
 import HarvestLoss from './pages/HarvestLoss';
+import CRA from './pages/CRA';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
@@ -76,6 +77,7 @@ const AuthenticatedApp = () => {
       <Route path="/FinancialDashboard" element={<LayoutWrapper currentPageName="FinancialDashboard"><FinancialDashboard /></LayoutWrapper>} />
       <Route path="/RuralCredit" element={<LayoutWrapper currentPageName="RuralCredit"><RuralCredit /></LayoutWrapper>} />
       <Route path="/HarvestLoss" element={<LayoutWrapper currentPageName="HarvestLoss"><HarvestLoss /></LayoutWrapper>} />
+      <Route path="/CRA" element={<LayoutWrapper currentPageName="CRA"><CRA /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

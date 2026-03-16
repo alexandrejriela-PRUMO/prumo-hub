@@ -12,6 +12,7 @@ import RealtimeNotificationCenter from './components/notifications/RealtimeNotif
 import { Badge } from '@/components/ui/badge';
 import {
               LayoutDashboard,
+              CalendarDays,
               FileCheck,
               FileText,
               MapPin,
@@ -55,6 +56,7 @@ const consultorNavItems = [
     icon: Briefcase,
     children: [
       { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
+      { name: 'Agenda', page: 'Agenda', icon: CalendarDays },
       { name: 'Meus Clientes', page: 'ConsultorClients', icon: Users },
       { name: 'Gestão de Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
       { name: 'Meus Contratos', page: 'Contracts', icon: ScrollText },

@@ -271,12 +271,19 @@ export default function FinancialTransactions() {
                   <td className="px-4 py-3 text-xs text-gray-500">{t.date?format(parseISO(t.date),'dd/MM/yyyy'):'—'}</td>
                   <td className={`px-4 py-3 text-right font-bold text-sm ${t.type==='receita'?'text-emerald-600':'text-red-600'}`}>{t.type==='despesa'?'- ':''}{fmt(t.amount)}</td>
                   <td className="px-4 py-3"><Badge className={`${STATUS_BADGES[t.status]||'bg-gray-100 text-gray-500'} border-0 text-xs`}>{t.status}</Badge></td>
-                  <td className="px-4 py-3">{t.editable&&(
-                    <div className="flex gap-1">
-                      <button onClick={()=>handleOpen(t.raw)} className="p-1 hover:bg-gray-100 rounded"><Pencil className="w-3.5 h-3.5 text-gray-400"/></button>
-                      <button onClick={()=>{if(confirm('Remover?'))deleteMutation.mutate(t.raw.id);}} className="p-1 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5 text-red-400"/></button>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-1 items-center">
+                      {t.raw?.attachments?.length > 0 && (
+                        <span title={`${t.raw.attachments.length} anexo(s)`} className="flex items-center gap-0.5 text-xs text-blue-500">
+                          <Paperclip className="w-3 h-3"/>{t.raw.attachments.length}
+                        </span>
+                      )}
+                      {t.editable && <>
+                        <button onClick={()=>handleOpen(t.raw)} className="p-1 hover:bg-gray-100 rounded"><Pencil className="w-3.5 h-3.5 text-gray-400"/></button>
+                        <button onClick={()=>{if(confirm('Remover?'))deleteMutation.mutate(t.raw.id);}} className="p-1 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5 text-red-400"/></button>
+                      </>}
                     </div>
-                  )}</td>
+                  </td>
                 </tr>
               ))}
             </tbody>

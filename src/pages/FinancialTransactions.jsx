@@ -306,73 +306,13 @@ export default function FinancialTransactions() {
         </div>
       </div>
 
-      {/* Form Dialog */}
-      <Dialog open={showForm} onOpenChange={handleClose}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="text-emerald-800">{editing?'Editar Transação':'Nova Transação Manual'}</DialogTitle></DialogHeader>
-          {/* Type toggle */}
-          <div className="flex gap-2 mb-2">
-            <button onClick={()=>setForm(p=>({...p,transaction_type:'receita',category:'Cobrança de Cliente (Manual)'}))}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${form.transaction_type==='receita'?'bg-emerald-50 border-emerald-500 text-emerald-700':'bg-white border-gray-200 text-gray-500 hover:border-gray-300'}`}>
-              <TrendingUp className="w-4 h-4"/>Receita</button>
-            <button onClick={()=>setForm(p=>({...p,transaction_type:'despesa',category:'Outros'}))}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${form.transaction_type==='despesa'?'bg-red-50 border-red-400 text-red-700':'bg-white border-gray-200 text-gray-500 hover:border-gray-300'}`}>
-              <TrendingDown className="w-4 h-4"/>Despesa</button>
-          </div>
-          {form.transaction_type==='receita'&&(
-            <div className="flex items-center gap-2 p-3 bg-violet-50 rounded-lg border border-violet-100 text-xs text-violet-700 mb-1">
-              <Zap className="w-4 h-4 flex-shrink-0"/>
-              <span>Receitas via <strong>Stripe</strong> aparecem automaticamente. Use este formulário apenas para receitas <strong>não vinculadas ao Stripe</strong>.</span>
-            </div>
-          )}
-          <div className="space-y-4">
-            <div><Label>Descrição *</Label><Input value={form.description} onChange={e=>setForm(p=>({...p,description:e.target.value}))} placeholder="Ex: Consultoria ambiental"/></div>
-            <div className="grid grid-cols-2 gap-4">
-              <div><Label>Valor (R$) *</Label><Input type="number" step="0.01" value={form.amount} onChange={e=>setForm(p=>({...p,amount:e.target.value}))} placeholder="0,00"/></div>
-              <div><Label>Data *</Label><Input type="date" value={form.date} onChange={e=>setForm(p=>({...p,date:e.target.value}))}/></div>
-            </div>
-            {/* Account selector */}
-            <div><Label>Conta Financeira</Label>
-              <Select value={form.account_id} onValueChange={v=>setForm(p=>({...p,account_id:v}))}>
-                <SelectTrigger><SelectValue placeholder="Caixa Manual (padrão)"/></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={null}>Caixa Manual</SelectItem>
-                  {accounts.filter(a=>!a.is_stripe).map(a=>(
-                    <SelectItem key={a.id} value={a.id}>{a.name} · {a.account_type}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div><Label>Categoria</Label>
-                <Select value={form.category} onValueChange={v=>setForm(p=>({...p,category:v}))}>
-                  <SelectTrigger><SelectValue/></SelectTrigger>
-                  <SelectContent>{categories.map(c=><SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                </Select></div>
-              <div><Label>Status</Label>
-                <Select value={form.status} onValueChange={v=>setForm(p=>({...p,status:v}))}>
-                  <SelectTrigger><SelectValue/></SelectTrigger>
-                  <SelectContent><SelectItem value="Pago">Pago</SelectItem><SelectItem value="Pendente">Pendente</SelectItem><SelectItem value="Cancelado">Cancelado</SelectItem></SelectContent>
-                </Select></div>
-            </div>
-            {form.transaction_type==='receita'&&(
-              <div><Label>Cliente</Label><Input value={form.client_name} onChange={e=>setForm(p=>({...p,client_name:e.target.value}))} placeholder="Nome do cliente (opcional)"/></div>
-            )}
-            <div><Label>Forma de Pagamento</Label>
-              <Select value={form.payment_method} onValueChange={v=>setForm(p=>({...p,payment_method:v}))}>
-                <SelectTrigger><SelectValue/></SelectTrigger>
-                <SelectContent>{PAYMENT_METHODS.map(m=><SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
-              </Select></div>
-            <div><Label>Observações</Label><Input value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))} placeholder="Notas adicionais"/></div>
-            <div className="flex justify-end gap-3 pt-2">
-              <Button variant="outline" onClick={handleClose}>Cancelar</Button>
-              <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={handleSubmit} disabled={createMutation.isPending||updateMutation.isPending}>
-                {createMutation.isPending||updateMutation.isPending?'Salvando...':'Salvar'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <TransactionForm
+        open={showForm}
+        onClose={() => { setShowForm(false); setEditing(null); }}
+        editing={editing}
+        consultorEmail={user?.email}
+        accounts={accounts}
+      />
     </div>
   );
 }

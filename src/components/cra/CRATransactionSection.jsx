@@ -8,13 +8,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, TrendingUp } from 'lucide-react';
+import { Plus, TrendingUp, AlertCircle } from 'lucide-react';
 
 export default function CRATransactionSection({ user }) {
   const [showForm, setShowForm] = useState(false);
+  const [selectedTitle, setSelectedTitle] = useState(null);
   const [formData, setFormData] = useState({
     transaction_number: '',
-    seller_property_id: '',
+    cra_title_id: '',
+    buyer_email: '',
     buyer_property_id: '',
     buyer_car: '',
     area_hectares: '',
@@ -22,7 +24,14 @@ export default function CRATransactionSection({ user }) {
     transaction_date: '',
     status: 'Em negociação'
   });
+
   const queryClient = useQueryClient();
+
+  const { data: titles = [] } = useQuery({
+    queryKey: ['cra-titles-for-transaction', user?.email],
+    queryFn: () => base44.entities.CRATitle.filter({ owner_email: user?.email }),
+    enabled: !!user?.email
+  });
 
   const { data: transactions = [] } = useQuery({
     queryKey: ['cra-transactions', user?.email],
@@ -30,18 +39,28 @@ export default function CRATransactionSection({ user }) {
     enabled: !!user?.email
   });
 
+  const { data: buyerProperties = [] } = useQuery({
+    queryKey: ['properties-for-buyer', user?.email],
+    queryFn: () => base44.entities.Property.filter({ owner_email: user?.email }),
+    enabled: !!user?.email
+  });
+
   const createTransactionMutation = useMutation({
     mutationFn: (data) => base44.entities.CRATransaction.create({
       ...data,
       seller_email: user.email,
+      seller_property_id: selectedTitle?.property_id,
+      origin_id: selectedTitle?.origin_id,
       total_value: parseFloat(data.area_hectares) * parseFloat(data.price_per_hectare)
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cra-transactions'] });
       setShowForm(false);
+      setSelectedTitle(null);
       setFormData({
         transaction_number: '',
-        seller_property_id: '',
+        cra_title_id: '',
+        buyer_email: '',
         buyer_property_id: '',
         buyer_car: '',
         area_hectares: '',
@@ -52,12 +71,14 @@ export default function CRATransactionSection({ user }) {
     }
   });
 
-  const handleSubmit = () => {
-    if (!formData.transaction_number || !formData.seller_property_id || !formData.area_hectares) {
-      alert('Preencha os campos obrigatórios');
-      return;
-    }
-    createTransactionMutation.mutate(formData);
+  const handleTitleChange = (titleId) => {
+    const title = titles.find(t => t.id === titleId);
+    setSelectedTitle(title);
+    setFormData({
+      ...formData,
+      cra_title_id: titleId,
+      cra_number: title?.cra_number || ''
+    });
   };
 
   const getStatusColor = (status) => {
@@ -69,9 +90,11 @@ export default function CRATransactionSection({ user }) {
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
-  const totalValue = formData.area_hectares && formData.price_per_hectare 
-    ? (parseFloat(formData.area_hectares) * parseFloat(formData.price_per_hectare)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-    : 'R$ 0,00';
+  const getAvailableArea = (title) => {
+    if (!title) return 0;
+    const usedArea = title.transaction_history?.reduce((sum, t) => sum + (t.area_hectares || 0), 0) || 0;
+    return (title.available_area_hectares || title.cra_area_hectares) - usedArea;
+  };
 
   return (
     <div className="space-y-4">
@@ -81,7 +104,7 @@ export default function CRATransactionSection({ user }) {
           className="bg-emerald-600 hover:bg-emerald-700"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Registrar Transação
+          Nova Transação
         </Button>
       </div>
 
@@ -94,36 +117,67 @@ export default function CRATransactionSection({ user }) {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {transactions.map(transaction => (
-            <Card key={transaction.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  <div>
-                    <h3 className="font-bold text-gray-900 mb-2">Transação {transaction.transaction_number}</h3>
-                    <Badge className={getStatusColor(transaction.status)}>{transaction.status}</Badge>
+          {transactions.map(transaction => {
+            const totalValue = transaction.total_value || 0;
+            
+            return (
+              <Card key={transaction.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between gap-4 mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="font-bold text-lg text-gray-900">Transação {transaction.transaction_number}</h3>
+                        <Badge className={getStatusColor(transaction.status)}>{transaction.status}</Badge>
+                      </div>
+                      <p className="text-xs text-gray-500">CRA: {transaction.cra_number}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="grid md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-600">Área negociada:</span>
-                    <p className="font-medium text-emerald-700">{transaction.area_hectares} ha</p>
+
+                  {/* Fluxo de Transação */}
+                  <div className="bg-gradient-to-r from-emerald-50 to-purple-50 p-4 rounded-lg mb-4 border border-emerald-200">
+                    <p className="text-xs font-semibold text-gray-700 mb-3">Fluxo da Transação:</p>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-emerald-600" />
+                        <span className="text-sm"><strong>Vendedor (Propriedade Origem):</strong></span>
+                        <span className="text-sm font-mono bg-white px-2 py-1 rounded text-xs">{transaction.seller_email}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-purple-600" />
+                        <span className="text-sm"><strong>Comprador (Compensação):</strong></span>
+                        <span className="text-sm font-mono bg-white px-2 py-1 rounded text-xs">{transaction.buyer_email}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-blue-600" />
+                        <span className="text-sm"><strong>Propriedade Compradora (CAR):</strong></span>
+                        <span className="text-sm font-mono bg-white px-2 py-1 rounded text-xs">{transaction.buyer_car}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-gray-600">Valor total:</span>
-                    <p className="font-medium text-green-700">{transaction.total_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+
+                  {/* Detalhes */}
+                  <div className="grid md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">Área Negociada:</span>
+                      <p className="font-medium text-emerald-700">{transaction.area_hectares} ha</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Valor/ha:</span>
+                      <p className="font-medium">R$ {parseFloat(transaction.price_per_hectare).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Valor Total:</span>
+                      <p className="font-bold text-purple-700">R$ {totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Data:</span>
+                      <p className="font-medium">{new Date(transaction.transaction_date).toLocaleDateString('pt-BR')}</p>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-gray-600">Preço/ha:</span>
-                    <p className="font-medium">R$ {transaction.price_per_hectare.toLocaleString('pt-BR')}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Data:</span>
-                    <p className="font-medium">{new Date(transaction.transaction_date).toLocaleDateString('pt-BR')}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
@@ -131,89 +185,139 @@ export default function CRATransactionSection({ user }) {
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Registrar Nova Transação</DialogTitle>
+            <DialogTitle>Registrar Nova Transação de CRA</DialogTitle>
+            <p className="text-xs text-gray-600 mt-2">Você é o VENDEDOR. Indique quem será o COMPRADOR (que fará compensação)</p>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Título CRA */}
             <div>
-              <Label className="text-sm font-medium">Número da Transação *</Label>
-              <Input
-                value={formData.transaction_number}
-                onChange={(e) => setFormData({ ...formData, transaction_number: e.target.value })}
-                placeholder="Ex: TXN-2024-001"
-                className="mt-1"
-              />
+              <Label className="text-sm font-medium">Título CRA (que você vai vender) *</Label>
+              <Select value={formData.cra_title_id} onValueChange={handleTitleChange}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Selecione o título CRA" />
+                </SelectTrigger>
+                <SelectContent>
+                  {titles.map(title => {
+                    const available = getAvailableArea(title);
+                    return (
+                      <SelectItem key={title.id} value={title.id} disabled={available <= 0}>
+                        CRA {title.cra_number} - {available.toFixed(2)}ha disponível
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+              {selectedTitle && (
+                <div className="mt-2 p-3 bg-green-50 rounded text-xs text-green-900 border border-green-200">
+                  <p><strong>CRA:</strong> {selectedTitle.cra_number}</p>
+                  <p><strong>Área Total:</strong> {selectedTitle.cra_area_hectares} ha</p>
+                  <p><strong>Disponível:</strong> {getAvailableArea(selectedTitle).toFixed(2)} ha</p>
+                  <p className="mt-1"><strong>Sua Propriedade (Origem):</strong> CAR da propriedade vendedora</p>
+                </div>
+              )}
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
+            {/* Comprador */}
+            <div className="grid md:grid-cols-2 gap-4 pt-4 border-t">
+              <div>
+                <Label className="text-sm font-medium">Email do Comprador *</Label>
+                <Input
+                  type="email"
+                  value={formData.buyer_email}
+                  onChange={(e) => setFormData({ ...formData, buyer_email: e.target.value })}
+                  placeholder="comprador@email.com"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Propriedade Compradora (CAR) *</Label>
+                <Input
+                  value={formData.buyer_car}
+                  onChange={(e) => setFormData({ ...formData, buyer_car: e.target.value })}
+                  placeholder="Ex: 123.456.789-12.0001-25"
+                  className="mt-1"
+                />
+              </div>
+            </div>
+
+            {/* Detalhes Comerciais */}
+            <div className="grid md:grid-cols-3 gap-4 pt-4 border-t">
               <div>
                 <Label className="text-sm font-medium">Área (ha) *</Label>
                 <Input
                   type="number"
+                  step="0.01"
                   value={formData.area_hectares}
                   onChange={(e) => setFormData({ ...formData, area_hectares: e.target.value })}
-                  placeholder="0.00"
-                  step="0.01"
+                  placeholder="Área a ser negociada"
                   className="mt-1"
                 />
               </div>
               <div>
-                <Label className="text-sm font-medium">Preço por hectare (R$) *</Label>
+                <Label className="text-sm font-medium">Valor por ha (R$) *</Label>
                 <Input
                   type="number"
+                  step="0.01"
                   value={formData.price_per_hectare}
                   onChange={(e) => setFormData({ ...formData, price_per_hectare: e.target.value })}
-                  placeholder="0.00"
-                  step="0.01"
+                  placeholder="Valor"
                   className="mt-1"
                 />
               </div>
-            </div>
-
-            <div className="p-3 bg-gray-50 rounded-lg border">
-              <div className="text-sm">
-                <span className="text-gray-600">Valor total estimado:</span>
-                <p className="font-bold text-emerald-700 text-lg">{totalValue}</p>
+              <div>
+                <Label className="text-sm font-medium">Valor Total</Label>
+                <div className="mt-1 p-2 bg-gray-100 rounded font-bold text-emerald-700">
+                  R$ {(
+                    (parseFloat(formData.area_hectares) || 0) * 
+                    (parseFloat(formData.price_per_hectare) || 0)
+                  ).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </div>
               </div>
             </div>
 
-            <div>
-              <Label className="text-sm font-medium">Data da Negociação *</Label>
-              <Input
-                type="date"
-                value={formData.transaction_date}
-                onChange={(e) => setFormData({ ...formData, transaction_date: e.target.value })}
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label className="text-sm font-medium">Status</Label>
-              <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Em negociação">Em negociação</SelectItem>
-                  <SelectItem value="Contrato assinado">Contrato assinado</SelectItem>
-                  <SelectItem value="Concluída">Concluída</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* Data e Status */}
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm font-medium">Data da Negociação *</Label>
+                <Input
+                  type="date"
+                  value={formData.transaction_date}
+                  onChange={(e) => setFormData({ ...formData, transaction_date: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Status *</Label>
+                <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Em negociação">Em negociação</SelectItem>
+                    <SelectItem value="Contrato assinado">Contrato assinado</SelectItem>
+                    <SelectItem value="Concluída">Concluída</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="flex gap-2 pt-4">
               <Button
                 variant="outline"
-                onClick={() => setShowForm(false)}
+                onClick={() => {
+                  setShowForm(false);
+                  setSelectedTitle(null);
+                }}
                 className="flex-1"
               >
                 Cancelar
               </Button>
               <Button
-                onClick={handleSubmit}
+                onClick={() => createTransactionMutation.mutate(formData)}
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700"
                 disabled={createTransactionMutation.isPending}
               >
-                {createTransactionMutation.isPending ? 'Salvando...' : 'Salvar'}
+                {createTransactionMutation.isPending ? 'Registrando...' : 'Registrar Transação'}
               </Button>
             </div>
           </div>

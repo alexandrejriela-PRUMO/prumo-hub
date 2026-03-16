@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import ErrorBoundary from './components/ErrorBoundary';
+import PullToRefresh from './components/mobile/PullToRefresh';
 import BottomTabBar from './components/BottomTabBar';
 import ThemeProvider from './components/ThemeProvider';
 import RouteTransition from './components/mobile/RouteTransition';
@@ -49,7 +50,10 @@ import {
               Sprout,
               Wheat,
               ReceiptText,
-              Smartphone
+              Smartphone,
+              ChevronLeft,
+              AlertCircle,
+              Trash2
                     } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -269,6 +273,10 @@ export default function Layout({ children, currentPageName }) {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [expandedMenus, setExpandedMenus] = useState({});
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const location = useLocation();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const loadUser = async () => {
@@ -299,6 +307,30 @@ export default function Layout({ children, currentPageName }) {
     base44.auth.logout();
   };
 
+  const handleDeleteAccount = async () => {
+    if (!user?.email) return;
+    setDeleting(true);
+    try {
+      await base44.auth.updateMe({ status: 'inactive', deleted_at: new Date().toISOString() });
+      toast.success('Conta desativada com sucesso.');
+      await new Promise(r => setTimeout(r, 1000));
+      base44.auth.logout();
+    } catch (error) {
+      toast.error('Erro ao desativar conta.');
+      console.error(error);
+    } finally {
+      setDeleting(false);
+      setDeleteConfirmOpen(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    queryClient.invalidateQueries();
+  };
+
+  // Check if on root page
+  const isRootPage = currentPageName === 'Home' || !currentPageName;
+
   return (
     <ThemeProvider>
     <div className="min-h-screen bg-gradient-to-br from-stone-50 via-white to-emerald-50/30">
@@ -328,7 +360,11 @@ export default function Layout({ children, currentPageName }) {
           onClick={() => setSidebarOpen(true)}
           className="p-2 rounded-xl hover:bg-emerald-50 transition-colors"
         >
-          <Menu className="w-6 h-6 text-emerald-900" />
+          {!isRootPage ? (
+            <ChevronLeft className="w-6 h-6 text-emerald-900" onClick={(e) => { e.stopPropagation(); window.history.back(); }} />
+          ) : (
+            <Menu className="w-6 h-6 text-emerald-900" />
+          )}
         </button>
         <img 
           src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/9e64158f0_PRUMO1.png" 
@@ -364,16 +400,23 @@ export default function Layout({ children, currentPageName }) {
                   Suporte
                 </Link>
                 <Link to={createPageUrl('Invoices')} className="flex items-center gap-3 px-4 py-2 hover:bg-emerald-50 transition-colors text-sm text-emerald-900">
-                  <CreditCard className="w-4 h-4" />
-                  Assinatura e Boletos
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-4 py-2 hover:bg-emerald-50 transition-colors text-sm text-emerald-900"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Sair
-                </button>
+                    <CreditCard className="w-4 h-4" />
+                    Assinatura e Boletos
+                  </Link>
+                  <button
+                    onClick={() => setDeleteConfirmOpen(true)}
+                    className="w-full flex items-center gap-3 px-4 py-2 hover:bg-red-50 transition-colors text-sm text-red-600"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Deletar Conta
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-4 py-2 hover:bg-emerald-50 transition-colors text-sm text-emerald-900"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sair
+                  </button>
               </div>
             </div>
           )}
@@ -413,6 +456,13 @@ export default function Layout({ children, currentPageName }) {
                 <CreditCard className="w-4 h-4" />
                 Assinatura e Boletos
               </Link>
+              <button
+                onClick={() => setDeleteConfirmOpen(true)}
+                className="w-full flex items-center gap-3 px-4 py-2 hover:bg-red-50 transition-colors text-sm text-red-600"
+              >
+                <Trash2 className="w-4 h-4" />
+                Deletar Conta
+              </button>
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-4 py-2 hover:bg-emerald-50 transition-colors text-sm text-emerald-900"
@@ -605,14 +655,50 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Main Content */}
       <main className="lg:ml-72 pt-20 lg:pt-16 min-h-screen bg-gradient-to-br from-stone-50 via-white to-emerald-50/20">
-        <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 pb-safe lg:pb-8">
-          <ErrorBoundary>
-            <RouteTransition>
-              {children}
-            </RouteTransition>
-          </ErrorBoundary>
-        </div>
+        <PullToRefresh onRefresh={handleRefresh}>
+          <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 pb-safe lg:pb-8">
+            <ErrorBoundary>
+              <RouteTransition>
+                {children}
+              </RouteTransition>
+            </ErrorBoundary>
+          </div>
+        </PullToRefresh>
       </main>
+
+      {/* Delete Account Confirmation Dialog */}
+      {deleteConfirmOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-lg max-w-sm w-full p-6 space-y-4">
+            <div className="flex items-center gap-3 text-red-600">
+              <AlertCircle className="w-6 h-6" />
+              <h3 className="text-lg font-bold">Deletar Conta</h3>
+            </div>
+            <p className="text-gray-700 text-sm">
+              Tem certeza que deseja desativar sua conta? Esta ação desativará sua conta e você será desconectado.
+            </p>
+            <p className="text-gray-500 text-xs">
+              Você poderá reativar sua conta entrando em contato com o suporte.
+            </p>
+            <div className="flex gap-3 justify-end pt-2">
+              <button
+                onClick={() => setDeleteConfirmOpen(false)}
+                disabled={deleting}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors text-sm font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors text-sm font-medium disabled:opacity-50"
+              >
+                {deleting ? 'Deletando...' : 'Deletar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </ThemeProvider>
   );

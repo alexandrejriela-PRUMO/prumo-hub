@@ -74,17 +74,17 @@ export default function FinancialDashboard() {
 
   // Filter entries by account
   const filteredCharges = useMemo(() => {
-    if (!filterAccount || filterAccount === '__stripe') return filterAccount === '__stripe' ? charges : filterAccount ? [] : charges;
-    return filterAccount === '__stripe' ? charges : [];
+    if (filterAccount === '__all' || filterAccount === '__stripe') return filterAccount === '__stripe' ? charges : charges;
+    return [];
   }, [charges, filterAccount]);
 
   const filteredManual = useMemo(() => {
-    if (!filterAccount) return manualEntries;
+    if (filterAccount === '__all') return manualEntries;
     if (filterAccount === '__caixa') return manualEntries.filter(e => !e.account_id);
     return manualEntries.filter(e => e.account_id === filterAccount);
   }, [manualEntries, filterAccount]);
 
-  const effectiveCharges = filterAccount && filterAccount !== '__stripe' ? [] : charges;
+  const effectiveCharges = filterAccount === '__all' || filterAccount === '__stripe' ? charges : [];
   const effectiveManual  = filteredManual;
 
   // ── Last 12 months history ────────────────────────────────────────────────
@@ -122,7 +122,7 @@ export default function FinancialDashboard() {
     months.forEach(m => { byMonth[m] = { receita: 0, despesa: 0 }; });
 
     // Pending Stripe charges
-    if (!filterAccount || filterAccount === '__stripe') {
+    if (filterAccount === '__all' || filterAccount === '__stripe') {
       charges.forEach(c => {
         const month = c.due_date?.substring(0,7);
         if (byMonth[month] && ['Pendente','Vencido'].includes(normalizeStatus(c.status))) {
@@ -233,8 +233,8 @@ export default function FinancialDashboard() {
                 {accountFilterOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
               </SelectContent>
             </Select>
-            {filterAccount && (
-              <Button variant="outline" size="sm" onClick={()=>setFilterAccount('')}>Limpar filtro</Button>
+            {filterAccount !== '__all' && (
+              <Button variant="outline" size="sm" onClick={()=>setFilterAccount('__all')}>Limpar filtro</Button>
             )}
           </div>
 

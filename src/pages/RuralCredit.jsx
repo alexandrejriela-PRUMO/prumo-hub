@@ -58,6 +58,7 @@ export default function RuralCreditPage() {
   const [expandedId, setExpandedId] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [user, setUser] = useState(null);
+  const [selectedPropertyId, setSelectedPropertyId] = useState('');
   const qc = useQueryClient();
 
   React.useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);

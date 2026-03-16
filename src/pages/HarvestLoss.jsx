@@ -61,6 +61,7 @@ export default function HarvestLossPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadTarget, setUploadTarget] = useState('evidencias');
   const [user, setUser] = useState(null);
+  const [selectedPropertyId, setSelectedPropertyId] = useState('');
   const qc = useQueryClient();
 
   React.useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);

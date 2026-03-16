@@ -48,7 +48,8 @@ import {
               Wallet,
               Sprout,
               Wheat,
-              ReceiptText
+              ReceiptText,
+              Smartphone
                     } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

@@ -119,20 +119,23 @@ Pergunta: ${userMessage}`,
         owner_email: user?.email,
         audit_data: auditData
       });
-      
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
+
+      const blobData = response.data instanceof Blob ? response.data : response.data.buffer ? new Blob([response.data.buffer]) : new Blob([response.data]);
+      const url = window.URL.createObjectURL(blobData);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `auditoria-${property?.property_name.replace(/\s+/g, '-')}.pdf`;
+      a.download = `auditoria-${property?.property_name?.replace(/\s+/g, '-') || 'propriedade'}.pdf`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }, 100);
     } catch (error) {
       console.error('Erro ao baixar PDF:', error);
+    } finally {
+      setDownloadLoading(null);
     }
-    setDownloadLoading(null);
   };
 
   const downloadExcel = async () => {
@@ -143,21 +146,28 @@ Pergunta: ${userMessage}`,
         owner_email: user?.email,
         audit_data: auditData
       });
-      
-      const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = window.URL.createObjectURL(blob);
+
+      const blobData = response.data instanceof Blob ? response.data : response.data.buffer ? new Blob([response.data.buffer]) : new Blob([response.data]);
+      const url = window.URL.createObjectURL(blobData);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `auditoria-${property?.property_name.replace(/\s+/g, '-')}.xlsx`;
+      a.download = `auditoria-${property?.property_name?.replace(/\s+/g, '-') || 'propriedade'}.xlsx`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }, 100);
     } catch (error) {
       console.error('Erro ao baixar Excel:', error);
+    } finally {
+      setDownloadLoading(null);
     }
-    setDownloadLoading(null);
   };
+
+  if (!user || !property) {
+    return null;
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

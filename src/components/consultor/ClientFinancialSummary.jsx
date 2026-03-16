@@ -43,12 +43,18 @@ export default function ClientFinancialSummary({ client }) {
   });
 
   const toggleReceived = (index) => {
-    const services = (crm?.services || []).map((s, i) =>
-      i === index ? { ...s, received: !s.received } : s
-    );
-    upsertCRM.mutate({ services });
-    toast.success('Status de recebimento atualizado!');
-  };
+     const services = (crm?.services || []).map((s, i) =>
+       i === index ? { ...s, received: !s.received, received_at: !s.received ? new Date().toISOString() : null } : s
+     );
+     upsertCRM.mutate({ services }, {
+       onSuccess: () => {
+         toast.success('Status de recebimento atualizado!');
+       },
+       onError: (error) => {
+         toast.error('Erro ao atualizar status: ' + (error?.message || 'Tente novamente'));
+       }
+     });
+   };
 
   if (isLoading) return (
     <div className="flex items-center justify-center py-10">
@@ -57,10 +63,16 @@ export default function ClientFinancialSummary({ client }) {
   );
 
   const services = crm?.services || [];
-  const activeServices = services.filter(s => s.status === 'Contratado' || s.status === 'Em Andamento');
-  const totalRevenue = services.reduce((sum, s) => sum + (parseFloat(s.value) || 0), 0);
-  const receivedRevenue = services.filter(s => s.received).reduce((sum, s) => sum + (parseFloat(s.value) || 0), 0);
-  const pendingRevenue = totalRevenue - receivedRevenue;
+   const activeServices = services.filter(s => s.status === 'Contratado' || s.status === 'Em Andamento');
+   const totalRevenue = services.reduce((sum, s) => {
+     const value = parseFloat(s.value);
+     return sum + (isNaN(value) ? 0 : value);
+   }, 0);
+   const receivedRevenue = services.filter(s => s.received).reduce((sum, s) => {
+     const value = parseFloat(s.value);
+     return sum + (isNaN(value) ? 0 : value);
+   }, 0);
+   const pendingRevenue = Math.max(0, totalRevenue - receivedRevenue);
 
   return (
     <div className="space-y-5">

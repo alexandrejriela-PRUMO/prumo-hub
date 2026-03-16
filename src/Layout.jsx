@@ -47,7 +47,8 @@ import {
               Building,
               Wallet,
               Sprout,
-              Wheat
+              Wheat,
+              ReceiptText
                     } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

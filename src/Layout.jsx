@@ -36,6 +36,7 @@ import {
               Droplets,
               Shield,
               TrendingUp,
+              TrendingDown,
               Cloud,
               Sparkles,
               Map,
@@ -43,7 +44,8 @@ import {
               ScrollText,
               TreePine,
               Briefcase,
-              Building
+              Building,
+              Wallet
                     } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

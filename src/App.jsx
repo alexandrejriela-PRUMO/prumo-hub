@@ -10,6 +10,8 @@ import PaymentSettings from './pages/PaymentSettings';
 import PropertyMapView from './pages/PropertyMapView';
 import Agenda from './pages/Agenda';
 import CRMBoard from './pages/CRMBoard';
+import FinancialTransactions from './pages/FinancialTransactions';
+import Expenses from './pages/Expenses';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 

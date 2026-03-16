@@ -7,10 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, TrendingUp, Building2, BarChart3, Eye } from 'lucide-react';
+import { AlertTriangle, TrendingUp, Building2, BarChart3, Eye, Leaf } from 'lucide-react';
+import RuteAIChat from './RuteAIChat';
 
 export default function ConsultorOverview({ user, properties, isLoading }) {
   const navigate = useNavigate();
+  const [ruteChatOpen, setRuteChatOpen] = useState(false);
 
 
   const propertyIds = properties.map(p => p.id);
@@ -157,7 +159,27 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
           <h1 className="text-3xl font-bold text-gray-900">Olá, {user?.full_name?.split(' ')[0]}! 👋</h1>
           <p className="text-gray-500 mt-1">Resumo da carteira de clientes</p>
         </div>
+        <button
+          onClick={() => setRuteChatOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg hover:shadow-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-300 group hover:scale-105"
+          title="Consultar com IA Rute"
+        >
+          <svg width="24" height="24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="group-hover:scale-110 transition-transform">
+            <circle cx="50" cy="50" r="45" fill="white" opacity="0.2" stroke="white" strokeWidth="2"/>
+            <path d="M50 20C35 20 25 30 25 50C25 70 50 85 50 85C50 85 75 70 75 50C75 30 65 20 50 20Z" fill="white"/>
+            <circle cx="50" cy="50" r="8" fill="#10b981"/>
+          </svg>
+          <span className="text-sm font-semibold hidden sm:inline">IA Rute</span>
+        </button>
       </div>
+
+      {/* Rute AI Chat Modal - Consultor */}
+      <RuteAIChat 
+        user={user} 
+        property={propertiesWithClients[0]}
+        isOpen={ruteChatOpen} 
+        onClose={() => setRuteChatOpen(false)}
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -46,7 +46,8 @@ import {
               Briefcase,
               Building,
               Wallet,
-              Sprout
+              Sprout,
+              Wheat
                     } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

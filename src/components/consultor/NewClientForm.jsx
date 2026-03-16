@@ -58,7 +58,7 @@ export default function NewClientForm({ isOpen, onClose, consultorEmail, onSucce
     activities: '',
   });
 
-  const [addProperty, setAddProperty] = useState(true);
+  const [addProperty, setAddProperty] = useState(false);
 
   const createProperty = useMutation({
     mutationFn: (data) => base44.entities.Property.create(data),

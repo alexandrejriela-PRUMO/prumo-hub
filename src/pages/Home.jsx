@@ -231,20 +231,20 @@ export default function Home() {
   <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
       {/* Header with back button if viewing specific property */}
       <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-         <div className="flex items-center gap-3 flex-1">
+         <div className="flex items-center gap-3 flex-1 min-w-0">
            {isDashboardView && (
              <button
                onClick={() => navigate(createPageUrl('Home'))}
-               className="p-2 hover:bg-emerald-100/50 rounded-xl transition-all duration-300 hover:text-emerald-700"
+               className="p-2 hover:bg-emerald-100/50 rounded-xl transition-all duration-300 hover:text-emerald-700 flex-shrink-0"
              >
                <ChevronLeft className="w-5 h-5 text-gray-600" />
              </button>
            )}
-           <div>
-             <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 bg-clip-text text-transparent">
+           <div className="min-w-0">
+             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 bg-clip-text text-transparent break-words">
                Olá, {user?.full_name?.split(' ')[0] || 'Cliente'}! 👋
              </h1>
-             <p className="text-gray-500 mt-2 text-sm lg:text-base">Bem-vindo à sua área do cliente Santa Rute - Engenharia Rural</p>
+             <p className="text-gray-500 mt-2 text-xs sm:text-sm lg:text-base break-words">Bem-vindo ao PRUMO Hub - Consultoria Ambiental</p>
            </div>
          </div>
          <button
@@ -263,23 +263,23 @@ export default function Home() {
 
       {/* Property Selector */}
       {properties.length > 1 && (
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 sm:p-5 bg-gradient-to-r from-white to-emerald-50/40 rounded-xl border border-emerald-100/60 shadow-sm hover:shadow-md transition-all duration-300 hover:border-emerald-200">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="p-2 bg-emerald-100/60 rounded-lg">
-              <MapPin className="w-5 h-5 text-emerald-700" />
+      <div className="flex flex-col gap-3 p-3 sm:p-5 bg-gradient-to-r from-white to-emerald-50/40 rounded-xl border border-emerald-100/60 shadow-sm hover:shadow-md transition-all duration-300 hover:border-emerald-200">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-2 bg-emerald-100/60 rounded-lg flex-shrink-0">
+              <MapPin className="w-4 sm:w-5 h-4 sm:h-5 text-emerald-700" />
             </div>
-            <span className="text-gray-700 font-semibold text-sm sm:text-base whitespace-nowrap">
-              Propriedade:
+            <span className="text-gray-700 font-semibold text-sm truncate">
+              Propriedade
             </span>
           </div>
           <Select value={selectedPropertyId || ''} onValueChange={setSelectedPropertyId} disabled={loadingProperties}>
-            <SelectTrigger className="w-full sm:w-80 bg-white border-emerald-200 text-sm font-medium hover:border-emerald-300 transition-colors">
+            <SelectTrigger className="w-full bg-white border-emerald-200 text-xs sm:text-sm font-medium hover:border-emerald-300 transition-colors">
               <SelectValue placeholder="Selecione uma propriedade" />
             </SelectTrigger>
             <SelectContent>
               {properties.map((prop) =>
             <SelectItem key={prop.id} value={prop.id}>
-                  <span className="font-medium">{prop.property_name}</span> • <span className="text-gray-500">{prop.city}/{prop.state}</span>
+                  <span className="font-medium truncate">{prop.property_name}</span> <span className="text-gray-500 text-xs">({prop.city}/{prop.state})</span>
                 </SelectItem>
             )}
             </SelectContent>
@@ -298,11 +298,12 @@ export default function Home() {
 
       {/* Tabs for Overview and Analytics */}
       <Tabs defaultValue="overview" className="space-y-6 mt-8">
-        <TabsList className="grid w-full max-w-md grid-cols-2 mx-auto bg-gradient-to-r from-emerald-50 to-emerald-50 border border-emerald-100 rounded-lg p-1">
-          <TabsTrigger value="overview" className="rounded-md transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-emerald-700">Visão Geral</TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2 rounded-md transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-emerald-700">
-            <BarChart3 className="w-4 h-4" />
-            Análises
+        <TabsList className="grid w-full grid-cols-2 bg-gradient-to-r from-emerald-50 to-emerald-50 border border-emerald-100 rounded-lg p-1">
+          <TabsTrigger value="overview" className="rounded-md transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-emerald-700 text-xs sm:text-sm">Visão Geral</TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-1 sm:gap-2 rounded-md transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-emerald-700 text-xs sm:text-sm">
+            <BarChart3 className="w-3 sm:w-4 h-3 sm:h-4" />
+            <span className="hidden sm:inline">Análises</span>
+            <span className="sm:hidden">Análise</span>
           </TabsTrigger>
         </TabsList>
 
@@ -396,10 +397,10 @@ export default function Home() {
 
       {/* Full Export Section */}
       {!isLoading && (
-        <div className="mt-12 pt-8 border-t border-emerald-100/50">
+        <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-emerald-100/50">
           <div className="mb-6">
-            <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-2">Exportar Dados</h2>
-            <p className="text-gray-600 text-sm lg:text-base">Baixe um relatório completo com todas as suas informações no sistema em PDF ou Excel</p>
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-2">Exportar Dados</h2>
+            <p className="text-gray-600 text-xs sm:text-sm lg:text-base break-words">Baixe um relatório completo com suas informações em PDF ou Excel</p>
           </div>
           <DashboardFullExport user={user} />
         </div>

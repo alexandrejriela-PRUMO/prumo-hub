@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { LayoutDashboard, Building2, FileText, AlertTriangle, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -12,6 +12,10 @@ const tabs = [
 ];
 
 export default function BottomTabBar({ currentPageName, userType }) {
+  const navigate = useNavigate();
+  const lastTabRef = useRef(null);
+  const tabTapTimeRef = useRef({});
+
   const tabList = userType === 'client_consultor'
     ? tabs.filter(t => t.page !== 'Properties')
     : userType === 'consultor' || userType === 'equipe'
@@ -22,6 +26,20 @@ export default function BottomTabBar({ currentPageName, userType }) {
         { name: 'EnvironmentalAlerts', page: 'EnvironmentalAlerts', icon: AlertTriangle, label: 'Alertas' },
       ]
     : tabs;
+
+  const handleTabClick = (tabPage) => {
+    const now = Date.now();
+    const lastTapTime = tabTapTimeRef.current[tabPage] || 0;
+    
+    // If double-tapped within 300ms, reset to root (clear stack)
+    if (now - lastTapTime < 300 && lastTabRef.current === tabPage) {
+      window.history.go(-(window.history.length - 1));
+      tabTapTimeRef.current[tabPage] = 0;
+    } else {
+      tabTapTimeRef.current[tabPage] = now;
+      lastTabRef.current = tabPage;
+    }
+  };
 
   return (
     <nav
@@ -35,6 +53,12 @@ export default function BottomTabBar({ currentPageName, userType }) {
           <Link
             key={tab.page}
             to={createPageUrl(tab.page)}
+            onClick={(e) => {
+              if (isActive) {
+                e.preventDefault();
+                handleTabClick(tab.page);
+              }
+            }}
             className={cn(
               'flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors',
               isActive ? 'text-emerald-700' : 'text-gray-400'

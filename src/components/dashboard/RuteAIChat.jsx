@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Send, Loader2, TreeDeciduous, Leaf, FileText, Download, CheckCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { motion, AnimatePresence } from 'framer-motion';
+
 import RuteAvatar from '../RuteAvatar';
 
 const suggestedQuestions = [
@@ -207,12 +207,9 @@ Pergunta: ${userMessage}`,
               </div>
             ) : (
               <div className="space-y-4">
-                <AnimatePresence>
-                  {messages.map((message, idx) => (
-                    <motion.div
+                {messages.map((message, idx) => (
+                    <div
                       key={idx}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
                       className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
                       {message.role === 'assistant' && <RuteAvatar size="sm" />}
@@ -231,21 +228,18 @@ Pergunta: ${userMessage}`,
                           </ReactMarkdown>
                         )}
                       </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-                {loading && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="flex gap-3"
-                  >
+                      </div>
+                      ))}
+                      {loading && (
+                      <div
+                      className="flex gap-3"
+                      >
                     <RuteAvatar size="sm" />
                     <div className="bg-gray-100 rounded-lg px-4 py-3 flex items-center gap-2">
                       <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
                       <span className="text-gray-500 text-sm">Rute está digitando...</span>
                     </div>
-                  </motion.div>
+                  </div>
                 )}
               </div>
             )}

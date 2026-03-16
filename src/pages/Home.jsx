@@ -405,7 +405,6 @@ export default function Home() {
           <DashboardFullExport user={user} />
         </div>
       )}
-      </div>
 
       {/* Rute AI Chat Modal */}
       <RuteAIChat 

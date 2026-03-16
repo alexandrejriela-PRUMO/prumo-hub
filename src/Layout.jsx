@@ -63,8 +63,19 @@ const consultorNavItems = [
       { name: 'Meus Clientes', page: 'ConsultorClients', icon: Users },
       { name: 'Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
       { name: 'Meus Contratos', page: 'Contracts', icon: ScrollText },
-      { name: 'Config. de Pagamento', page: 'PaymentSettings', icon: CreditCard },
       { name: 'Minha Equipe', page: 'MyTeam', icon: Users },
+    ]
+  },
+  {
+    name: 'Financeiro Geral',
+    icon: Wallet,
+    children: [
+      { name: 'Transações Consolidadas', page: 'FinancialTransactions', icon: Scale },
+      { name: 'Despesas', page: 'Expenses', icon: TrendingDown },
+      { name: 'Config. de Pagamento', page: 'PaymentSettings', icon: CreditCard },
+    ]
+  },
+];
     ]
   },
 ];

@@ -72,7 +72,7 @@ export default function PaymentSettings() {
     } catch (e) {
       toast.error('Erro: ' + e.message);
     } finally {
-      setConnectingStripe(false));
+      setConnectingStripe(false);
     }
   };
 

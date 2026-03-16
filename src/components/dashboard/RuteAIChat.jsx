@@ -125,8 +125,8 @@ Pergunta: ${userMessage}`,
 
         {/* Chat Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <ScrollArea className="flex-1 px-6 py-4 overflow-hidden">
-            <div ref={scrollRef}>
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div ref={scrollRef} className="space-y-4">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center text-center space-y-6 py-8">
                 <div>
@@ -199,7 +199,7 @@ Pergunta: ${userMessage}`,
               </div>
             )}
             </div>
-          </ScrollArea>
+          </div>
 
           {/* Audit Section */}
           {messages.length > 2 && !auditGenerated && (

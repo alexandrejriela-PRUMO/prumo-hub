@@ -218,7 +218,7 @@ export default function ConsultorClients() {
                   size="sm"
                 >
                   <MessageCircle className="w-3 h-3 mr-2" />
-                  Ver CRM & Financeiro
+                  Ver Perfil
                 </Button>
               </CardContent>
             </Card>

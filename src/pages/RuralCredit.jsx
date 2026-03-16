@@ -70,8 +70,12 @@ export default function RuralCreditPage() {
   });
 
   const { data: credits = [], isLoading } = useQuery({
-    queryKey: ['rural-credits', user?.email],
-    queryFn: () => base44.entities.RuralCredit.filter({ consultor_email: user.email }, '-created_date', 200),
+    queryKey: ['rural-credits', user?.email, selectedPropertyId],
+    queryFn: () => {
+      const filter = { consultor_email: user.email };
+      if (selectedPropertyId) filter.property_id = selectedPropertyId;
+      return base44.entities.RuralCredit.filter(filter, '-created_date', 200);
+    },
     enabled: !!user?.email,
   });
 

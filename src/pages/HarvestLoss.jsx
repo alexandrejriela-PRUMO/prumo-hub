@@ -73,8 +73,12 @@ export default function HarvestLossPage() {
   });
 
   const { data: records = [], isLoading } = useQuery({
-    queryKey: ['harvest-loss', user?.email],
-    queryFn: () => base44.entities.HarvestLoss.filter({ consultor_email: user.email }, '-data_evento', 200),
+    queryKey: ['harvest-loss', user?.email, selectedPropertyId],
+    queryFn: () => {
+      const filter = { consultor_email: user.email };
+      if (selectedPropertyId) filter.property_id = selectedPropertyId;
+      return base44.entities.HarvestLoss.filter(filter, '-data_evento', 200);
+    },
     enabled: !!user?.email,
   });
 

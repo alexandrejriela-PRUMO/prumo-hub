@@ -124,10 +124,11 @@ Pergunta: ${userMessage}`,
         </DialogHeader>
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col min-h-0">
-          <ScrollArea ref={scrollRef} className="flex-1 px-6 py-4">
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <ScrollArea className="flex-1 px-6 py-4 overflow-hidden">
+            <div ref={scrollRef}>
             {messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center space-y-6">
+              <div className="flex flex-col items-center justify-center text-center space-y-6 py-8">
                 <div>
                   <RuteAvatar size="md" />
                 </div>
@@ -197,6 +198,7 @@ Pergunta: ${userMessage}`,
                 )}
               </div>
             )}
+            </div>
           </ScrollArea>
 
           {/* Audit Section */}

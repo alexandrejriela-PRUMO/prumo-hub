@@ -138,7 +138,8 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
       consultor_email: consultorEmail,
       competencia: form.date.substring(0, 7),
       is_stripe: false,
-      account_name: acc?.name || (form.account_id ? '' : 'Caixa Manual'),
+      account_name: acc?.name || 'Caixa Manual',
+      account_id: (form.account_id === '__caixa__' ? '' : form.account_id),
       client_name: clientProp?.client_name || form.client_name,
     };
     if (editing) updateMutation.mutate({ id: editing.id, data: payload });

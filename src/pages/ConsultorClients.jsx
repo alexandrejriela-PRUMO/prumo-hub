@@ -16,6 +16,7 @@ import ClientCRMPanel from '../components/consultor/ClientCRMPanel';
 import ClientFinancialSummary from '../components/consultor/ClientFinancialSummary';
 import ClientChargesPanel from '../components/consultor/ClientChargesPanel';
 import ClientProfilePanel from '../components/consultor/ClientProfilePanel';
+import ClientARTPanel from '../components/consultor/ClientARTPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 function calcRegularity(licenses) {
@@ -264,11 +265,12 @@ export default function ConsultorClients() {
           </DialogHeader>
           {crmProperty && (
             <Tabs defaultValue="perfil">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="perfil">Perfil</TabsTrigger>
                 <TabsTrigger value="crm">CRM</TabsTrigger>
                 <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
                 <TabsTrigger value="cobranças">Cobranças</TabsTrigger>
+                <TabsTrigger value="arts">ARTs</TabsTrigger>
               </TabsList>
               <TabsContent value="perfil" className="mt-4">
                 <ClientProfilePanel client={crmProperty} />
@@ -281,6 +283,9 @@ export default function ConsultorClients() {
               </TabsContent>
               <TabsContent value="cobranças" className="mt-4">
                 <ClientChargesPanel client={crmProperty} />
+              </TabsContent>
+              <TabsContent value="arts" className="mt-4">
+                <ClientARTPanel client={crmProperty} />
               </TabsContent>
             </Tabs>
           )}

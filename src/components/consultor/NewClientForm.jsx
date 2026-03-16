@@ -260,24 +260,10 @@ export default function NewClientForm({ isOpen, onClose, consultorEmail, onSucce
               </div>
             </div>
 
-            {/* Vincular propriedade? */}
-            <div className="border-t pt-4 flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="addProperty"
-                checked={addProperty}
-                onChange={e => setAddProperty(e.target.checked)}
-                className="w-4 h-4 accent-emerald-600"
-              />
-              <label htmlFor="addProperty" className="text-sm text-gray-700 cursor-pointer">
-                Vincular uma propriedade ou empreendimento agora
-              </label>
-            </div>
-
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="outline" onClick={handleClose}>Cancelar</Button>
               <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={handleNextStep}>
-                {addProperty ? 'Próximo: Propriedade' : 'Salvar Cliente'}
+                Salvar Lead
               </Button>
             </div>
           </div>

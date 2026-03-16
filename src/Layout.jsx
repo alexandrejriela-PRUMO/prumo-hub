@@ -60,6 +60,7 @@ const consultorNavItems = [
       { name: 'Meus Clientes', page: 'ConsultorClients', icon: Users },
       { name: 'Gestão de Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
       { name: 'Meus Contratos', page: 'Contracts', icon: ScrollText },
+      { name: 'CRM de Clientes', page: 'ConsultorClients', icon: ClipboardList },
       { name: 'Config. de Pagamento', page: 'PaymentSettings', icon: CreditCard },
       { name: 'Minha Equipe', page: 'MyTeam', icon: Users },
     ]

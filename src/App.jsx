@@ -1,3 +1,4 @@
+import React, { useEffect } from 'react'
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -21,9 +22,6 @@ import CampMode from './pages/CampMode';
 import OfflineIndicator from '@/components/offline/OfflineIndicator';
 import { useOfflineSync } from '@/components/offline/OfflineSyncHook';
 import { initializeOfflineDB } from '@/components/offline/OfflineStorageManager';
-
-// Importar React para usar dentro do componente
-import React from 'react';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
@@ -40,7 +38,7 @@ const AuthenticatedApp = () => {
   const { isOnline, syncInProgress, syncStats } = useOfflineSync();
 
   // Inicializar offline DB
-  React.useEffect(() => {
+  useEffect(() => {
     initializeOfflineDB().catch(err => console.error('[App] Erro ao inicializar offline DB:', err));
   }, []);
 

@@ -62,11 +62,13 @@ Deno.serve(async (req) => {
       metadata: {
         user_email: user.email,
         property_id: propertyId || 'default',
+        plan_type: resolvedPlanType,
       },
       subscription_data: {
         metadata: {
           user_email: user.email,
           property_id: propertyId || 'default',
+          plan_type: resolvedPlanType,
         },
       },
     });

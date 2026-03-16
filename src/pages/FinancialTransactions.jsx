@@ -67,6 +67,7 @@ export default function FinancialTransactions() {
   });
 
   const propertyMap = useMemo(() => { const m={}; properties.forEach(p=>{m[p.id]=p;}); return m; }, [properties]);
+  // eslint-disable-next-line no-unused-vars
   const accountMap  = useMemo(() => { const m={}; accounts.forEach(a=>{m[a.id]=a;}); return m; }, [accounts]);
 
   const deleteMutation = useMutation({

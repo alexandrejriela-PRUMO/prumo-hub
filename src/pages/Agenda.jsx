@@ -135,15 +135,33 @@ export default function Agenda() {
     };
   }, [allEvents, crmEvents, agendaEvents, user]);
 
+  const deleteEventMutation = useMutation({
+    mutationFn: async (ev) => {
+      if (ev.google_calendar_event_id) {
+        await base44.functions.invoke('googleCalendarAgenda', { action: 'delete', eventId: ev.google_calendar_event_id, event: {} });
+      }
+      await base44.entities.AgendaEvent.delete(ev.id);
+    },
+    onMutate: async (ev) => {
+      await qc.cancelQueries(['agendaEvents']);
+      const previousData = qc.getQueryData(['agendaEvents']);
+      qc.setQueryData(['agendaEvents'], (old = []) => old.filter(e => e.id !== ev.id));
+      return { previousData };
+    },
+    onError: (err, vars, context) => {
+      if (context?.previousData) {
+        qc.setQueryData(['agendaEvents'], context.previousData);
+      }
+    },
+    onSuccess: () => {
+      toast.success('Evento removido!');
+      qc.invalidateQueries(['agendaEvents']);
+    },
+  });
+
   const deleteEvent = async (ev) => {
     if (!confirm('Remover este evento?')) return;
-    if (ev.google_calendar_event_id) {
-      await base44.functions.invoke('googleCalendarAgenda', { action: 'delete', eventId: ev.google_calendar_event_id, event: {} });
-    }
-    await base44.entities.AgendaEvent.delete(ev.id);
-    toast.success('Evento removido!');
-    setDetailEvent(null);
-    qc.invalidateQueries(['agendaEvents']);
+    deleteEventMutation.mutate(ev);
   };
 
   const handleDayClick = (day) => {

@@ -13,6 +13,7 @@ import DashboardMetrics from '../components/dashboard/DashboardMetrics';
 import DashboardCharts from '../components/dashboard/DashboardCharts';
 import DashboardFilters from '../components/dashboard/DashboardFilters';
 import DashboardFullExport from '../components/dashboard/DashboardFullExport';
+import RuteAIAssistant from '../components/dashboard/RuteAIAssistant';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -229,23 +230,24 @@ export default function Home() {
   <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
       {/* Header with back button if viewing specific property */}
       <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          {isDashboardView && (
-            <button
-              onClick={() => navigate(createPageUrl('Home'))}
-              className="p-2 hover:bg-emerald-100/50 rounded-xl transition-all duration-300 hover:text-emerald-700"
-            >
-              <ChevronLeft className="w-5 h-5 text-gray-600" />
-            </button>
-          )}
-          <div>
-            <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 bg-clip-text text-transparent">
-              Olá, {user?.full_name?.split(' ')[0] || 'Cliente'}! 👋
-            </h1>
-            <p className="text-gray-500 mt-2 text-sm lg:text-base">Bem-vindo à sua área do cliente Santa Rute - Engenharia Rural</p>
-          </div>
-        </div>
-      </div>
+         <div className="flex items-center gap-3 flex-1">
+           {isDashboardView && (
+             <button
+               onClick={() => navigate(createPageUrl('Home'))}
+               className="p-2 hover:bg-emerald-100/50 rounded-xl transition-all duration-300 hover:text-emerald-700"
+             >
+               <ChevronLeft className="w-5 h-5 text-gray-600" />
+             </button>
+           )}
+           <div>
+             <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 bg-clip-text text-transparent">
+               Olá, {user?.full_name?.split(' ')[0] || 'Cliente'}! 👋
+             </h1>
+             <p className="text-gray-500 mt-2 text-sm lg:text-base">Bem-vindo à sua área do cliente Santa Rute - Engenharia Rural</p>
+           </div>
+         </div>
+         {selectedProperty && <RuteAIAssistant user={user} property={selectedProperty} />}
+       </div>
 
       {/* Property Selector */}
       {properties.length > 1 && (

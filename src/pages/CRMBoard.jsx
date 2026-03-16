@@ -21,7 +21,7 @@ import ClientProfilePanel from '../components/consultor/ClientProfilePanel';
 const COLUMNS = [
   { id: 'Prospect',       label: 'Prospect',        color: 'border-t-amber-400',   bg: 'bg-amber-50',   badge: 'bg-amber-100 text-amber-700' },
   { id: 'Em Negociação',  label: 'Em Negociação',   color: 'border-t-blue-400',    bg: 'bg-blue-50',    badge: 'bg-blue-100 text-blue-700' },
-  { id: 'Ativo',          label: 'Ativo',            color: 'border-t-emerald-500', bg: 'bg-emerald-50', badge: 'bg-emerald-100 text-emerald-700' },
+  { id: 'Ativo',          label: 'Cliente',          color: 'border-t-emerald-500', bg: 'bg-emerald-50', badge: 'bg-emerald-100 text-emerald-700' },
   { id: 'Inativo',        label: 'Inativo',          color: 'border-t-gray-400',    bg: 'bg-gray-50',    badge: 'bg-gray-100 text-gray-600' },
   { id: 'Encerrado',      label: 'Encerrado',        color: 'border-t-red-400',     bg: 'bg-red-50',     badge: 'bg-red-100 text-red-700' },
 ];

@@ -18,6 +18,7 @@ import { format, parseISO, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
 import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
+import ClicksignContractButton from '../components/contracts/ClicksignContractButton';
 
 const STATUS_CONFIG = {
   'Proposta':     { color: 'bg-blue-100 text-blue-700 border-blue-200',   icon: Clock },
@@ -348,7 +349,7 @@ export default function Contracts() {
                       R$ {contract.total_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </p>
                   )}
-                  <div className="flex gap-2 pt-2 flex-wrap">
+                  <div className="flex flex-wrap gap-2 pt-2">
                     <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => setViewingContract(contract)}>
                       <Eye className="w-3 h-3 mr-1" />Ver
                     </Button>

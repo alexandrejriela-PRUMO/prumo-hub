@@ -9,6 +9,7 @@ import CARModule from './pages/CARModule';
 import PaymentSettings from './pages/PaymentSettings';
 import PropertyMapView from './pages/PropertyMapView';
 import Agenda from './pages/Agenda';
+import CRMBoard from './pages/CRMBoard';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
@@ -65,6 +66,7 @@ const AuthenticatedApp = () => {
       <Route path="/CARModule" element={<LayoutWrapper currentPageName="CARModule"><CARModule /></LayoutWrapper>} />
       <Route path="/PropertyMapView" element={<LayoutWrapper currentPageName="PropertyMapView"><PropertyMapView /></LayoutWrapper>} />
       <Route path="/Agenda" element={<LayoutWrapper currentPageName="Agenda"><Agenda /></LayoutWrapper>} />
+      <Route path="/CRMBoard" element={<LayoutWrapper currentPageName="CRMBoard"><CRMBoard /></LayoutWrapper>} />
       <Route path="/PaymentSettings" element={<LayoutWrapper currentPageName="PaymentSettings"><PaymentSettings /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>

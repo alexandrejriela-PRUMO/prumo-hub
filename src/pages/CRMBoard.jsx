@@ -182,6 +182,19 @@ export default function CRMBoard() {
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }) => base44.entities.ClientCRM.update(id, { status }),
+    onMutate: async ({ id, status }) => {
+      await queryClient.cancelQueries(['crm-board-list']);
+      const previousData = queryClient.getQueryData(['crm-board-list']);
+      queryClient.setQueryData(['crm-board-list'], (old = []) =>
+        old.map(crm => crm.id === id ? { ...crm, status } : crm)
+      );
+      return { previousData };
+    },
+    onError: (err, vars, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(['crm-board-list'], context.previousData);
+      }
+    },
     onSuccess: () => queryClient.invalidateQueries(['crm-board-list']),
   });
 

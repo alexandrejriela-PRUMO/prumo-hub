@@ -185,6 +185,22 @@ export default function CRMBoard() {
     onSuccess: () => queryClient.invalidateQueries(['crm-board-list']),
   });
 
+  const createPropertyMutation = useMutation({
+    mutationFn: (data) => base44.entities.Property.create(data),
+    onSuccess: async (property) => {
+      const { crmId } = linkPropertyModal;
+      await base44.entities.ClientCRM.update(crmId, {
+        status: 'Ativo',
+        property_id: property.id,
+      });
+      queryClient.invalidateQueries(['crm-board-list']);
+      queryClient.invalidateQueries(['crm-board-properties']);
+      setLinkPropertyModal(null);
+      setPropertyData({ property_name:'',property_type:'rural',location:'',city:'',state:'',total_hectares:'',app_hectares:'',legal_reserve_hectares:'',total_area_m2:'',built_area_m2:'',main_activity:'',activities:'' });
+      toast.success('Lead convertido para Cliente com propriedade vinculada!');
+    },
+  });
+
   const propertyMap = useMemo(() => {
     const map = {};
     properties.forEach(p => { map[p.id] = p; });

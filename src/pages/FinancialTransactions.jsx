@@ -41,7 +41,6 @@ export default function FinancialTransactions() {
   const [sortDir,      setSortDir]      = useState('desc');
   const [showForm,     setShowForm]     = useState(false);
   const [editing,      setEditing]      = useState(null);
-  const [form,         setForm]         = useState(EMPTY_FORM);
   const qc = useQueryClient();
 
   useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);

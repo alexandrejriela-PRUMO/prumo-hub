@@ -13,7 +13,7 @@ import DashboardMetrics from '../components/dashboard/DashboardMetrics';
 import DashboardCharts from '../components/dashboard/DashboardCharts';
 import DashboardFilters from '../components/dashboard/DashboardFilters';
 import DashboardFullExport from '../components/dashboard/DashboardFullExport';
-import RuteAIAssistant from '../components/dashboard/RuteAIAssistant';
+import RuteAIChatPanel from '../components/dashboard/RuteAIChatPanel';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -36,6 +36,7 @@ export default function Home() {
 
   const [user, setUser] = useState(null);
   const [selectedPropertyId, setSelectedPropertyId] = useState(null);
+  const [ruteChatOpen, setRuteChatOpen] = useState(false);
   const [filters, setFilters] = useState({
     period: 'all',
     licenseStatus: 'all',
@@ -246,7 +247,19 @@ export default function Home() {
              <p className="text-gray-500 mt-2 text-sm lg:text-base">Bem-vindo à sua área do cliente Santa Rute - Engenharia Rural</p>
            </div>
          </div>
-         {selectedProperty && <RuteAIAssistant user={user} property={selectedProperty} />}
+         <button
+           onClick={() => setRuteChatOpen(true)}
+           className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg hover:shadow-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-300 group"
+           title="Chat com IA Rute"
+         >
+           <svg width="24" height="24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+             <circle cx="50" cy="50" r="45" fill="white" opacity="0.2" stroke="white" strokeWidth="2"/>
+             <path d="M50 20C35 20 25 30 25 50C25 70 50 85 50 85C50 85 75 70 75 50C75 30 65 20 50 20Z" fill="white"/>
+             <circle cx="50" cy="50" r="8" fill="#10b981"/>
+           </svg>
+           <span className="text-sm font-semibold hidden sm:inline">IA Rute</span>
+           <span className="inline-block w-2 h-2 bg-white rounded-full animate-pulse group-hover:scale-125 transition-transform" />
+         </button>
        </div>
 
       {/* Property Selector */}
@@ -393,6 +406,14 @@ export default function Home() {
         </div>
       )}
       </div>
+
+      {/* Rute AI Chat Panel */}
+      <RuteAIChatPanel 
+        user={user} 
+        property={selectedProperty} 
+        isOpen={ruteChatOpen} 
+        onClose={() => setRuteChatOpen(false)}
+      />
   </PullToRefresh>);
 
       }

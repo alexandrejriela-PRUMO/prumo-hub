@@ -130,7 +130,7 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
   const handleSubmit = () => {
     if (!form.description || !form.amount || !form.date) { toast.error('Preencha descrição, valor e data.'); return; }
     if (isReceita && !form.client_property_id) { toast.error('Selecione um cliente para a receita.'); return; }
-    const acc = accounts.find(a => a.id === form.account_id);
+    const acc = accounts.find(a => a.id === form.account_id && form.account_id !== '__caixa__');
     const clientProp = properties.find(p => p.id === form.client_property_id);
     const payload = {
       ...form,

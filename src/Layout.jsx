@@ -120,14 +120,6 @@ const produtorNavItems = [
     ]
   },
   { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
-  {
-    name: 'Crédito e Safra',
-    icon: Sprout,
-    children: [
-      { name: 'Gestão de Crédito Rural', page: 'RuralCredit', icon: Building2 },
-      { name: 'Frustração de Safra', page: 'HarvestLoss', icon: Wheat },
-    ]
-  },
   { name: 'Relatórios', page: 'Reports', icon: FileText },
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
@@ -249,6 +241,14 @@ const navItems = [
       { name: 'PSA - Serviços Ambientais', page: 'PSAContracts', icon: Droplets },
       { name: 'Servidão Ambiental', page: 'EnvironmentalEasements', icon: Shield },
       { name: 'ESG para o Agro', page: 'ESGAgro', icon: TrendingUp },
+    ]
+  },
+  {
+    name: 'Crédito e Safra',
+    icon: Sprout,
+    children: [
+      { name: 'Gestão de Crédito Rural', page: 'RuralCredit', icon: Building2 },
+      { name: 'Frustração de Safra', page: 'HarvestLoss', icon: Wheat },
     ]
   },
   { name: 'Relatórios', page: 'Reports', icon: FileText },

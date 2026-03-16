@@ -14,6 +14,7 @@ import { createPageUrl } from '@/utils';
 import NewClientForm from '../components/consultor/NewClientForm';
 import ClientCRMPanel from '../components/consultor/ClientCRMPanel';
 import ClientFinancialSummary from '../components/consultor/ClientFinancialSummary';
+import ClientChargesPanel from '../components/consultor/ClientChargesPanel';
 import ClientProfilePanel from '../components/consultor/ClientProfilePanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 

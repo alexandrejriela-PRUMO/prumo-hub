@@ -210,6 +210,14 @@ const clientConsultorNavItems = [
 // Consultor: itens adicionais abaixo dos fixos (consultorNavItems)
 const navItems = [
   {
+    name: 'Crédito e Safra',
+    icon: Sprout,
+    children: [
+      { name: 'Gestão de Crédito Rural', page: 'RuralCredit', icon: Building2 },
+      { name: 'Frustração de Safra', page: 'HarvestLoss', icon: Wheat },
+    ]
+  },
+  {
     name: 'Central da Propriedade',
     icon: Building,
     children: [

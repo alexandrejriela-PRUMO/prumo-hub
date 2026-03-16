@@ -162,10 +162,7 @@ export default function NewClientForm({ isOpen, onClose, consultorEmail, onSucce
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-emerald-800">
             <Plus className="w-5 h-5" />
-            Novo Cliente
-            <Badge variant="outline" className="ml-2 text-xs">
-              Passo {step} de {addProperty ? 2 : 1}
-            </Badge>
+            Novo Lead
           </DialogTitle>
         </DialogHeader>
 

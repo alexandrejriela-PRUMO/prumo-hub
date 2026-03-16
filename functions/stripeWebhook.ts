@@ -27,38 +27,64 @@ Deno.serve(async (req) => {
       case 'checkout.session.completed': {
         const session = event.data.object;
         const userEmail = session.metadata.user_email;
-        const propertyId = session.metadata.property_id;
+        const planType = session.metadata.plan_type || 'produtor';
+        const amountPaid = session.amount_total ? session.amount_total / 100 : 497.00;
+        const monthLabel = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+        const planLabel = planType === 'consultor' ? 'Consultor' : 'Produtor Rural';
 
-        // Criar fatura paga
-        await base44.asServiceRole.entities.Invoice.create({
+        const newInvoice = await base44.asServiceRole.entities.Invoice.create({
           client_email: userEmail,
-          description: `Assinatura Plano Campo Nobre - ${new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}`,
-          amount: 497.00,
+          description: `Assinatura PRUMO Hub - Plano ${planLabel} - ${monthLabel}`,
+          amount: amountPaid,
           due_date: new Date().toISOString().split('T')[0],
           status: 'Pago',
           payment_date: new Date().toISOString().split('T')[0],
+          stripe_invoice_id: session.id,
+          plan_type: planType,
+          nfe_status: 'Não emitida',
         });
 
-        console.log('Invoice created for:', userEmail);
+        // Emite NF-e automaticamente da plataforma para o usuário
+        await base44.asServiceRole.functions.invoke('emitirNFePlataforma', {
+          invoice_id: newInvoice.id,
+        });
+
+        console.log('Invoice + NF-e created for:', userEmail);
         break;
       }
 
       case 'invoice.payment_succeeded': {
-        const invoice = event.data.object;
-        const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+        const stripeInvoice = event.data.object;
+        if (!stripeInvoice.subscription) break;
+        const subscription = await stripe.subscriptions.retrieve(stripeInvoice.subscription);
         const userEmail = subscription.metadata.user_email;
+        const planType = subscription.metadata.plan_type || 'produtor';
+        const amountPaid = stripeInvoice.amount_paid ? stripeInvoice.amount_paid / 100 : 497.00;
+        const monthLabel = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+        const planLabel = planType === 'consultor' ? 'Consultor' : 'Produtor Rural';
 
-        // Criar fatura paga para renovação
-        await base44.asServiceRole.entities.Invoice.create({
+        // Evita duplicidade com checkout.session.completed
+        if (stripeInvoice.billing_reason === 'subscription_create') break;
+
+        const renewalInvoice = await base44.asServiceRole.entities.Invoice.create({
           client_email: userEmail,
-          description: `Assinatura Plano Campo Nobre - ${new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}`,
-          amount: 497.00,
+          description: `Assinatura PRUMO Hub - Plano ${planLabel} - ${monthLabel}`,
+          amount: amountPaid,
           due_date: new Date().toISOString().split('T')[0],
           status: 'Pago',
           payment_date: new Date().toISOString().split('T')[0],
+          stripe_invoice_id: stripeInvoice.id,
+          stripe_subscription_id: stripeInvoice.subscription,
+          plan_type: planType,
+          nfe_status: 'Não emitida',
         });
 
-        console.log('Renewal invoice created for:', userEmail);
+        // Emite NF-e automaticamente da plataforma para o usuário
+        await base44.asServiceRole.functions.invoke('emitirNFePlataforma', {
+          invoice_id: renewalInvoice.id,
+        });
+
+        console.log('Renewal invoice + NF-e created for:', userEmail);
         break;
       }
 

@@ -7,13 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   TrendingUp, TrendingDown, Scale, Download, Search,
-  ChevronUp, ChevronDown, Plus, Pencil, Trash2, Zap, Landmark, Banknote, Wallet
+  ChevronUp, ChevronDown, Plus, Pencil, Trash2, Zap, Banknote, Paperclip
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
+import TransactionForm from '../components/financial/TransactionForm';
 
 const STATUS_BADGES = {
   'Pago':     'bg-emerald-100 text-emerald-700',
@@ -21,9 +21,6 @@ const STATUS_BADGES = {
   'Vencido':  'bg-red-100 text-red-700',
   'Cancelado':'bg-gray-100 text-gray-500',
 };
-const EXPENSE_CATEGORIES = ['Aluguel / Escritório','Salários / Pró-labore','Marketing / Publicidade','Tecnologia / Software','Deslocamento / Combustível','Equipamentos','Impostos / Taxas','Serviços de Terceiros','Materiais de Escritório','Treinamento / Cursos','Outros'];
-const INCOME_CATEGORIES  = ['Cobrança de Cliente (Manual)','Outros Serviços Prestados','Outros'];
-const PAYMENT_METHODS    = ['Boleto','PIX','Cartão de Crédito','Cartão de Débito','Transferência','Dinheiro','Outro'];
 
 function normalizeStatus(s) {
   if (!s) return 'Pendente';

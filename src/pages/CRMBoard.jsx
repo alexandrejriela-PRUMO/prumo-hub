@@ -8,8 +8,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Plus, Users, MessageCircle, CheckSquare, Calendar, Tag,
-  MoreVertical, Briefcase, TrendingUp, Clock, ChevronRight
+  MoreVertical, Briefcase, TrendingUp, Clock, ChevronRight, MapPin
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import NewClientForm from '../components/consultor/NewClientForm';

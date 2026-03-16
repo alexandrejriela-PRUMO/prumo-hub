@@ -1,35 +1,52 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, Scale, Download, Search, ChevronUp, ChevronDown } from 'lucide-react';
-import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  TrendingUp, TrendingDown, Scale, Download, Search,
+  ChevronUp, ChevronDown, Plus, Pencil, Trash2, CreditCard, Zap
+} from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-
-const TYPE_COLORS = {
-  receita: 'text-emerald-600',
-  despesa: 'text-red-600',
-};
+import { toast } from 'sonner';
 
 const STATUS_BADGES = {
-  'Pago': 'bg-emerald-100 text-emerald-700',
+  'Pago':     'bg-emerald-100 text-emerald-700',
   'Pendente': 'bg-amber-100 text-amber-700',
-  'Paga': 'bg-emerald-100 text-emerald-700',
-  'Vencido': 'bg-red-100 text-red-700',
-  'Cancelado': 'bg-gray-100 text-gray-500',
-  'Cancelada': 'bg-gray-100 text-gray-500',
+  'Vencido':  'bg-red-100 text-red-700',
+  'Cancelado':'bg-gray-100 text-gray-500',
 };
+
+const EXPENSE_CATEGORIES = [
+  'Aluguel / Escritório', 'Salários / Pró-labore', 'Marketing / Publicidade',
+  'Tecnologia / Software', 'Deslocamento / Combustível', 'Equipamentos',
+  'Impostos / Taxas', 'Serviços de Terceiros', 'Materiais de Escritório',
+  'Treinamento / Cursos', 'Outros',
+];
+const INCOME_CATEGORIES = [
+  'Cobrança de Cliente (Manual)', 'Outros Serviços Prestados', 'Outros',
+];
+const PAYMENT_METHODS = ['Boleto', 'PIX', 'Cartão de Crédito', 'Cartão de Débito', 'Transferência', 'Dinheiro', 'Outro'];
 
 function normalizeStatus(s) {
   if (!s) return 'Pendente';
   if (s === 'Pago' || s === 'Paga') return 'Pago';
+  if (s === 'Cancelada') return 'Cancelado';
   return s;
 }
+
+const EMPTY_FORM = {
+  transaction_type: 'despesa',
+  description: '', amount: '', date: '', category: 'Outros',
+  client_name: '', status: 'Pago', payment_method: 'PIX', notes: '',
+};
 
 export default function FinancialTransactions() {
   const [user, setUser] = useState(null);
@@ -40,14 +57,12 @@ export default function FinancialTransactions() {
   const [search, setSearch] = useState('');
   const [sortField, setSortField] = useState('date');
   const [sortDir, setSortDir] = useState('desc');
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const queryClient = useQueryClient();
 
   useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);
-
-  const { data: invoices = [] } = useQuery({
-    queryKey: ['fin-invoices', user?.email],
-    queryFn: () => base44.entities.Invoice.filter({ client_email: user.email }, '-due_date', 500),
-    enabled: !!user?.email,
-  });
 
   const { data: charges = [] } = useQuery({
     queryKey: ['fin-charges', user?.email],
@@ -55,8 +70,8 @@ export default function FinancialTransactions() {
     enabled: !!user?.email,
   });
 
-  const { data: expenses = [] } = useQuery({
-    queryKey: ['fin-expenses', user?.email],
+  const { data: manualEntries = [] } = useQuery({
+    queryKey: ['fin-manual', user?.email],
     queryFn: () => base44.entities.Expense.filter({ consultor_email: user.email }, '-date', 500),
     enabled: !!user?.email,
   });
@@ -73,95 +88,117 @@ export default function FinancialTransactions() {
     return m;
   }, [properties]);
 
-  // Normalize all transactions into a common format
+  const createMutation = useMutation({
+    mutationFn: (data) => base44.entities.Expense.create(data),
+    onSuccess: () => { queryClient.invalidateQueries(['fin-manual']); handleClose(); toast.success('Transação adicionada!'); },
+  });
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Expense.update(id, data),
+    onSuccess: () => { queryClient.invalidateQueries(['fin-manual']); handleClose(); toast.success('Transação atualizada!'); },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.Expense.delete(id),
+    onSuccess: () => { queryClient.invalidateQueries(['fin-manual']); toast.success('Transação removida!'); },
+  });
+
+  const handleOpen = (entry = null) => {
+    if (entry) {
+      setEditing(entry);
+      setForm({ ...EMPTY_FORM, ...entry, amount: String(entry.amount) });
+    } else {
+      setEditing(null);
+      const today = format(new Date(), 'yyyy-MM-dd');
+      setForm({ ...EMPTY_FORM, date: today });
+    }
+    setShowForm(true);
+  };
+
+  const handleClose = () => { setShowForm(false); setEditing(null); setForm(EMPTY_FORM); };
+
+  const handleSubmit = () => {
+    if (!form.description || !form.amount || !form.date) {
+      toast.error('Preencha descrição, valor e data.');
+      return;
+    }
+    const payload = {
+      ...form,
+      amount: parseFloat(form.amount),
+      consultor_email: user.email,
+      competencia: form.date.substring(0, 7),
+      is_stripe: false,
+    };
+    if (editing) updateMutation.mutate({ id: editing.id, data: payload });
+    else createMutation.mutate(payload);
+  };
+
+  // Consolidate all transactions
   const allTransactions = useMemo(() => {
     const txns = [];
 
-    // Receitas: ConsultorCharge (cobranças emitidas para clientes)
+    // Stripe charges (receitas automáticas)
     charges.forEach(c => {
       const prop = propertyMap[c.property_id];
       const clientName = prop?.client_name || c.client_email?.split('@')[0] || '—';
       txns.push({
         id: `charge-${c.id}`,
         type: 'receita',
-        source: 'Cobrança de Cliente',
-        description: c.description || 'Cobrança',
+        source: 'Stripe',
+        sourceIcon: 'stripe',
+        description: c.description || 'Cobrança via Stripe',
         client: clientName,
-        client_email: c.client_email,
         amount: c.amount || 0,
         date: c.due_date || c.created_date?.substring(0, 10),
         competencia: (c.due_date || c.created_date?.substring(0, 10))?.substring(0, 7),
         status: normalizeStatus(c.status),
         payment_method: c.payment_method,
-        raw: c,
+        editable: false,
       });
     });
 
-    // Receitas: Invoices da plataforma (faturas do consultor com a plataforma)
-    invoices.forEach(inv => {
+    // Manual entries (receitas e despesas manuais)
+    manualEntries.forEach(e => {
       txns.push({
-        id: `inv-${inv.id}`,
-        type: 'receita',
-        source: 'Fatura Plataforma',
-        description: inv.description || 'Fatura',
-        client: inv.client_email?.split('@')[0] || '—',
-        client_email: inv.client_email,
-        amount: inv.amount || 0,
-        date: inv.due_date,
-        competencia: inv.due_date?.substring(0, 7),
-        status: normalizeStatus(inv.status),
-        payment_method: null,
-        raw: inv,
-      });
-    });
-
-    // Despesas
-    expenses.forEach(exp => {
-      txns.push({
-        id: `exp-${exp.id}`,
-        type: 'despesa',
-        source: exp.category || 'Despesa',
-        description: exp.description,
-        client: null,
-        client_email: null,
-        amount: exp.amount || 0,
-        date: exp.date,
-        competencia: exp.competencia || exp.date?.substring(0, 7),
-        status: normalizeStatus(exp.status),
-        payment_method: exp.payment_method,
-        raw: exp,
+        id: `manual-${e.id}`,
+        type: e.transaction_type || 'despesa',
+        source: e.transaction_type === 'receita' ? (e.category || 'Receita Manual') : (e.category || 'Despesa'),
+        sourceIcon: 'manual',
+        description: e.description,
+        client: e.client_name || null,
+        amount: e.amount || 0,
+        date: e.date,
+        competencia: e.competencia || e.date?.substring(0, 7),
+        status: normalizeStatus(e.status),
+        payment_method: e.payment_method,
+        editable: true,
+        raw: e,
       });
     });
 
     return txns;
-  }, [charges, invoices, expenses, propertyMap]);
+  }, [charges, manualEntries, propertyMap]);
 
-  // Distinct clients for filter dropdown
   const clients = useMemo(() => {
     const set = new Set();
     allTransactions.forEach(t => { if (t.client) set.add(t.client); });
     return Array.from(set).sort();
   }, [allTransactions]);
 
-  // Apply filters
   const filtered = useMemo(() => {
     return allTransactions.filter(t => {
-      const matchMonth = !filterMonth || t.competencia === filterMonth ||
-        (t.date && t.date.startsWith(filterMonth));
+      const matchMonth = !filterMonth || t.competencia === filterMonth || (t.date && t.date.startsWith(filterMonth));
       const matchType = !filterType || t.type === filterType;
       const matchClient = !filterClient || t.client === filterClient;
       const matchStatus = !filterStatus || t.status === filterStatus;
-      const matchSearch = !search || t.description?.toLowerCase().includes(search.toLowerCase()) ||
+      const matchSearch = !search ||
+        t.description?.toLowerCase().includes(search.toLowerCase()) ||
         t.client?.toLowerCase().includes(search.toLowerCase());
       return matchMonth && matchType && matchClient && matchStatus && matchSearch;
     });
   }, [allTransactions, filterMonth, filterType, filterClient, filterStatus, search]);
 
-  // Sort
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
       let va = a[sortField], vb = b[sortField];
-      if (sortField === 'amount') { va = a.amount; vb = b.amount; }
       if (typeof va === 'string') va = va?.toLowerCase();
       if (typeof vb === 'string') vb = vb?.toLowerCase();
       if (va < vb) return sortDir === 'asc' ? -1 : 1;
@@ -191,17 +228,18 @@ export default function FinancialTransactions() {
     const rows = sorted.map(t =>
       [t.type, t.source, `"${t.description}"`, t.client || '', t.competencia || '', t.date || '', t.amount, t.status, t.payment_method || ''].join(',')
     );
-    const csv = [header, ...rows].join('\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(['\uFEFF' + [header, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url;
-    a.download = `transacoes_${filterMonth || 'todas'}.csv`; a.click();
+    const a = document.createElement('a');
+    a.href = url; a.download = `transacoes_${filterMonth || 'todas'}.csv`; a.click();
   };
+
+  const categories = form.transaction_type === 'receita' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Scale className="w-7 h-7 text-emerald-600" />
@@ -209,9 +247,14 @@ export default function FinancialTransactions() {
           </h1>
           <p className="text-gray-500 text-sm mt-0.5">Visão consolidada de receitas, despesas e resultado</p>
         </div>
-        <Button variant="outline" onClick={exportCSV} className="gap-2">
-          <Download className="w-4 h-4" /> Exportar CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={exportCSV} className="gap-2">
+            <Download className="w-4 h-4" /> Exportar CSV
+          </Button>
+          <Button className="bg-emerald-600 hover:bg-emerald-700 gap-2" onClick={() => handleOpen()}>
+            <Plus className="w-4 h-4" /> Nova Transação
+          </Button>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -242,7 +285,7 @@ export default function FinancialTransactions() {
             </div>
           </CardContent>
         </Card>
-        <Card className={`${resultado >= 0 ? 'border-blue-100 bg-blue-50/50' : 'border-orange-100 bg-orange-50/50'}`}>
+        <Card className={resultado >= 0 ? 'border-blue-100 bg-blue-50/50' : 'border-orange-100 bg-orange-50/50'}>
           <CardContent className="pt-5 pb-4">
             <div className="flex items-center gap-3">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${resultado >= 0 ? 'bg-blue-100' : 'bg-orange-100'}`}>
@@ -320,34 +363,38 @@ export default function FinancialTransactions() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => toggleSort('type')}>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => toggleSort('type')}>
                   Tipo <SortIcon field="type" />
                 </th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Origem</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => toggleSort('description')}>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => toggleSort('description')}>
                   Descrição <SortIcon field="description" />
                 </th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => toggleSort('client')}>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => toggleSort('client')}>
                   Cliente <SortIcon field="client" />
                 </th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => toggleSort('competencia')}>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => toggleSort('competencia')}>
                   Competência <SortIcon field="competencia" />
                 </th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => toggleSort('date')}>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => toggleSort('date')}>
                   Data <SortIcon field="date" />
                 </th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => toggleSort('amount')}>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => toggleSort('amount')}>
                   Valor <SortIcon field="amount" />
                 </th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-4 py-3 w-16"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {sorted.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-12 text-gray-400">
+                  <td colSpan={9} className="text-center py-12 text-gray-400">
                     <Scale className="w-10 h-10 mx-auto mb-2 opacity-20" />
-                    <p>Nenhuma transação encontrada para os filtros selecionados.</p>
+                    <p>Nenhuma transação encontrada.</p>
+                    <Button className="mt-3 bg-emerald-600 hover:bg-emerald-700" size="sm" onClick={() => handleOpen()}>
+                      <Plus className="w-3.5 h-3.5 mr-1" /> Adicionar transação
+                    </Button>
                   </td>
                 </tr>
               ) : sorted.map(t => (
@@ -357,13 +404,19 @@ export default function FinancialTransactions() {
                       {t.type === 'receita'
                         ? <TrendingUp className="w-4 h-4 text-emerald-500" />
                         : <TrendingDown className="w-4 h-4 text-red-400" />}
-                      <span className={`text-xs font-semibold capitalize ${TYPE_COLORS[t.type]}`}>
+                      <span className={`text-xs font-semibold ${t.type === 'receita' ? 'text-emerald-600' : 'text-red-600'}`}>
                         {t.type === 'receita' ? 'Receita' : 'Despesa'}
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-500">{t.source}</td>
-                  <td className="px-4 py-3 text-sm text-gray-800 font-medium max-w-[200px] truncate">{t.description}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                      {t.sourceIcon === 'stripe'
+                        ? <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-violet-100 text-violet-700 rounded text-xs font-semibold"><Zap className="w-3 h-3" />Stripe</span>
+                        : t.source}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-800 font-medium max-w-[180px] truncate">{t.description}</td>
                   <td className="px-4 py-3 text-xs text-gray-600">{t.client || <span className="text-gray-300">—</span>}</td>
                   <td className="px-4 py-3 text-xs text-gray-500">{t.competencia || '—'}</td>
                   <td className="px-4 py-3 text-xs text-gray-500">
@@ -377,6 +430,18 @@ export default function FinancialTransactions() {
                       {t.status}
                     </Badge>
                   </td>
+                  <td className="px-4 py-3">
+                    {t.editable && (
+                      <div className="flex gap-1">
+                        <button onClick={() => handleOpen(t.raw)} className="p-1 hover:bg-gray-100 rounded transition-colors">
+                          <Pencil className="w-3.5 h-3.5 text-gray-400" />
+                        </button>
+                        <button onClick={() => { if (confirm('Remover esta transação?')) deleteMutation.mutate(t.raw.id); }} className="p-1 hover:bg-red-50 rounded transition-colors">
+                          <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                        </button>
+                      </div>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -387,19 +452,125 @@ export default function FinancialTransactions() {
                     Total ({sorted.length} itens)
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <div className="flex flex-col items-end">
+                    <div className="flex flex-col items-end gap-0.5">
                       <span className="text-xs text-emerald-600 font-semibold">+{fmt(totalReceitas)}</span>
                       <span className="text-xs text-red-500 font-semibold">-{fmt(totalDespesas)}</span>
                       <span className={`text-sm font-bold ${resultado >= 0 ? 'text-blue-700' : 'text-orange-600'}`}>{fmt(resultado)}</span>
                     </div>
                   </td>
-                  <td />
+                  <td /><td />
                 </tr>
               </tfoot>
             )}
           </table>
         </div>
       </div>
+
+      {/* Form Dialog */}
+      <Dialog open={showForm} onOpenChange={handleClose}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-emerald-800">
+              {editing ? 'Editar Transação' : 'Nova Transação Manual'}
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* Type toggle */}
+          <div className="flex gap-2 mb-2">
+            <button
+              onClick={() => setForm(p => ({ ...p, transaction_type: 'receita', category: 'Cobrança de Cliente (Manual)' }))}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${
+                form.transaction_type === 'receita'
+                  ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
+                  : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+              }`}
+            >
+              <TrendingUp className="w-4 h-4" /> Receita
+            </button>
+            <button
+              onClick={() => setForm(p => ({ ...p, transaction_type: 'despesa', category: 'Outros' }))}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${
+                form.transaction_type === 'despesa'
+                  ? 'bg-red-50 border-red-400 text-red-700'
+                  : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+              }`}
+            >
+              <TrendingDown className="w-4 h-4" /> Despesa
+            </button>
+          </div>
+
+          {form.transaction_type === 'receita' && (
+            <div className="flex items-center gap-2 p-3 bg-violet-50 rounded-lg border border-violet-100 text-xs text-violet-700 mb-1">
+              <Zap className="w-4 h-4 flex-shrink-0" />
+              <span>Receitas geradas via <strong>Stripe</strong> (cobranças de clientes) aparecem automaticamente — sem precisar lançar aqui. Use este formulário apenas para receitas <strong>não vinculadas ao Stripe</strong>.</span>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div>
+              <Label>Descrição *</Label>
+              <Input value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Ex: Consultoria ambiental" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Valor (R$) *</Label>
+                <Input type="number" step="0.01" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: e.target.value }))} placeholder="0,00" />
+              </div>
+              <div>
+                <Label>Data *</Label>
+                <Input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Categoria</Label>
+                <Select value={form.category} onValueChange={v => setForm(p => ({ ...p, category: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Status</Label>
+                <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pago">Pago</SelectItem>
+                    <SelectItem value="Pendente">Pendente</SelectItem>
+                    <SelectItem value="Cancelado">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {form.transaction_type === 'receita' && (
+              <div>
+                <Label>Cliente</Label>
+                <Input value={form.client_name} onChange={e => setForm(p => ({ ...p, client_name: e.target.value }))} placeholder="Nome do cliente (opcional)" />
+              </div>
+            )}
+            <div>
+              <Label>Forma de Pagamento</Label>
+              <Select value={form.payment_method} onValueChange={v => setForm(p => ({ ...p, payment_method: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{PAYMENT_METHODS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Observações</Label>
+              <Input value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} placeholder="Notas adicionais" />
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="outline" onClick={handleClose}>Cancelar</Button>
+              <Button
+                className="bg-emerald-600 hover:bg-emerald-700"
+                onClick={handleSubmit}
+                disabled={createMutation.isPending || updateMutation.isPending}
+              >
+                {createMutation.isPending || updateMutation.isPending ? 'Salvando...' : 'Salvar'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

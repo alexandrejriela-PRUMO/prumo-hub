@@ -71,7 +71,6 @@ const consultorNavItems = [
     icon: Wallet,
     children: [
       { name: 'Transações Consolidadas', page: 'FinancialTransactions', icon: Scale },
-      { name: 'Despesas', page: 'Expenses', icon: TrendingDown },
       { name: 'Config. de Pagamento', page: 'PaymentSettings', icon: CreditCard },
     ]
   },

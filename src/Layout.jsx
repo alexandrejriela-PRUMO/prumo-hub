@@ -76,9 +76,6 @@ const consultorNavItems = [
     ]
   },
 ];
-    ]
-  },
-];
 
 // Produtor Rural: menu completo
 const produtorNavItems = [

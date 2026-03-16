@@ -11,6 +11,7 @@ import PropertyMapView from './pages/PropertyMapView';
 import Agenda from './pages/Agenda';
 import CRMBoard from './pages/CRMBoard';
 import FinancialTransactions from './pages/FinancialTransactions';
+import FinancialDashboard from './pages/FinancialDashboard';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
@@ -70,6 +71,7 @@ const AuthenticatedApp = () => {
       <Route path="/CRMBoard" element={<LayoutWrapper currentPageName="CRMBoard"><CRMBoard /></LayoutWrapper>} />
       <Route path="/PaymentSettings" element={<LayoutWrapper currentPageName="PaymentSettings"><PaymentSettings /></LayoutWrapper>} />
       <Route path="/FinancialTransactions" element={<LayoutWrapper currentPageName="FinancialTransactions"><FinancialTransactions /></LayoutWrapper>} />
+      <Route path="/FinancialDashboard" element={<LayoutWrapper currentPageName="FinancialDashboard"><FinancialDashboard /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

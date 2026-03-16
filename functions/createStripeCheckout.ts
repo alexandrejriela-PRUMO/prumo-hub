@@ -15,37 +15,34 @@ Deno.serve(async (req) => {
     const { propertyId, planType } = await req.json();
     const resolvedPlanType = planType || user.user_type || 'produtor';
 
-    // Criar ou buscar o produto
-    const products = await stripe.products.list({ limit: 1 });
-    let product;
-    
-    if (products.data.length > 0) {
-      product = products.data[0];
-    } else {
+    // Planos por tipo de usuário
+    const planConfig = {
+      consultor: { name: 'PRUMO Hub - Plano Consultor', amount: 49700 },
+      produtor: { name: 'PRUMO Hub - Plano Produtor Rural', amount: 49700 },
+    };
+    const plan = planConfig[resolvedPlanType] || planConfig.produtor;
+
+    // Criar ou buscar o produto pelo nome do plano
+    const allProducts = await stripe.products.list({ limit: 100 });
+    let product = allProducts.data.find(p => p.name === plan.name && p.active);
+    if (!product) {
       product = await stripe.products.create({
-        name: 'Plano Campo Nobre - PRUMO Hub',
-        description: 'Assinatura mensal por propriedade',
+        name: plan.name,
+        description: `Assinatura mensal - ${plan.name}`,
       });
     }
 
-    // Criar ou buscar o preço
-    const prices = await stripe.prices.list({
-      product: product.id,
-      active: true,
-      limit: 1
-    });
-    
+    // Criar ou buscar o preço ativo
+    const prices = await stripe.prices.list({ product: product.id, active: true, limit: 1 });
     let price;
     if (prices.data.length > 0) {
       price = prices.data[0];
     } else {
       price = await stripe.prices.create({
         product: product.id,
-        unit_amount: 49700, // R$ 497,00 em centavos
+        unit_amount: plan.amount,
         currency: 'brl',
-        recurring: {
-          interval: 'month',
-        },
+        recurring: { interval: 'month' },
       });
     }
 

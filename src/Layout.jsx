@@ -179,6 +179,7 @@ const equipeNavItems = [
   { name: 'Relatórios', page: 'Reports', icon: FileText },
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
+  { name: 'Modo Campo', page: 'CampMode', icon: Smartphone, separator: true },
 ];
 
 // Cliente do consultor (Enterprise): somente leitura/download, sem IA, notificações ou equipe
@@ -209,6 +210,7 @@ const clientConsultorNavItems = [
     ]
   },
   { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
+  { name: 'Modo Campo', page: 'CampMode', icon: Smartphone, separator: true },
 ];
 
 // Consultor: itens adicionais abaixo dos fixos (consultorNavItems)

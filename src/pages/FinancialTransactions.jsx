@@ -146,7 +146,6 @@ export default function FinancialTransactions() {
   const resultado = totalReceitas-totalDespesas;
   const fmt = (v)=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const SortIcon = ({field})=>{ if(sortField!==field)return null; return sortDir==='asc'?<ChevronUp className="w-3 h-3 inline ml-0.5"/>:<ChevronDown className="w-3 h-3 inline ml-0.5"/>; };
-  const categories = form.transaction_type==='receita' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
 
   const exportCSV = ()=>{
     const header='Tipo,Origem,Descrição,Cliente,Conta,Competência,Data,Valor,Status,Forma Pagamento';

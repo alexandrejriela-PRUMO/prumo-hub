@@ -287,7 +287,18 @@ export default function CRMBoard() {
         isOpen={showNewClientForm}
         onClose={() => setShowNewClientForm(false)}
         consultorEmail={user?.email}
-        onSuccess={() => { setShowNewClientForm(false); queryClient.invalidateQueries(['crm-board-list']); }}
+        onSuccess={async (property) => {
+          setShowNewClientForm(false);
+          if (property?.id) {
+            await base44.entities.ClientCRM.create({
+              property_id: property.id,
+              consultor_email: user.email,
+              client_email: property.owner_email || '',
+              status: 'Prospect',
+            });
+          }
+          queryClient.invalidateQueries(['crm-board-list']);
+        }}
       />
 
       {/* Client Detail Modal */}

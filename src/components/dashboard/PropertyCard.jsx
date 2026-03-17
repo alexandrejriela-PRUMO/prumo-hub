@@ -81,6 +81,11 @@ export default function PropertyCard({ property, isConsultor }) {
                   {isUrban ? 'Empreendimento' : 'Propriedade Rural'}
                 </p>
                 <h2 className="text-2xl font-bold text-white">{property.property_name}</h2>
+                {property.owner_names && (
+                  <p className="text-amber-300 text-sm mt-0.5 flex items-center gap-1">
+                    <span className="opacity-70">Proprietário(s):</span> {property.owner_names}
+                  </p>
+                )}
                 <p className="text-emerald-300 flex items-center gap-2 mt-1">
                   <MapPin className="w-4 h-4" />
                   {property.city}, {property.state}

@@ -180,6 +180,20 @@ export default function CRMBoard() {
     enabled: !!user?.email,
   });
 
+  const deleteCRMMutation = useMutation({
+    mutationFn: async ({ crmId, propertyId }) => {
+      await base44.entities.ClientCRM.delete(crmId);
+      if (propertyId) await base44.entities.Property.delete(propertyId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['crm-board-list']);
+      queryClient.invalidateQueries(['crm-board-properties']);
+      setSelectedCRM(null);
+      toast.success('Cliente excluído com sucesso.');
+    },
+    onError: () => toast.error('Erro ao excluir cliente.'),
+  });
+
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }) => base44.entities.ClientCRM.update(id, { status }),
     onMutate: async ({ id, status }) => {

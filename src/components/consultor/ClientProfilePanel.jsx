@@ -72,7 +72,7 @@ export default function ClientProfilePanel({ client, onUpdate }) {
   const [personalData, setPersonalData] = useState(() => buildPersonalData(client));
 
   // Reinicializa estado quando muda de cliente
-  React.useEffect(() => {
+  useEffect(() => {
     setPersonalData(buildPersonalData(client));
     setEditingPersonal(false);
   }, [client?.id]);

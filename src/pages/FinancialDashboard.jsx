@@ -13,7 +13,7 @@ import {
   ResponsiveContainer, ReferenceLine, ComposedChart, Line
 } from 'recharts';
 import {
-  TrendingUp, TrendingDown, Scale, Wallet, CalendarRange,
+  TrendingUp, TrendingDown, PiggyBank, Wallet, CalendarRange,
   ArrowUpRight, ArrowDownRight, AlertCircle, Info, Settings2
 } from 'lucide-react';
 import { format, addMonths, subMonths, startOfMonth, parseISO, isValid } from 'date-fns';

@@ -173,7 +173,7 @@ export default function DocumentUpload({
               <select
                 required
                 value={metadata.document_type}
-                onChange={(e) => setMetadata({ ...metadata, document_type: e.target.value })}
+                onChange={(e) => setMetadata({ ...metadata, document_type: e.target.value, other_description: '' })}
                 disabled={uploading}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
@@ -183,6 +183,20 @@ export default function DocumentUpload({
                 ))}
               </select>
             </div>
+
+            {/* Other description */}
+            {metadata.document_type === 'Outro' && (
+              <div>
+                <Label>Descrição do tipo "Outro" *</Label>
+                <Input
+                  required
+                  value={metadata.other_description}
+                  onChange={(e) => setMetadata({ ...metadata, other_description: e.target.value })}
+                  placeholder="Ex: Contrato de Compra e Venda, Laudo de Avaliação..."
+                  disabled={uploading}
+                />
+              </div>
+            )}
 
             {/* Document Name */}
             <div>

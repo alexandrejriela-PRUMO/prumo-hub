@@ -427,7 +427,7 @@ export default function Contracts() {
                           'Contrato de Compra e Venda de Milho','Contrato de Compra e Venda de Boi / Pecuária',
                           'Contrato de Compra e Venda de Algodão','Contrato de Compra de Sementes',
                           'Contrato de Compra de Insumos / Defensivos','Contrato de Compra de Máquinas e Equipamentos',
-                          'Contrato de Financiamento / Crédito Rural','CPR - Cédula de Produto Rural',
+                          'CPR - Cédula de Produto Rural',
                           'Contrato de Prestação de Serviços de Terraplanagem','Contrato de Prestação de Serviços de Irrigação',
                           'Contrato de Prestação de Serviços de Colheita','Contrato de Prestação de Serviços de Pulverização',
                           'Contrato de Prestação de Serviços de Transporte de Grãos','Contrato de Terceirização de Serviços Rurais',

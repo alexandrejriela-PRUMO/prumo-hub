@@ -217,7 +217,7 @@ export default function CRMBoard() {
   };
 
   // Build client object for modal with all linked properties
-  const selectedClient = React.useMemo(() => {
+  const selectedClient = useMemo(() => {
     if (!selectedCRM) return null;
     const linkedProps = properties.filter(p => {
       if (selectedCRM.property_id && p.id === selectedCRM.property_id) return true;

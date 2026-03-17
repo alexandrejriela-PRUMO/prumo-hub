@@ -113,6 +113,26 @@ export default function DocumentsHub() {
     }
   };
 
+  // Sync order when documents load
+  useEffect(() => {
+    if (allDocuments.length > 0) {
+      setOrderedIds(prev => {
+        const allIds = allDocuments.map(d => d.id);
+        const preserved = prev.filter(id => allIds.includes(id));
+        const newIds = allIds.filter(id => !preserved.includes(id));
+        return [...preserved, ...newIds];
+      });
+    }
+  }, [allDocuments]);
+
+  const handleDragEnd = (result) => {
+    if (!result.destination) return;
+    const newOrder = Array.from(orderedIds);
+    const [moved] = newOrder.splice(result.source.index, 1);
+    newOrder.splice(result.destination.index, 0, moved);
+    setOrderedIds(newOrder);
+  };
+
   // Filter and search documents
   const filteredDocuments = allDocuments.filter(doc => {
     const searchMatch = !searchTerm || 

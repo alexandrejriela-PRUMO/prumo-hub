@@ -215,13 +215,20 @@ export default function CRMBoard() {
     updateStatusMutation.mutate({ id: draggableId, status: destination.droppableId });
   };
 
-  // Find the selected CRM's property for modal
-  const selectedProperty = selectedCRM ? propertyMap[selectedCRM.property_id] : null;
-  const selectedClient = selectedCRM ? {
-    ...selectedCRM,
-    client_name: selectedCRM.client_name || selectedProperty?.client_name || selectedCRM.client_email?.split('@')[0],
-    properties: selectedProperty ? [selectedProperty] : [],
-  } : null;
+  // Build client object for modal with all linked properties
+  const selectedClient = React.useMemo(() => {
+    if (!selectedCRM) return null;
+    const linkedProps = properties.filter(p => {
+      if (selectedCRM.property_id && p.id === selectedCRM.property_id) return true;
+      if (selectedCRM.client_email && p.owner_email === selectedCRM.client_email) return true;
+      return false;
+    });
+    return {
+      ...selectedCRM,
+      client_name: selectedCRM.client_name || selectedCRM.client_email?.split('@')[0],
+      properties: linkedProps,
+    };
+  }, [selectedCRM, properties]);
 
   return (
     <div className="space-y-5">

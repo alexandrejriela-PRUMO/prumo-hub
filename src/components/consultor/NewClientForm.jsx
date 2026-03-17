@@ -75,7 +75,7 @@ export default function NewClientForm({ isOpen, onClose, consultorEmail, onSucce
     setClientType('pf');
     setClientData({ full_name:'',cpf:'',rg:'',birth_date:'',company_name:'',cnpj:'',state_registration:'',email:'',phone:'',address:'',city:'',state:'',zip_code:'',notes:'' });
     setPropertyData({ property_name:'',property_type:'rural',location:'',city:'',state:'',total_hectares:'',app_hectares:'',legal_reserve_hectares:'',total_area_m2:'',built_area_m2:'',main_activity:'',activities:'' });
-    setAddProperty(true);
+    setAddProperty(false);
     onClose();
   };
 

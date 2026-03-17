@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Plus, Users, MessageCircle, CheckSquare, Calendar, Tag,
-  MoreVertical, Briefcase, TrendingUp, Clock, ChevronRight, MapPin
+  MoreVertical, Briefcase, TrendingUp, Clock, ChevronRight, MapPin, Trash2
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

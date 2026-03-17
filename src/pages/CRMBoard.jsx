@@ -238,19 +238,9 @@ export default function CRMBoard() {
   const handleDragEnd = (result) => {
     const { destination, source, draggableId } = result;
     if (!destination) return;
+    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
     if (destination.droppableId === source.droppableId) return;
-    const destStatus = destination.droppableId;
-    if (destStatus === 'Ativo') {
-      // Check if already has a real property linked
-      const crm = crmList.find(c => c.id === draggableId);
-      const prop = crm ? propertyMap[crm.property_id] : null;
-      if (!prop || prop.is_client_only) {
-        // Need to link a property first
-        setLinkPropertyModal({ crmId: draggableId });
-        return;
-      }
-    }
-    updateStatusMutation.mutate({ id: draggableId, status: destStatus });
+    updateStatusMutation.mutate({ id: draggableId, status: destination.droppableId });
   };
 
   const setProp = (field, val) => setPropertyData(prev => ({ ...prev, [field]: val }));

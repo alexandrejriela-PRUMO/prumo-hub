@@ -29,6 +29,24 @@ const urbanActivities = [
 
 export default function PropertyForm({ property, user, onSubmit, onCancel }) {
   const isConsultor = user?.user_type === 'consultor';
+  const [existingClients, setExistingClients] = useState([]);
+
+  useEffect(() => {
+    if (isConsultor && !property && user?.email) {
+      base44.entities.Property.filter({ consultor_email: user.email })
+        .then(props => {
+          // Extract unique clients
+          const map = new Map();
+          props.forEach(p => {
+            if (p.owner_email && !map.has(p.owner_email)) {
+              map.set(p.owner_email, { email: p.owner_email, name: p.client_name || p.owner_email });
+            }
+          });
+          setExistingClients(Array.from(map.values()));
+        })
+        .catch(() => {});
+    }
+  }, [isConsultor, property, user?.email]);
 
   const initialActivities = property?.activities
     ? (typeof property.activities === 'string' ? property.activities.split(',').map(a => a.trim()).filter(Boolean) : property.activities)

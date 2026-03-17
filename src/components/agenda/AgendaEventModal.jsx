@@ -239,20 +239,10 @@ export default function AgendaEventModal({ event, initialDate, user, properties,
             <Textarea value={form.description} onChange={e => set('description', e.target.value)} placeholder="Detalhes do evento..." rows={3} />
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-blue-800">📅 Sincronizar com Google Agenda</p>
-              <p className="text-xs text-blue-600">Cria/atualiza o evento na sua conta Google</p>
-            </div>
-            <Switch checked={form.sync_google} onCheckedChange={v => set('sync_google', v)} />
+          <div>
+            <Label>Lembrete (minutos antes)</Label>
+            <Input type="number" value={form.reminder_minutes} onChange={e => set('reminder_minutes', e.target.value)} min={0} />
           </div>
-
-          {form.sync_google && (
-            <div>
-              <Label>Lembrete (minutos antes)</Label>
-              <Input type="number" value={form.reminder_minutes} onChange={e => set('reminder_minutes', e.target.value)} min={0} />
-            </div>
-          )}
         </div>
 
         <div className="flex gap-2 pt-2">

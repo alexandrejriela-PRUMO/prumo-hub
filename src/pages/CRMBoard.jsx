@@ -387,15 +387,21 @@ export default function CRMBoard() {
         consultorEmail={user?.email}
         onSuccess={async (property) => {
           setShowNewClientForm(false);
+          // The CRM record will be auto-created by the board query for existing properties
+          // but we create it here explicitly with Prospect status for new leads
           if (property?.id) {
-            await base44.entities.ClientCRM.create({
-              property_id: property.id,
-              consultor_email: user.email,
-              client_email: property.owner_email || '',
-              status: 'Prospect',
-            });
+            const existing = await base44.entities.ClientCRM.filter({ property_id: property.id });
+            if (existing.length === 0) {
+              await base44.entities.ClientCRM.create({
+                property_id: property.id,
+                consultor_email: user.email,
+                client_email: property.owner_email || '',
+                status: 'Prospect',
+              });
+            }
           }
           queryClient.invalidateQueries(['crm-board-list']);
+          queryClient.invalidateQueries(['crm-board-properties']);
         }}
       />
 

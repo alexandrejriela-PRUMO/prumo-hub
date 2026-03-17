@@ -105,17 +105,6 @@ export default function AgendaEventModal({ event, initialDate, user, properties,
 
       let gcalId = form.google_calendar_event_id;
 
-      // Sync to Google Calendar
-      if (form.sync_google) {
-        const gcalEvent = toGCalEvent(form);
-        if (event?.google_calendar_event_id) {
-          await base44.functions.invoke('googleCalendarAgenda', { action: 'update', eventId: event.google_calendar_event_id, event: gcalEvent });
-        } else {
-          const res = await base44.functions.invoke('googleCalendarAgenda', { action: 'create', event: gcalEvent });
-          gcalId = res.data?.id;
-        }
-      }
-
       if (gcalId) payload.google_calendar_event_id = gcalId;
 
       if (event?.id) {

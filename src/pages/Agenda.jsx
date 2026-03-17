@@ -22,8 +22,6 @@ export default function Agenda() {
   const [detailEvent, setDetailEvent] = useState(null);
   const [filterAssignee, setFilterAssignee] = useState('all');
   const [filterType, setFilterType] = useState('all');
-  const [gcalEvents, setGcalEvents] = useState([]);
-  const [gcalLoading, setGcalLoading] = useState(false);
   const [search, setSearch] = useState('');
 
   const qc = useQueryClient();

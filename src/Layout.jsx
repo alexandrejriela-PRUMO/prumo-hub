@@ -92,7 +92,7 @@ const produtorNavItems = [
   { name: 'Minhas Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
   { name: 'Meus Contratos', page: 'Contracts', icon: ScrollText },
   { name: 'Documentos', page: 'DocumentsHub', icon: FileText },
-  { name: 'Licenças Ambientais', page: 'Licenses', icon: FileCheck },
+  { name: 'Licenças e Projetos', page: 'Licenses', icon: FileCheck },
   { name: 'Gestão do CAR', page: 'CARModule', icon: TreePine },
   { name: 'Mapa Interativo', page: 'PropertyMapView', icon: Map },
   { name: 'Processos', page: 'Processes', icon: Scale },
@@ -153,7 +153,7 @@ const equipeNavItems = [
     icon: Building,
     children: [
       { name: 'Documentos', page: 'DocumentsHub', icon: FileText },
-      { name: 'Licenças Ambientais', page: 'Licenses', icon: FileCheck },
+      { name: 'Licenças e Projetos', page: 'Licenses', icon: FileCheck },
       { name: 'Gestão do CAR', page: 'CARModule', icon: TreePine },
       { name: 'Mapa Interativo', page: 'PropertyMapView', icon: Map },
       { name: 'Processos', page: 'Processes', icon: Scale },
@@ -192,7 +192,7 @@ const equipeNavItems = [
 const clientConsultorNavItems = [
   { name: 'Minha Propriedade', page: 'ClientConsultorPortal', icon: Building2 },
   { name: 'Documentos', page: 'DocumentsHub', icon: FileText },
-  { name: 'Licenças Ambientais', page: 'Licenses', icon: FileCheck },
+  { name: 'Licenças e Projetos', page: 'Licenses', icon: FileCheck },
   { name: 'Processos', page: 'Processes', icon: Scale },
   { name: 'Alertas de Infrações', page: 'EnvironmentalAlerts', icon: AlertTriangle },
   { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: FileCheck },
@@ -226,7 +226,7 @@ const navItems = [
     icon: Building,
     children: [
       { name: 'Documentos', page: 'DocumentsHub', icon: FileText },
-      { name: 'Licenças Ambientais', page: 'Licenses', icon: FileCheck },
+      { name: 'Licenças e Projetos', page: 'Licenses', icon: FileCheck },
       { name: 'Gestão do CAR', page: 'CARModule', icon: TreePine },
       { name: 'Mapa Interativo', page: 'PropertyMapView', icon: Map },
       { name: 'Processos', page: 'Processes', icon: Scale },

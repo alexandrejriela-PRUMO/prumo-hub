@@ -132,8 +132,7 @@ function ClientCard({ crm, property, index, onClick }) {
   );
 }
 
-const ESTADOS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO']; // estados brasileiros
-const ATIVIDADES_RURAIS = ['Agricultura','Pecuária','Silvicultura','Aquicultura','Extrativismo','Agroindústria','Turismo Rural','Outro'];
+
 
 export default function CRMBoard() {
   const [user, setUser] = useState(null);

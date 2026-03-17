@@ -117,7 +117,6 @@ export default function Agenda() {
       if (filterType !== 'all') {
         if (filterType === 'crm' && ev._source !== 'crm_task' && ev._source !== 'crm_interaction') return false;
         if (filterType === 'agenda' && ev._source !== 'agenda') return false;
-        if (filterType === 'gcal' && ev._source !== 'gcal') return false;
       }
       if (search && !ev.title?.toLowerCase().includes(search.toLowerCase()) &&
           !ev.client_name?.toLowerCase().includes(search.toLowerCase())) return false;

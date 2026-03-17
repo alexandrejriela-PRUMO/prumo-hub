@@ -93,41 +93,22 @@ export default function ClientProfilePanel({ client, onUpdate }) {
   const updatePersonal = useMutation({
     mutationFn: async () => {
       const name = personalData.client_type === 'pf' ? personalData.full_name : personalData.company_name;
-      if (isCRMBased) {
-        await base44.entities.ClientCRM.update(client.id, {
-          client_name: name,
-          client_email: personalData.email,
-          client_phone: personalData.phone,
-          client_type: personalData.client_type,
-          cpf: personalData.cpf,
-          rg: personalData.rg,
-          birth_date: personalData.birth_date || undefined,
-          cnpj: personalData.cnpj,
-          state_registration: personalData.state_registration,
-          address: personalData.address,
-          city: personalData.city,
-          state: personalData.state,
-          zip_code: personalData.zip_code,
-          notes: personalData.notes,
-        });
-      } else {
-        const authorizedUsersJson = JSON.stringify({
-          client_type: personalData.client_type,
-          cpf: personalData.cpf, rg: personalData.rg, birth_date: personalData.birth_date,
-          cnpj: personalData.cnpj, state_registration: personalData.state_registration,
-          phone: personalData.phone, address: personalData.address, city: personalData.city,
-          state: personalData.state, zip_code: personalData.zip_code, notes: personalData.notes,
-        });
-        const updates = (client.properties || []).map(p =>
-          base44.entities.Property.update(p.id, {
-            client_name: name,
-            client_contact: personalData.phone,
-            authorized_users: authorizedUsersJson,
-            owner_email: personalData.email || p.owner_email,
-          })
-        );
-        await Promise.all(updates);
-      }
+      await base44.entities.ClientCRM.update(client.id, {
+        client_name: name,
+        client_email: personalData.email,
+        client_phone: personalData.phone,
+        client_type: personalData.client_type,
+        cpf: personalData.cpf,
+        rg: personalData.rg,
+        birth_date: personalData.birth_date || undefined,
+        cnpj: personalData.cnpj,
+        state_registration: personalData.state_registration,
+        address: personalData.address,
+        city: personalData.city,
+        state: personalData.state,
+        zip_code: personalData.zip_code,
+        notes: personalData.notes,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['consultor-crm-clients'] });

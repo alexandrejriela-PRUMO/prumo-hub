@@ -182,8 +182,10 @@ export default function CRMBoard() {
 
   const deleteCRMMutation = useMutation({
     mutationFn: async ({ crmId, propertyId }) => {
-      await base44.entities.ClientCRM.delete(crmId);
-      if (propertyId) await base44.entities.Property.delete(propertyId);
+      try { await base44.entities.ClientCRM.delete(crmId); } catch (e) { /* ignore 404 */ }
+      if (propertyId) {
+        try { await base44.entities.Property.delete(propertyId); } catch (e) { /* ignore 404 */ }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['crm-board-list']);

@@ -285,7 +285,7 @@ export default function CRMBoard() {
   const selectedProperty = selectedCRM ? propertyMap[selectedCRM.property_id] : null;
   const selectedClient = selectedCRM ? {
     ...selectedCRM,
-    client_name: selectedProperty?.client_name || selectedCRM.client_email?.split('@')[0],
+    client_name: selectedCRM.client_name || selectedProperty?.client_name || selectedCRM.client_email?.split('@')[0],
     properties: selectedProperty ? [selectedProperty] : [],
   } : null;
 

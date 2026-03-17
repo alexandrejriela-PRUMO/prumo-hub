@@ -262,7 +262,7 @@ export default function NewClientForm({ isOpen, onClose, consultorEmail, onSucce
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="outline" onClick={handleClose}>Cancelar</Button>
               <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={handleNextStep}>
-                Salvar Lead
+                Salvar Cliente
               </Button>
             </div>
           </div>

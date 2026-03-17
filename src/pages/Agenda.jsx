@@ -55,38 +55,6 @@ export default function Agenda() {
     enabled: !!user?.email,
   });
 
-  const fetchGCalEvents = async () => {
-    if (!user?.email) return;
-    setGcalLoading(true);
-    try {
-      const now = new Date();
-      const timeMin = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
-      const timeMax = new Date(now.getFullYear(), now.getMonth() + 3, 0).toISOString();
-      const res = await base44.functions.invoke('googleCalendarAgenda', { action: 'list', event: { timeMin, timeMax } });
-      const items = res.data?.items || [];
-      setGcalEvents(items.map(ev => ({
-        id: `gcal_${ev.id}`,
-        google_calendar_event_id: ev.id,
-        title: ev.summary || '(sem título)',
-        start_datetime: ev.start?.dateTime || ev.start?.date,
-        end_datetime: ev.end?.dateTime || ev.end?.date,
-        all_day: !!ev.start?.date && !ev.start?.dateTime,
-        location: ev.location || '',
-        description: ev.description || '',
-        _source: 'gcal',
-        status: 'Confirmado',
-        htmlLink: ev.htmlLink,
-      })));
-    } catch (e) {
-      console.error('Erro ao buscar Google Calendar:', e);
-    }
-    setGcalLoading(false);
-  };
-
-  useEffect(() => {
-    if (user?.email) fetchGCalEvents();
-  }, [user?.email]);
-
   // Extract CRM events (tasks + interactions with next_action_date)
   const crmEvents = useMemo(() => {
     const evs = [];

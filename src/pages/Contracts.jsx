@@ -434,8 +434,9 @@ export default function Contracts() {
                           'Contrato de Trabalho Rural (CLT)','Contrato de Trabalho Rural (Temporário)',
                           'Contrato de Honorários Advocatícios','Contrato de Honorários Contábeis',
                           'Contrato de Gestão Financeira','Contrato de Seguro Rural','Contrato de Seguro de Máquinas',
-                          'Contrato de Armazenagem de Grãos','Contrato de Rastreabilidade / Certificação',
-                          'Contrato de Carbono / PSA','Contrato de Servidão Ambiental','Outro'
+                          'Contrato de Compra e Venda de Arroz','Contrato de Compra e Venda de Trigo',
+                          'Contrato de Compra e Venda de Canola',
+                          'Contrato de Armazenagem de Grãos','Contrato de Rastreabilidade / Certificação','Outro'
                         ].map(t => (
                           <SelectItem key={t} value={t}>{t}</SelectItem>
                         ))}

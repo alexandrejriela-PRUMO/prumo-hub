@@ -677,28 +677,78 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
 
       {isConsultor && (
         <div className="space-y-4 pt-4 border-t border-dashed border-emerald-200">
-          <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Dados do Cliente Responsável</p>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Nome do Cliente / Produtor</Label>
-              <Input value={formData.client_name || ''}
-                onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
-                placeholder="Ex: João da Silva" />
+          <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Cliente Responsável *</p>
+          {!property ? (
+            <div className="space-y-3">
+              {existingClients.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Selecionar cliente existente</Label>
+                  <Select
+                    value={formData.client_email || ''}
+                    onValueChange={(val) => {
+                      const client = existingClients.find(c => c.email === val);
+                      setFormData({ ...formData, client_email: val, client_name: client?.name || '' });
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um cliente cadastrado..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {existingClients.map(c => (
+                        <SelectItem key={c.email} value={c.email}>
+                          {c.name} — {c.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-400">Ou preencha manualmente abaixo para um novo cliente:</p>
+                </div>
+              )}
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Nome do Cliente / Produtor *</Label>
+                  <Input value={formData.client_name || ''}
+                    onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
+                    placeholder="Ex: João da Silva"
+                    required />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email do Cliente *</Label>
+                  <Input type="email" value={formData.client_email || ''}
+                    onChange={(e) => setFormData({ ...formData, client_email: e.target.value })}
+                    placeholder="Ex: joao@email.com"
+                    required />
+                </div>
+                <div className="space-y-2">
+                  <Label>Contato do Cliente</Label>
+                  <Input value={formData.client_contact || ''}
+                    onChange={(e) => setFormData({ ...formData, client_contact: e.target.value })}
+                    placeholder="Telefone ou email" />
+                </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>Email do Cliente *</Label>
-              <Input type="email" value={formData.client_email || ''}
-                onChange={(e) => setFormData({ ...formData, client_email: e.target.value })}
-                placeholder="Ex: joao@email.com"
-                required={isConsultor && !property} />
+          ) : (
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Nome do Cliente / Produtor</Label>
+                <Input value={formData.client_name || ''}
+                  onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
+                  placeholder="Ex: João da Silva" />
+              </div>
+              <div className="space-y-2">
+                <Label>Email do Cliente</Label>
+                <Input type="email" value={formData.client_email || ''}
+                  onChange={(e) => setFormData({ ...formData, client_email: e.target.value })}
+                  placeholder="Ex: joao@email.com" />
+              </div>
+              <div className="space-y-2">
+                <Label>Contato do Cliente</Label>
+                <Input value={formData.client_contact || ''}
+                  onChange={(e) => setFormData({ ...formData, client_contact: e.target.value })}
+                  placeholder="Telefone ou email" />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>Contato do Cliente</Label>
-              <Input value={formData.client_contact || ''}
-                onChange={(e) => setFormData({ ...formData, client_contact: e.target.value })}
-                placeholder="Telefone ou email" />
-            </div>
-          </div>
+          )}
         </div>
       )}
 

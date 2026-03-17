@@ -29,7 +29,41 @@ import LicenseDocuments from '../components/license/LicenseDocuments';
 import { toast } from 'sonner';
 import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
 
-const licenseTypes = ['LP', 'LI', 'LO', 'LAU', 'Dispensa', 'Outorga', 'Outro'];
+const licenseTypes = [
+  'LP - Licença Prévia',
+  'LI - Licença de Instalação',
+  'LO - Licença de Operação',
+  'LAU - Licença de Autorização de Uso',
+  'LAS - Licença Ambiental Simplificada',
+  'LAC - Licença Ambiental Corretiva',
+  'Dispensa de Licenciamento',
+  'Outorga de Uso de Recursos Hídricos',
+  'Autorização de Supressão Vegetal (ASV)',
+  'Autorização de Intervenção em APP',
+  'Autorização de Uso do Solo',
+  'Licença de Pesca / Aquicultura',
+  'Licença Sanitária',
+  'Licença de Funcionamento',
+  'ART - Anotação de Responsabilidade Técnica',
+  'TRT - Termo de Responsabilidade Técnica',
+  'RRT - Registro de Responsabilidade Técnica',
+  'Laudo Técnico Ambiental',
+  'Laudo de Vistoria',
+  'Laudo de Avaliação de Imóvel Rural',
+  'Laudo Agronômico',
+  'Laudo Fitossanitário',
+  'Laudo de Conformidade de Estrutura',
+  'Parecer Técnico',
+  'Relatório de Conformidade Ambiental',
+  'Relatório de Monitoramento',
+  'Certificado de Conformidade',
+  'Certificado Fitossanitário',
+  'Projeto Técnico de Engenharia',
+  'Projeto de Drenagem',
+  'Projeto de Irrigação',
+  'Projeto de Saneamento',
+  'Outro',
+];
 
 export default function Licenses() {
   const [user, setUser] = useState(null);
@@ -270,14 +304,14 @@ export default function Licenses() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 bg-clip-text text-transparent">Licenças Ambientais</h1>
-          <p className="text-gray-500 mt-1 text-sm sm:text-base">Gerencie suas licenças e condicionantes</p>
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 bg-clip-text text-transparent">Licenças e Documentos Técnicos</h1>
+          <p className="text-gray-500 mt-1 text-sm sm:text-base">Gerencie licenças, ARTs, laudos e documentos técnicos</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-emerald-600 hover:bg-emerald-700">
               <Plus className="w-4 h-4 mr-2" />
-              Nova Licença
+              Novo Registro
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">

@@ -31,22 +31,44 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
   const isConsultor = user?.user_type === 'consultor';
   const [existingClients, setExistingClients] = useState([]);
 
+  const [clientNameSearch, setClientNameSearch] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
   useEffect(() => {
-    if (isConsultor && !property && user?.email) {
+    if (isConsultor && user?.email) {
       base44.entities.Property.filter({ consultor_email: user.email })
         .then(props => {
-          // Extract unique clients
           const map = new Map();
           props.forEach(p => {
-            if (p.owner_email && !map.has(p.owner_email)) {
-              map.set(p.owner_email, { email: p.owner_email, name: p.client_name || p.owner_email });
+            const email = p.client_email || p.owner_email;
+            const name = p.client_name;
+            if (email && name && !map.has(email)) {
+              map.set(email, { email, name });
             }
           });
           setExistingClients(Array.from(map.values()));
         })
         .catch(() => {});
     }
-  }, [isConsultor, property, user?.email]);
+  }, [isConsultor, user?.email]);
+
+  // Sync clientNameSearch with formData.client_name
+  useEffect(() => {
+    setClientNameSearch(formData.client_name || '');
+  }, []);
+
+  const filteredSuggestions = clientNameSearch.length >= 1
+    ? existingClients.filter(c =>
+        c.name.toLowerCase().includes(clientNameSearch.toLowerCase()) ||
+        c.email.toLowerCase().includes(clientNameSearch.toLowerCase())
+      )
+    : existingClients;
+
+  const selectClient = (client) => {
+    setFormData(prev => ({ ...prev, client_name: client.name, client_email: client.email }));
+    setClientNameSearch(client.name);
+    setShowSuggestions(false);
+  };
 
   const initialActivities = property?.activities
     ? (typeof property.activities === 'string' ? property.activities.split(',').map(a => a.trim()).filter(Boolean) : property.activities)

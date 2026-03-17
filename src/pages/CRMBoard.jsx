@@ -503,10 +503,24 @@ export default function CRMBoard() {
       <Dialog open={!!selectedCRM} onOpenChange={() => setSelectedCRM(null)}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-emerald-800">
-              <Users className="w-5 h-5" />
-              {selectedClient?.client_name || selectedCRM?.client_email?.split('@')[0]}
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2 text-emerald-800">
+                <Users className="w-5 h-5" />
+                {selectedClient?.client_name || selectedCRM?.client_email?.split('@')[0]}
+              </DialogTitle>
+              <button
+                onClick={() => {
+                  if (window.confirm('Tem certeza que deseja excluir este cliente do CRM? Esta ação também removerá a propriedade vinculada.')) {
+                    deleteCRMMutation.mutate({ crmId: selectedCRM.id, propertyId: selectedCRM.property_id });
+                  }
+                }}
+                disabled={deleteCRMMutation.isPending}
+                className="p-2 rounded-lg text-red-500 hover:bg-red-50 transition-colors mr-6"
+                title="Excluir cliente"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           </DialogHeader>
           {selectedCRM && (
             <Tabs defaultValue="crm">

@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import {
-  TrendingUp, TrendingDown, Scale, Download, Search,
+  TrendingUp, TrendingDown, ArrowLeftRight, Download, Search,
   ChevronUp, ChevronDown, Plus, Pencil, Trash2, Zap, Banknote, Paperclip
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
@@ -160,7 +160,7 @@ export default function FinancialTransactions() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Scale className="w-7 h-7 text-emerald-600"/>Transações Financeiras
+            <ArrowLeftRight className="w-7 h-7 text-emerald-600"/>Transações Financeiras
           </h1>
           <p className="text-gray-500 text-sm mt-0.5">Visão consolidada de receitas, despesas e resultado</p>
         </div>

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+// Note: useState imported from React above
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';

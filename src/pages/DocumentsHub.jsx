@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { 
   FileText, 
   Upload, 
@@ -14,7 +15,8 @@ import {
   Eye,
   Trash2,
   FolderOpen,
-  Calendar
+  Calendar,
+  GripVertical
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';

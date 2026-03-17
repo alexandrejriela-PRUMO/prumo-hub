@@ -161,22 +161,7 @@ export default function CRMBoard() {
 
   const { data: crmList = [], isLoading } = useQuery({
     queryKey: ['crm-board-list', user?.email],
-    queryFn: async () => {
-      const existing = await base44.entities.ClientCRM.filter({ consultor_email: user.email });
-      const existingPropertyIds = new Set(existing.map(c => c.property_id));
-      const props = await base44.entities.Property.filter({ consultor_email: user.email });
-      // Create CRM records for properties that don't have one yet
-      const toCreate = props.filter(p => !existingPropertyIds.has(p.id));
-      const created = await Promise.all(
-        toCreate.map(p => base44.entities.ClientCRM.create({
-          property_id: p.id,
-          consultor_email: user.email,
-          client_email: p.owner_email || '',
-          status: p.is_client_only ? 'Prospect' : 'Ativo',
-        }))
-      );
-      return [...existing, ...created];
-    },
+    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: user.email }),
     enabled: !!user?.email,
   });
 

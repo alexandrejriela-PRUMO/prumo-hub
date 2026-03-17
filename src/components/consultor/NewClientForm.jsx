@@ -161,7 +161,7 @@ export default function NewClientForm({ isOpen, onClose, consultorEmail, onSucce
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-emerald-800">
             <Plus className="w-5 h-5" />
-            Novo Lead
+            Novo Cliente
           </DialogTitle>
         </DialogHeader>
 

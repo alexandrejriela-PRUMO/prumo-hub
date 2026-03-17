@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { User, Building2, Mail, Phone, MapPin, FileText, Calendar, Hash, Info, Pencil, X, Check, Plus } from 'lucide-react';
+import { User, Building2, Mail, Phone, MapPin, FileText, Calendar, Hash, Info, Pencil, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 const ESTADOS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
@@ -37,106 +37,97 @@ function Field({ label, children }) {
   );
 }
 
-export default function ClientProfilePanel({ client }) {
+export default function ClientProfilePanel({ client, onUpdate }) {
   const queryClient = useQueryClient();
-  const firstProperty = client?.properties?.[0];
 
-  let clientInfo = {};
-  let clientType = 'pf';
-  if (firstProperty?.authorized_users) {
-    try {
-      clientInfo = JSON.parse(firstProperty.authorized_users);
-      clientType = clientInfo.client_type || 'pf';
-    } catch (e) { clientInfo = {}; }
-  }
-
+  // Suporta tanto CRM direto quanto property-based
+  const isCRMBased = !!client?.id && !client?.owner_email; // ClientCRM record
+  const clientType = client?.client_type || 'pf';
   const isPF = clientType === 'pf';
   const clientName = client?.client_name || client?.client_email?.split('@')[0];
 
-  // State for editing personal data
   const [editingPersonal, setEditingPersonal] = useState(false);
   const [personalData, setPersonalData] = useState({
     client_type: clientType,
-    full_name: isPF ? clientName : '',
-    company_name: !isPF ? clientName : '',
-    cpf: clientInfo.cpf || '',
-    rg: clientInfo.rg || '',
-    birth_date: clientInfo.birth_date || '',
-    cnpj: clientInfo.cnpj || '',
-    state_registration: clientInfo.state_registration || '',
-    phone: clientInfo.phone || '',
-    address: clientInfo.address || '',
-    city: clientInfo.city || '',
-    state: clientInfo.state || '',
-    zip_code: clientInfo.zip_code || '',
-    notes: clientInfo.notes || '',
+    full_name: isPF ? (clientName || '') : '',
+    company_name: !isPF ? (clientName || '') : '',
     email: client?.client_email || '',
+    phone: client?.client_phone || '',
+    cpf: client?.cpf || '',
+    rg: client?.rg || '',
+    birth_date: client?.birth_date || '',
+    cnpj: client?.cnpj || '',
+    state_registration: client?.state_registration || '',
+    address: client?.address || '',
+    city: client?.city || '',
+    state: client?.state || '',
+    zip_code: client?.zip_code || '',
+    notes: client?.notes || '',
   });
 
-  // State for editing a property
   const [editingProperty, setEditingProperty] = useState(null);
   const [propertyForm, setPropertyForm] = useState({});
-
-  // State for adding new property
   const [addingProperty, setAddingProperty] = useState(false);
   const [newPropertyForm, setNewPropertyForm] = useState({
-    property_name: '',
-    property_type: 'rural',
-    location: '',
-    city: '',
-    state: '',
-    total_hectares: '',
-    app_hectares: '',
-    legal_reserve_hectares: '',
-    total_area_m2: '',
-    built_area_m2: '',
-    main_activity: '',
-    activities: '',
+    property_name: '', property_type: 'rural', location: '', city: '', state: '',
+    total_hectares: '', app_hectares: '', legal_reserve_hectares: '',
+    total_area_m2: '', built_area_m2: '', main_activity: '', activities: '',
   });
 
   const set = (field, val) => setPersonalData(prev => ({ ...prev, [field]: val }));
   const setProp = (field, val) => setPropertyForm(prev => ({ ...prev, [field]: val }));
   const setNewProp = (field, val) => setNewPropertyForm(prev => ({ ...prev, [field]: val }));
 
-  // Mutation: update personal data on all client properties
   const updatePersonal = useMutation({
     mutationFn: async () => {
       const name = personalData.client_type === 'pf' ? personalData.full_name : personalData.company_name;
-      const authorizedUsersJson = JSON.stringify({
-        client_type: personalData.client_type,
-        cpf: personalData.cpf,
-        rg: personalData.rg,
-        birth_date: personalData.birth_date,
-        cnpj: personalData.cnpj,
-        state_registration: personalData.state_registration,
-        phone: personalData.phone,
-        address: personalData.address,
-        city: personalData.city,
-        state: personalData.state,
-        zip_code: personalData.zip_code,
-        notes: personalData.notes,
-      });
-      const contactInfo = `${personalData.phone || ''}${personalData.phone ? ' | ' : ''}${personalData.email || ''}`;
-      // Update all properties of this client
-      const updates = client.properties.map(p =>
-        base44.entities.Property.update(p.id, {
+      if (isCRMBased) {
+        await base44.entities.ClientCRM.update(client.id, {
           client_name: name,
-          client_contact: contactInfo,
-          authorized_users: authorizedUsersJson,
-          owner_email: personalData.email || p.owner_email,
-        })
-      );
-      await Promise.all(updates);
+          client_email: personalData.email,
+          client_phone: personalData.phone,
+          client_type: personalData.client_type,
+          cpf: personalData.cpf,
+          rg: personalData.rg,
+          birth_date: personalData.birth_date || undefined,
+          cnpj: personalData.cnpj,
+          state_registration: personalData.state_registration,
+          address: personalData.address,
+          city: personalData.city,
+          state: personalData.state,
+          zip_code: personalData.zip_code,
+          notes: personalData.notes,
+        });
+      } else {
+        const authorizedUsersJson = JSON.stringify({
+          client_type: personalData.client_type,
+          cpf: personalData.cpf, rg: personalData.rg, birth_date: personalData.birth_date,
+          cnpj: personalData.cnpj, state_registration: personalData.state_registration,
+          phone: personalData.phone, address: personalData.address, city: personalData.city,
+          state: personalData.state, zip_code: personalData.zip_code, notes: personalData.notes,
+        });
+        const updates = (client.properties || []).map(p =>
+          base44.entities.Property.update(p.id, {
+            client_name: name,
+            client_contact: personalData.phone,
+            authorized_users: authorizedUsersJson,
+            owner_email: personalData.email || p.owner_email,
+          })
+        );
+        await Promise.all(updates);
+      }
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['consultor-crm-clients'] });
       queryClient.invalidateQueries({ queryKey: ['consultor-properties'] });
-      toast.success('Dados do cliente atualizados!');
+      queryClient.invalidateQueries({ queryKey: ['crm-board-list'] });
+      toast.success('Dados atualizados!');
       setEditingPersonal(false);
+      onUpdate?.();
     },
     onError: () => toast.error('Erro ao atualizar dados.')
   });
 
-  // Mutation: update a property
   const updateProperty = useMutation({
     mutationFn: () => base44.entities.Property.update(editingProperty.id, {
       property_name: propertyForm.property_name,
@@ -160,7 +151,6 @@ export default function ClientProfilePanel({ client }) {
     onError: () => toast.error('Erro ao atualizar propriedade.')
   });
 
-  // Mutation: create new property
   const createProperty = useMutation({
     mutationFn: () => base44.entities.Property.create({
       owner_email: client.client_email,
@@ -176,10 +166,8 @@ export default function ClientProfilePanel({ client }) {
       legal_reserve_hectares: newPropertyForm.property_type === 'rural' ? (parseFloat(newPropertyForm.legal_reserve_hectares) || 0) : undefined,
       total_area_m2: newPropertyForm.property_type === 'urbano' ? (parseFloat(newPropertyForm.total_area_m2) || 0) : undefined,
       built_area_m2: newPropertyForm.property_type === 'urbano' ? (parseFloat(newPropertyForm.built_area_m2) || 0) : undefined,
-      consultor_email: firstProperty?.consultor_email,
-      client_name: client.client_name,
-      client_contact: firstProperty?.client_contact,
-      authorized_users: firstProperty?.authorized_users,
+      consultor_email: client.consultor_email,
+      client_name: clientName,
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['consultor-properties'] });
@@ -208,6 +196,8 @@ export default function ClientProfilePanel({ client }) {
     });
   };
 
+  const visibleProperties = (client?.properties || []).filter(p => !p.is_client_only);
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -226,7 +216,7 @@ export default function ClientProfilePanel({ client }) {
         </Button>
       </div>
 
-      {/* View Mode: Dados Pessoais */}
+      {/* Dados Pessoais */}
       <Card>
         <CardContent className="pt-4">
           <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-3">
@@ -235,15 +225,15 @@ export default function ClientProfilePanel({ client }) {
           {isPF ? (
             <>
               <InfoRow icon={User} label="Nome Completo" value={clientName} />
-              <InfoRow icon={Hash} label="CPF" value={clientInfo.cpf} />
-              <InfoRow icon={FileText} label="RG" value={clientInfo.rg} />
-              <InfoRow icon={Calendar} label="Data de Nascimento" value={clientInfo.birth_date ? new Date(clientInfo.birth_date).toLocaleDateString('pt-BR') : null} />
+              <InfoRow icon={Hash} label="CPF" value={client?.cpf} />
+              <InfoRow icon={FileText} label="RG" value={client?.rg} />
+              <InfoRow icon={Calendar} label="Data de Nascimento" value={client?.birth_date ? new Date(client.birth_date).toLocaleDateString('pt-BR') : null} />
             </>
           ) : (
             <>
               <InfoRow icon={Building2} label="Razão Social" value={clientName} />
-              <InfoRow icon={Hash} label="CNPJ" value={clientInfo.cnpj} />
-              <InfoRow icon={FileText} label="Inscrição Estadual" value={clientInfo.state_registration} />
+              <InfoRow icon={Hash} label="CNPJ" value={client?.cnpj} />
+              <InfoRow icon={FileText} label="Inscrição Estadual" value={client?.state_registration} />
             </>
           )}
         </CardContent>
@@ -253,25 +243,27 @@ export default function ClientProfilePanel({ client }) {
         <CardContent className="pt-4">
           <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-3">Contato</p>
           <InfoRow icon={Mail} label="E-mail" value={client?.client_email} />
-          <InfoRow icon={Phone} label="Telefone / WhatsApp" value={clientInfo.phone} />
+          <InfoRow icon={Phone} label="Telefone / WhatsApp" value={client?.client_phone} />
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="pt-4">
-          <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-3">Endereço</p>
-          <InfoRow icon={MapPin} label="Endereço" value={clientInfo.address} />
-          <InfoRow icon={MapPin} label="Cidade" value={clientInfo.city} />
-          <InfoRow icon={MapPin} label="Estado" value={clientInfo.state} />
-          <InfoRow icon={MapPin} label="CEP" value={clientInfo.zip_code} />
-        </CardContent>
-      </Card>
+      {(client?.address || client?.city || client?.state) && (
+        <Card>
+          <CardContent className="pt-4">
+            <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-3">Endereço</p>
+            <InfoRow icon={MapPin} label="Endereço" value={client?.address} />
+            <InfoRow icon={MapPin} label="Cidade" value={client?.city} />
+            <InfoRow icon={MapPin} label="Estado" value={client?.state} />
+            <InfoRow icon={MapPin} label="CEP" value={client?.zip_code} />
+          </CardContent>
+        </Card>
+      )}
 
-      {clientInfo.notes && (
+      {client?.notes && (
         <Card>
           <CardContent className="pt-4">
             <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-3">Observações</p>
-            <InfoRow icon={Info} label="Notas" value={clientInfo.notes} />
+            <InfoRow icon={Info} label="Notas" value={client?.notes} />
           </CardContent>
         </Card>
       )}
@@ -281,18 +273,18 @@ export default function ClientProfilePanel({ client }) {
         <CardContent className="pt-4">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider">
-              Propriedades e Empreendimentos ({client?.properties?.filter(p => !p.is_client_only).length || 0})
+              Propriedades e Empreendimentos ({visibleProperties.length})
             </p>
             <Button size="sm" variant="outline" onClick={() => setAddingProperty(true)} className="gap-1 text-xs">
               <Plus className="w-3 h-3" /> Adicionar
             </Button>
           </div>
           <div className="space-y-2">
-            {client?.properties?.filter(p => !p.is_client_only).map(prop => (
+            {visibleProperties.map(prop => (
               <div key={prop.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                 <div>
                   <p className="text-sm font-medium text-gray-800">{prop.property_name}</p>
-                  <p className="text-xs text-gray-500">{prop.city}/{prop.state}</p>
+                  <p className="text-xs text-gray-500">{prop.city}{prop.state ? `/${prop.state}` : ''}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge className={prop.property_type === 'urbano' ? 'bg-purple-100 text-purple-700' : 'bg-emerald-100 text-emerald-700'}>
@@ -304,6 +296,9 @@ export default function ClientProfilePanel({ client }) {
                 </div>
               </div>
             ))}
+            {visibleProperties.length === 0 && (
+              <p className="text-xs text-gray-400 text-center py-3">Nenhuma propriedade vinculada</p>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -439,6 +434,8 @@ export default function ClientProfilePanel({ client }) {
 }
 
 function PropertyFormFields({ form, setField }) {
+  const ATIVIDADES = ['Agricultura','Pecuária','Silvicultura','Aquicultura','Extrativismo','Agroindústria','Turismo Rural','Outro'];
+  const UFS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
   return (
     <div className="grid grid-cols-2 gap-3">
       <div className="col-span-2">
@@ -460,7 +457,7 @@ function PropertyFormFields({ form, setField }) {
         {form.property_type === 'rural' ? (
           <Select value={form.main_activity} onValueChange={val => setField('main_activity', val)}>
             <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-            <SelectContent>{ATIVIDADES_RURAIS.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
+            <SelectContent>{ATIVIDADES.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
           </Select>
         ) : (
           <Input value={form.main_activity} onChange={e => setField('main_activity', e.target.value)} />
@@ -478,38 +475,20 @@ function PropertyFormFields({ form, setField }) {
         <Label>Estado</Label>
         <Select value={form.state} onValueChange={val => setField('state', val)}>
           <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
-          <SelectContent>{['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'].map(uf => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}</SelectContent>
+          <SelectContent>{UFS.map(uf => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}</SelectContent>
         </Select>
       </div>
       {form.property_type === 'rural' ? (
         <>
-          <div>
-            <Label>Área Total (ha)</Label>
-            <Input type="number" value={form.total_hectares} onChange={e => setField('total_hectares', e.target.value)} />
-          </div>
-          <div>
-            <Label>APP (ha)</Label>
-            <Input type="number" value={form.app_hectares} onChange={e => setField('app_hectares', e.target.value)} />
-          </div>
-          <div>
-            <Label>Reserva Legal (ha)</Label>
-            <Input type="number" value={form.legal_reserve_hectares} onChange={e => setField('legal_reserve_hectares', e.target.value)} />
-          </div>
-          <div>
-            <Label>Atividades</Label>
-            <Input value={form.activities} onChange={e => setField('activities', e.target.value)} placeholder="Ex: Soja, Milho" />
-          </div>
+          <div><Label>Área Total (ha)</Label><Input type="number" value={form.total_hectares} onChange={e => setField('total_hectares', e.target.value)} /></div>
+          <div><Label>APP (ha)</Label><Input type="number" value={form.app_hectares} onChange={e => setField('app_hectares', e.target.value)} /></div>
+          <div><Label>Reserva Legal (ha)</Label><Input type="number" value={form.legal_reserve_hectares} onChange={e => setField('legal_reserve_hectares', e.target.value)} /></div>
+          <div><Label>Atividades</Label><Input value={form.activities} onChange={e => setField('activities', e.target.value)} placeholder="Ex: Soja, Milho" /></div>
         </>
       ) : (
         <>
-          <div>
-            <Label>Área Total (m²)</Label>
-            <Input type="number" value={form.total_area_m2} onChange={e => setField('total_area_m2', e.target.value)} />
-          </div>
-          <div>
-            <Label>Área Construída (m²)</Label>
-            <Input type="number" value={form.built_area_m2} onChange={e => setField('built_area_m2', e.target.value)} />
-          </div>
+          <div><Label>Área Total (m²)</Label><Input type="number" value={form.total_area_m2} onChange={e => setField('total_area_m2', e.target.value)} /></div>
+          <div><Label>Área Construída (m²)</Label><Input type="number" value={form.built_area_m2} onChange={e => setField('built_area_m2', e.target.value)} /></div>
         </>
       )}
     </div>

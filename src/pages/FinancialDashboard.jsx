@@ -258,7 +258,7 @@ export default function FinancialDashboard() {
               <div className="flex items-start justify-between">
                 <div><p className="text-xs text-gray-500 font-medium">Resultado (12m)</p>
                   <p className={`text-xl font-bold mt-0.5 ${kpis.resultado12>=0?'text-blue-700':'text-orange-600'}`}>{fmt(kpis.resultado12)}</p></div>
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${kpis.resultado12>=0?'bg-blue-100':'bg-orange-100'}`}><Scale className={`w-4 h-4 ${kpis.resultado12>=0?'text-blue-600':'text-orange-500'}`}/></div>
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${kpis.resultado12>=0?'bg-blue-100':'bg-orange-100'}`}><PiggyBank className={`w-4 h-4 ${kpis.resultado12>=0?'text-blue-600':'text-orange-500'}`}/></div>
               </div>
             </CardContent></Card>
             <Card className={kpis.projFim12>=0?'border-violet-100 bg-violet-50/40':'border-red-200 bg-red-50/40'}><CardContent className="pt-4 pb-4">
@@ -345,7 +345,7 @@ export default function FinancialDashboard() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
-                <Scale className="w-4 h-4 text-blue-600"/>Saldo Acumulado Projetado
+                <PiggyBank className="w-4 h-4 text-blue-600"/>Saldo Acumulado Projetado
               </CardTitle>
             </CardHeader>
             <CardContent>

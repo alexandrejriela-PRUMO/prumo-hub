@@ -186,7 +186,7 @@ export default function FinancialTransactions() {
         </CardContent></Card>
         <Card className={resultado>=0?'border-blue-100 bg-blue-50/50':'border-orange-100 bg-orange-50/50'}><CardContent className="pt-5 pb-4">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${resultado>=0?'bg-blue-100':'bg-orange-100'}`}><Scale className={`w-5 h-5 ${resultado>=0?'text-blue-600':'text-orange-500'}`}/></div>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${resultado>=0?'bg-blue-100':'bg-orange-100'}`}><ArrowLeftRight className={`w-5 h-5 ${resultado>=0?'text-blue-600':'text-orange-500'}`}/></div>
             <div><p className={`text-xs font-medium ${resultado>=0?'text-blue-700':'text-orange-700'}`}>Resultado</p><p className={`text-xl font-bold ${resultado>=0?'text-blue-700':'text-orange-600'}`}>{fmt(resultado)}</p></div>
           </div>
         </CardContent></Card>
@@ -195,7 +195,7 @@ export default function FinancialTransactions() {
       {/* Filters */}
       <div className="bg-white rounded-xl border border-gray-200 p-4">
         <div className="flex flex-wrap gap-3 items-end">
-          <div><Label className="text-xs">Competência</Label><Input type="month" value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} className="w-40"/></div>
+          <div className="flex flex-col gap-1"><Label className="text-xs">Competência</Label><Input type="month" value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} className="w-40 h-9"/></div>
           <div><Label className="text-xs">Tipo</Label>
             <Select value={filterType} onValueChange={setFilterType}><SelectTrigger className="w-36"><SelectValue placeholder="Todos"/></SelectTrigger>
               <SelectContent><SelectItem value={null}>Todos</SelectItem><SelectItem value="receita">Receita</SelectItem><SelectItem value="despesa">Despesa</SelectItem></SelectContent>
@@ -243,7 +243,7 @@ export default function FinancialTransactions() {
             <tbody className="divide-y divide-gray-100">
               {sorted.length===0?(
                 <tr><td colSpan={9} className="text-center py-12 text-gray-400">
-                  <Scale className="w-10 h-10 mx-auto mb-2 opacity-20"/>
+                  <ArrowLeftRight className="w-10 h-10 mx-auto mb-2 opacity-20"/>
                   <p>Nenhuma transação encontrada.</p>
                   <Button className="mt-3 bg-emerald-600 hover:bg-emerald-700" size="sm" onClick={()=>handleOpen()}><Plus className="w-3.5 h-3.5 mr-1"/>Adicionar</Button>
                 </td></tr>

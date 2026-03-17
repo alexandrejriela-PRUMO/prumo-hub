@@ -417,7 +417,26 @@ export default function Contracts() {
                     <Select value={formData.contract_type} onValueChange={v => setFormData(p => ({ ...p, contract_type: v }))}>
                       <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {['Prestação de Serviços Ambientais','Assessoria Ambiental','Licenciamento Ambiental','PRAD','Georreferenciamento','CAR / Regularização Fundiária','Consultoria Geral','Outro'].map(t => (
+                        {[
+                          'Prestação de Serviços Ambientais','Assessoria Ambiental','Licenciamento Ambiental',
+                          'PRAD - Recuperação de Área Degradada','Georreferenciamento','Mapeamento de Agricultura de Precisão',
+                          'CAR / Regularização Fundiária','Consultoria Técnica Rural','Consultoria Agronômica',
+                          'Assistência Técnica e Extensão Rural (ATER)','Contrato de Arrendamento Rural',
+                          'Contrato de Parceria Agrícola','Contrato de Parceria Pecuária','Contrato de Comodato Rural',
+                          'Contrato de Compra e Venda de Imóvel Rural','Contrato de Compra e Venda de Soja',
+                          'Contrato de Compra e Venda de Milho','Contrato de Compra e Venda de Boi / Pecuária',
+                          'Contrato de Compra e Venda de Algodão','Contrato de Compra de Sementes',
+                          'Contrato de Compra de Insumos / Defensivos','Contrato de Compra de Máquinas e Equipamentos',
+                          'Contrato de Financiamento / Crédito Rural','CPR - Cédula de Produto Rural',
+                          'Contrato de Prestação de Serviços de Terraplanagem','Contrato de Prestação de Serviços de Irrigação',
+                          'Contrato de Prestação de Serviços de Colheita','Contrato de Prestação de Serviços de Pulverização',
+                          'Contrato de Prestação de Serviços de Transporte de Grãos','Contrato de Terceirização de Serviços Rurais',
+                          'Contrato de Trabalho Rural (CLT)','Contrato de Trabalho Rural (Temporário)',
+                          'Contrato de Honorários Advocatícios','Contrato de Honorários Contábeis',
+                          'Contrato de Gestão Financeira','Contrato de Seguro Rural','Contrato de Seguro de Máquinas',
+                          'Contrato de Armazenagem de Grãos','Contrato de Rastreabilidade / Certificação',
+                          'Contrato de Carbono / PSA','Contrato de Servidão Ambiental','Outro'
+                        ].map(t => (
                           <SelectItem key={t} value={t}>{t}</SelectItem>
                         ))}
                       </SelectContent>

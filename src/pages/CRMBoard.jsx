@@ -58,10 +58,13 @@ function ClientCard({ crm, property, index, onClick }) {
               </div>
               <div className="min-w-0">
                 <p className="font-semibold text-gray-900 text-sm truncate">
-                  {property?.client_name || crm.client_email?.split('@')[0] || '—'}
+                  {crm.client_name || property?.client_name || crm.client_email?.split('@')[0] || '—'}
                 </p>
                 {property?.property_name && (
                   <p className="text-xs text-gray-400 truncate">{property.property_name}</p>
+                )}
+                {!property && crm.client_email && (
+                  <p className="text-xs text-gray-400 truncate">{crm.client_email}</p>
                 )}
               </div>
             </div>

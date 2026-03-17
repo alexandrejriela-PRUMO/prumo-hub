@@ -61,9 +61,8 @@ export default function ConsultorClients() {
 
   const deleteClientMutation = useMutation({
     mutationFn: async (client) => {
-      // Deleta todas as propriedades vinculadas ao cliente
       for (const prop of client.properties) {
-        await base44.entities.Property.delete(prop.id);
+        try { await base44.entities.Property.delete(prop.id); } catch (e) { /* ignore 404 */ }
       }
     },
     onSuccess: () => {

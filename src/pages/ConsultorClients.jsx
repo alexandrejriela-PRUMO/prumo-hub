@@ -53,12 +53,14 @@ export default function ConsultorClients() {
   });
 
   // Enriquece o client com propriedades vinculadas para o perfil
-  const enrichClient = (crm) => ({
-    ...crm,
-    client_email: crm.client_email,
-    client_name: crm.client_name,
-    properties: properties.filter(p => p.owner_email === crm.client_email || p.id === crm.property_id),
-  });
+  const enrichClient = (crm) => {
+    const clientProps = properties.filter(p => {
+      if (crm.property_id && p.id === crm.property_id) return true;
+      if (crm.client_email && p.owner_email === crm.client_email) return true;
+      return false;
+    });
+    return { ...crm, properties: clientProps };
+  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">

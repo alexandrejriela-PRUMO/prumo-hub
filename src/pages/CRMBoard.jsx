@@ -143,13 +143,6 @@ export default function CRMBoard() {
   const [user, setUser] = useState(null);
   const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [selectedCRM, setSelectedCRM] = useState(null);
-  const [linkPropertyModal, setLinkPropertyModal] = useState(null); // { crmId, pendingStatus }
-  const [propertyData, setPropertyData] = useState({
-    property_name: '', property_type: 'rural', location: '',
-    city: '', state: '', total_hectares: '', app_hectares: '',
-    legal_reserve_hectares: '', total_area_m2: '', built_area_m2: '',
-    main_activity: '', activities: '',
-  });
   const queryClient = useQueryClient();
 
   useEffect(() => {

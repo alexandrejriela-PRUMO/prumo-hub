@@ -40,30 +40,42 @@ function Field({ label, children }) {
 export default function ClientProfilePanel({ client, onUpdate }) {
   const queryClient = useQueryClient();
 
-  // Suporta tanto CRM direto quanto property-based
-  const isCRMBased = !!client?.id && !client?.owner_email; // ClientCRM record
+  // Suporta CRM direto (ClientCRM) — sempre isCRMBased = true aqui
   const clientType = client?.client_type || 'pf';
   const isPF = clientType === 'pf';
   const clientName = client?.client_name || client?.client_email?.split('@')[0];
 
+  const buildPersonalData = (c) => {
+    const ct = c?.client_type || 'pf';
+    const isPf = ct === 'pf';
+    const name = c?.client_name || c?.client_email?.split('@')[0] || '';
+    return {
+      client_type: ct,
+      full_name: isPf ? name : '',
+      company_name: !isPf ? name : '',
+      email: c?.client_email || '',
+      phone: c?.client_phone || '',
+      cpf: c?.cpf || '',
+      rg: c?.rg || '',
+      birth_date: c?.birth_date || '',
+      cnpj: c?.cnpj || '',
+      state_registration: c?.state_registration || '',
+      address: c?.address || '',
+      city: c?.city || '',
+      state: c?.state || '',
+      zip_code: c?.zip_code || '',
+      notes: c?.notes || '',
+    };
+  };
+
   const [editingPersonal, setEditingPersonal] = useState(false);
-  const [personalData, setPersonalData] = useState({
-    client_type: clientType,
-    full_name: isPF ? (clientName || '') : '',
-    company_name: !isPF ? (clientName || '') : '',
-    email: client?.client_email || '',
-    phone: client?.client_phone || '',
-    cpf: client?.cpf || '',
-    rg: client?.rg || '',
-    birth_date: client?.birth_date || '',
-    cnpj: client?.cnpj || '',
-    state_registration: client?.state_registration || '',
-    address: client?.address || '',
-    city: client?.city || '',
-    state: client?.state || '',
-    zip_code: client?.zip_code || '',
-    notes: client?.notes || '',
-  });
+  const [personalData, setPersonalData] = useState(() => buildPersonalData(client));
+
+  // Reinicializa estado quando muda de cliente
+  React.useEffect(() => {
+    setPersonalData(buildPersonalData(client));
+    setEditingPersonal(false);
+  }, [client?.id]);
 
   const [editingProperty, setEditingProperty] = useState(null);
   const [propertyForm, setPropertyForm] = useState({});

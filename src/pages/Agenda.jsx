@@ -57,10 +57,6 @@ export default function Agenda() {
     enabled: !!user?.email,
   });
 
-  // Load Google Calendar events directly
-  const [gcalEvents, setGcalEvents] = useState([]);
-  const [gcalLoading, setGcalLoading] = useState(false);
-
   const fetchGCalEvents = async () => {
     if (!user?.email) return;
     setGcalLoading(true);

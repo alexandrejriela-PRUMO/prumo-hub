@@ -15,6 +15,7 @@ const TYPE_COLORS = {
   'crm_task': 'bg-amber-400',
   'crm_interaction': 'bg-emerald-500',
   'google': 'bg-indigo-400',
+  'gcal': 'bg-indigo-400',
 };
 
 export default function AgendaCalendarView({ events = [], onDayClick, onEventClick }) {

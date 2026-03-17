@@ -172,7 +172,7 @@ export default function CRMBoard() {
           property_id: p.id,
           consultor_email: user.email,
           client_email: p.owner_email || '',
-          status: 'Ativo',
+          status: p.is_client_only ? 'Prospect' : 'Ativo',
         }))
       );
       return [...existing, ...created];

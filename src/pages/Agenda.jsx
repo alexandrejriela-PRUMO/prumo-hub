@@ -262,19 +262,10 @@ export default function Agenda() {
           </Select>
         )}
         <div className="ml-auto flex items-center gap-2">
-          <button
-            onClick={fetchGCalEvents}
-            disabled={gcalLoading}
-            className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded-lg border border-blue-200 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${gcalLoading ? 'animate-spin' : ''}`} />
-            {gcalLoading ? 'Sincronizando...' : 'Sincronizar Google Agenda'}
-          </button>
           <div className="flex items-center gap-1.5">
             <div className="w-2.5 h-2.5 rounded-full bg-blue-500" /><span className="text-xs text-gray-500">Evento</span>
             <div className="w-2.5 h-2.5 rounded-full bg-amber-500 ml-2" /><span className="text-xs text-gray-500">Tarefa CRM</span>
             <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 ml-2" /><span className="text-xs text-gray-500">Follow-up</span>
-            <div className="w-2.5 h-2.5 rounded-full bg-purple-500 ml-2" /><span className="text-xs text-gray-500">Google</span>
           </div>
         </div>
       </div>

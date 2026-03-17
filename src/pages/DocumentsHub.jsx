@@ -152,6 +152,13 @@ export default function DocumentsHub() {
                       (!dateTo || (docDate && docDate <= dateTo));
 
     return searchMatch && propertyMatch && entityMatch && typeMatch && dateMatch && doc.is_active !== false;
+  }).sort((a, b) => {
+    const ai = orderedIds.indexOf(a.id);
+    const bi = orderedIds.indexOf(b.id);
+    if (ai === -1 && bi === -1) return 0;
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
   });
 
   // Get unique document types

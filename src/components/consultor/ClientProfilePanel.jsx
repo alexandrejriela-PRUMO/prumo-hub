@@ -40,10 +40,10 @@ function Field({ label, children }) {
 export default function ClientProfilePanel({ client, onUpdate }) {
   const queryClient = useQueryClient();
 
-  // Suporta CRM direto (ClientCRM) — sempre isCRMBased = true aqui
+  // Derivados do client atual (reactive)
   const clientType = client?.client_type || 'pf';
   const isPF = clientType === 'pf';
-  const clientName = client?.client_name || client?.client_email?.split('@')[0];
+  const clientName = client?.client_name || client?.client_email?.split('@')[0] || '?';
 
   const buildPersonalData = (c) => {
     const ct = c?.client_type || 'pf';

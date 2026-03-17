@@ -62,7 +62,6 @@ export default function NewClientForm({ isOpen, onClose, consultorEmail, onSucce
   const createProperty = useMutation({
     mutationFn: (data) => base44.entities.Property.create(data),
     onSuccess: (result) => {
-      setCreatedPropertyId(result.id);
       queryClient.invalidateQueries({ queryKey: ['consultor-properties'] });
       toast.success('Cliente e propriedade cadastrados com sucesso!');
       onSuccess?.(result);

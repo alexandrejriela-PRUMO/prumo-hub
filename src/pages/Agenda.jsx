@@ -245,13 +245,12 @@ export default function Agenda() {
           className="w-48 h-8 text-sm"
         />
         <Select value={filterType} onValueChange={setFilterType}>
-          <SelectTrigger className="h-8 w-36 text-sm"><SelectValue placeholder="Tipo" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="agenda">Meus Eventos</SelectItem>
-            <SelectItem value="crm">Do CRM</SelectItem>
-            <SelectItem value="gcal">Só Google Agenda</SelectItem>
-          </SelectContent>
+        <SelectTrigger className="h-8 w-36 text-sm"><SelectValue placeholder="Tipo" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todos</SelectItem>
+          <SelectItem value="agenda">Meus Eventos</SelectItem>
+          <SelectItem value="crm">Do CRM</SelectItem>
+        </SelectContent>
         </Select>
         {allAssignees.length > 0 && (
           <Select value={filterAssignee} onValueChange={setFilterAssignee}>

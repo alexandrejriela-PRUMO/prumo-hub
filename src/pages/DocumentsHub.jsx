@@ -37,6 +37,7 @@ export default function DocumentsHub() {
     dateFrom: '',
     dateTo: ''
   });
+  const [orderedIds, setOrderedIds] = useState([]);
 
   const queryClient = useQueryClient();
 

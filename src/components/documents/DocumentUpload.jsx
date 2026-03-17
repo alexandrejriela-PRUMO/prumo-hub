@@ -8,12 +8,43 @@ import { base44 } from '@/api/base44Client';
 import { Upload, X, Loader2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
+const DEFAULT_TYPES = [
+  'CCIR',
+  'ITR',
+  'Georreferenciamento',
+  'Matrícula do Imóvel',
+  'Escritura',
+  'Certidão de Zoneamento',
+  'Certidão Negativa de Débitos',
+  'Certidão de Registro de Imóveis',
+  'Declaração de Aptidão ao Pronaf (DAP/CAF)',
+  'Declaração de Uso e Cobertura',
+  'Declaração de Produtor Rural',
+  'Declaração de Movimentação de Animais (DMA)',
+  'Identidade (RG)',
+  'CPF',
+  'CNPJ',
+  'Comprovante de Residência',
+  'Licença Ambiental',
+  'Outorga de Água',
+  'ART / TRT',
+  'Laudo Técnico',
+  'Relatório de Vistoria',
+  'Nota Fiscal',
+  'Comprovante de Pagamento',
+  'Contrato de Arrendamento',
+  'Contrato de Parceria',
+  'Procuração',
+  'Alvará',
+  'Outro',
+];
+
 export default function DocumentUpload({ 
   entityType, 
   entityId, 
   onSuccess, 
   onCancel,
-  allowedTypes = ['CAR', 'CCIR', 'Georreferenciamento', 'Licença', 'Contrato', 'Relatório', 'Laudo', 'Outro'],
+  allowedTypes = DEFAULT_TYPES,
   properties = []
 }) {
   const [uploading, setUploading] = useState(false);
@@ -21,6 +52,7 @@ export default function DocumentUpload({
   const [selectedPropertyId, setSelectedPropertyId] = useState(entityId || '');
   const [metadata, setMetadata] = useState({
     document_type: '',
+    other_description: '',
     document_name: '',
     description: '',
     date: new Date().toISOString().split('T')[0]

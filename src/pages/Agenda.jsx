@@ -291,6 +291,7 @@ export default function Agenda() {
             <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="agenda">Meus Eventos</SelectItem>
             <SelectItem value="crm">Do CRM</SelectItem>
+            <SelectItem value="gcal">Só Google Agenda</SelectItem>
           </SelectContent>
         </Select>
         {allAssignees.length > 0 && (

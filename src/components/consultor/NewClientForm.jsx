@@ -12,19 +12,24 @@ import { toast } from 'sonner';
 
 const ESTADOS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 
-const emptyClient = { full_name:'', company_name:'', cpf:'', cnpj:'', email:'', phone:'', city:'', state:'', notes:'' };
+const emptyClient = {
+  full_name: '', company_name: '', cpf: '', rg: '', birth_date: '',
+  cnpj: '', state_registration: '', email: '', phone: '',
+  address: '', city: '', state: '', zip_code: '', notes: ''
+};
 
-export default function NewClientForm({ isOpen, onClose, consultorEmail, onSuccess }) {
+export default function NewClientForm({ isOpen, onClose, consultorEmail, onSuccess, initialStatus = null }) {
   const queryClient = useQueryClient();
   const [clientType, setClientType] = useState('pf');
-  const [crmStatus, setCrmStatus] = useState('Prospect'); // 'Prospect' = Lead, 'Ativo' = Cliente
+  const [crmStatus, setCrmStatus] = useState(initialStatus || 'Prospect');
   const [clientData, setClientData] = useState(emptyClient);
 
   const createCRM = useMutation({
     mutationFn: (data) => base44.entities.ClientCRM.create(data),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['crm-board-list'] });
-      toast.success(crmStatus === 'Prospect' ? 'Lead cadastrado com sucesso!' : 'Cliente cadastrado com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['consultor-crm-clients'] });
+      toast.success(crmStatus === 'Prospect' ? 'Lead cadastrado!' : 'Cliente cadastrado!');
       onSuccess?.(result);
       handleClose();
     },
@@ -33,7 +38,7 @@ export default function NewClientForm({ isOpen, onClose, consultorEmail, onSucce
 
   const handleClose = () => {
     setClientType('pf');
-    setCrmStatus('Prospect');
+    setCrmStatus(initialStatus || 'Prospect');
     setClientData(emptyClient);
     onClose();
   };
@@ -44,7 +49,6 @@ export default function NewClientForm({ isOpen, onClose, consultorEmail, onSucce
       toast.error('Preencha o nome.');
       return;
     }
-
     createCRM.mutate({
       consultor_email: consultorEmail,
       client_name: name,
@@ -52,117 +56,166 @@ export default function NewClientForm({ isOpen, onClose, consultorEmail, onSucce
       client_phone: clientData.phone,
       client_type: clientType,
       status: crmStatus,
+      cpf: clientData.cpf,
+      rg: clientData.rg,
+      birth_date: clientData.birth_date || undefined,
+      cnpj: clientData.cnpj,
+      state_registration: clientData.state_registration,
+      address: clientData.address,
+      city: clientData.city,
+      state: clientData.state,
+      zip_code: clientData.zip_code,
       notes: clientData.notes,
     });
   };
 
   const set = (field, val) => setClientData(prev => ({ ...prev, [field]: val }));
+  const isCliente = crmStatus === 'Ativo';
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-emerald-800">
             <UserPlus className="w-5 h-5" />
-            Novo Lead / Cliente
+            {initialStatus === 'Ativo' ? 'Novo Cliente' : initialStatus === 'Prospect' ? 'Novo Lead' : 'Novo Lead / Cliente'}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-5">
-          {/* Lead ou Cliente */}
-          <div>
-            <Label className="text-sm font-semibold text-gray-700 mb-2 block">Tipo de Cadastro</Label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setCrmStatus('Prospect')}
-                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                  crmStatus === 'Prospect'
-                    ? 'border-amber-400 bg-amber-50 text-amber-700'
-                    : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
-                }`}
-              >
-                <UserPlus className="w-6 h-6" />
-                <span className="font-semibold text-sm">Lead / Prospect</span>
-                <span className="text-xs text-center opacity-70">Contato em potencial ainda não convertido</span>
-              </button>
-              <button
-                onClick={() => setCrmStatus('Ativo')}
-                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                  crmStatus === 'Ativo'
-                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                    : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
-                }`}
-              >
-                <Users className="w-6 h-6" />
-                <span className="font-semibold text-sm">Cliente Ativo</span>
-                <span className="text-xs text-center opacity-70">Já possui vínculo com sua consultoria</span>
-              </button>
+          {/* Só mostra seleção se não foi fixado via initialStatus */}
+          {!initialStatus && (
+            <div>
+              <Label className="text-sm font-semibold text-gray-700 mb-2 block">Tipo de Cadastro</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setCrmStatus('Prospect')}
+                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                    !isCliente ? 'border-amber-400 bg-amber-50 text-amber-700' : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+                  }`}
+                >
+                  <UserPlus className="w-6 h-6" />
+                  <span className="font-semibold text-sm">Lead / Prospect</span>
+                  <span className="text-xs text-center opacity-70">Contato em potencial</span>
+                </button>
+                <button
+                  onClick={() => setCrmStatus('Ativo')}
+                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                    isCliente ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+                  }`}
+                >
+                  <Users className="w-6 h-6" />
+                  <span className="font-semibold text-sm">Cliente Ativo</span>
+                  <span className="text-xs text-center opacity-70">Já é seu cliente</span>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* PF ou PJ */}
           <Tabs value={clientType} onValueChange={setClientType}>
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="pf" className="flex items-center gap-2">
-                <User className="w-4 h-4" /> Pessoa Física
-              </TabsTrigger>
-              <TabsTrigger value="pj" className="flex items-center gap-2">
-                <Building2 className="w-4 h-4" /> Pessoa Jurídica
-              </TabsTrigger>
+              <TabsTrigger value="pf"><User className="w-4 h-4 mr-1" /> Pessoa Física</TabsTrigger>
+              <TabsTrigger value="pj"><Building2 className="w-4 h-4 mr-1" /> Pessoa Jurídica</TabsTrigger>
             </TabsList>
 
             <TabsContent value="pf" className="mt-4">
-              <div>
-                <Label>Nome Completo *</Label>
-                <Input value={clientData.full_name} onChange={e => set('full_name', e.target.value)} placeholder="Nome completo" />
+              <div className="space-y-3">
+                <div>
+                  <Label>Nome Completo *</Label>
+                  <Input value={clientData.full_name} onChange={e => set('full_name', e.target.value)} placeholder="Nome completo" />
+                </div>
+                {isCliente && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>CPF</Label>
+                      <Input value={clientData.cpf} onChange={e => set('cpf', e.target.value)} placeholder="000.000.000-00" />
+                    </div>
+                    <div>
+                      <Label>RG</Label>
+                      <Input value={clientData.rg} onChange={e => set('rg', e.target.value)} placeholder="00.000.000-0" />
+                    </div>
+                    <div>
+                      <Label>Data de Nascimento</Label>
+                      <Input type="date" value={clientData.birth_date} onChange={e => set('birth_date', e.target.value)} />
+                    </div>
+                  </div>
+                )}
               </div>
             </TabsContent>
 
             <TabsContent value="pj" className="mt-4">
-              <div>
-                <Label>Razão Social *</Label>
-                <Input value={clientData.company_name} onChange={e => set('company_name', e.target.value)} placeholder="Nome da empresa" />
+              <div className="space-y-3">
+                <div>
+                  <Label>Razão Social *</Label>
+                  <Input value={clientData.company_name} onChange={e => set('company_name', e.target.value)} placeholder="Nome da empresa" />
+                </div>
+                {isCliente && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>CNPJ</Label>
+                      <Input value={clientData.cnpj} onChange={e => set('cnpj', e.target.value)} placeholder="00.000.000/0000-00" />
+                    </div>
+                    <div>
+                      <Label>Inscrição Estadual</Label>
+                      <Input value={clientData.state_registration} onChange={e => set('state_registration', e.target.value)} />
+                    </div>
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>
 
           {/* Contato */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>E-mail</Label>
-              <Input type="email" value={clientData.email} onChange={e => set('email', e.target.value)} placeholder="email@exemplo.com" />
-            </div>
-            <div>
-              <Label>Telefone / WhatsApp</Label>
-              <Input value={clientData.phone} onChange={e => set('phone', e.target.value)} placeholder="(00) 00000-0000" />
-            </div>
-            <div>
-              <Label>Cidade</Label>
-              <Input value={clientData.city} onChange={e => set('city', e.target.value)} placeholder="Cidade" />
-            </div>
-            <div>
-              <Label>Estado</Label>
-              <Select value={clientData.state} onValueChange={val => set('state', val)}>
-                <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
-                <SelectContent>
-                  {ESTADOS.map(uf => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="col-span-2">
-              <Label>Observações</Label>
-              <Input value={clientData.notes} onChange={e => set('notes', e.target.value)} placeholder="Notas adicionais" />
+          <div className="border-t pt-4">
+            <p className="text-sm font-semibold text-gray-700 mb-3">Contato{isCliente ? ' e Endereço' : ''}</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>E-mail</Label>
+                <Input type="email" value={clientData.email} onChange={e => set('email', e.target.value)} placeholder="email@exemplo.com" />
+              </div>
+              <div>
+                <Label>Telefone / WhatsApp</Label>
+                <Input value={clientData.phone} onChange={e => set('phone', e.target.value)} placeholder="(00) 00000-0000" />
+              </div>
+              {isCliente && (
+                <>
+                  <div className="col-span-2">
+                    <Label>Endereço</Label>
+                    <Input value={clientData.address} onChange={e => set('address', e.target.value)} placeholder="Rua, número, bairro" />
+                  </div>
+                  <div>
+                    <Label>Cidade</Label>
+                    <Input value={clientData.city} onChange={e => set('city', e.target.value)} placeholder="Cidade" />
+                  </div>
+                  <div>
+                    <Label>Estado</Label>
+                    <Select value={clientData.state} onValueChange={val => set('state', val)}>
+                      <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
+                      <SelectContent>{ESTADOS.map(uf => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>CEP</Label>
+                    <Input value={clientData.zip_code} onChange={e => set('zip_code', e.target.value)} placeholder="00000-000" />
+                  </div>
+                </>
+              )}
+              <div className={isCliente ? '' : 'col-span-2'}>
+                <Label>Observações</Label>
+                <Input value={clientData.notes} onChange={e => set('notes', e.target.value)} placeholder="Notas adicionais" />
+              </div>
             </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="outline" onClick={handleClose}>Cancelar</Button>
             <Button
-              className={crmStatus === 'Prospect' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-emerald-600 hover:bg-emerald-700'}
+              className={!isCliente ? 'bg-amber-500 hover:bg-amber-600' : 'bg-emerald-600 hover:bg-emerald-700'}
               onClick={handleSubmit}
               disabled={createCRM.isPending}
             >
-              {createCRM.isPending ? 'Salvando...' : crmStatus === 'Prospect' ? 'Salvar Lead' : 'Salvar Cliente'}
+              {createCRM.isPending ? 'Salvando...' : !isCliente ? 'Salvar Lead' : 'Salvar Cliente'}
             </Button>
           </div>
         </div>

@@ -102,16 +102,13 @@ export default function Agenda() {
     return evs;
   }, [crmRecords, properties]);
 
-  // All events merged (deduplicate: gcal events already linked to agenda events are skipped)
+  // All events merged
   const allEvents = useMemo(() => {
-    const linkedGcalIds = new Set(agendaEvents.filter(e => e.google_calendar_event_id).map(e => e.google_calendar_event_id));
-    const externalGcal = gcalEvents.filter(e => !linkedGcalIds.has(e.google_calendar_event_id));
     return [
       ...agendaEvents.map(e => ({ ...e, _source: 'agenda' })),
       ...crmEvents,
-      ...externalGcal,
     ];
-  }, [agendaEvents, crmEvents, gcalEvents]);
+  }, [agendaEvents, crmEvents]);
 
   // Filtered events
   const filteredEvents = useMemo(() => {

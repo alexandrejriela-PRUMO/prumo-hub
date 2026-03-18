@@ -491,6 +491,9 @@ export default function DocumentsHub() {
                               <Button variant="outline" size="sm" onClick={() => window.open(doc.file_url, '_blank')}>
                                 <Download className="w-4 h-4" />
                               </Button>
+                              <Button variant="outline" size="sm" onClick={() => setEditingDoc(doc)} className="text-blue-600 hover:text-blue-700">
+                                <Pencil className="w-4 h-4" />
+                              </Button>
                               <Button variant="outline" size="sm" onClick={() => handleDelete(doc)} className="text-red-600 hover:text-red-700">
                                 <Trash2 className="w-4 h-4" />
                               </Button>

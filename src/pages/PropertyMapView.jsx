@@ -199,12 +199,13 @@ export default function PropertyMapView() {
     }
   }, [properties]);
 
-  // Carregar camadas KML salvas ao trocar propriedade
-  useEffect(() => {
-    if (!selectedProperty) return;
-    const saved = selectedProperty.kml_layers || [];
-    setKmlLayers(saved);
-  }, [selectedPropertyId]);
+  // Carregar camadas KML salvas e limpar desenho ao trocar propriedade
+   useEffect(() => {
+     if (!selectedProperty) return;
+     const saved = selectedProperty.kml_layers || [];
+     setKmlLayers(saved);
+     setDrawnGeometry(null); // Reset drawn geometry quando troca propriedade
+   }, [selectedPropertyId]);
 
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
 

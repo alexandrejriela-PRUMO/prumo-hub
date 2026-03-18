@@ -14,25 +14,29 @@ const dataSourceOptions = [
 ];
 
 export default function ReportBuilder({ user, onGenerate, editingReport, onCancelEdit }) {
-  const [config, setConfig] = useState(editingReport?.config || {
-    title: '',
-    dataSources: [],
-    propertyId: '',
-    dateRange: { start: '', end: '' },
-    status: '',
-    severity: ''
-  });
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const [reportName, setReportName] = useState(editingReport?.report_name || '');
-  const [reportDescription, setReportDescription] = useState(editingReport?.description || '');
+   const isConsultor = user?.user_type === 'consultor' || user?.user_type === 'equipe';
 
-  const queryClient = useQueryClient();
+   const [config, setConfig] = useState(editingReport?.config || {
+     title: '',
+     dataSources: [],
+     propertyId: '',
+     dateRange: { start: '', end: '' },
+     status: '',
+     severity: ''
+   });
+   const [showSaveDialog, setShowSaveDialog] = useState(false);
+   const [reportName, setReportName] = useState(editingReport?.report_name || '');
+   const [reportDescription, setReportDescription] = useState(editingReport?.description || '');
 
-  const { data: properties = [] } = useQuery({
-    queryKey: ['properties', user?.email],
-    queryFn: () => base44.entities.Property.filter({ owner_email: user.email }),
-    enabled: !!user?.email
-  });
+   const queryClient = useQueryClient();
+
+   const { data: properties = [] } = useQuery({
+     queryKey: ['properties', user?.email],
+     queryFn: () => isConsultor
+       ? base44.entities.Property.filter({ consultor_email: user.email })
+       : base44.entities.Property.filter({ owner_email: user.email }),
+     enabled: !!user?.email
+   });
 
   const saveReportMutation = useMutation({
     mutationFn: (data) => {
@@ -145,21 +149,23 @@ export default function ReportBuilder({ user, onGenerate, editingReport, onCance
         </div>
 
         <div className="grid md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Filtrar por Cliente</label>
-            <select
-              value={config.propertyId}
-              onChange={(e) => setConfig({ ...config, propertyId: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            >
-              <option value="">Todos os clientes</option>
-              {properties.map((property) => (
-                <option key={property.id} value={property.id}>
-                  {property.property_name}
-                </option>
-              ))}
-            </select>
-          </div>
+           {isConsultor && (
+             <div className="space-y-2">
+               <label className="text-sm font-medium">Filtrar por Cliente</label>
+               <select
+                 value={config.propertyId}
+                 onChange={(e) => setConfig({ ...config, propertyId: e.target.value })}
+                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+               >
+                 <option value="">Todos os clientes</option>
+                 {properties.map((property) => (
+                   <option key={property.id} value={property.id}>
+                     {property.property_name}
+                   </option>
+                 ))}
+               </select>
+             </div>
+           )}
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Status</label>

@@ -89,16 +89,8 @@ const consultorNavItems = [
 // Produtor Rural: menu completo
 const produtorNavItems = [
   { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
+  { name: 'Central da Propriedade', page: 'PropertyCentral', icon: Building2 },
   { name: 'Minhas Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
-  { name: 'Meus Contratos', page: 'Contracts', icon: ScrollText },
-  { name: 'Documentos', page: 'DocumentsHub', icon: FileText },
-  { name: 'Licenças e Projetos', page: 'Licenses', icon: FileCheck },
-  { name: 'Gestão do CAR', page: 'CARModule', icon: TreePine },
-  { name: 'Mapa Interativo', page: 'PropertyMapView', icon: Map },
-  { name: 'Processos', page: 'Processes', icon: Scale },
-  { name: 'Alertas de Infrações', page: 'EnvironmentalAlerts', icon: AlertTriangle },
-  { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: FileCheck },
-  { name: 'PRAD - Recuperação de Área', page: 'PRAD', icon: Leaf },
   { 
     name: 'Agricultura de Precisão', 
     icon: Sparkles,

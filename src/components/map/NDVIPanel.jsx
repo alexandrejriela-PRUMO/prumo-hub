@@ -110,59 +110,70 @@ export default function NDVIPanel({ geometry, coordinates, propertyName }) {
   };
 
   const analyze = async () => {
-    if (!hasGeometry) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const payload = {};
-      if (geometry) {
-        // Se for uma Feature, extrai a Geometry; se for FeatureCollection, converte para a primeira feature
-        let geom = geometry;
-        if (geometry.type === 'Feature') {
-          geom = geometry.geometry;
-        } else if (geometry.type === 'FeatureCollection' && geometry.features?.length > 0) {
-          geom = geometry.features[0].geometry;
-        }
+     if (!hasGeometry) return;
+     setLoading(true);
+     setError(null);
+     try {
+       const payload = {};
+       if (geometry) {
+         // Se for uma Feature, extrai a Geometry; se for FeatureCollection, converte para a primeira feature
+         let geom = geometry;
+         if (geometry.type === 'Feature') {
+           geom = geometry.geometry;
+         } else if (geometry.type === 'FeatureCollection' && geometry.features?.length > 0) {
+           geom = geometry.features[0].geometry;
+         }
 
-        // Valida estrutura básica
-        if (!geom || !geom.type) {
-          setError('Geometria inválida: estrutura incorreta');
-          setLoading(false);
-          return;
-        }
+         // Valida estrutura básica
+         if (!geom || !geom.type) {
+           setError('Geometria inválida: estrutura incorreta');
+           setLoading(false);
+           return;
+         }
 
-        // Se Polygon, valida e normaliza coordenadas
-        if (geom.type === 'Polygon') {
-          if (!Array.isArray(geom.coordinates) || geom.coordinates.length === 0) {
-            setError('Polígono sem coordenadas válidas');
-            setLoading(false);
-            return;
-          }
+         // Se Polygon, valida e normaliza coordenadas
+         if (geom.type === 'Polygon') {
+           if (!Array.isArray(geom.coordinates) || geom.coordinates.length === 0) {
+             setError('Polígono sem coordenadas válidas');
+             setLoading(false);
+             return;
+           }
 
-          // Normaliza o array de coordenadas (exterior ring)
-          console.log('[NDVIPanel] Coordenadas originais do polígono:', geom.coordinates[0]);
-          const normalized = validateAndNormalizePolygon(geom.coordinates[0]);
-          console.log('[NDVIPanel] Coordenadas após normalização:', normalized);
+           // Normaliza o array de coordenadas (exterior ring)
+           console.log('[NDVIPanel] Coordenadas originais do polígono:', geom.coordinates[0]);
+           const normalized = validateAndNormalizePolygon(geom.coordinates[0]);
+           console.log('[NDVIPanel] Coordenadas após normalização:', normalized);
 
-          if (!normalized || normalized.length < 3) {
-            setError('Polígono deve ter pelo menos 3 pontos válidos');
-            setLoading(false);
-            return;
-          }
+           if (!normalized || normalized.length < 3) {
+             setError('Polígono deve ter pelo menos 3 pontos válidos');
+             setLoading(false);
+             return;
+           }
 
-          // Reconstrói a geometria com coordenadas normalizadas
-          geom = {
-            type: 'Polygon',
-            coordinates: [normalized]
-          };
-          }
+           // Reconstrói a geometria com coordenadas normalizadas
+           geom = {
+             type: 'Polygon',
+             coordinates: [normalized]
+           };
+           }
 
-          console.log('[NDVIPanel] Geometry pronta para envio:', geom);
-          console.log('[NDVIPanel] Número de pontos:', geom.coordinates?.[0]?.length || 0);
-          payload.boundaries_geojson = geom;
-        } else if (coordinates) {
-        payload.center_coordinates = coordinates;
-        }
+           console.log('[NDVIPanel] Geometry pronta para envio:', geom);
+           console.log('[NDVIPanel] Número de pontos:', geom.coordinates?.[0]?.length || 0);
+           payload.boundaries_geojson = geom;
+         } else if (coordinates) {
+           // Valida coordenadas centrais antes de enviar
+           const coordStr = String(coordinates).trim();
+           const coordArray = coordStr.split(',').map(c => Number(c.trim()));
+
+           if (coordArray.length < 2 || coordArray.some(isNaN)) {
+             setError(`Coordenadas centrais inválidas: "${coordStr}" não são números válidos`);
+             setLoading(false);
+             return;
+           }
+
+           console.log('[NDVIPanel] Coordenadas centrais válidas:', coordArray);
+           payload.center_coordinates = coordinates;
+         }
 
         console.log('[NDVIPanel] Payload completo:', JSON.stringify(payload));
         const resp = await base44.functions.invoke('geeNdviAnalysis', payload);

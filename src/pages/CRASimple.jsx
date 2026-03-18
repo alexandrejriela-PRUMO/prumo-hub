@@ -185,6 +185,11 @@ export default function CRASimple() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
+      {/* TARJA DE CONSTRUÇÃO */}
+      <div className="w-full bg-yellow-400 border-4 border-yellow-600 p-4 rounded-lg">
+        <p className="text-center font-bold text-black text-lg">⚠️ EM CONSTRUÇÃO - Esta funcionalidade está em desenvolvimento</p>
+      </div>
+
       {/* HEADER */}
       <div className="flex items-center gap-3">
         <div className="p-3 bg-emerald-100 rounded-xl">

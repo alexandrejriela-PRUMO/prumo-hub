@@ -13,6 +13,7 @@ import DocumentUpload from '../documents/DocumentUpload';
 
 export default function CRAOriginSection({ user }) {
   const [showForm, setShowForm] = useState(false);
+  const [editingOrigin, setEditingOrigin] = useState(null);
   const [formData, setFormData] = useState({
     property_id: '',
     car_number: '',
@@ -41,19 +42,35 @@ export default function CRAOriginSection({ user }) {
   const createOriginMutation = useMutation({
     mutationFn: async (data) => {
       const surplus = Math.max(0, data.existing_legal_reserve_hectares - data.required_legal_reserve_hectares);
-      return base44.entities.CRAOrigin.create({
+      const payload = {
         ...data,
         owner_email: user.email,
         surplus_native_vegetation_hectares: surplus,
         potential_cra_area_hectares: surplus,
-        status: 'Pendente',
-        documents
-      });
+        status: editingOrigin?.status || 'Pendente'
+      };
+      
+      if (documents.length > 0) {
+        payload.documents = documents;
+      }
+
+      if (editingOrigin) {
+        return base44.entities.CRAOrigin.update(editingOrigin.id, payload);
+      }
+      return base44.entities.CRAOrigin.create(payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cra-origins'] });
       setShowForm(false);
+      setEditingOrigin(null);
       resetForm();
+    }
+  });
+
+  const deleteOriginMutation = useMutation({
+    mutationFn: (originId) => base44.entities.CRAOrigin.delete(originId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cra-origins'] });
     }
   });
 
@@ -69,14 +86,36 @@ export default function CRAOriginSection({ user }) {
       existing_legal_reserve_hectares: ''
     });
     setDocuments([]);
+    setEditingOrigin(null);
+  };
+
+  const openEditForm = (origin) => {
+    setEditingOrigin(origin);
+    setFormData({
+      property_id: origin.property_id,
+      car_number: origin.car_number,
+      biome: origin.biome,
+      state: origin.state,
+      municipality: origin.municipality,
+      total_area_hectares: origin.total_area_hectares,
+      required_legal_reserve_hectares: origin.required_legal_reserve_hectares,
+      existing_legal_reserve_hectares: origin.existing_legal_reserve_hectares
+    });
+    setDocuments(origin.documents || []);
+    setShowForm(true);
   };
 
   const handleSubmit = () => {
-    if (!formData.property_id || !formData.biome || !formData.total_area_hectares) {
+    if (!formData.property_id || !formData.biome || !formData.car_number || !formData.total_area_hectares) {
       alert('Preencha os campos obrigatórios');
       return;
     }
-    createOriginMutation.mutate(formData);
+    createOriginMutation.mutate({
+      ...formData,
+      total_area_hectares: parseFloat(formData.total_area_hectares) || 0,
+      required_legal_reserve_hectares: parseFloat(formData.required_legal_reserve_hectares) || 0,
+      existing_legal_reserve_hectares: parseFloat(formData.existing_legal_reserve_hectares) || 0
+    });
   };
 
   const getStatusColor = (status) => {
@@ -115,7 +154,7 @@ export default function CRAOriginSection({ user }) {
             return (
               <Card key={origin.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-6">
-                  <div className="grid md:grid-cols-2 gap-4">
+                  <div className="grid md:grid-cols-2 gap-4 mb-4">
                     <div>
                       <h3 className="font-bold text-gray-900 mb-3">{prop?.property_name || 'Propriedade'}</h3>
                       <div className="space-y-2 text-sm">
@@ -155,6 +194,28 @@ export default function CRAOriginSection({ user }) {
                       <Badge className={getStatusColor(origin.status)}>{origin.status}</Badge>
                     </div>
                   </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openEditForm(origin)}
+                      className="flex-1"
+                    >
+                      Editar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => {
+                        if (confirm('Tem certeza que deseja deletar esta origem?')) {
+                          deleteOriginMutation.mutate(origin.id);
+                        }
+                      }}
+                      disabled={deleteOriginMutation.isPending}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             );
@@ -163,10 +224,13 @@ export default function CRAOriginSection({ user }) {
       )}
 
       {/* Form Dialog */}
-      <Dialog open={showForm} onOpenChange={setShowForm}>
+      <Dialog open={showForm} onOpenChange={(open) => {
+        setShowForm(open);
+        if (!open) resetForm();
+      }}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Adicionar Origem de CRA</DialogTitle>
+            <DialogTitle>{editingOrigin ? 'Editar Origem de CRA' : 'Adicionar Origem de CRA'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -260,7 +324,10 @@ export default function CRAOriginSection({ user }) {
             <div className="flex gap-2 pt-4">
               <Button
                 variant="outline"
-                onClick={() => setShowForm(false)}
+                onClick={() => {
+                  setShowForm(false);
+                  resetForm();
+                }}
                 className="flex-1"
               >
                 Cancelar
@@ -270,7 +337,7 @@ export default function CRAOriginSection({ user }) {
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700"
                 disabled={createOriginMutation.isPending}
               >
-                {createOriginMutation.isPending ? 'Salvando...' : 'Salvar'}
+                {createOriginMutation.isPending ? 'Salvando...' : editingOrigin ? 'Atualizar' : 'Salvar'}
               </Button>
             </div>
           </div>

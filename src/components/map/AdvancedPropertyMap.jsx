@@ -175,25 +175,12 @@ export default function AdvancedPropertyMap({
           />
         )}
 
-        {/* Drawing control */}
+        {/* Drawing handler */}
         {isDrawing && (
-          <FeatureGroup ref={featureGroupRef}>
-            <EditControl
-              position="topleft"
-              onCreated={() => {}}
-              onEdited={() => {}}
-              onDeleted={() => {}}
-              draw={{
-                polygon: true,
-                polyline: false,
-                rectangle: false,
-                circle: false,
-                marker: false,
-                circlemarker: false
-              }}
-              edit={{ featureGroup: featureGroupRef.current }}
-            />
-          </FeatureGroup>
+          <DrawingLayer 
+            onPolygonCreated={handleAddPolygon}
+            featureGroupRef={featureGroupRef}
+          />
         )}
       </>
     );

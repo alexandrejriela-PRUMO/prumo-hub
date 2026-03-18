@@ -312,7 +312,9 @@ export default function PropertyMapView() {
           <span className="font-semibold text-emerald-800">{selectedProperty.property_name}</span>
           {selectedProperty.city && <Badge variant="outline" className="text-emerald-700 border-emerald-300">{selectedProperty.city}/{selectedProperty.state}</Badge>}
           {selectedProperty.total_hectares && <Badge variant="outline" className="text-blue-700 border-blue-200">{selectedProperty.total_hectares} ha</Badge>}
-          {selectedProperty.car_number && <Badge variant="outline" className="text-amber-700 border-amber-200">CAR: {selectedProperty.car_number}</Badge>}
+          {(selectedProperty.car_numbers?.length > 0 ? selectedProperty.car_numbers : selectedProperty.car_number ? [selectedProperty.car_number] : []).map((car, i) => (
+            <Badge key={i} variant="outline" className="text-amber-700 border-amber-200">CAR: {car}</Badge>
+          ))}
           {carData && <Badge className={cn("text-white text-xs", carData.car_status === 'Validado' ? 'bg-emerald-600' : 'bg-amber-500')}>{carData.car_status}</Badge>}
         </div>
       )}

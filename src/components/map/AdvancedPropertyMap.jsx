@@ -192,10 +192,14 @@ export default function AdvancedPropertyMap({
 
   const getCenter = () => {
     if (property?.coordinates) {
-      const [lat, lng] = property.coordinates.split(',').map(Number);
-      if (!isNaN(lat) && !isNaN(lng)) return [lat, lng];
+      const coords = property.coordinates.trim().split(',').map(c => Number(c.trim()));
+      if (coords.length >= 2 && coords.every(n => !isNaN(n))) {
+        // Se property.coordinates é [lat, lng], retorna diretamente
+        // Leaflet espera [lat, lng]
+        return coords;
+      }
     }
-    return [-15.7801, -47.9292];
+    return [-15.7801, -47.9292]; // Brasília como fallback
   };
 
   const MapContent = () => {

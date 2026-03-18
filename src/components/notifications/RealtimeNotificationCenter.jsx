@@ -64,13 +64,15 @@ function NotifIcon({ notification }) {
 }
 
 export default function RealtimeNotificationCenter({ user, isOpen, onClose }) {
-  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useRealtimeNotifications(user?.email);
+  const { notifications = [], unreadCount = 0, markAsRead = () => {}, markAllAsRead = () => {}, deleteNotification = () => {} } = useRealtimeNotifications(user?.email) || {};
   const navigate = useNavigate();
   const [filter, setFilter] = useState('all'); // 'all' | 'unread'
 
   if (!isOpen) return null;
 
-  const displayed = filter === 'unread' ? notifications.filter(n => !n.read) : notifications;
+  const displayed = (notifications && Array.isArray(notifications)) 
+    ? (filter === 'unread' ? notifications.filter(n => !n.read) : notifications)
+    : [];
 
   const handleClick = async (notif) => {
     try {
@@ -138,7 +140,7 @@ export default function RealtimeNotificationCenter({ user, isOpen, onClose }) {
                   ? 'text-emerald-700 border-b-2 border-emerald-600 bg-white'
                   : 'text-gray-500 hover:text-gray-700'
               )}>
-              {f === 'all' ? `Todas (${notifications.length})` : `Não lidas (${unreadCount})`}
+              {f === 'all' ? `Todas (${Array.isArray(notifications) ? notifications.length : 0})` : `Não lidas (${unreadCount || 0})`}
             </button>
           ))}
         </div>

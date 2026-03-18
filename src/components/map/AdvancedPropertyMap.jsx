@@ -32,7 +32,6 @@ function DrawingLayer({ onPolygonCreated, featureGroupRef }) {
     };
 
     const handleRightClick = (e) => {
-       e.preventDefault();
        if (polygon.length > 2) {
          polygon.push(polygon[0]); // Close polygon
          const geojson = {

@@ -49,12 +49,7 @@ Deno.serve(async (req) => {
     });
     const data = await res.json();
 
-    // Filter to Collection and ImageCollection functions
-    const names = Object.keys(data.algorithms || {}).filter(k => 
-      k.includes('Collection') || k.includes('Filter') || k.includes('Reducer')
-    ).sort();
-
-    return Response.json({ names, total: names.length });
+    return Response.json({ raw: data, keys: Object.keys(data).slice(0, 20) });
   } catch (err) {
     return Response.json({ error: err.message }, { status: 500 });
   }

@@ -467,7 +467,7 @@ export default function PropertyMapView() {
                 );
               })()}
 
-              {carGeoJson && <FitBoundsLayer geoJson={carGeoJson} />}
+              {allGeoJsonLayers.length > 0 && <FitBoundsLayer geoJsonList={allGeoJsonLayers} />}
             </MapContainer>
 
             <LayerLegend activeLayers={activeLayers} kmlLayers={kmlLayers} />

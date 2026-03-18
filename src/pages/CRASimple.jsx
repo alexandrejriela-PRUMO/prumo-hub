@@ -375,8 +375,8 @@ export default function CRASimple() {
             <Card className="bg-blue-50 border-blue-200">
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <CardTitle>Editar Título</CardTitle>
-                  <Button size="sm" variant="ghost" onClick={() => setEditingTitle(null)}>
+                  <CardTitle>{editingTitle.id ? 'Editar Título' : 'Novo Título'}</CardTitle>
+                  <Button size="sm" variant="ghost" onClick={() => { setEditingTitle(null); setTitleFormData({}); }}>
                     <X className="w-4 h-4" />
                   </Button>
                 </div>
@@ -386,20 +386,24 @@ export default function CRASimple() {
                   <div>
                     <Label>Número CRA *</Label>
                     <Input 
-                      defaultValue={editingTitle.cra_number} 
-                      onChange={(e) => setEditingTitle({ ...editingTitle, cra_number: e.target.value })} 
+                      value={titleFormData.cra_number || ''} 
+                      onChange={(e) => setTitleFormData({ ...titleFormData, cra_number: e.target.value })} 
+                      placeholder="CRA-123456"
                     />
                   </div>
                   <div>
                     <Label>Origem *</Label>
-                    <Select defaultValue={editingTitle.origin_id} onValueChange={(value) => setEditingTitle({ ...editingTitle, origin_id: value })}>
+                    <Select 
+                      value={titleFormData.origin_id || ''} 
+                      onValueChange={(value) => setTitleFormData({ ...titleFormData, origin_id: value })}
+                    >
                       <SelectTrigger className="mt-1">
-                        <SelectValue />
+                        <SelectValue placeholder="Selecione uma origem" />
                       </SelectTrigger>
                       <SelectContent>
                         {origins.map(o => (
                           <SelectItem key={o.id} value={o.id}>
-                            {properties.find(p => p.id === o.property_id)?.property_name || 'Propriedade'}
+                            {properties.find(p => p.id === o.property_id)?.property_name || 'Propriedade'} - {o.car_number}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -410,15 +414,18 @@ export default function CRASimple() {
                     <Input 
                       type="number" 
                       step="0.01" 
-                      defaultValue={editingTitle.cra_area_hectares} 
-                      onChange={(e) => setEditingTitle({ ...editingTitle, cra_area_hectares: e.target.value })} 
+                      value={titleFormData.cra_area_hectares || ''} 
+                      onChange={(e) => setTitleFormData({ ...titleFormData, cra_area_hectares: e.target.value })} 
                     />
                   </div>
                   <div>
                     <Label>Bioma *</Label>
-                    <Select defaultValue={editingTitle.biome} onValueChange={(value) => setEditingTitle({ ...editingTitle, biome: value })}>
+                    <Select 
+                      value={titleFormData.biome || ''} 
+                      onValueChange={(value) => setTitleFormData({ ...titleFormData, biome: value })}
+                    >
                       <SelectTrigger className="mt-1">
-                        <SelectValue />
+                        <SelectValue placeholder="Selecione um bioma" />
                       </SelectTrigger>
                       <SelectContent>
                         {BIOMAS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
@@ -427,8 +434,8 @@ export default function CRASimple() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setEditingTitle(null)} className="flex-1">Cancelar</Button>
-                  <Button onClick={() => saveTitleMutation.mutate(editingTitle)} className="flex-1 bg-emerald-600 hover:bg-emerald-700" disabled={saveTitleMutation.isPending}>
+                  <Button variant="outline" onClick={() => { setEditingTitle(null); setTitleFormData({}); }} className="flex-1">Cancelar</Button>
+                  <Button onClick={() => saveTitleMutation.mutate({ ...editingTitle, ...titleFormData })} className="flex-1 bg-emerald-600 hover:bg-emerald-700" disabled={saveTitleMutation.isPending}>
                     <Save className="w-4 h-4 mr-2" />
                     {saveTitleMutation.isPending ? 'Salvando...' : 'Salvar'}
                   </Button>
@@ -436,13 +443,16 @@ export default function CRASimple() {
               </CardContent>
             </Card>
           ) : (
-            <Button onClick={() => setEditingTitle({
-              cra_number: '',
-              origin_id: '',
-              property_id: '',
-              cra_area_hectares: '',
-              biome: ''
-            })} className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto">
+            <Button onClick={() => {
+              setEditingTitle({});
+              setTitleFormData({
+                cra_number: '',
+                origin_id: '',
+                property_id: '',
+                cra_area_hectares: '',
+                biome: ''
+              });
+            }} className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               Novo Título
             </Button>

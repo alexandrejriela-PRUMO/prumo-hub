@@ -451,7 +451,7 @@ export default function RegularityReport() {
             <TrendingUp className="w-7 sm:w-8 h-7 sm:h-8 text-emerald-600 flex-shrink-0" />
             <span>Relatório de Regularidade Ambiental</span>
           </h1>
-          <p className="text-gray-500 mt-1 text-sm sm:text-base">Análise completa da conformidade do cliente</p>
+          <p className="text-gray-500 mt-1 text-sm sm:text-base">{isConsultor ? 'Análise completa da conformidade do cliente' : 'Análise completa e conformidade da propriedade'}</p>
         </div>
         <Button variant="outline" className="gap-2 w-full sm:w-auto">
           <Download className="w-4 h-4" />

@@ -244,7 +244,7 @@ export default function Home() {
              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 bg-clip-text text-transparent break-words">
                Olá, {user?.full_name?.split(' ')[0] || 'Cliente'}! 👋
              </h1>
-             <p className="text-gray-500 mt-2 text-xs sm:text-sm lg:text-base break-words">Bem-vindo ao PRUMO Hub - Consultoria Ambiental</p>
+             <p className="text-gray-500 mt-2 text-xs sm:text-sm lg:text-base break-words">{user?.user_type === 'produtor' ? 'Seja bem-vindo ao PRUMO Hub. O seu software inteligente para gestão da propriedade, empresas e dados ambientais' : 'Bem-vindo ao PRUMO Hub - Consultoria Ambiental'}</p>
            </div>
          </div>
          <button

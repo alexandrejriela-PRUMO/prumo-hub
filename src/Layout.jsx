@@ -105,6 +105,7 @@ const produtorNavItems = [
     children: [
       { name: 'Créditos de Carbono', page: 'CarbonCredits', icon: Leaf },
       { name: 'PSA - Serviços Ambientais', page: 'PSAContracts', icon: Droplets },
+      { name: 'Cotas de Reserva Ambiental', page: 'CRA', icon: Leaf },
       { name: 'Servidão Ambiental', page: 'EnvironmentalEasements', icon: Shield },
       { name: 'ESG para o Agro', page: 'ESGAgro', icon: TrendingUp },
     ]

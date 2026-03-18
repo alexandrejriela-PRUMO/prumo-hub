@@ -430,7 +430,10 @@ export default function PropertyMapView() {
               {/* CAR */}
               {activeLayers.car && carGeoJson && (
                 <GeoJSON key={`car-${selectedPropertyId}`} data={carGeoJson} style={LAYER_STYLES.car}
-                  onEachFeature={(_, layer) => layer.bindPopup(`<b>Limite CAR</b><br/>CAR: ${selectedProperty?.car_number || 'N/D'}`)} />
+                  onEachFeature={(_, layer) => {
+                    const cars = selectedProperty?.car_numbers?.length > 0 ? selectedProperty.car_numbers : selectedProperty?.car_number ? [selectedProperty.car_number] : [];
+                    layer.bindPopup(`<b>Limite CAR</b><br/>${cars.map(c => `CAR: ${c}`).join('<br/>') || 'N/D'}`);
+                  }} />
               )}
 
               {/* APP */}

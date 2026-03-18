@@ -12,6 +12,10 @@ const LAYERS = [
   { key: 'legal_reserve_url', label: 'Reserva Legal', color: 'green' },
   { key: 'consolidated_area_url', label: 'Área Consolidada', color: 'yellow' },
   { key: 'recovery_area_url', label: 'Área em Recuperação', color: 'orange' },
+  { key: 'servidoes_url', label: 'Servidões Administrativas', color: 'red' },
+  { key: 'remanescente_url', label: 'Remanescente de Vegetação Nativa', color: 'teal' },
+  { key: 'pousio_url', label: 'Pousio', color: 'amber' },
+  { key: 'outro_uso_restrito_url', label: 'Outro Uso Restrito', color: 'purple' },
 ];
 
 export default function CARMapLayers({ carRecord, onUpdate }) {

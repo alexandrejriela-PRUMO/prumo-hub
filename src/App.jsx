@@ -23,6 +23,7 @@ const CRA = React.lazy(() => import('./pages/CRA'));
 
 const CampMode = React.lazy(() => import('./pages/CampMode'));
 const PropertyCentral = React.lazy(() => import('./pages/PropertyCentral'));
+const EnvironmentalAssets = React.lazy(() => import('./pages/EnvironmentalAssets'));
 import OfflineIndicator from '@/components/offline/OfflineIndicator';
 import { useOfflineSync } from '@/components/offline/OfflineSyncHook';
 import { initializeOfflineDB } from '@/components/offline/OfflineStorageManager';
@@ -105,6 +106,7 @@ const AuthenticatedApp = () => {
 
       <Route path="/CampMode" element={<LayoutWrapper currentPageName="CampMode"><Suspense fallback={<LoadingSpinner />}><CampMode /></Suspense></LayoutWrapper>} />
       <Route path="/PropertyCentral" element={<LayoutWrapper currentPageName="PropertyCentral"><Suspense fallback={<LoadingSpinner />}><PropertyCentral /></Suspense></LayoutWrapper>} />
+      <Route path="/EnvironmentalAssets" element={<LayoutWrapper currentPageName="EnvironmentalAssets"><Suspense fallback={<LoadingSpinner />}><EnvironmentalAssets /></Suspense></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
     </>

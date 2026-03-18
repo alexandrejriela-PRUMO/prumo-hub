@@ -140,8 +140,11 @@ export default function NDVIPanel({ geometry, coordinates, propertyName }) {
           }
 
           // Normaliza o array de coordenadas (exterior ring)
+          console.log('[NDVIPanel] Coordenadas originais do polígono:', geom.coordinates[0]);
           const normalized = validateAndNormalizePolygon(geom.coordinates[0]);
-          if (!normalized) {
+          console.log('[NDVIPanel] Coordenadas após normalização:', normalized);
+
+          if (!normalized || normalized.length < 3) {
             setError('Polígono deve ter pelo menos 3 pontos válidos');
             setLoading(false);
             return;
@@ -152,10 +155,11 @@ export default function NDVIPanel({ geometry, coordinates, propertyName }) {
             type: 'Polygon',
             coordinates: [normalized]
           };
-        }
+          }
 
-        payload.boundaries_geojson = geom;
-        console.log('[NDVIPanel] Geometria normalizada enviada:', JSON.stringify(geom));
+          console.log('[NDVIPanel] Geometry pronta para envio:', geom);
+          console.log('[NDVIPanel] Número de pontos:', geom.coordinates?.[0]?.length || 0);
+          payload.boundaries_geojson = geom;
         } else if (coordinates) {
         payload.center_coordinates = coordinates;
         }

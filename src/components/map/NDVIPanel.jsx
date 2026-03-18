@@ -74,12 +74,8 @@ export default function NDVIPanel({ geometry, propertyName }) {
     setLoading(true);
     setError(null);
     try {
-      const resp = await base44.functions.invoke('geeNDVI', {
-        geometry,
-        start_date: startDate,
-        end_date: endDate,
-        dataset,
-        include_history: true
+      const resp = await base44.functions.invoke('geeNdviAnalysis', {
+        boundaries_geojson: geometry,
       });
       setResult(resp.data);
     } catch (e) {

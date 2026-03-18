@@ -279,7 +279,7 @@ Deno.serve(async (req) => {
       } else if (center_coordinates) {
         console.log('[GEE] Criando geometria a partir de coordenadas centrais:', center_coordinates);
         const coordStr = String(center_coordinates).trim();
-        const coordArray = coordStr.split(',').map(c => Number(c.trim()));
+        const coordArray = coordStr.split(/[,;]/).map(c => Number(c.trim()));
 
         if (coordArray.length < 2 || coordArray.some(isNaN)) {
           throw new Error(`Coordenadas centrais inválidas: "${coordStr}" não contém 2 números válidos`);

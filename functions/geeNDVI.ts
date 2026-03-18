@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
+import ee from 'npm:@google/earthengine@0.1.391';
 
 async function getGEEToken(email, pem) {
   const b64url = (o) => btoa(JSON.stringify(o)).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
@@ -16,8 +17,11 @@ async function getGEEToken(email, pem) {
   const key = await crypto.subtle.importKey('pkcs8', keyBytes, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
   const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(sigInput));
   const sigStr = btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
-  const jwt = `${sigInput}.${sigStr}`;
+  return `${sigInput}.${sigStr}`;
+}
 
+async function getAccessToken(email, privateKey) {
+  const jwt = await getGEEToken(email, privateKey);
   const res = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -26,39 +30,6 @@ async function getGEEToken(email, pem) {
   const data = await res.json();
   if (!data.access_token) throw new Error('GEE auth failed: ' + JSON.stringify(data));
   return data.access_token;
-}
-
-function buildExpr(geometry, startDate, endDate) {
-  return {
-    result: '4',
-    values: {
-      '0': { functionInvocationValue: { functionName: 'ImageCollection.load', arguments: { id: { constantValue: 'MODIS/061/MOD13Q1' } } } },
-      '1': { functionInvocationValue: { functionName: 'Collection.filterBounds', arguments: { collection: { valueReference: '0' }, geometry: { constantValue: geometry } } } },
-      '2': { functionInvocationValue: { functionName: 'Collection.filterDate', arguments: { collection: { valueReference: '1' }, start_time: { constantValue: startDate }, end_time: { constantValue: endDate } } } },
-      '3': { functionInvocationValue: { functionName: 'ImageCollection.reduce', arguments: { collection: { valueReference: '2' }, reducer: { functionInvocationValue: { functionName: 'Reducer.mean', arguments: {} } } } } },
-      '4': { functionInvocationValue: { functionName: 'Image.reduceRegion', arguments: {
-        image: { valueReference: '3' },
-        reducer: { functionInvocationValue: { functionName: 'Reducer.mean', arguments: {} } },
-        geometry: { constantValue: geometry },
-        scale: { constantValue: 500 },
-        maxPixels: { constantValue: 100000000 },
-        bestEffort: { constantValue: true }
-      }}}
-    }
-  };
-}
-
-async function computeNDVI(projectId, token, geometry, startDate, endDate) {
-  const res = await fetch(`https://earthengine.googleapis.com/v1/projects/${projectId}/value:compute`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ expression: buildExpr(geometry, startDate, endDate) }),
-  });
-  const data = await res.json();
-  if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
-  const result = data.result ?? {};
-  const raw = result['NDVI_mean'] ?? result['NDVI'] ?? null;
-  return raw != null ? raw / 10000 : null;
 }
 
 function classify(ndvi) {
@@ -79,37 +50,31 @@ Deno.serve(async (req) => {
 
     const serviceEmail = Deno.env.get('GEE_SERVICE_ACCOUNT_EMAIL');
     const keyRaw = Deno.env.get('GEE_PRIVATE_KEY');
+    const projectId = Deno.env.get('GEE_PROJECT_ID') || serviceEmail?.match(/@([^.]+)\.iam\.gserviceaccount\.com/)?.[1];
 
-    let privateKey;
-    try {
-      const parsed = JSON.parse(keyRaw);
-      privateKey = parsed.private_key || keyRaw;
-    } catch {
-      privateKey = keyRaw;
-    }
+    if (!serviceEmail || !keyRaw) throw new Error('GEE credentials not configured');
+    if (!projectId) throw new Error('GEE project ID not found');
 
-    console.log('KEY_START:', JSON.stringify(privateKey?.substring(0, 80)));
-    console.log('KEY_HAS_LITERAL_SLASH_N:', privateKey?.includes('\\n'));
-    console.log('KEY_HAS_REAL_NEWLINE:', privateKey?.includes('\n'));
+    const accessToken = await getAccessToken(serviceEmail, keyRaw);
+
+    // Initialize ee with the access token
+    await new Promise((resolve, reject) => {
+      ee.data.setAuthToken('', 'Bearer', accessToken, 3600, [], () => resolve(), false);
+      ee.initialize(null, null, resolve, reject, null, `projects/${projectId}`);
+    });
 
     let geometry;
     if (boundaries_geojson) {
       const gj = typeof boundaries_geojson === 'string' ? JSON.parse(boundaries_geojson) : boundaries_geojson;
-      geometry = gj.type === 'FeatureCollection' ? gj.features[0]?.geometry :
-                 gj.type === 'Feature' ? gj.geometry : gj;
+      const geom = gj.type === 'FeatureCollection' ? gj.features[0]?.geometry : gj.type === 'Feature' ? gj.geometry : gj;
+      geometry = ee.Geometry(geom);
     } else if (center_coordinates) {
       const [lat, lng] = String(center_coordinates).split(',').map(Number);
       const d = 0.045;
-      geometry = { type: 'Polygon', coordinates: [[[lng-d,lat-d],[lng+d,lat-d],[lng+d,lat+d],[lng-d,lat+d],[lng-d,lat-d]]] };
+      geometry = ee.Geometry.Polygon([[[lng-d,lat-d],[lng+d,lat-d],[lng+d,lat+d],[lng-d,lat+d],[lng-d,lat-d]]]);
     } else {
       return Response.json({ error: 'Geometria não fornecida' }, { status: 400 });
     }
-
-    let projectId = serviceEmail?.match(/@([^.]+)\.iam\.gserviceaccount\.com/)?.[1];
-    if (!projectId) projectId = Deno.env.get('GEE_PROJECT_ID') || null;
-    if (!projectId) throw new Error('Não foi possível extrair o Project ID. Configure GEE_PROJECT_ID.');
-
-    const token = await getGEEToken(serviceEmail, privateKey);
 
     const now = new Date();
     const endDate = now.toISOString().split('T')[0];
@@ -117,13 +82,33 @@ Deno.serve(async (req) => {
     const prevEnd = new Date(now - 365 * 86400000).toISOString().split('T')[0];
     const prevStart = new Date(now - 455 * 86400000).toISOString().split('T')[0];
 
+    const getNDVI = (start, end) => new Promise((resolve, reject) => {
+      const col = ee.ImageCollection('MODIS/061/MOD13Q1')
+        .filterBounds(geometry)
+        .filterDate(start, end)
+        .select('NDVI');
+
+      const mean = col.mean();
+      mean.reduceRegion({
+        reducer: ee.Reducer.mean(),
+        geometry,
+        scale: 500,
+        maxPixels: 1e8,
+        bestEffort: true,
+      }).evaluate((result, err) => {
+        if (err) return reject(new Error(err));
+        const raw = result?.NDVI ?? null;
+        resolve(raw != null ? raw / 10000 : null);
+      });
+    });
+
     const [ndviCurrent, ndviPrev] = await Promise.all([
-      computeNDVI(projectId, token, geometry, startDate, endDate),
-      computeNDVI(projectId, token, geometry, prevStart, prevEnd),
+      getNDVI(startDate, endDate),
+      getNDVI(prevStart, prevEnd),
     ]);
 
     if (ndviCurrent === null) {
-      return Response.json({ error: 'Sem imagens MODIS disponíveis para o período/área selecionado.', ndvi_mean: null });
+      return Response.json({ error: 'Sem imagens MODIS disponíveis para o período/área.', ndvi_mean: null });
     }
 
     const classification = classify(ndviCurrent);

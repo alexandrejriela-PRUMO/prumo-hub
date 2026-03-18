@@ -80,6 +80,14 @@ export default function NDVIPanel({ geometry, coordinates, propertyName }) {
         } else if (geometry.type === 'FeatureCollection' && geometry.features?.length > 0) {
           geom = geometry.features[0].geometry;
         }
+
+        // Valida que coordinates seja um array válido
+        if (!geom || !geom.coordinates || !Array.isArray(geom.coordinates)) {
+          setError('Geometria inválida: coordenadas não são um array válido');
+          setLoading(false);
+          return;
+        }
+
         payload.boundaries_geojson = geom;
       } else if (coordinates) {
         payload.center_coordinates = coordinates;

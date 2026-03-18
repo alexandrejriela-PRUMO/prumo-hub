@@ -247,10 +247,24 @@ export default function ClimateMonitoring() {
       {currentProperty && (
         <>
           {/* Botão Atualizar */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            {!currentProperty?.coordinates && (
+              <Card className="w-full border-amber-200 bg-amber-50">
+                <CardContent className="p-4 flex items-center gap-3">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                  <p className="text-sm text-amber-900"><strong>Aviso:</strong> Esta propriedade não possui coordenadas GPS. Configure as coordenadas antes de atualizar.</p>
+                </CardContent>
+              </Card>
+            )}
             <Button
-              onClick={() => updateClimateDataMutation.mutate()}
-              disabled={updateClimateDataMutation.isPending}
+              onClick={() => {
+                if (!currentProperty?.coordinates) {
+                  toast.error('Propriedade sem coordenadas. Configure antes de atualizar.');
+                  return;
+                }
+                updateClimateDataMutation.mutate();
+              }}
+              disabled={updateClimateDataMutation.isPending || !currentProperty?.coordinates}
               className="bg-blue-600 hover:bg-blue-700"
             >
               {updateClimateDataMutation.isPending ? (

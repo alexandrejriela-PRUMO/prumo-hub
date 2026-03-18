@@ -5,21 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { X, Save, Loader2 } from 'lucide-react';
-
-const MODULES = [
-  'Trabalhista', 'Contábil', 'Ambiental', 'Tributário',
-  'Imobiliário', 'Civil', 'Fiscal', 'Recursos Humanos', 'Administrativo',
-];
-
-const DEFAULT_TYPES = [
-  'CCIR', 'ITR', 'Georreferenciamento', 'Matrícula do Imóvel', 'Escritura',
-  'Certidão de Zoneamento', 'Certidão Negativa de Débitos', 'Certidão de Registro de Imóveis',
-  'Certidão de Inteiro Teor', 'Declaração de Aptidão ao Pronaf (DAP/CAF)',
-  'Declaração de Uso e Cobertura', 'Declaração de Produtor Rural',
-  'Declaração de Movimentação de Animais (DMA)', 'Identidade (RG)', 'CPF', 'CNPJ',
-  'Comprovante de Residência', 'Nota Fiscal', 'Comprovante de Pagamento',
-  'Procuração', 'Alvará', 'Outro',
-];
+import { MODULES, DOCUMENT_TYPES } from './documentConstants';
 
 export default function DocumentEditModal({ document, properties = [], onSave, onCancel }) {
   const [saving, setSaving] = useState(false);

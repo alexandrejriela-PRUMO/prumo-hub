@@ -403,70 +403,70 @@ export default function DocumentsHub() {
               )}
             </div>
           ) : (
-            <div className="space-y-3">
-              {filteredDocuments.map(doc => (
-                <div
-                  key={doc.id}
-                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50/50 transition-all"
-                >
-                  <div className="flex items-start gap-4 flex-1 min-w-0">
-                    <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
-                      <FileText className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 truncate">{doc.document_name}</h3>
-                      {doc.description && (
-                        <p className="text-sm text-gray-600 truncate">{doc.description}</p>
-                      )}
-                      <div className="flex items-center gap-2 mt-2 flex-wrap">
-                        <Badge variant="outline" className="text-xs">
-                          {entityTypeLabels[doc.entity_type] || doc.entity_type}
-                        </Badge>
-                        <Badge className="bg-blue-100 text-blue-800 text-xs">
-                          {doc.document_type}
-                        </Badge>
-                        {doc.upload_date && (
-                          <span className="text-xs text-gray-500 flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {format(new Date(doc.upload_date), 'dd/MM/yyyy', { locale: ptBR })}
-                          </span>
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <Droppable droppableId="documents-list">
+                {(provided) => (
+                  <div className="space-y-3" ref={provided.innerRef} {...provided.droppableProps}>
+                    {filteredDocuments.map((doc, index) => (
+                      <Draggable key={doc.id} draggableId={doc.id} index={index}>
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            className={`flex items-center justify-between p-4 border rounded-lg transition-all ${snapshot.isDragging ? 'border-blue-400 bg-blue-50 shadow-lg' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/50'}`}
+                          >
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <div {...provided.dragHandleProps} className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing shrink-0">
+                                <GripVertical className="w-5 h-5" />
+                              </div>
+                              <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                                <FileText className="w-5 h-5 text-blue-600" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-gray-900 truncate">{doc.document_name}</h3>
+                                {doc.description && (
+                                  <p className="text-sm text-gray-600 truncate">{doc.description}</p>
+                                )}
+                                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                  <Badge variant="outline" className="text-xs">
+                                    {entityTypeLabels[doc.entity_type] || doc.entity_type}
+                                  </Badge>
+                                  <Badge className="bg-blue-100 text-blue-800 text-xs">
+                                    {doc.document_type}
+                                  </Badge>
+                                  {doc.upload_date && (
+                                    <span className="text-xs text-gray-500 flex items-center gap-1">
+                                      <Calendar className="w-3 h-3" />
+                                      {format(new Date(doc.upload_date), 'dd/MM/yyyy', { locale: ptBR })}
+                                    </span>
+                                  )}
+                                  {doc.uploaded_by && (
+                                    <span className="text-xs text-gray-500">por {doc.uploaded_by}</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 ml-4">
+                              <Button variant="outline" size="sm" onClick={() => setSelectedDoc(doc)}>
+                                <Eye className="w-4 h-4 mr-1" />
+                                Ver
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={() => window.open(doc.file_url, '_blank')}>
+                                <Download className="w-4 h-4" />
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={() => handleDelete(doc)} className="text-red-600 hover:text-red-700">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
                         )}
-                        {doc.uploaded_by && (
-                          <span className="text-xs text-gray-500">
-                            por {doc.uploaded_by}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
                   </div>
-                  <div className="flex items-center gap-2 ml-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedDoc(doc)}
-                    >
-                      <Eye className="w-4 h-4 mr-1" />
-                      Ver
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => window.open(doc.file_url, '_blank')}
-                    >
-                      <Download className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDelete(doc)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                )}
+              </Droppable>
+            </DragDropContext>
           )}
         </CardContent>
       </Card>

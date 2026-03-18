@@ -11,6 +11,7 @@ import {
 
 export default function PropertyCentral() {
   const [selectedPropertyId, setSelectedPropertyId] = useState(null);
+  const [showModuleNav, setShowModuleNav] = useState(false);
   const location = useLocation();
   
   // Detecta se veio de um módulo (tem search params com return_from)
@@ -63,8 +64,6 @@ export default function PropertyCentral() {
     { name: 'PRAD - Recuperação de Área', page: 'PRAD', icon: Leaf, color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
     { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin, color: 'bg-teal-50 text-teal-700 border-teal-200' },
   ];
-
-  const [showModuleNav, setShowModuleNav] = useState(false);
 
   return (
     <div className="space-y-6">

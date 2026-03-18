@@ -105,6 +105,23 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
     fiscal_address: '',
   });
 
+  // Lista de CARs
+  const parseCarNumbers = () => {
+    if (property?.car_numbers?.length) return property.car_numbers;
+    if (property?.car_number) return [property.car_number];
+    return [];
+  };
+  const [carNumbers, setCarNumbers] = useState(parseCarNumbers());
+  const [newCarNumber, setNewCarNumber] = useState('');
+
+  const addCarNumber = () => {
+    if (!newCarNumber.trim()) return;
+    if (carNumbers.includes(newCarNumber.trim())) return;
+    setCarNumbers([...carNumbers, newCarNumber.trim()]);
+    setNewCarNumber('');
+  };
+  const removeCarNumber = (idx) => setCarNumbers(carNumbers.filter((_, i) => i !== idx));
+
   // Lista de proprietários
   const parseOwnersList = () => {
     if (property?.owner_names_list) {

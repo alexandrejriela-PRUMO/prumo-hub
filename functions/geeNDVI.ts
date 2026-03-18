@@ -1,5 +1,56 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
+// ── JWT / OAuth ────────────────────────────────────────────────────────────
+async function getGEEToken(email, pemRaw) {
+  // Normalize newlines
+  let pem = pemRaw;
+  if (pem.includes('\\n')) pem = pem.replace(/\\n/g, '\n');
+
+  // Extract base64 body from PEM
+  const pemBody = pem
+    .split('\n')
+    .filter(l => !l.startsWith('---') && l.trim().length > 0)
+    .join('');
+
+  const keyBytes = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0));
+  const key = await crypto.subtle.importKey(
+    'pkcs8', keyBytes.buffer,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']
+  );
+
+  const now = Math.floor(Date.now() / 1000);
+  const toB64u = (obj) => {
+    const json = JSON.stringify(obj);
+    const bytes = new TextEncoder().encode(json);
+    let s = '';
+    bytes.forEach(b => { s += String.fromCharCode(b); });
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  };
+
+  const h = toB64u({ alg: 'RS256', typ: 'JWT' });
+  const p = toB64u({
+    iss: email,
+    scope: 'https://www.googleapis.com/auth/earthengine https://www.googleapis.com/auth/cloud-platform',
+    aud: 'https://oauth2.googleapis.com/token',
+    iat: now, exp: now + 3600
+  });
+  const sigInput = `${h}.${p}`;
+  const sigBuf = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(sigInput));
+  const sigArr = Array.from(new Uint8Array(sigBuf));
+  const sig = btoa(sigArr.map(b => String.fromCharCode(b)).join(''))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+
+  const jwt = `${sigInput}.${sig}`;
+  const r = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`
+  });
+  const d = await r.json();
+  if (!d.access_token) throw new Error(`GEE auth failed: ${JSON.stringify(d)}`);
+  return d.access_token;
+}
+
 // ── EE expression helpers ──────────────────────────────────────────────────
 const c = (val) => ({ constantValue: val });
 const fn = (name, args = {}) => ({ functionInvocationValue: { functionName: name, arguments: args } });
@@ -22,8 +73,7 @@ function buildNDVIImage(geomExpr, start, end, dataset) {
             collection: fn('ImageCollection.load', { id: c(colId) }),
             geometry: geomExpr
           }),
-          start: c(start),
-          end: c(end)
+          start: c(start), end: c(end)
         }),
         bandSelectors: c([nir, red])
       })
@@ -72,57 +122,6 @@ function buildMapExpr(geojsonGeom, start, end, dataset) {
   });
 }
 
-// ── JWT / OAuth ────────────────────────────────────────────────────────────
-async function getAccessToken(email, pemRaw) {
-  // Normalize: handle both literal \n and actual newlines
-  const pem = pemRaw.replace(/\\n/g, '\n');
-  const now = Math.floor(Date.now() / 1000);
-
-  const b64u = (obj) => {
-    const str = typeof obj === 'string' ? obj : JSON.stringify(obj);
-    const bytes = new TextEncoder().encode(str);
-    let b = '';
-    for (const byte of bytes) b += String.fromCharCode(byte);
-    return btoa(b).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-  };
-
-  const header = b64u({ alg: 'RS256', typ: 'JWT' });
-  const payload = b64u({
-    iss: email,
-    scope: 'https://www.googleapis.com/auth/earthengine https://www.googleapis.com/auth/cloud-platform',
-    aud: 'https://oauth2.googleapis.com/token',
-    iat: now, exp: now + 3600
-  });
-  const sigInput = `${header}.${payload}`;
-
-  // Strip PEM headers and all whitespace to get pure base64
-  const pemBody = pem
-    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
-    .replace(/-----END PRIVATE KEY-----/g, '')
-    .replace(/-----BEGIN RSA PRIVATE KEY-----/g, '')
-    .replace(/-----END RSA PRIVATE KEY-----/g, '')
-    .replace(/[^A-Za-z0-9+/=]/g, ''); // remove everything that isn't valid base64
-  const keyBytes = Uint8Array.from(atob(pemBody), ch => ch.charCodeAt(0));
-  const key = await crypto.subtle.importKey(
-    'pkcs8', keyBytes.buffer,
-    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']
-  );
-  const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(sigInput));
-  const sigB64 = btoa(String.fromCharCode(...new Uint8Array(sig)))
-    .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-
-  const jwt = `${sigInput}.${sigB64}`;
-  const resp = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`
-  });
-  const data = await resp.json();
-  if (!data.access_token) throw new Error(`GEE auth failed: ${JSON.stringify(data)}`);
-  return data.access_token;
-}
-
-// ── Helpers ────────────────────────────────────────────────────────────────
 function parseStats(data) {
   if (!data?.result) return null;
   const vals = data.result.dictionaryValue?.values || {};
@@ -165,7 +164,8 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { geometry, start_date, end_date, dataset = 'sentinel2', include_history = false } = await req.json();
+    const body = await req.json();
+    const { geometry, start_date, end_date, dataset = 'sentinel2', include_history = false } = body;
     if (!geometry || !start_date || !end_date)
       return Response.json({ error: 'geometry, start_date e end_date são obrigatórios' }, { status: 400 });
 
@@ -176,35 +176,30 @@ Deno.serve(async (req) => {
     let privateKey = pkRaw;
     let projectId = Deno.env.get('GEE_PROJECT_ID') || null;
 
-    // Try to parse as JSON service account file
+    // If pkRaw is a JSON service account file
     try {
       const parsed = JSON.parse(pkRaw);
-      if (parsed.private_key) {
-        privateKey = parsed.private_key;
-        if (parsed.project_id) projectId = parsed.project_id;
-      }
-    } catch {
-      // pkRaw is already a raw PEM key string
+      if (parsed.private_key) privateKey = parsed.private_key;
+      if (parsed.project_id && !projectId) projectId = parsed.project_id;
+    } catch (_) {
+      // pkRaw is already a raw PEM
     }
 
     if (!projectId) {
-      const m = email.match(/@(.+)\.iam\.gserviceaccount\.com/);
-      projectId = m ? m[1] : null;
+      const m = email.match(/@([^.]+)/);
+      if (m) projectId = m[1];
     }
-    if (!projectId) return Response.json({ error: 'Não foi possível determinar o project_id do GEE' }, { status: 500 });
+    if (!projectId) return Response.json({ error: 'Não foi possível determinar o project_id' }, { status: 500 });
 
-    console.log('[GEE] project_id:', projectId);
-    console.log('[GEE] email:', email);
-    console.log('[GEE] key starts with:', privateKey?.substring(0, 50));
+    console.log('[GEE] project:', projectId, 'email:', email, 'keyLen:', privateKey?.length);
 
     const geomObj = normalizeGeometry(geometry);
     if (!geomObj) return Response.json({ error: 'Geometria inválida' }, { status: 400 });
 
-    const accessToken = await getAccessToken(email, privateKey);
+    const accessToken = await getGEEToken(email, privateKey);
     const base = `https://earthengine.googleapis.com/v1/projects/${projectId}`;
     const hdrs = { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' };
 
-    // Stats + tile URL in parallel
     const [statsResp, mapResp] = await Promise.all([
       fetch(`${base}/value:compute`, {
         method: 'POST', headers: hdrs,
@@ -217,10 +212,12 @@ Deno.serve(async (req) => {
     ]);
 
     const [statsData, mapData] = await Promise.all([statsResp.json(), mapResp.json()]);
+    console.log('[GEE] statsData:', JSON.stringify(statsData).substring(0, 200));
+    console.log('[GEE] mapData:', JSON.stringify(mapData).substring(0, 200));
+
     const stats = parseStats(statsData);
     const tileUrl = mapData.name ? `https://earthengine.googleapis.com/v1/${mapData.name}/tiles/{z}/{x}/{y}` : null;
 
-    // Optional historical quarters
     let history = null;
     if (include_history) {
       const quarters = getPast6Quarters();
@@ -239,6 +236,7 @@ Deno.serve(async (req) => {
     return Response.json({ stats, tileUrl, accessToken, history, dataset, period: { start: start_date, end: end_date } });
 
   } catch (err) {
+    console.error('[GEE] Error:', err.message, err.stack);
     return Response.json({ error: err.message }, { status: 500 });
   }
 });

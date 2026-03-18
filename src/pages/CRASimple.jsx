@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Leaf, Plus, Edit2, Trash2, AlertCircle } from 'lucide-react';
+import { Leaf, Plus, Edit2, Trash2, AlertCircle, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 const BIOMAS = ['Amazônia', 'Cerrado', 'Mata Atlântica', 'Caatinga', 'Pantanal', 'Pampas'];
@@ -19,7 +19,6 @@ export default function CRASimple() {
   const [editingTitle, setEditingTitle] = useState(null);
   const queryClient = useQueryClient();
 
-  // ============ FETCH USER ============
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -37,35 +36,40 @@ export default function CRASimple() {
     queryKey: ['properties', user?.email],
     queryFn: () => base44.entities.Property.filter({ owner_email: user?.email }),
     enabled: !!user?.email,
-    staleTime: 0
+    staleTime: 0,
+    refetchInterval: 30000
   });
 
   const { data: origins = [], refetch: refetchOrigins } = useQuery({
     queryKey: ['cra-origins', user?.email],
     queryFn: () => base44.entities.CRAOrigin.filter({ owner_email: user?.email }),
     enabled: !!user?.email,
-    staleTime: 0
+    staleTime: 0,
+    refetchInterval: 30000
   });
 
   const { data: titles = [], refetch: refetchTitles } = useQuery({
     queryKey: ['cra-titles', user?.email],
     queryFn: () => base44.entities.CRATitle.filter({ owner_email: user?.email }),
     enabled: !!user?.email,
-    staleTime: 0
+    staleTime: 0,
+    refetchInterval: 30000
   });
 
-  const { data: transactions = [], refetch: refetchTransactions } = useQuery({
+  const { data: transactions = [] } = useQuery({
     queryKey: ['cra-transactions', user?.email],
     queryFn: () => base44.entities.CRATransaction.filter({ seller_email: user?.email }),
     enabled: !!user?.email,
-    staleTime: 0
+    staleTime: 0,
+    refetchInterval: 30000
   });
 
-  const { data: compensations = [], refetch: refetchCompensations } = useQuery({
+  const { data: compensations = [] } = useQuery({
     queryKey: ['cra-compensations', user?.email],
     queryFn: () => base44.entities.CRACompensation.filter({ owner_email: user?.email }),
     enabled: !!user?.email,
-    staleTime: 0
+    staleTime: 0,
+    refetchInterval: 30000
   });
 
   // ============ MUTATIONS ============
@@ -76,7 +80,7 @@ export default function CRASimple() {
       const total = parseFloat(data.total_area_hectares) || 0;
 
       if (total <= 0 || required < 0 || existing < 0) {
-        throw new Error('Valores inválidos');
+        throw new Error('Valores devem ser positivos');
       }
 
       const surplus = Math.max(0, existing - required);
@@ -88,7 +92,7 @@ export default function CRASimple() {
         existing_legal_reserve_hectares: existing,
         surplus_native_vegetation_hectares: surplus,
         potential_cra_area_hectares: surplus,
-        status: editingOrigin?.status || 'Pendente'
+        status: editingOrigin?.id ? (editingOrigin.status || 'Pendente') : 'Pendente'
       };
 
       if (editingOrigin?.id) {
@@ -99,7 +103,7 @@ export default function CRASimple() {
     onSuccess: async () => {
       await refetchOrigins();
       setEditingOrigin(null);
-      toast.success(editingOrigin?.id ? 'Atualizado!' : 'Criado!');
+      toast.success('Salvo com sucesso!');
     },
     onError: (err) => toast.error(err.message || 'Erro ao salvar')
   });
@@ -115,11 +119,16 @@ export default function CRASimple() {
 
   const saveTitleMutation = useMutation({
     mutationFn: async (data) => {
+      const area = parseFloat(data.cra_area_hectares) || 0;
+      if (area <= 0) throw new Error('Área deve ser positiva');
+
       const payload = {
         ...data,
+        cra_area_hectares: area,
         owner_email: user.email,
         current_holder_email: user.email,
-        status: editingTitle?.status || 'Disponível'
+        available_area_hectares: area,
+        status: editingTitle?.id ? (editingTitle.status || 'Disponível') : 'Disponível'
       };
 
       if (editingTitle?.id) {
@@ -130,7 +139,7 @@ export default function CRASimple() {
     onSuccess: async () => {
       await refetchTitles();
       setEditingTitle(null);
-      toast.success(editingTitle?.id ? 'Atualizado!' : 'Criado!');
+      toast.success('Salvo com sucesso!');
     },
     onError: (err) => toast.error(err.message || 'Erro ao salvar')
   });
@@ -144,12 +153,12 @@ export default function CRASimple() {
     onError: () => toast.error('Erro ao deletar')
   });
 
-  if (!user) return <div className="p-4">Carregando...</div>;
+  if (!user) return <div className="p-4 text-center">Carregando...</div>;
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6">
       {/* HEADER */}
-      <div className="flex items-center gap-3 mb-8">
+      <div className="flex items-center gap-3">
         <div className="p-3 bg-emerald-100 rounded-xl">
           <Leaf className="w-8 h-8 text-emerald-700" />
         </div>
@@ -160,7 +169,7 @@ export default function CRASimple() {
       </div>
 
       <Tabs defaultValue="origem" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-gray-100">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="origem">Origem</TabsTrigger>
           <TabsTrigger value="titulos">Títulos</TabsTrigger>
           <TabsTrigger value="transacoes">Transações</TabsTrigger>
@@ -168,11 +177,16 @@ export default function CRASimple() {
         </TabsList>
 
         {/* ============ ORIGEM ============ */}
-        <TabsContent value="origem" className="space-y-4">
+        <TabsContent value="origem" className="space-y-4 mt-6">
           {editingOrigin ? (
             <Card className="bg-blue-50 border-blue-200">
               <CardHeader>
-                <CardTitle className="text-lg">Editar Origem</CardTitle>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Editar Origem</CardTitle>
+                  <Button size="sm" variant="ghost" onClick={() => setEditingOrigin(null)}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid md:grid-cols-2 gap-4">
@@ -191,7 +205,11 @@ export default function CRASimple() {
                   </div>
                   <div>
                     <Label>CAR *</Label>
-                    <Input defaultValue={editingOrigin.car_number} onChange={(e) => setEditingOrigin({ ...editingOrigin, car_number: e.target.value })} />
+                    <Input 
+                      defaultValue={editingOrigin.car_number} 
+                      onChange={(e) => setEditingOrigin({ ...editingOrigin, car_number: e.target.value })} 
+                      placeholder="123.456.789-12"
+                    />
                   </div>
                   <div>
                     <Label>Bioma *</Label>
@@ -205,21 +223,53 @@ export default function CRASimple() {
                     </Select>
                   </div>
                   <div>
+                    <Label>Estado *</Label>
+                    <Input 
+                      defaultValue={editingOrigin.state} 
+                      onChange={(e) => setEditingOrigin({ ...editingOrigin, state: e.target.value })} 
+                      placeholder="SP"
+                    />
+                  </div>
+                  <div>
+                    <Label>Município *</Label>
+                    <Input 
+                      defaultValue={editingOrigin.municipality} 
+                      onChange={(e) => setEditingOrigin({ ...editingOrigin, municipality: e.target.value })} 
+                      placeholder="São Paulo"
+                    />
+                  </div>
+                  <div>
                     <Label>Área total (ha) *</Label>
-                    <Input type="number" step="0.01" defaultValue={editingOrigin.total_area_hectares} onChange={(e) => setEditingOrigin({ ...editingOrigin, total_area_hectares: parseFloat(e.target.value) })} />
+                    <Input 
+                      type="number" 
+                      step="0.01" 
+                      defaultValue={editingOrigin.total_area_hectares} 
+                      onChange={(e) => setEditingOrigin({ ...editingOrigin, total_area_hectares: e.target.value })} 
+                    />
                   </div>
                   <div>
                     <Label>Reserva Legal exigida (ha) *</Label>
-                    <Input type="number" step="0.01" defaultValue={editingOrigin.required_legal_reserve_hectares} onChange={(e) => setEditingOrigin({ ...editingOrigin, required_legal_reserve_hectares: parseFloat(e.target.value) })} />
+                    <Input 
+                      type="number" 
+                      step="0.01" 
+                      defaultValue={editingOrigin.required_legal_reserve_hectares} 
+                      onChange={(e) => setEditingOrigin({ ...editingOrigin, required_legal_reserve_hectares: e.target.value })} 
+                    />
                   </div>
                   <div>
                     <Label>Reserva Legal existente (ha) *</Label>
-                    <Input type="number" step="0.01" defaultValue={editingOrigin.existing_legal_reserve_hectares} onChange={(e) => setEditingOrigin({ ...editingOrigin, existing_legal_reserve_hectares: parseFloat(e.target.value) })} />
+                    <Input 
+                      type="number" 
+                      step="0.01" 
+                      defaultValue={editingOrigin.existing_legal_reserve_hectares} 
+                      onChange={(e) => setEditingOrigin({ ...editingOrigin, existing_legal_reserve_hectares: e.target.value })} 
+                    />
                   </div>
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => setEditingOrigin(null)} className="flex-1">Cancelar</Button>
                   <Button onClick={() => saveOriginMutation.mutate(editingOrigin)} className="flex-1 bg-emerald-600 hover:bg-emerald-700" disabled={saveOriginMutation.isPending}>
+                    <Save className="w-4 h-4 mr-2" />
                     {saveOriginMutation.isPending ? 'Salvando...' : 'Salvar'}
                   </Button>
                 </div>
@@ -232,10 +282,10 @@ export default function CRASimple() {
               biome: '',
               state: '',
               municipality: '',
-              total_area_hectares: 0,
-              required_legal_reserve_hectares: 0,
-              existing_legal_reserve_hectares: 0
-            })} className="bg-emerald-600 hover:bg-emerald-700">
+              total_area_hectares: '',
+              required_legal_reserve_hectares: '',
+              existing_legal_reserve_hectares: ''
+            })} className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               Nova Origem
             </Button>
@@ -244,30 +294,32 @@ export default function CRASimple() {
           <div className="grid gap-3">
             {origins.length === 0 ? (
               <Card className="border-dashed">
-                <CardContent className="py-8 text-center text-gray-500">Nenhuma origem cadastrada</CardContent>
+                <CardContent className="py-12 text-center text-gray-500">Nenhuma origem cadastrada</CardContent>
               </Card>
             ) : (
               origins.map(origin => {
                 const prop = properties.find(p => p.id === origin.property_id);
                 const surplus = Math.max(0, (origin.existing_legal_reserve_hectares || 0) - (origin.required_legal_reserve_hectares || 0));
                 return (
-                  <Card key={origin.id}>
+                  <Card key={origin.id} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start gap-4">
-                        <div className="flex-1">
-                          <h3 className="font-bold">{prop?.property_name || 'Propriedade'}</h3>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3 text-xs text-gray-600">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-gray-900">{prop?.property_name || origin.property_id}</h3>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3 text-sm text-gray-600">
                             <div><span className="font-medium">CAR:</span> {origin.car_number}</div>
                             <div><span className="font-medium">Bioma:</span> {origin.biome}</div>
                             <div><span className="font-medium">Total:</span> {origin.total_area_hectares}ha</div>
-                            <div><span className="font-medium text-emerald-700">Potencial CRA:</span> {surplus}ha</div>
+                            <div><span className="font-medium text-emerald-700">Potencial:</span> {surplus}ha</div>
                           </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-shrink-0">
                           <Button size="sm" variant="outline" onClick={() => setEditingOrigin(origin)}>
                             <Edit2 className="w-3 h-3" />
                           </Button>
-                          <Button size="sm" variant="destructive" onClick={() => deleteOriginMutation.mutate(origin.id)} disabled={deleteOriginMutation.isPending}>
+                          <Button size="sm" variant="destructive" onClick={() => {
+                            if (confirm('Deletar esta origem?')) deleteOriginMutation.mutate(origin.id);
+                          }} disabled={deleteOriginMutation.isPending}>
                             <Trash2 className="w-3 h-3" />
                           </Button>
                         </div>
@@ -281,17 +333,25 @@ export default function CRASimple() {
         </TabsContent>
 
         {/* ============ TÍTULOS ============ */}
-        <TabsContent value="titulos" className="space-y-4">
+        <TabsContent value="titulos" className="space-y-4 mt-6">
           {editingTitle ? (
             <Card className="bg-blue-50 border-blue-200">
               <CardHeader>
-                <CardTitle className="text-lg">Editar Título</CardTitle>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Editar Título</CardTitle>
+                  <Button size="sm" variant="ghost" onClick={() => setEditingTitle(null)}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <Label>Número CRA *</Label>
-                    <Input defaultValue={editingTitle.cra_number} onChange={(e) => setEditingTitle({ ...editingTitle, cra_number: e.target.value })} />
+                    <Input 
+                      defaultValue={editingTitle.cra_number} 
+                      onChange={(e) => setEditingTitle({ ...editingTitle, cra_number: e.target.value })} 
+                    />
                   </div>
                   <div>
                     <Label>Origem *</Label>
@@ -301,14 +361,21 @@ export default function CRASimple() {
                       </SelectTrigger>
                       <SelectContent>
                         {origins.map(o => (
-                          <SelectItem key={o.id} value={o.id}>{properties.find(p => p.id === o.property_id)?.property_name || 'Propriedade'}</SelectItem>
+                          <SelectItem key={o.id} value={o.id}>
+                            {properties.find(p => p.id === o.property_id)?.property_name || 'Propriedade'}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
                     <Label>Área (ha) *</Label>
-                    <Input type="number" step="0.01" defaultValue={editingTitle.cra_area_hectares} onChange={(e) => setEditingTitle({ ...editingTitle, cra_area_hectares: parseFloat(e.target.value) })} />
+                    <Input 
+                      type="number" 
+                      step="0.01" 
+                      defaultValue={editingTitle.cra_area_hectares} 
+                      onChange={(e) => setEditingTitle({ ...editingTitle, cra_area_hectares: e.target.value })} 
+                    />
                   </div>
                   <div>
                     <Label>Bioma *</Label>
@@ -325,6 +392,7 @@ export default function CRASimple() {
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => setEditingTitle(null)} className="flex-1">Cancelar</Button>
                   <Button onClick={() => saveTitleMutation.mutate(editingTitle)} className="flex-1 bg-emerald-600 hover:bg-emerald-700" disabled={saveTitleMutation.isPending}>
+                    <Save className="w-4 h-4 mr-2" />
                     {saveTitleMutation.isPending ? 'Salvando...' : 'Salvar'}
                   </Button>
                 </div>
@@ -335,9 +403,9 @@ export default function CRASimple() {
               cra_number: '',
               origin_id: '',
               property_id: '',
-              cra_area_hectares: 0,
+              cra_area_hectares: '',
               biome: ''
-            })} className="bg-emerald-600 hover:bg-emerald-700">
+            })} className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               Novo Título
             </Button>
@@ -346,28 +414,30 @@ export default function CRASimple() {
           <div className="grid gap-3">
             {titles.length === 0 ? (
               <Card className="border-dashed">
-                <CardContent className="py-8 text-center text-gray-500">Nenhum título cadastrado</CardContent>
+                <CardContent className="py-12 text-center text-gray-500">Nenhum título cadastrado</CardContent>
               </Card>
             ) : (
               titles.map(title => (
-                <Card key={title.id}>
+                <Card key={title.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
                     <div className="flex justify-between items-start gap-4">
                       <div className="flex-1">
-                        <h3 className="font-bold">CRA {title.cra_number}</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3 text-xs text-gray-600">
+                        <h3 className="font-bold text-gray-900">CRA {title.cra_number}</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3 text-sm text-gray-600">
                           <div><span className="font-medium">Área:</span> {title.cra_area_hectares}ha</div>
                           <div><span className="font-medium">Bioma:</span> {title.biome}</div>
                           <div><span className="font-medium">Disponível:</span> {title.available_area_hectares || title.cra_area_hectares}ha</div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 flex-shrink-0">
                         <Badge>{title.status}</Badge>
                         <div className="flex gap-2">
                           <Button size="sm" variant="outline" onClick={() => setEditingTitle(title)}>
                             <Edit2 className="w-3 h-3" />
                           </Button>
-                          <Button size="sm" variant="destructive" onClick={() => deleteTitleMutation.mutate(title.id)} disabled={deleteTitleMutation.isPending}>
+                          <Button size="sm" variant="destructive" onClick={() => {
+                            if (confirm('Deletar este título?')) deleteTitleMutation.mutate(title.id);
+                          }} disabled={deleteTitleMutation.isPending}>
                             <Trash2 className="w-3 h-3" />
                           </Button>
                         </div>
@@ -381,21 +451,21 @@ export default function CRASimple() {
         </TabsContent>
 
         {/* ============ TRANSAÇÕES ============ */}
-        <TabsContent value="transacoes">
+        <TabsContent value="transacoes" className="mt-6">
           <Card className="border-amber-200 bg-amber-50">
-            <CardContent className="p-4 flex items-center gap-3">
+            <CardContent className="p-6 flex items-center gap-3">
               <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
-              <p className="text-sm text-amber-900">Transações ({transactions.length}): Gerencie vendas de CRA em breve</p>
+              <p className="text-sm text-amber-900"><strong>Transações ({transactions.length}):</strong> Funcionalidade em desenvolvimento</p>
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* ============ COMPENSAÇÕES ============ */}
-        <TabsContent value="compensacoes">
+        <TabsContent value="compensacoes" className="mt-6">
           <Card className="border-amber-200 bg-amber-50">
-            <CardContent className="p-4 flex items-center gap-3">
+            <CardContent className="p-6 flex items-center gap-3">
               <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
-              <p className="text-sm text-amber-900">Compensações ({compensations.length}): Registre compensações ambientais em breve</p>
+              <p className="text-sm text-amber-900"><strong>Compensações ({compensations.length}):</strong> Funcionalidade em desenvolvimento</p>
             </CardContent>
           </Card>
         </TabsContent>

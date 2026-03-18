@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, GeoJSON, useMap, FeatureGroup } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import 'leaflet-draw/dist/leaflet.draw.css';
 import MapDrawingToolbar from './MapDrawingToolbar';
 import CoordinateInputPanel from './CoordinateInputPanel';
 import MapMeasurementTools from './MapMeasurementTools';

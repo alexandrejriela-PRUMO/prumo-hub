@@ -156,31 +156,39 @@ export default function NDVIPanel({ geometry, propertyName }) {
         )}
 
         {/* Results */}
-        {result?.stats && (
+        {result?.ndvi_mean != null && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Resultado do Período</span>
-              <Badge variant="outline" className="text-xs">{result.dataset === 'sentinel2' ? 'Sentinel-2' : 'Landsat-8'}</Badge>
+              <Badge variant="outline" className="text-xs">{result.source || 'MODIS'}</Badge>
             </div>
 
             {/* Main NDVI */}
             <div className="p-3 bg-white rounded-xl border border-emerald-100 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold text-gray-800">NDVI Médio</span>
-                <NdviBadge value={result.stats.mean} />
+                <span className="text-lg">{result.emoji}</span>
               </div>
-              <NdviBar value={result.stats.mean} />
+              <NdviBar value={result.ndvi_mean} />
               <div className="text-2xl font-black text-emerald-700 text-center py-1">
-                {result.stats.mean?.toFixed(3) ?? '—'}
+                {result.ndvi_mean?.toFixed(3) ?? '—'}
               </div>
+              <div className="text-center text-xs font-semibold text-gray-700">{result.status}</div>
+              <div className="text-center text-xs text-gray-500">{result.desc}</div>
             </div>
 
-            {/* Stat grid */}
-            <div className="grid grid-cols-3 gap-2">
-              <StatCard label="Mínimo" value={result.stats.min} />
-              <StatCard label="Máximo" value={result.stats.max} />
-              <StatCard label="Desvio Padrão" value={result.stats.std} />
-            </div>
+            {/* Trend */}
+            {result.ndvi_prev_year != null && (
+              <div className="grid grid-cols-2 gap-2">
+                <StatCard label="Ano Anterior" value={result.ndvi_prev_year} />
+                <div className="flex flex-col items-center p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
+                  <span className="text-xs text-gray-500 mb-1">Tendência</span>
+                  <span className={`text-xl font-bold ${result.trend >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                    {result.trend >= 0 ? '+' : ''}{result.trend?.toFixed(3)}
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* NDVI Palette Reference */}
             <div className="space-y-1.5">
@@ -194,58 +202,9 @@ export default function NDVIPanel({ geometry, propertyName }) {
               ))}
             </div>
 
-            {/* Historical chart */}
-            {historyData.length > 0 && (
-              <div>
-                <button
-                  onClick={() => setShowHistory(h => !h)}
-                  className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-900 transition-colors"
-                >
-                  <BarChart3 className="w-3.5 h-3.5" />
-                  Histórico dos últimos 18 meses
-                  {showHistory ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                </button>
-                {showHistory && (
-                  <div className="mt-2 p-3 bg-white rounded-xl border border-gray-100">
-                    <ResponsiveContainer width="100%" height={140}>
-                      <BarChart data={historyData} margin={{ top: 4, right: 4, left: -20, bottom: 4 }}>
-                        <XAxis dataKey="name" tick={{ fontSize: 9 }} />
-                        <YAxis tick={{ fontSize: 9 }} domain={[-0.1, 1]} />
-                        <Tooltip
-                          formatter={(v) => [v?.toFixed(3), 'NDVI Médio']}
-                          labelFormatter={(l) => {
-                            const h = historyData.find(d => d.name === l);
-                            return h?.period || l;
-                          }}
-                          contentStyle={{ fontSize: 11, borderRadius: 8 }}
-                        />
-                        <Bar dataKey="NDVI" radius={[4, 4, 0, 0]}>
-                          {historyData.map((entry, i) => (
-                            <Cell key={i} fill={getNdviLevel(entry.NDVI)?.color || '#ccc'} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                    <div className="mt-1 space-y-0.5">
-                      {historyData.map((h, i) => (
-                        <div key={i} className="flex items-center justify-between text-xs text-gray-500">
-                          <span className="font-medium text-gray-700">{h.name}</span>
-                          <NdviBadge value={h.NDVI} />
-                          <span className="font-bold">{h.NDVI?.toFixed(3)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {result.tileUrl && (
-              <div className="flex items-center gap-2 p-2 bg-emerald-50 border border-emerald-100 rounded-lg text-xs text-emerald-700">
-                <Satellite className="w-3.5 h-3.5" />
-                Camada NDVI disponível. Integração de tile no mapa pode ser adicionada.
-              </div>
-            )}
+            <div className="text-xs text-gray-400 text-center">
+              Fonte: {result.source} · {result.date_range?.start} a {result.date_range?.end}
+            </div>
           </div>
         )}
       </CardContent>

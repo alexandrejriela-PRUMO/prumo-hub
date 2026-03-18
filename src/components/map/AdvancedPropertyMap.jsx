@@ -138,11 +138,13 @@ export default function AdvancedPropertyMap({
 
   const handleAddPolygon = (geojson) => {
     setDrawnGeometry(geojson);
+    setIsDrawing(false);
     if (featureGroupRef.current) {
       const layer = L.geoJSON(geojson);
       featureGroupRef.current.clearLayers();
       featureGroupRef.current.addLayer(layer);
     }
+    toast.success('Polígono finalizado! Clique em "Salvar Área" para prosseguir.');
   };
 
   const handleSaveGeometry = () => {

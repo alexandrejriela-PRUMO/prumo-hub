@@ -319,6 +319,9 @@ export default function PropertyMapView() {
   const handleSaveDrawnArea = async (geojson) => {
     if (!selectedProperty) return;
     try {
+      // Salva localmente para o NDVIPanel usar imediatamente
+      setDrawnGeometry(geojson);
+      // Salva também na base de dados
       await base44.entities.Property.update(selectedProperty.id, { boundaries: geojson });
       toast.success('Área salva com sucesso!');
     } catch (err) {

@@ -315,8 +315,27 @@ export default function PropertyMapView() {
     { key: 'consolidated', label: 'Consolidada', icon: '🟣' },
   ];
 
+  const handleSaveDrawnArea = async (geojson) => {
+    if (!selectedProperty) return;
+    try {
+      await base44.entities.Property.update(selectedProperty.id, { boundaries: geojson });
+      toast.success('Área salva com sucesso!');
+    } catch (err) {
+      toast.error('Erro ao salvar área');
+      console.error(err);
+    }
+  };
+
   return (
     <div className="space-y-4">
+      <Link
+        to={createPageUrl('PropertyCentral')}
+        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-emerald-700 hover:bg-emerald-50 transition-colors text-xs font-medium"
+      >
+        <ChevronLeft className="w-3 h-3" />
+        Voltar
+      </Link>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -324,7 +343,7 @@ export default function PropertyMapView() {
             <MapPin className="w-6 h-6 text-emerald-600" />
             Mapa Interativo da Propriedade
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">Visualize camadas ambientais com imagens de satélite</p>
+          <p className="text-sm text-gray-500 mt-0.5">Desenhe, importe e visualize camadas ambientais com precisão Google Earth</p>
         </div>
         {properties.length > 1 && (
           <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>

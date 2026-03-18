@@ -32,6 +32,7 @@ function DrawingLayer({ onPolygonCreated, featureGroupRef }) {
     };
 
     const handleRightClick = (e) => {
+       e.preventDefault();
        if (polygon.length > 2) {
          polygon.push(polygon[0]); // Close polygon
          const geojson = {
@@ -41,12 +42,12 @@ function DrawingLayer({ onPolygonCreated, featureGroupRef }) {
          };
          console.log('[DrawingLayer] Polígono criado:', JSON.stringify(geojson));
          onPolygonCreated(geojson);
-        polylineLayer.remove();
-        pointsLayer.remove();
-        map.off('click', handleClick);
-        map.off('contextmenu', handleRightClick);
-      }
-    };
+         polylineLayer.remove();
+         pointsLayer.remove();
+         map.off('click', handleClick);
+         map.off('contextmenu', handleRightClick);
+       }
+     };
 
     map.on('click', handleClick);
     map.on('contextmenu', handleRightClick);

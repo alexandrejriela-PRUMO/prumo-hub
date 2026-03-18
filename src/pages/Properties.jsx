@@ -145,18 +145,6 @@ export default function Properties() {
           </div>
 
           <div className="flex gap-1.5 sm:gap-2 w-full sm:w-auto sm:flex-col flex-shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setSelectedProperty(property);
-                setMapDialogOpen(true);
-              }}
-              title="Definir limites no mapa"
-              className="flex-1 sm:flex-none"
-            >
-              <MapIcon className="w-4 h-4" />
-            </Button>
             {isConsultor && (
               <Button
                 variant="outline"

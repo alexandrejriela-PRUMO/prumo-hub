@@ -136,48 +136,52 @@ export default function RuralCreditPage() {
 
   const removeDoc = (idx) => setForm(p => ({ ...p, documentos: p.documentos.filter((_, i) => i !== idx) }));
 
-  const handleSubmit = () => {
-     console.log('Submit form:', form);
-     if (!form.instituicao || !form.valor_contratado) { 
-       toast.error('Preencha instituição e valor contratado');
-       return; 
-     }
-     if (!form.data_vencimento) {
-       toast.error('Data de vencimento é obrigatória');
-       return;
-     }
+  const handleSubmit = async (e) => {
+     if (e) e.preventDefault();
+     try {
+       if (!form.instituicao?.trim()) { toast.error('Preencha a instituição financeira'); return; }
+       if (!form.valor_contratado) { toast.error('Preencha o valor contratado'); return; }
+       if (!form.data_vencimento) { toast.error('Preencha a data de vencimento'); return; }
 
-     const valor = parseFloat(form.valor_contratado);
-     const saldo = parseFloat(form.saldo_devedor) || 0;
-     if (valor <= 0) { toast.error('Valor contratado deve ser maior que zero'); return; }
-     if (saldo < 0) { toast.error('Saldo devedor não pode ser negativo'); return; }
+       const valor = parseFloat(form.valor_contratado);
+       const saldo = parseFloat(form.saldo_devedor) || 0;
+       if (valor <= 0) { toast.error('Valor deve ser maior que 0'); return; }
+       if (saldo < 0) { toast.error('Saldo devedor não pode ser negativo'); return; }
 
-     const clientProp = properties.find(p => p.id === form.property_id) || properties[0];
-     const payload = {
-       instituicao: form.instituicao,
-       tipo_credito: form.tipo_credito,
-       programa: form.programa,
-       numero_contrato: form.numero_contrato,
-       data_contratacao: form.data_contratacao,
-       data_vencimento: form.data_vencimento,
-       valor_contratado: valor,
-       saldo_devedor: saldo,
-       taxa_juros: parseFloat(form.taxa_juros) || 0,
-       prazo_total_meses: parseInt(form.prazo_total_meses) || 0,
-       num_parcelas: parseInt(form.num_parcelas) || 0,
-       parcelas_pagas: Math.min(parseInt(form.parcelas_pagas) || 0, parseInt(form.num_parcelas) || 0),
-       garantia: form.garantia,
-       status: form.status,
-       notas: form.notas,
-       property_id: form.property_id || clientProp?.id || '',
-       consultor_email: user?.email,
-       client_email: clientProp?.owner_email || user?.email,
-       client_name: clientProp?.client_name || clientProp?.property_name || form.client_name || 'Sem nome',
-       documentos: form.documentos || [],
-       parcelas: form.parcelas || []
-     };
-     if (editing) updateM.mutate({ id: editing.id, data: payload });
-     else createM.mutate(payload);
+       const clientProp = properties.find(p => p.id === form.property_id) || (properties.length > 0 ? properties[0] : null);
+       const payload = {
+         instituicao: form.instituicao.trim(),
+         tipo_credito: form.tipo_credito || 'Custeio',
+         programa: form.programa || '',
+         numero_contrato: form.numero_contrato || '',
+         data_contratacao: form.data_contratacao || '',
+         data_vencimento: form.data_vencimento,
+         valor_contratado: valor,
+         saldo_devedor: saldo,
+         taxa_juros: parseFloat(form.taxa_juros) || 0,
+         prazo_total_meses: parseInt(form.prazo_total_meses) || 0,
+         num_parcelas: parseInt(form.num_parcelas) || 0,
+         parcelas_pagas: Math.min(parseInt(form.parcelas_pagas) || 0, parseInt(form.num_parcelas) || 0),
+         garantia: form.garantia || '',
+         status: form.status || 'Em dia',
+         notas: form.notas || '',
+         property_id: form.property_id || clientProp?.id || '',
+         consultor_email: user?.email || '',
+         client_email: clientProp?.owner_email || user?.email || '',
+         client_name: clientProp?.client_name || clientProp?.property_name || form.client_name || 'Sem especificar',
+         documentos: form.documentos && Array.isArray(form.documentos) ? form.documentos : [],
+         parcelas: form.parcelas && Array.isArray(form.parcelas) ? form.parcelas : []
+       };
+
+       if (editing?.id) {
+         await updateM.mutateAsync({ id: editing.id, data: payload });
+       } else {
+         await createM.mutateAsync(payload);
+       }
+     } catch (err) {
+       console.error('Erro em handleSubmit:', err);
+       toast.error(err?.message || 'Erro ao salvar');
+     }
    };
 
   const totalContratado = credits.reduce((s, c) => s + (c.valor_contratado || 0), 0);

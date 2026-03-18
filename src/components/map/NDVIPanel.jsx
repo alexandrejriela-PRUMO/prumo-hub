@@ -53,7 +53,7 @@ function StatCard({ label, value, unit = '' }) {
   );
 }
 
-export default function NDVIPanel({ geometry, coordinates, propertyName, kmlLayers = [], carData = {}, drawnGeometry = null }) {
+export default function NDVIPanel({ geometry, coordinates, propertyName, kmlLayers = [], carData = {}, propertyAreas = [] }) {
   const [startDate, setStartDate] = useState(() => {
     const d = new Date(); d.setMonth(d.getMonth() - 3);
     return d.toISOString().split('T')[0];
@@ -63,7 +63,7 @@ export default function NDVIPanel({ geometry, coordinates, propertyName, kmlLaye
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
-  const [selectedArea, setSelectedArea] = useState(() => drawnGeometry ? 'drawn' : 'main');
+  const [selectedAreaId, setSelectedAreaId] = useState('');
 
   // Monta lista de áreas disponíveis (propertyAreas é prioritário)
   const availableAreas = [
@@ -146,7 +146,7 @@ export default function NDVIPanel({ geometry, coordinates, propertyName, kmlLaye
        const payload = { start_date: startDate, end_date: endDate, dataset };
        
        // Usa a geometria selecionada
-       let geom = selectedAreaGeom;
+       let geom = selectedGeometry?.geometry || selectedGeometry;
        
        if (geom) {
          // Se for uma Feature, extrai a Geometry; se for FeatureCollection, converte para a primeira feature
@@ -252,12 +252,14 @@ export default function NDVIPanel({ geometry, coordinates, propertyName, kmlLaye
         )}
 
         {/* Area Selection */}
-        {availableAreas.length > 1 && (
+        {availableAreas.length > 0 && (
           <div className="space-y-2">
-            <label className="text-xs font-medium text-gray-600">Selecione a Área para Análise</label>
-            <Select value={selectedArea} onValueChange={setSelectedArea}>
+            <label className="text-xs font-medium text-gray-600">
+              Selecione a Área para Análise {!selectedAreaId && <span className="text-red-500">*</span>}
+            </label>
+            <Select value={selectedAreaId} onValueChange={setSelectedAreaId}>
               <SelectTrigger className="h-8 text-xs">
-                <SelectValue />
+                <SelectValue placeholder={availableAreas.length === 0 ? 'Nenhuma área disponível' : 'Selecione uma área...'} />
               </SelectTrigger>
               <SelectContent>
                 {availableAreas.map(area => (
@@ -297,8 +299,9 @@ export default function NDVIPanel({ geometry, coordinates, propertyName, kmlLaye
           <div className="flex flex-col gap-1 justify-end">
             <Button
               onClick={analyze}
-              disabled={loading || !hasGeometry}
-              className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 gap-1.5"
+              disabled={loading || !selectedAreaId}
+              title={!selectedAreaId ? 'Selecione uma área para análise' : ''}
+              className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 gap-1.5"
             >
               {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Leaf className="w-3 h-3" />}
               {loading ? 'Analisando...' : 'Analisar'}

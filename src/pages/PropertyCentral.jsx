@@ -1,30 +1,16 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import PropertySelector from '@/components/properties/PropertySelector';
 import { 
   Building2, FileText, MapPin, AlertTriangle, FileCheck, 
-  Leaf, Map, Scale, TreePine, BarChart3, Plus, ChevronRight, MapPinIcon, ScrollText
+  Leaf, Map, Scale, TreePine, BarChart3, ChevronRight, ScrollText
 } from 'lucide-react';
-import PropertySelector from '@/components/properties/PropertySelector';
-import DocumentsHub from './DocumentsHub';
-import Licenses from './Licenses';
-import CARModule from './CARModule';
-import PropertyMapView from './PropertyMapView';
-import Processes from './Processes';
-import EnvironmentalAlerts from './EnvironmentalAlerts';
-import RegularityReport from './RegularityReport';
-import PRAD from './PRAD';
-import Georeferencing from './Georeferencing';
-import Contracts from './Contracts';
 
 export default function PropertyCentral() {
   const [selectedPropertyId, setSelectedPropertyId] = useState(null);
-  const [activeTab, setActiveTab] = useState('overview');
 
   // Fetch user data
   const { data: user } = useQuery({
@@ -49,65 +35,7 @@ export default function PropertyCentral() {
     }
   }, [properties, selectedPropertyId]);
 
-  const selectedProperty = useMemo(
-    () => properties.find(p => p.id === selectedPropertyId),
-    [properties, selectedPropertyId]
-  );
-
-  // Fetch contracts count
-  const { data: contracts = [] } = useQuery({
-    queryKey: ['contracts', selectedPropertyId],
-    queryFn: () => base44.entities.ClientContract.filter(
-      { property_id: selectedPropertyId },
-      '-created_date',
-      5
-    ),
-    enabled: !!selectedPropertyId,
-  });
-
-  // Fetch documents count
-  const { data: documents = [] } = useQuery({
-    queryKey: ['documents', selectedPropertyId],
-    queryFn: () => base44.entities.UnifiedDocument.filter(
-      { entity_id: selectedPropertyId },
-      '-created_date',
-      5
-    ),
-    enabled: !!selectedPropertyId,
-  });
-
-  // Fetch licenses count
-  const { data: licenses = [] } = useQuery({
-    queryKey: ['licenses', selectedPropertyId],
-    queryFn: () => base44.entities.License.filter(
-      { property_id: selectedPropertyId },
-      '-created_date',
-      5
-    ),
-    enabled: !!selectedPropertyId,
-  });
-
-  // Fetch alerts count
-  const { data: alerts = [] } = useQuery({
-    queryKey: ['alerts', selectedPropertyId],
-    queryFn: () => base44.entities.EnvironmentalAlert.filter(
-      { property_id: selectedPropertyId },
-      '-detection_date',
-      5
-    ),
-    enabled: !!selectedPropertyId,
-  });
-
-  // Fetch PRAD count
-  const { data: prads = [] } = useQuery({
-    queryKey: ['prads', selectedPropertyId],
-    queryFn: () => base44.entities.PRAD.filter(
-      { property_id: selectedPropertyId },
-      '-created_date',
-      5
-    ),
-    enabled: !!selectedPropertyId,
-  });
+  const selectedProperty = properties.find(p => p.id === selectedPropertyId);
 
   if (propertiesLoading || !selectedProperty) {
     return (
@@ -117,13 +45,27 @@ export default function PropertyCentral() {
     );
   }
 
+  const modules = [
+    { name: 'Minhas Propriedades', page: 'Properties', icon: Building2, color: 'bg-blue-50 text-blue-700 border-blue-200' },
+    { name: 'Meus Contratos', page: 'Contracts', icon: ScrollText, color: 'bg-purple-50 text-purple-700 border-purple-200' },
+    { name: 'Documentos', page: 'DocumentsHub', icon: FileText, color: 'bg-amber-50 text-amber-700 border-amber-200' },
+    { name: 'Licenças e Projetos', page: 'Licenses', icon: FileCheck, color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+    { name: 'Gestão do CAR', page: 'CARModule', icon: TreePine, color: 'bg-green-50 text-green-700 border-green-200' },
+    { name: 'Mapa Interativo', page: 'PropertyMapView', icon: Map, color: 'bg-cyan-50 text-cyan-700 border-cyan-200' },
+    { name: 'Processos', page: 'Processes', icon: Scale, color: 'bg-gray-50 text-gray-700 border-gray-200' },
+    { name: 'Alertas de Infrações', page: 'EnvironmentalAlerts', icon: AlertTriangle, color: 'bg-red-50 text-red-700 border-red-200' },
+    { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: BarChart3, color: 'bg-orange-50 text-orange-700 border-orange-200' },
+    { name: 'PRAD - Recuperação de Área', page: 'PRAD', icon: Leaf, color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin, color: 'bg-teal-50 text-teal-700 border-teal-200' },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-emerald-900">Central da Propriedade</h1>
-          <p className="text-sm text-emerald-600 mt-1">Gerencie todos os dados, documentos e análises de sua propriedade em um só lugar</p>
+          <p className="text-sm text-emerald-600 mt-1">Acesse e gerencie todos os módulos de sua propriedade</p>
         </div>
         <PropertySelector
           selectedPropertyId={selectedPropertyId}
@@ -132,230 +74,58 @@ export default function PropertyCentral() {
         />
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-        <StatCard
-          icon={FileText}
-          label="Documentos"
-          value={documents.length}
-          color="blue"
-          onClick={() => setActiveTab('documentos')}
-        />
-        <StatCard
-          icon={FileCheck}
-          label="Licenças"
-          value={licenses.length}
-          color="purple"
-          onClick={() => setActiveTab('licencas')}
-        />
-        <StatCard
-          icon={ScrollText}
-          label="Contratos"
-          value={contracts.length}
-          color="green"
-          onClick={() => setActiveTab('contratos')}
-        />
-        <StatCard
-          icon={AlertTriangle}
-          label="Alertas"
-          value={alerts.length}
-          color="orange"
-          onClick={() => setActiveTab('alertas')}
-        />
-        <StatCard
-          icon={Leaf}
-          label="PRAD"
-          value={prads.length}
-          color="emerald"
-          onClick={() => setActiveTab('prad')}
-        />
-      </div>
-
-      {/* Tabs Navigation */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="bg-white rounded-xl border border-emerald-100 shadow-sm overflow-x-auto">
-          <TabsList className="w-full justify-start bg-transparent border-b border-emerald-100 rounded-none h-auto p-0">
-            <TabTrigger value="overview" className="rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-medium data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-600">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Visão Geral
-            </TabTrigger>
-            <TabTrigger value="mapa" className="rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-medium data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-600">
-              <Map className="w-4 h-4 mr-2" />
-              Mapa
-            </TabTrigger>
-            <TabTrigger value="documentos" className="rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-medium data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-600">
-              <FileText className="w-4 h-4 mr-2" />
-              Documentos
-            </TabTrigger>
-            <TabTrigger value="licencas" className="rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-medium data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-600">
-              <FileCheck className="w-4 h-4 mr-2" />
-              Licenças
-            </TabTrigger>
-            <TabTrigger value="car" className="rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-medium data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-600">
-              <TreePine className="w-4 h-4 mr-2" />
-              CAR
-            </TabTrigger>
-            <TabTrigger value="contratos" className="rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-medium data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-600">
-              <FileText className="w-4 h-4 mr-2" />
-              Contratos
-            </TabTrigger>
-            <TabTrigger value="processos" className="rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-medium data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-600">
-              <Scale className="w-4 h-4 mr-2" />
-              Processos
-            </TabTrigger>
-            <TabTrigger value="alertas" className="rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-medium data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-600">
-              <AlertTriangle className="w-4 h-4 mr-2" />
-              Alertas
-            </TabTrigger>
-            <TabTrigger value="regularidade" className="rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-medium data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-600">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Regularidade
-            </TabTrigger>
-            <TabTrigger value="prad" className="rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-medium data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-600">
-              <Leaf className="w-4 h-4 mr-2" />
-              PRAD
-            </TabTrigger>
-            <TabTrigger value="geo" className="rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-medium data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-600">
-              <MapPinIcon className="w-4 h-4 mr-2" />
-              Geo
-            </TabTrigger>
-          </TabsList>
-        </div>
-
-        {/* Tab Contents */}
-        <TabsContent value="overview" className="mt-6 space-y-6">
-          <OverviewTab property={selectedProperty} contracts={contracts} documents={documents} licenses={licenses} alerts={alerts} />
-        </TabsContent>
-
-        <TabsContent value="mapa" className="mt-6">
-          <PropertyMapView propertyId={selectedPropertyId} />
-        </TabsContent>
-
-        <TabsContent value="documentos" className="mt-6">
-          <DocumentsHub propertyId={selectedPropertyId} />
-        </TabsContent>
-
-        <TabsContent value="licencas" className="mt-6">
-          <Licenses propertyId={selectedPropertyId} />
-        </TabsContent>
-
-        <TabsContent value="car" className="mt-6">
-          <CARModule propertyId={selectedPropertyId} />
-        </TabsContent>
-
-        <TabsContent value="contratos" className="mt-6">
-          <Contracts propertyId={selectedPropertyId} />
-        </TabsContent>
-
-        <TabsContent value="processos" className="mt-6">
-          <Processes propertyId={selectedPropertyId} />
-        </TabsContent>
-
-        <TabsContent value="alertas" className="mt-6">
-          <EnvironmentalAlerts propertyId={selectedPropertyId} />
-        </TabsContent>
-
-        <TabsContent value="regularidade" className="mt-6">
-          <RegularityReport propertyId={selectedPropertyId} />
-        </TabsContent>
-
-        <TabsContent value="prad" className="mt-6">
-          <PRAD propertyId={selectedPropertyId} />
-        </TabsContent>
-
-        <TabsContent value="geo" className="mt-6">
-          <Georeferencing propertyId={selectedPropertyId} />
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
-
-function StatCard({ icon: Icon, label, value, color, onClick }) {
-  const colorMap = {
-    blue: 'bg-blue-50 text-blue-700 border-blue-200',
-    purple: 'bg-purple-50 text-purple-700 border-purple-200',
-    green: 'bg-green-50 text-green-700 border-green-200',
-    orange: 'bg-orange-50 text-orange-700 border-orange-200',
-    emerald: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  };
-  const iconColorMap = {
-    blue: 'text-blue-600 bg-blue-100',
-    purple: 'text-purple-600 bg-purple-100',
-    green: 'text-green-600 bg-green-100',
-    orange: 'text-orange-600 bg-orange-100',
-    emerald: 'text-emerald-600 bg-emerald-100',
-  };
-
-  return (
-    <button
-      onClick={onClick}
-      className={`${colorMap[color]} p-4 rounded-xl border transition-all hover:shadow-md`}
-    >
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <div className={`${iconColorMap[color]} p-2.5 rounded-lg`}>
-            <Icon className="w-5 h-5" />
-          </div>
-          <div className="text-left">
-            <p className="text-xs font-medium opacity-75">{label}</p>
-            <p className="text-2xl font-bold">{value}</p>
-          </div>
-        </div>
-        <ChevronRight className="w-4 h-4 opacity-50" />
-      </div>
-    </button>
-  );
-}
-
-function OverviewTab({ property, contracts, documents, licenses, alerts }) {
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Property Info */}
-      <Card className="lg:col-span-2 p-6">
-        <h2 className="text-lg font-bold text-emerald-900 mb-4">Informações da Propriedade</h2>
-        <div className="space-y-3">
-          <div className="flex justify-between">
-            <span className="text-sm font-medium text-gray-600">Nome:</span>
-            <span className="text-sm font-semibold text-gray-900">{property.property_name}</span>
+      <div className="bg-white rounded-xl border border-emerald-100 shadow-sm p-6">
+        <h2 className="text-lg font-bold text-emerald-900 mb-4">Propriedade Selecionada</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <p className="text-xs font-medium text-gray-600">Nome</p>
+            <p className="text-sm font-semibold text-gray-900">{selectedProperty.property_name}</p>
           </div>
-          <div className="flex justify-between">
-            <span className="text-sm font-medium text-gray-600">Tipo:</span>
-            <Badge className="bg-emerald-100 text-emerald-700">{property.property_type === 'rural' ? 'Rural' : 'Urbano'}</Badge>
+          <div>
+            <p className="text-xs font-medium text-gray-600">Tipo</p>
+            <p className="text-sm font-semibold text-gray-900">{selectedProperty.property_type === 'rural' ? 'Rural' : 'Urbano'}</p>
           </div>
-          {property.city && (
-            <div className="flex justify-between">
-              <span className="text-sm font-medium text-gray-600">Localização:</span>
-              <span className="text-sm text-gray-900">{property.city}, {property.state}</span>
+          {selectedProperty.city && (
+            <div>
+              <p className="text-xs font-medium text-gray-600">Localização</p>
+              <p className="text-sm font-semibold text-gray-900">{selectedProperty.city}, {selectedProperty.state}</p>
             </div>
           )}
-          {property.total_hectares && (
-            <div className="flex justify-between">
-              <span className="text-sm font-medium text-gray-600">Área Total:</span>
-              <span className="text-sm font-semibold text-emerald-700">{property.total_hectares} ha</span>
-            </div>
-          )}
-          {property.coordinates && (
-            <div className="flex justify-between">
-              <span className="text-sm font-medium text-gray-600">Coordenadas:</span>
-              <span className="text-sm text-gray-600 font-mono">{property.coordinates}</span>
+          {selectedProperty.total_hectares && (
+            <div>
+              <p className="text-xs font-medium text-gray-600">Área Total</p>
+              <p className="text-sm font-semibold text-emerald-700">{selectedProperty.total_hectares} ha</p>
             </div>
           )}
         </div>
-      </Card>
+      </div>
 
-      {/* Recent Activity */}
-      <Card className="p-6">
-        <h2 className="text-lg font-bold text-emerald-900 mb-4">Atividade Recente</h2>
-        <div className="space-y-2">
-          <div className="text-xs">
-            <p className="text-gray-600">{documents.length} documentos</p>
-            <p className="text-gray-600">{licenses.length} licenças</p>
-            <p className="text-gray-600">{contracts.length} contratos</p>
-            <p className="text-gray-600">{alerts.length} alertas</p>
-          </div>
-        </div>
-      </Card>
+      {/* Modules Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {modules.map((module) => {
+          const Icon = module.icon;
+          return (
+            <Link
+              key={module.page}
+              to={createPageUrl(module.page)}
+              className={`${module.color} p-6 rounded-xl border transition-all hover:shadow-md group`}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-4 flex-1">
+                  <div className="p-3 bg-white/50 rounded-lg group-hover:bg-white transition-colors">
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">{module.name}</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+              </div>
+            </Link>
+          );
+        })}
+      </div>
     </div>
   );
 }

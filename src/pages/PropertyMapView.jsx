@@ -463,97 +463,29 @@ export default function PropertyMapView() {
         </CardContent>
       </Card>
 
-      {/* Map */}
-      <div className="relative rounded-2xl overflow-hidden border border-gray-200 shadow-lg" style={{ height: '560px' }}>
-        {selectedProperty ? (
-          <>
-            <MapContainer center={getCenter()} zoom={13} style={{ height: '100%', width: '100%' }} zoomControl>
-              {/* Base layer: Google Satellite or OpenStreetMap */}
-              {activeLayers.satellite ? (
-                <TileLayer
-                  url="https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
-                  attribution='&copy; <a href="https://maps.google.com">Google Earth</a>'
-                  maxZoom={20}
-                />
-              ) : (
-                <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                />
-              )}
-
-              {/* CAR */}
-              {activeLayers.car && carGeoJson && (
-                <GeoJSON key={`car-${selectedPropertyId}`} data={carGeoJson} style={LAYER_STYLES.car}
-                  onEachFeature={(_, layer) => {
-                    const cars = selectedProperty?.car_numbers?.length > 0 ? selectedProperty.car_numbers : selectedProperty?.car_number ? [selectedProperty.car_number] : [];
-                    layer.bindPopup(`<b>Limite CAR</b><br/>${cars.map(c => `CAR: ${c}`).join('<br/>') || 'N/D'}`);
-                  }} />
-              )}
-
-              {/* APP */}
-              {activeLayers.app && (() => { const gj = parseGeoJson(carLayers?.app_layer_url); return gj ? <GeoJSON key={`app-${selectedPropertyId}`} data={gj} style={LAYER_STYLES.app} onEachFeature={(_, l) => l.bindPopup('<b>APP</b>')} /> : null; })()}
-
-              {/* Reserva Legal */}
-              {activeLayers.legalReserve && (() => { const gj = parseGeoJson(carLayers?.legal_reserve_url); return gj ? <GeoJSON key={`rl-${selectedPropertyId}`} data={gj} style={LAYER_STYLES.legalReserve} onEachFeature={(_, l) => l.bindPopup('<b>Reserva Legal</b>')} /> : null; })()}
-
-              {/* Recuperação */}
-              {activeLayers.recovery && (() => { const gj = parseGeoJson(carLayers?.recovery_area_url); return gj ? <GeoJSON key={`rec-${selectedPropertyId}`} data={gj} style={LAYER_STYLES.recovery} onEachFeature={(_, l) => l.bindPopup('<b>Área em Recuperação</b>')} /> : null; })()}
-
-              {/* Consolidada */}
-              {activeLayers.consolidated && (() => { const gj = parseGeoJson(carLayers?.consolidated_area_url); return gj ? <GeoJSON key={`cons-${selectedPropertyId}`} data={gj} style={LAYER_STYLES.consolidated} onEachFeature={(_, l) => l.bindPopup('<b>Área Consolidada</b>')} /> : null; })()}
-
-              {/* KML layers uploaded by user */}
-              {kmlLayers.filter(l => l.visible).map(layer => (
-                <GeoJSON
-                  key={layer.id}
-                  data={layer.geojson}
-                  style={{ color: layer.color, weight: 2, fillOpacity: 0.18, fillColor: layer.color }}
-                  onEachFeature={(feature, l) => {
-                    const name = feature.properties?.name || layer.name;
-                    const desc = feature.properties?.description || '';
-                    l.bindPopup(`<b>${name}</b>${desc ? `<br/>${desc}` : ''}`);
-                  }}
-                />
-              ))}
-
-              {/* Center marker */}
-              {selectedProperty?.coordinates && (() => {
-                const [lat, lng] = selectedProperty.coordinates.split(',').map(Number);
-                if (!isNaN(lat) && !isNaN(lng)) return (
-                  <Marker position={[lat, lng]}>
-                    <Popup><b>{selectedProperty.property_name}</b><br />{selectedProperty.city}, {selectedProperty.state}</Popup>
-                  </Marker>
-                );
-              })()}
-
-              {/* NDVI tile overlay */}
-              {ndviTileUrl && ndviToken && (
-                <TileLayer
-                  url={`${ndviTileUrl.replace('{z}', '{z}').replace('{x}', '{x}').replace('{y}', '{y}')}`}
-                  attribution="Google Earth Engine"
-                  tms={false}
-                  opacity={0.75}
-                  eventHandlers={{}}
-                  headers={{ Authorization: `Bearer ${ndviToken}` }}
-                />
-              )}
-
-              {allGeoJsonLayers.length > 0 && <FitBoundsLayer geoJsonList={allGeoJsonLayers} />}
-            </MapContainer>
-
-            <LayerLegend activeLayers={activeLayers} kmlLayers={kmlLayers} />
-          </>
-        ) : (
-          <div className="h-full flex items-center justify-center bg-gray-50">
-            <div className="text-center text-gray-500">
-              <MapPin className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <p className="font-medium">Nenhuma propriedade selecionada</p>
-              <p className="text-sm">Selecione uma propriedade para visualizar o mapa</p>
-            </div>
-          </div>
-        )}
-      </div>
+      {/* Advanced Map */}
+      {selectedProperty ? (
+        <AdvancedPropertyMap
+          property={selectedProperty}
+          onSave={handleSaveDrawnArea}
+          LAYER_STYLES={LAYER_STYLES}
+          carGeoJson={carGeoJson}
+          carLayers={carLayers}
+          kmlLayers={kmlLayers}
+          activeLayers={activeLayers}
+          onLayerToggle={toggleLayer}
+          parseGeoJson={parseGeoJson}
+          onKmlImport={handleKmlUpload}
+        />
+      ) : (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <MapPin className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+            <p className="font-medium text-gray-900">Nenhuma propriedade selecionada</p>
+            <p className="text-sm text-gray-500">Selecione uma propriedade para visualizar o mapa</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Info Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

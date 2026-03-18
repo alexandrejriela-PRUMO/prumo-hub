@@ -462,9 +462,7 @@ export default function DocumentsHub() {
                                       {doc.module}
                                     </Badge>
                                   )}
-                                  <Badge variant="outline" className="text-xs">
-                                    {entityTypeLabels[doc.entity_type] || doc.entity_type}
-                                  </Badge>
+
                                   <Badge className="bg-blue-100 text-blue-800 text-xs">
                                     {doc.document_type}
                                   </Badge>

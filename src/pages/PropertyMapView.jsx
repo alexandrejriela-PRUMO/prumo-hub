@@ -570,6 +570,15 @@ export default function PropertyMapView() {
         </Card>
       </div>
 
+      {/* NDVI GEE Panel */}
+      {selectedProperty && (() => {
+        // Use first visible KML layer, or fallback to CAR boundaries
+        const kmlGeom = kmlLayers.find(l => l.visible && l.geojson)?.geojson;
+        const carGeom = carGeoJson;
+        const geometry = kmlGeom || carGeom;
+        return <NDVIPanel geometry={geometry} propertyName={selectedProperty.property_name} />;
+      })()}
+
       {/* Help */}
       <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-700">
         <Info className="w-4 h-4 mt-0.5 flex-shrink-0 text-blue-500" />

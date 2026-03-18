@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
   Building2, FileText, MapPin, AlertTriangle, FileCheck, 
-  Leaf, Map, Scale, TreePine, BarChart3, Plus, ChevronRight, MapPinIcon
+  Leaf, Map, Scale, TreePine, BarChart3, Plus, ChevronRight, MapPinIcon, ScrollText
 } from 'lucide-react';
 import PropertySelector from '@/components/properties/PropertySelector';
 import DocumentsHub from './DocumentsHub';

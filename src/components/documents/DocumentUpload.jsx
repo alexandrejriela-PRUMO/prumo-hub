@@ -14,7 +14,7 @@ export default function DocumentUpload({
   entityId, 
   onSuccess, 
   onCancel,
-  allowedTypes = DEFAULT_TYPES,
+  allowedTypes = DOCUMENT_TYPES,
   properties = []
 }) {
   const [uploading, setUploading] = useState(false);

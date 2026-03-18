@@ -91,6 +91,11 @@ const produtorNavItems = [
   { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
   { name: 'Central da Propriedade', page: 'PropertyCentral', icon: Building2 },
   { name: 'Minhas Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
+  { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
+  { name: 'Relatórios', page: 'Reports', icon: FileText },
+  { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
+  { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
+  { name: 'Minha Equipe', page: 'MyTeam', icon: Users, separator: true },
   { 
     name: 'Agricultura de Precisão', 
     icon: Sparkles,

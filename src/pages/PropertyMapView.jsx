@@ -169,6 +169,7 @@ export default function PropertyMapView() {
   });
   const [kmlLayers, setKmlLayers] = useState([]); // { id, name, geojson, color, visible }
   const fileInputRef = useRef(null);
+  const savingRef = useRef(false);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});

@@ -299,6 +299,15 @@ export default function AdvancedPropertyMap({
               key={area.id}
               data={geojson}
               style={{ color: area.color, weight: 2.5, fillOpacity: 0.2, fillColor: area.color }}
+              onEachFeature={(feature, layer) => {
+                layer.on('click', () => {
+                  if (!mapRef.current) return;
+                  const bounds = L.latLngBounds(
+                    area.coordinates.map(([lng, lat]) => [lat, lng])
+                  );
+                  mapRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+                });
+              }}
             />
           );
         })}

@@ -192,6 +192,13 @@ export default function PropertyMapView() {
     }
   }, [properties]);
 
+  // Carregar camadas KML salvas ao trocar propriedade
+  useEffect(() => {
+    if (!selectedProperty) return;
+    const saved = selectedProperty.kml_layers || [];
+    setKmlLayers(saved);
+  }, [selectedPropertyId]);
+
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
 
   const { data: carData } = useQuery({

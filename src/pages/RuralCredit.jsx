@@ -152,18 +152,28 @@ export default function RuralCreditPage() {
      if (saldo < 0) { toast.error('Saldo devedor não pode ser negativo'); return; }
 
      const clientProp = properties.find(p => p.id === form.property_id) || properties[0];
-     const payload = { 
-       ...form, 
+     const payload = {
+       instituicao: form.instituicao,
+       tipo_credito: form.tipo_credito,
+       programa: form.programa,
+       numero_contrato: form.numero_contrato,
+       data_contratacao: form.data_contratacao,
+       data_vencimento: form.data_vencimento,
        valor_contratado: valor,
-       saldo_devedor: saldo, 
-       taxa_juros: parseFloat(form.taxa_juros) || 0, 
-       prazo_total_meses: parseInt(form.prazo_total_meses) || 0, 
-       num_parcelas: parseInt(form.num_parcelas) || 0, 
+       saldo_devedor: saldo,
+       taxa_juros: parseFloat(form.taxa_juros) || 0,
+       prazo_total_meses: parseInt(form.prazo_total_meses) || 0,
+       num_parcelas: parseInt(form.num_parcelas) || 0,
        parcelas_pagas: Math.min(parseInt(form.parcelas_pagas) || 0, parseInt(form.num_parcelas) || 0),
+       garantia: form.garantia,
+       status: form.status,
+       notas: form.notas,
+       property_id: form.property_id || clientProp?.id || '',
        consultor_email: user?.email,
        client_email: clientProp?.owner_email || user?.email,
        client_name: clientProp?.client_name || clientProp?.property_name || form.client_name || 'Sem nome',
-       property_id: form.property_id || clientProp?.id || ''
+       documentos: form.documentos || [],
+       parcelas: form.parcelas || []
      };
      if (editing) updateM.mutate({ id: editing.id, data: payload });
      else createM.mutate(payload);

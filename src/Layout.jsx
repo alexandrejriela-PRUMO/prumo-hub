@@ -91,11 +91,6 @@ const produtorNavItems = [
   { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
   { name: 'Central da Propriedade', page: 'PropertyCentral', icon: Building2 },
   { name: 'Minhas Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
-  { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
-  { name: 'Relatórios', page: 'Reports', icon: FileText },
-  { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
-  { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
-  { name: 'Minha Equipe', page: 'MyTeam', icon: Users, separator: true },
   { 
     name: 'Agricultura de Precisão', 
     icon: Sparkles,
@@ -123,12 +118,11 @@ const produtorNavItems = [
       { name: 'Frustração de Safra', page: 'HarvestLoss', icon: Wheat },
     ]
   },
-  { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
   { name: 'Relatórios', page: 'Reports', icon: FileText },
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
-  { name: 'Minha Equipe', page: 'MyTeam', icon: Users },
-  { name: 'Modo Campo', page: 'CampMode', icon: Building2, separator: true },
+  { name: 'Minha Equipe', page: 'MyTeam', icon: Users, separator: true },
+  { name: 'Modo Campo', page: 'CampMode', icon: Building2 },
 ];
 
 // Equipe do consultor: igual ao consultor, sem "Minha Equipe"

@@ -19,7 +19,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { MapPin, BarChart3 } from 'lucide-react';
+import { MapPin, BarChart3, Briefcase, CheckCircle2, TrendingUp, Clock, Users, MessageSquare } from 'lucide-react';
 import { subDays, isAfter, isBefore } from 'date-fns';
 import { createPageUrl } from '@/utils';
 import { useNavigate } from 'react-router-dom';
@@ -297,6 +297,87 @@ export default function Home() {
 
       {/* Quick Actions */}
       <QuickActions userType={user?.user_type} />
+
+      {/* Consultoria e Requerimento - Para Produtores */}
+      {!isConsultor && user?.user_type === 'produtor' && (
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Consultoria Card */}
+          <div className="group relative bg-gradient-to-br from-emerald-50 via-white to-emerald-50/30 border-2 border-emerald-200 rounded-2xl p-6 sm:p-8 hover:shadow-2xl hover:border-emerald-400 transition-all duration-300 overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-200 to-emerald-100 rounded-full -mr-12 -mt-12 opacity-40 group-hover:opacity-60 transition-opacity" />
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
+                  <Briefcase className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl sm:text-2xl font-bold text-emerald-900">Consultoria Especializada</h3>
+                  <p className="text-emerald-600 text-xs font-semibold">Orientação de Especialistas</p>
+                </div>
+              </div>
+
+              <p className="text-gray-700 text-sm sm:text-base mb-6 leading-relaxed">
+                Acesse consultores ambientais certificados para orientação sobre regularização ambiental, licenciamento e sustentabilidade da sua propriedade.
+              </p>
+
+              <div className="space-y-3 mb-6">
+                {[
+                  { icon: CheckCircle2, text: 'Análise completa da propriedade' },
+                  { icon: TrendingUp, text: 'Otimização de processos' },
+                  { icon: Users, text: 'Consultores especializados' }
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <item.icon className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                    <span className="text-gray-700 text-sm">{item.text}</span>
+                  </div>
+                ))}
+              </div>
+
+              <Button onClick={() => navigate(createPageUrl('Requests'))} className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-semibold group/btn">
+                <MessageSquare className="w-4 h-4 mr-2 group-hover/btn:scale-110 transition-transform" />
+                Solicitar Consultoria
+              </Button>
+            </div>
+          </div>
+
+          {/* Requerimentos Card */}
+          <div className="group relative bg-gradient-to-br from-amber-50 via-white to-amber-50/30 border-2 border-amber-200 rounded-2xl p-6 sm:p-8 hover:shadow-2xl hover:border-amber-400 transition-all duration-300 overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-200 to-amber-100 rounded-full -mr-12 -mt-12 opacity-40 group-hover:opacity-60 transition-opacity" />
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg">
+                  <Clock className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl sm:text-2xl font-bold text-amber-900">Requerimentos Processados</h3>
+                  <p className="text-amber-600 text-xs font-semibold">Acompanhamento em Tempo Real</p>
+                </div>
+              </div>
+
+              <p className="text-gray-700 text-sm sm:text-base mb-6 leading-relaxed">
+                Monitore o status de todos os seus requerimentos ambientais, licenças e autorizações em um único lugar. Notificações automáticas de atualizações.
+              </p>
+
+              <div className="space-y-3 mb-6">
+                {[
+                  { icon: Clock, text: 'Acompanhamento 24/7' },
+                  { icon: TrendingUp, text: 'Status em tempo real' },
+                  { icon: CheckCircle2, text: 'Documentação organizada' }
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <item.icon className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                    <span className="text-gray-700 text-sm">{item.text}</span>
+                  </div>
+                ))}
+              </div>
+
+              <Button onClick={() => navigate(createPageUrl('Processes'))} className="w-full bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-semibold group/btn">
+                <TrendingUp className="w-4 h-4 mr-2 group-hover/btn:scale-110 transition-transform" />
+                Ver Requerimentos
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabs for Overview and Analytics */}
       <Tabs defaultValue="overview" className="space-y-6 mt-8">

@@ -229,6 +229,25 @@ export default function NDVIPanel({ geometry, coordinates, propertyName, kmlLaye
           </div>
         )}
 
+        {/* Area Selection */}
+        {availableAreas.length > 1 && (
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-gray-600">Selecione a Área para Análise</label>
+            <Select value={selectedArea} onValueChange={setSelectedArea}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availableAreas.map(area => (
+                  <SelectItem key={area.id} value={area.id}>
+                    {area.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         {/* Controls */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <div className="flex flex-col gap-1">

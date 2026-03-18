@@ -278,10 +278,18 @@ Deno.serve(async (req) => {
         console.log('[GEE] Geometria recebida (raw):', JSON.stringify(geometry));
       } else if (center_coordinates) {
         console.log('[GEE] Criando geometria a partir de coordenadas centrais:', center_coordinates);
-        const coords = String(center_coordinates).split(',').map(Number);
-        const lng = coords[0]; // Primeira coordenada é longitude
-        const lat = coords[1]; // Segunda coordenada é latitude
-        if (isNaN(lat) || isNaN(lng)) throw new Error('Coordenadas centrais inválidas (não são números)');
+        const coordStr = String(center_coordinates).trim();
+        const coordArray = coordStr.split(',').map(c => Number(c.trim()));
+
+        if (coordArray.length < 2 || coordArray.some(isNaN)) {
+          throw new Error(`Coordenadas centrais inválidas: "${coordStr}" não contém 2 números válidos`);
+        }
+
+        const lng = coordArray[0]; // Primeira coordenada é longitude
+        const lat = coordArray[1]; // Segunda coordenada é latitude
+
+        console.log('[GEE] Coordenadas centrais processadas:', { lng, lat });
+
         const d = 0.045;
         geometry = { type: 'Polygon', coordinates: [[[lng-d,lat-d],[lng+d,lat-d],[lng+d,lat+d],[lng-d,lat+d],[lng-d,lat-d]]] };
         console.log('[GEE] Geometria criada com sucesso. Center: [' + lng + ', ' + lat + ']');

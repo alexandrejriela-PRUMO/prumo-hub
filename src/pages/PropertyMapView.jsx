@@ -554,10 +554,10 @@ export default function PropertyMapView() {
 
       {/* NDVI GEE Panel */}
       {selectedProperty && (() => {
-        // Use first visible KML layer, or fallback to CAR boundaries
+        // Prioridade: geometria desenhada > first visible KML layer > CAR boundaries
         const kmlGeom = kmlLayers.find(l => l.visible && l.geojson)?.geojson;
         const carGeom = carGeoJson;
-        const geometry = kmlGeom || carGeom;
+        const geometry = drawnGeometry || kmlGeom || carGeom;
         return <NDVIPanel geometry={geometry} coordinates={selectedProperty.coordinates} propertyName={selectedProperty.property_name} />;
       })()}
 

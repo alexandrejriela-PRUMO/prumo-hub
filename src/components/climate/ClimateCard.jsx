@@ -3,11 +3,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Cloud, Droplets, Wind, Sun, Eye, Gauge } from 'lucide-react';
 
 export default function ClimateCard({ location }) {
+  if (!location) return null;
+
+  const temp = location.temperature_current ?? '--';
+  const humidity = location.humidity ?? '--';
+  const precipitation = location.precipitation ?? '--';
+  const windSpeed = location.wind_speed ?? '--';
+  const windDir = location.wind_direction || '--';
+  const uvIndex = location.uv_index ?? '--';
+  const soilMoisture = location.soil_moisture ?? '--';
+  const lastUpdate = location.last_update ? new Date(location.last_update).toLocaleString('pt-BR') : 'N/A';
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">{location.location_name}</CardTitle>
-        <p className="text-xs text-gray-500 mt-1">Atualizado: {new Date(location.last_update).toLocaleString('pt-BR')}</p>
+        <CardTitle className="text-xl">{location.location_name || 'Localização'}</CardTitle>
+        <p className="text-xs text-gray-500 mt-1">Atualizado: {lastUpdate}</p>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -17,7 +28,7 @@ export default function ClimateCard({ location }) {
               <Sun className="w-4 h-4 text-orange-600" />
               <p className="text-xs text-orange-600 font-medium">Temperatura</p>
             </div>
-            <p className="text-3xl font-bold text-orange-700">{location.temperature_current}°C</p>
+            <p className="text-3xl font-bold text-orange-700">{temp}°C</p>
           </div>
 
           {/* Umidade */}
@@ -26,7 +37,7 @@ export default function ClimateCard({ location }) {
               <Droplets className="w-4 h-4 text-blue-600" />
               <p className="text-xs text-blue-600 font-medium">Umidade</p>
             </div>
-            <p className="text-3xl font-bold text-blue-700">{location.humidity}%</p>
+            <p className="text-3xl font-bold text-blue-700">{humidity}%</p>
           </div>
 
           {/* Precipitação */}
@@ -35,7 +46,7 @@ export default function ClimateCard({ location }) {
               <Cloud className="w-4 h-4 text-cyan-600" />
               <p className="text-xs text-cyan-600 font-medium">Precipitação</p>
             </div>
-            <p className="text-3xl font-bold text-cyan-700">{location.precipitation}mm</p>
+            <p className="text-3xl font-bold text-cyan-700">{precipitation}mm</p>
           </div>
 
           {/* Vento */}
@@ -44,8 +55,8 @@ export default function ClimateCard({ location }) {
               <Wind className="w-4 h-4 text-purple-600" />
               <p className="text-xs text-purple-600 font-medium">Vento</p>
             </div>
-            <p className="text-2xl font-bold text-purple-700">{location.wind_speed}km/h</p>
-            <p className="text-xs text-purple-600 mt-1">{location.wind_direction}</p>
+            <p className="text-2xl font-bold text-purple-700">{windSpeed}km/h</p>
+            <p className="text-xs text-purple-600 mt-1">{windDir}</p>
           </div>
 
           {/* UV */}
@@ -54,7 +65,7 @@ export default function ClimateCard({ location }) {
               <Eye className="w-4 h-4 text-red-600" />
               <p className="text-xs text-red-600 font-medium">Índice UV</p>
             </div>
-            <p className="text-3xl font-bold text-red-700">{location.uv_index}</p>
+            <p className="text-3xl font-bold text-red-700">{uvIndex}</p>
           </div>
 
           {/* Umidade do Solo */}
@@ -63,7 +74,7 @@ export default function ClimateCard({ location }) {
               <Gauge className="w-4 h-4 text-green-600" />
               <p className="text-xs text-green-600 font-medium">Umidade Solo</p>
             </div>
-            <p className="text-3xl font-bold text-green-700">{location.soil_moisture}%</p>
+            <p className="text-3xl font-bold text-green-700">{soilMoisture}%</p>
           </div>
         </div>
       </CardContent>

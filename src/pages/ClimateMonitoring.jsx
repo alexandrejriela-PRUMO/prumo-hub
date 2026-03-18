@@ -55,58 +55,84 @@ export default function ClimateMonitoring() {
 
       const [lat, lng] = selectedProperty.coordinates.split(',').map(c => c.trim());
       
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Forneça dados climáticos atuais e previsão de 7 dias para as coordenadas ${lat},${lng}. 
-        Inclua: temperatura atual, umidade, precipitação recente, velocidade do vento, direção do vento, índice UV, 
-        umidade do solo, e previsão detalhada para cada dia dos próximos 7 dias.`,
-        add_context_from_internet: true,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            temperature_current: { type: "number" },
-            humidity: { type: "number" },
-            precipitation: { type: "number" },
-            wind_speed: { type: "number" },
-            wind_direction: { type: "string" },
-            uv_index: { type: "number" },
-            soil_moisture: { type: "number" },
-            forecast_7days: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  date: { type: "string" },
-                  temp_max: { type: "number" },
-                  temp_min: { type: "number" },
-                  precipitation_chance: { type: "number" },
-                  description: { type: "string" }
+      try {
+        const response = await base44.integrations.Core.InvokeLLM({
+          prompt: `Forneça dados climáticos atuais e previsão de 7 dias para as coordenadas ${lat},${lng}. 
+          Inclua: temperatura atual (número), umidade (0-100%), precipitação (mm), velocidade do vento (km/h), 
+          direção do vento, índice UV (0-11), umidade do solo (0-100%), e previsão detalhada para cada dia dos próximos 7 dias.`,
+          add_context_from_internet: true,
+          response_json_schema: {
+            type: "object",
+            properties: {
+              temperature_current: { type: "number" },
+              humidity: { type: "number" },
+              precipitation: { type: "number" },
+              wind_speed: { type: "number" },
+              wind_direction: { type: "string" },
+              uv_index: { type: "number" },
+              soil_moisture: { type: "number" },
+              forecast_7days: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    date: { type: "string" },
+                    temp_max: { type: "number" },
+                    temp_min: { type: "number" },
+                    precipitation_chance: { type: "number" },
+                    description: { type: "string" }
+                  }
                 }
               }
             }
           }
+        });
+
+        const cleanedResponse = {
+          temperature_current: response.temperature_current || 0,
+          humidity: Math.min(100, Math.max(0, response.humidity || 0)),
+          precipitation: response.precipitation || 0,
+          wind_speed: response.wind_speed || 0,
+          wind_direction: response.wind_direction || 'N',
+          uv_index: response.uv_index || 0,
+          soil_moisture: Math.min(100, Math.max(0, response.soil_moisture || 0)),
+          forecast_7days: (response.forecast_7days || []).map(day => ({
+            date: day.date || new Date().toISOString().split('T')[0],
+            temp_max: day.temp_max || 25,
+            temp_min: day.temp_min || 15,
+            precipitation_chance: Math.min(100, Math.max(0, day.precipitation_chance || 0)),
+            description: day.description || 'Sem informação'
+          }))
+        };
+
+        const mainLocation = climateData.find(c => c.location_name === `Principal - ${selectedProperty.property_name}`);
+        
+        if (mainLocation) {
+          await base44.entities.ClimateMonitoring.update(mainLocation.id, {
+            ...cleanedResponse,
+            last_update: new Date().toISOString()
+          });
+        } else {
+          await base44.entities.ClimateMonitoring.create({
+            property_id: selectedProperty.id,
+            location_name: `Principal - ${selectedProperty.property_name}`,
+            coordinates: selectedProperty.coordinates,
+            ...cleanedResponse,
+            last_update: new Date().toISOString(),
+            data_source: 'API Pública',
+            alerts: []
+          });
         }
-      });
 
-      const mainLocation = climateData.find(c => c.location_name === `Principal - ${selectedProperty.property_name}`);
-      
-      if (mainLocation) {
-        await base44.entities.ClimateMonitoring.update(mainLocation.id, {
-          ...response,
-          last_update: new Date().toISOString()
-        });
-      } else {
-        await base44.entities.ClimateMonitoring.create({
-          property_id: selectedProperty.id,
-          location_name: `Principal - ${selectedProperty.property_name}`,
-          coordinates: selectedProperty.coordinates,
-          ...response,
-          last_update: new Date().toISOString(),
-          data_source: 'API Pública'
-        });
+        queryClient.invalidateQueries({ queryKey: ['climateMonitoring'] });
+        toast.success('Dados climáticos atualizados com sucesso!');
+      } catch (error) {
+        toast.error('Erro ao buscar dados climáticos. Tente novamente.');
+        console.error(error);
       }
-
-      queryClient.invalidateQueries({ queryKey: ['climateMonitoring'] });
-      toast.success('Dados climáticos atualizados com sucesso!');
+    },
+    onError: () => {
+      toast.error('Erro ao atualizar dados climáticos');
     }
   });
 

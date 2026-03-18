@@ -55,10 +55,18 @@ export default function MapDrawingToolbar({
       </div>
 
       {measurements && (
-        <div className="text-xs text-gray-600 border-t border-gray-200 pt-2 mt-2 space-y-1">
-          {measurements.area && <p>Área: <strong>{measurements.area}</strong></p>}
-          {measurements.perimeter && <p>Perímetro: <strong>{measurements.perimeter}</strong></p>}
-          {measurements.vertices && <p>Vértices: <strong>{measurements.vertices}</strong></p>}
+        <div className="border-t border-gray-200 pt-2 mt-2 space-y-1.5">
+          <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-2">
+            {measurements.area && (
+              <div className="text-xs text-emerald-700">
+                <p className="font-semibold">📐 Área Total</p>
+                <p className="font-bold text-sm text-emerald-900">{measurements.area}</p>
+              </div>
+            )}
+            {measurements.vertices && (
+              <p className="text-xs text-gray-600 mt-1">📍 {measurements.vertices} vértices</p>
+            )}
+          </div>
         </div>
       )}
 

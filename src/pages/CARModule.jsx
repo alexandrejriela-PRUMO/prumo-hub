@@ -131,7 +131,9 @@ export default function CARModule() {
           href="javascript:history.back()"
           className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-emerald-700 hover:bg-emerald-50 transition-colors text-xs font-medium"
         >
-          <ChevronLeft className="w-3 h-3" />
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
           Voltar
         </a>
       )}

@@ -564,7 +564,7 @@ export default function PropertyMapView() {
       {selectedProperty && (() => {
         const kmlGeom = kmlLayers.find(l => l.visible && l.geojson)?.geojson;
         const carGeom = carGeoJson;
-        const geometry = drawnGeometry || kmlGeom || carGeom;
+        const geometry = kmlGeom || carGeom;
         const carData = {
           car_polygon: carGeoJson,
           app: null,
@@ -576,6 +576,7 @@ export default function PropertyMapView() {
           propertyName={selectedProperty.property_name}
           kmlLayers={kmlLayers}
           carData={carData}
+          drawnGeometry={drawnGeometry}
         />;
       })()}
 

@@ -98,6 +98,7 @@ export default function DocumentUpload({
       const documentData = {
         entity_type: selectedPropertyId ? 'Property' : entityType,
         entity_id: selectedPropertyId || entityId,
+        module: metadata.module || undefined,
         document_type: metadata.document_type === 'Outro' && metadata.other_description
           ? `Outro: ${metadata.other_description}`
           : metadata.document_type,

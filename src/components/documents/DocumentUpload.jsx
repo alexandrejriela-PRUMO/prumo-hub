@@ -175,6 +175,23 @@ export default function DocumentUpload({
               </div>
             )}
 
+            {/* Module */}
+            <div>
+              <Label>Módulo *</Label>
+              <select
+                required
+                value={metadata.module}
+                onChange={(e) => setMetadata({ ...metadata, module: e.target.value })}
+                disabled={uploading}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 mt-1"
+              >
+                <option value="">Selecione o módulo</option>
+                {MODULES.map(m => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+
             {/* Document Type */}
             <div>
               <Label>Tipo de Documento *</Label>

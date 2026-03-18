@@ -147,6 +147,7 @@ export default function AdvancedPropertyMap({
       toast.error('Nenhuma área desenhada para salvar');
       return;
     }
+    console.log('[AdvancedPropertyMap] Geometria sendo salva:', JSON.stringify(drawnGeometry));
     onSave(drawnGeometry);
     setDrawnGeometry(null);
     setIsDrawing(false);

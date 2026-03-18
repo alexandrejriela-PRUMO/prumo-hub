@@ -149,52 +149,61 @@ export default function HarvestLossPage() {
 
   const removeItem = (target, idx) => setForm(p => ({ ...p, [target]: p[target].filter((_, i) => i !== idx) }));
 
-  const handleSubmit = () => {
-     console.log('Submit form:', form);
-     if (!form.cultura || !form.cultura.trim()) { toast.error('Preencha a cultura'); return; }
-     if (!form.tipo_evento) { toast.error('Selecione o tipo de evento'); return; }
-     if (!form.data_evento) { toast.error('Preencha a data do evento'); return; }
+  const handleSubmit = async (e) => {
+     if (e) e.preventDefault();
+     try {
+       if (!form.cultura?.trim()) { toast.error('Preencha a cultura afetada'); return; }
+       if (!form.tipo_evento) { toast.error('Selecione o tipo de evento'); return; }
+       if (!form.data_evento) { toast.error('Preencha a data do evento'); return; }
 
-     const areaPlantada = parseFloat(form.area_plantada) || 0;
-     const areaAfetada = parseFloat(form.area_afetada) || 0;
-     const prodEsperada = parseFloat(form.produtividade_esperada) || 0;
-     const prodObtida = parseFloat(form.produtividade_obtida) || 0;
-     const perda = parseFloat(form.percentual_perda) || 0;
+       const areaPlantada = parseFloat(form.area_plantada) || 0;
+       const areaAfetada = parseFloat(form.area_afetada) || 0;
+       const prodEsperada = parseFloat(form.produtividade_esperada) || 0;
+       const prodObtida = parseFloat(form.produtividade_obtida) || 0;
+       const perda = parseFloat(form.percentual_perda) || 0;
 
-     if (areaAfetada > 0 && areaPlantada > 0 && areaAfetada > areaPlantada) {
-       toast.error('Área afetada não pode exceder área plantada');
-       return;
+       if (areaAfetada > 0 && areaPlantada > 0 && areaAfetada > areaPlantada) {
+         toast.error('Área afetada não pode exceder área plantada');
+         return;
+       }
+       if (perda < 0 || perda > 100) {
+         toast.error('Percentual de perda deve estar entre 0 e 100%');
+         return;
+       }
+
+       const clientProp = properties.find(p => p.id === form.property_id) || (properties.length > 0 ? properties[0] : null);
+       const payload = {
+         cultura: form.cultura.trim(),
+         area_plantada: areaPlantada,
+         area_afetada: areaAfetada,
+         data_evento: form.data_evento,
+         tipo_evento: form.tipo_evento,
+         produtividade_esperada: prodEsperada,
+         produtividade_obtida: prodObtida,
+         unidade_produtividade: form.unidade_produtividade || 'sc/ha',
+         percentual_perda: perda,
+         status: form.status || 'Registrado',
+         seguro_rural: form.seguro_rural === true,
+         seguradora: form.seguro_rural ? form.seguradora || '' : '',
+         numero_apolice: form.seguro_rural ? form.numero_apolice || '' : '',
+         property_id: form.property_id || clientProp?.id || '',
+         notas: form.notas || '',
+         consultor_email: user?.email || '',
+         client_email: clientProp?.owner_email || user?.email || '',
+         client_name: clientProp?.client_name || clientProp?.property_name || form.client_name || 'Sem especificar',
+         evidencias: form.evidencias && Array.isArray(form.evidencias) ? form.evidencias : [],
+         documentos: form.documentos && Array.isArray(form.documentos) ? form.documentos : []
+       };
+
+       if (editing?.id) {
+         await updateM.mutateAsync({ id: editing.id, data: payload });
+       } else {
+         await createM.mutateAsync(payload);
+       }
+     } catch (err) {
+       console.error('Erro em handleSubmit:', err);
+       toast.error(err?.message || 'Erro ao salvar');
      }
-     if (perda < 0 || perda > 100) {
-       toast.error('Percentual de perda deve estar entre 0 e 100%');
-       return;
-     }
-
-     const clientProp = properties.find(p => p.id === form.property_id);
-     const payload = {
-       cultura: form.cultura,
-       area_plantada: areaPlantada,
-       area_afetada: areaAfetada,
-       data_evento: form.data_evento,
-       tipo_evento: form.tipo_evento,
-       produtividade_esperada: prodEsperada,
-       produtividade_obtida: prodObtida,
-       unidade_produtividade: form.unidade_produtividade,
-       percentual_perda: perda,
-       status: form.status,
-       seguro_rural: form.seguro_rural,
-       seguradora: form.seguradora,
-       numero_apolice: form.numero_apolice,
-       property_id: form.property_id || clientProp?.id || '',
-       notas: form.notas,
-       consultor_email: user?.email,
-       client_email: clientProp?.owner_email || user?.email,
-       client_name: clientProp?.client_name || form.client_name || 'Sem nome',
-       evidencias: form.evidencias || [],
-       documentos: form.documentos || []
-     };
-     if (editing) updateM.mutate({ id: editing.id, data: payload });
-     else createM.mutate(payload);
    };
 
   const totalArea = records.reduce((s, r) => s + (r.area_afetada || 0), 0);

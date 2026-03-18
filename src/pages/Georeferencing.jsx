@@ -28,7 +28,8 @@ import {
   TrendingUp,
   Shield,
   Info,
-  Leaf
+  Leaf,
+  ChevronLeft
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -168,6 +169,17 @@ export default function Georeferencing() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      {/* Back Link */}
+      {!isConsultor && (
+        <a
+          href="javascript:history.back()"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-emerald-700 hover:bg-emerald-50 transition-colors text-xs font-medium"
+        >
+          <ChevronLeft className="w-3 h-3" />
+          Voltar
+        </a>
+      )}
+
       {/* Consultor Property Selector */}
       {isConsultor && (
         <ConsultorPropertySelector

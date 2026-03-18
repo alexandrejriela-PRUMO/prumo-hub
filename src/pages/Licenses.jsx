@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '../utils';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -345,6 +347,15 @@ export default function Licenses() {
               </Select>
               </div>
               )}
+
+      {/* Back Link */}
+      <Link
+        to={createPageUrl('PropertyCentral')}
+        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-emerald-700 hover:bg-emerald-50 transition-colors text-xs font-medium"
+      >
+        <ChevronLeft className="w-3 h-3" />
+        Voltar
+      </Link>
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

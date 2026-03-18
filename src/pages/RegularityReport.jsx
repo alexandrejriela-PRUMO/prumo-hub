@@ -18,7 +18,8 @@ import {
   Download,
   Calendar,
   User,
-  MapPinned
+  MapPinned,
+  ChevronLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import moment from 'moment';
@@ -444,6 +445,17 @@ export default function RegularityReport() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
+      {/* Back Link */}
+      {!isConsultor && (
+        <a
+          href="javascript:history.back()"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-emerald-700 hover:bg-emerald-50 transition-colors text-xs font-medium"
+        >
+          <ChevronLeft className="w-3 h-3" />
+          Voltar
+        </a>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="min-w-0">

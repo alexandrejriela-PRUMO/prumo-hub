@@ -101,6 +101,7 @@ export default function AdvancedPropertyMap({
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawnGeometry, setDrawnGeometry] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const featureGroupRef = useRef(null);
   const mapRef = useRef(null);
 

@@ -166,17 +166,25 @@ Deno.serve(async (req) => {
     }
 
     let geometry;
-    if (boundaries_geojson) {
-      const gj = typeof boundaries_geojson === 'string' ? JSON.parse(boundaries_geojson) : boundaries_geojson;
-      geometry = gj.type === 'FeatureCollection' ? gj.features[0]?.geometry :
-                 gj.type === 'Feature' ? gj.geometry : gj;
-    } else if (center_coordinates) {
-      const [lat, lng] = String(center_coordinates).split(',').map(Number);
-      const d = 0.045;
-      geometry = { type: 'Polygon', coordinates: [[[lng-d,lat-d],[lng+d,lat-d],[lng+d,lat+d],[lng-d,lat+d],[lng-d,lat-d]]] };
-    } else {
-      return Response.json({ error: 'Geometria não fornecida' }, { status: 400 });
-    }
+     if (boundaries_geojson) {
+       const gj = typeof boundaries_geojson === 'string' ? JSON.parse(boundaries_geojson) : boundaries_geojson;
+       geometry = gj.type === 'FeatureCollection' ? gj.features[0]?.geometry :
+                  gj.type === 'Feature' ? gj.geometry : gj;
+       console.log('[GEE] Geometria recebida (raw):', JSON.stringify(geometry));
+     } else if (center_coordinates) {
+       const [lat, lng] = String(center_coordinates).split(',').map(Number);
+       const d = 0.045;
+       geometry = { type: 'Polygon', coordinates: [[[lng-d,lat-d],[lng+d,lat-d],[lng+d,lat+d],[lng-d,lat+d],[lng-d,lat-d]]] };
+       console.log('[GEE] Geometria criada a partir de coordenadas centrais:', JSON.stringify(geometry));
+     } else {
+       return Response.json({ error: 'Geometria não fornecida' }, { status: 400 });
+     }
+
+     // Validação pré-GEE
+     if (!geometry || !geometry.type || !geometry.coordinates) {
+       console.error('[GEE] Geometria inválida:', JSON.stringify(geometry));
+       return Response.json({ error: 'Geometria inválida (ausência de type ou coordinates)' }, { status: 400 });
+     }
 
     let projectId = serviceEmail?.match(/@([^.]+)\.iam\.gserviceaccount\.com/)?.[1];
     if (!projectId) projectId = Deno.env.get('GEE_PROJECT_ID') || null;

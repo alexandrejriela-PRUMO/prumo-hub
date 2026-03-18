@@ -427,7 +427,7 @@ export default function RuralCreditPage() {
 
           <div className="flex justify-end gap-3 pt-2 border-t border-gray-100 mt-4">
             <Button variant="outline" onClick={closeForm}>Cancelar</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={handleSubmit} disabled={createM.isPending || updateM.isPending}>
+            <Button type="button" className="bg-emerald-600 hover:bg-emerald-700" onClick={e => { e.preventDefault(); handleSubmit(); }} disabled={createM.isPending || updateM.isPending}>
               {createM.isPending || updateM.isPending ? 'Salvando...' : 'Salvar'}
             </Button>
           </div>

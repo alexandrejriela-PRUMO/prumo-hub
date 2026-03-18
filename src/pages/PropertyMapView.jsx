@@ -501,11 +501,12 @@ export default function PropertyMapView() {
       {selectedProperty ? (
         <AdvancedPropertyMap
           property={selectedProperty}
-          onSave={handleSaveDrawnArea}
+          onSave={handleSaveArea}
           LAYER_STYLES={LAYER_STYLES}
           carGeoJson={carGeoJson}
           carLayers={carLayers}
           kmlLayers={kmlLayers}
+          propertyAreas={propertyAreas}
           activeLayers={activeLayers}
           onLayerToggle={toggleLayer}
           parseGeoJson={parseGeoJson}
@@ -574,7 +575,7 @@ export default function PropertyMapView() {
           propertyName={selectedProperty.property_name}
           kmlLayers={kmlLayers}
           carData={carData}
-          drawnGeometry={drawnGeometry}
+          propertyAreas={propertyAreas}
         />;
       })()}
 

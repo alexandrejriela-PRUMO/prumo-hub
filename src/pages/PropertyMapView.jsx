@@ -208,9 +208,27 @@ export default function PropertyMapView() {
     select: data => data[0],
   });
 
+  const saveKmlLayers = async (layers) => {
+    if (!selectedPropertyId || savingRef.current) return;
+    savingRef.current = true;
+    try {
+      await base44.entities.Property.update(selectedPropertyId, { kml_layers: layers });
+    } finally {
+      savingRef.current = false;
+    }
+  };
+
   const toggleLayer = (key) => setActiveLayers(prev => ({ ...prev, [key]: !prev[key] }));
-  const toggleKmlLayer = (id) => setKmlLayers(prev => prev.map(l => l.id === id ? { ...l, visible: !l.visible } : l));
-  const removeKmlLayer = (id) => setKmlLayers(prev => prev.filter(l => l.id !== id));
+  const toggleKmlLayer = (id) => {
+    const updated = kmlLayers.map(l => l.id === id ? { ...l, visible: !l.visible } : l);
+    setKmlLayers(updated);
+    saveKmlLayers(updated);
+  };
+  const removeKmlLayer = (id) => {
+    const updated = kmlLayers.filter(l => l.id !== id);
+    setKmlLayers(updated);
+    saveKmlLayers(updated);
+  };
 
   const parseGeoJson = (str) => {
     if (!str) return null;

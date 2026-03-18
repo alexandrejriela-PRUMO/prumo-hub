@@ -505,6 +505,18 @@ export default function PropertyMapView() {
                 );
               })()}
 
+              {/* NDVI tile overlay */}
+              {ndviTileUrl && ndviToken && (
+                <TileLayer
+                  url={`${ndviTileUrl.replace('{z}', '{z}').replace('{x}', '{x}').replace('{y}', '{y}')}`}
+                  attribution="Google Earth Engine"
+                  tms={false}
+                  opacity={0.75}
+                  eventHandlers={{}}
+                  headers={{ Authorization: `Bearer ${ndviToken}` }}
+                />
+              )}
+
               {allGeoJsonLayers.length > 0 && <FitBoundsLayer geoJsonList={allGeoJsonLayers} />}
             </MapContainer>
 

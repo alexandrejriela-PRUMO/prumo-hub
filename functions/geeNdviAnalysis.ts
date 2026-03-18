@@ -101,8 +101,9 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Geometria não fornecida' }, { status: 400 });
     }
 
-    const projectId = serviceEmail?.match(/@([^.]+)\.iam\.gserviceaccount\.com/)?.[1];
-    if (!projectId) throw new Error('Não foi possível extrair o Project ID do e-mail da conta de serviço.');
+    let projectId = serviceEmail?.match(/@([^.]+)\.iam\.gserviceaccount\.com/)?.[1];
+    if (!projectId) projectId = Deno.env.get('GEE_PROJECT_ID') || null;
+    if (!projectId) throw new Error('Não foi possível extrair o Project ID do e-mail da conta de serviço. Configure GEE_PROJECT_ID.');
 
     const token = await getGEEToken(serviceEmail, privateKey);
 

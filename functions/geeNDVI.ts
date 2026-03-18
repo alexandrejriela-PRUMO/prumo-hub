@@ -34,7 +34,7 @@ function buildExpr(geometry, startDate, endDate) {
     values: {
       '0': { functionInvocationValue: { functionName: 'ImageCollection.load', arguments: { id: { constantValue: 'MODIS/061/MOD13Q1' } } } },
       '1': { functionInvocationValue: { functionName: 'Collection.filterBounds', arguments: { collection: { valueReference: '0' }, geometry: { constantValue: geometry } } } },
-      '2': { functionInvocationValue: { functionName: 'Collection.filterDate', arguments: { collection: { valueReference: '1' }, start_time: { constantValue: startDate }, end_time: { constantValue: endDate } } } },
+      '2': { functionInvocationValue: { functionName: 'ImageCollection.filterDate', arguments: { collection: { valueReference: '1' }, start_time: { constantValue: startDate }, end_time: { constantValue: endDate } } } },
       '3': { functionInvocationValue: { functionName: 'ImageCollection.reduce', arguments: { collection: { valueReference: '2' }, reducer: { functionInvocationValue: { functionName: 'Reducer.mean', arguments: {} } } } } },
       '4': { functionInvocationValue: { functionName: 'Image.reduceRegion', arguments: {
         image: { valueReference: '3' },

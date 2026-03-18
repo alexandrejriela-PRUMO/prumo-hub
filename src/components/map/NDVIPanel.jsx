@@ -72,8 +72,18 @@ export default function NDVIPanel({ geometry, coordinates, propertyName }) {
     setError(null);
     try {
       const payload = {};
-      if (geometry) payload.boundaries_geojson = geometry;
-      else if (coordinates) payload.center_coordinates = coordinates;
+      if (geometry) {
+        // Se for uma Feature, extrai a Geometry; se for FeatureCollection, converte para a primeira feature
+        let geom = geometry;
+        if (geometry.type === 'Feature') {
+          geom = geometry.geometry;
+        } else if (geometry.type === 'FeatureCollection' && geometry.features?.length > 0) {
+          geom = geometry.features[0].geometry;
+        }
+        payload.boundaries_geojson = geom;
+      } else if (coordinates) {
+        payload.center_coordinates = coordinates;
+      }
       const resp = await base44.functions.invoke('geeNdviAnalysis', payload);
       setResult(resp.data);
     } catch (e) {

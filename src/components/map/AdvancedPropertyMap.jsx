@@ -319,6 +319,39 @@ export default function AdvancedPropertyMap({
           )}
         </div>
       )}
+
+      {/* Summary card after draw finalized */}
+      {!isDrawing && drawnGeometry && (
+        <div className="absolute bottom-4 left-4 right-4 z-[500] bg-white/98 backdrop-blur rounded-xl shadow-lg p-4 border border-emerald-200 max-w-md mx-auto">
+          <div className="space-y-3">
+            <div>
+              <h3 className="font-bold text-emerald-900 flex items-center gap-2 mb-2">
+                <span className="text-lg">✓</span> Polígono Desenhado
+              </h3>
+              {measurements?.area && (
+                <div className="bg-emerald-50 rounded-lg p-2 text-sm text-emerald-800 border border-emerald-100">
+                  <p className="font-semibold text-emerald-900">{measurements.area}</p>
+                  {measurements.vertices && <p className="text-xs mt-1 opacity-75">📍 {measurements.vertices} pontos</p>}
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={handleSaveGeometry}
+                className="flex-1 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-all"
+              >
+                💾 Salvar
+              </button>
+              <button
+                onClick={handleCancelDraw}
+                className="flex-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-all"
+              >
+                ✕ Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

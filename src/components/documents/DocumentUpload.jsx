@@ -49,8 +49,21 @@ export default function DocumentUpload({
     other_description: '',
     document_name: '',
     description: '',
-    date: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString().split('T')[0],
+    module: ''
   });
+
+  const MODULES = [
+    'Trabalhista',
+    'Contábil',
+    'Ambiental',
+    'Tributário',
+    'Imobiliário',
+    'Civil',
+    'Fiscal',
+    'Recursos Humanos',
+    'Administrativo',
+  ];
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];

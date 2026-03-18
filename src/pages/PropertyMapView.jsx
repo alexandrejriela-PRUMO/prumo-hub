@@ -421,27 +421,51 @@ export default function PropertyMapView() {
             </Button>
 
             {/* Uploaded KML layer chips */}
-            {kmlLayers.map(layer => (
-              <div
-                key={layer.id}
-                className="flex items-center gap-1 px-2 py-1 rounded-lg border text-xs font-medium cursor-pointer transition-all"
-                style={{
-                  backgroundColor: layer.visible ? layer.color + '22' : '#f9fafb',
-                  borderColor: layer.visible ? layer.color : '#e5e7eb',
-                  color: layer.visible ? layer.color : '#6b7280',
-                }}
-                onClick={() => toggleKmlLayer(layer.id)}
-              >
-                <FileText className="w-3 h-3" />
-                <span className="max-w-[120px] truncate">{layer.name}</span>
-                <button
-                  onClick={(e) => { e.stopPropagation(); removeKmlLayer(layer.id); }}
-                  className="ml-0.5 hover:opacity-70"
+            {kmlLayers.map(layer => {
+              // Calcula área do KML
+              const calcArea = (geojson) => {
+                if (!geojson?.features) return null;
+                let totalArea = 0;
+                geojson.features.forEach(f => {
+                  if (f.geometry?.type === 'Polygon' && f.geometry.coordinates[0]) {
+                    const coords = f.geometry.coordinates[0];
+                    const area = Math.abs(
+                      coords.reduce((sum, [lng, lat], i) => {
+                        const next = coords[(i + 1) % coords.length];
+                        return sum + (lng * next[1] - lat * next[0]);
+                      }, 0) / 2
+                    );
+                    totalArea += area * 111320 * 111320;
+                  }
+                });
+                return totalArea > 0 ? (totalArea / 10000).toFixed(2) : null;
+              };
+              const areaHa = calcArea(layer.geojson);
+              
+              return (
+                <div
+                  key={layer.id}
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg border text-xs font-medium cursor-pointer transition-all"
+                  style={{
+                    backgroundColor: layer.visible ? layer.color + '22' : '#f9fafb',
+                    borderColor: layer.visible ? layer.color : '#e5e7eb',
+                    color: layer.visible ? layer.color : '#6b7280',
+                  }}
+                  onClick={() => toggleKmlLayer(layer.id)}
+                  title={areaHa ? `${areaHa} ha` : undefined}
                 >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            ))}
+                  <FileText className="w-3 h-3" />
+                  <span className="max-w-[120px] truncate">{layer.name}</span>
+                  {areaHa && <span className="text-xs opacity-70">({areaHa} ha)</span>}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); removeKmlLayer(layer.id); }}
+                    className="ml-0.5 hover:opacity-70"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              );
+            })}
 
             {/* Export buttons */}
             {selectedProperty && (

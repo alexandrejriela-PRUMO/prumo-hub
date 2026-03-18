@@ -8,6 +8,14 @@ import MapMeasurementTools from './MapMeasurementTools';
 import SaveAreaModal from './SaveAreaModal';
 import { toast } from 'sonner';
 
+const AREA_TYPES = {
+  total: { label: '📐 Área Total', color: '#3b82f6' },
+  app: { label: '💧 APP', color: '#10b981' },
+  rl: { label: '🌳 Reserva Legal', color: '#f59e0b' },
+  uso: { label: '🏞️ Área de Uso', color: '#8b5cf6' },
+  analise: { label: '🔍 Análise', color: '#ef4444' },
+};
+
 // Simple drawing layer component
 function DrawingLayer({ onPolygonCreated, featureGroupRef }) {
   const map = useMap();

@@ -16,6 +16,13 @@ const AREA_TYPES = {
   analise: { label: '🔍 Análise', color: '#ef4444' },
 };
 
+// Component para gerenciar clicks nos layers
+function LayerClickHandler({ propertyAreas, kmlLayers }) {
+  const map = useMap();
+
+  return null;
+}
+
 // Simple drawing layer component
 function DrawingLayer({ onPolygonCreated, featureGroupRef }) {
   const map = useMap();
@@ -238,15 +245,13 @@ export default function AdvancedPropertyMap({
   };
 
   const MapContent = () => {
-    let map;
-    try {
-      map = useMap();
-    } catch (e) {
-      // useMap pode falhar se não estiver dentro de MapContainer
-      map = null;
-    }
+    const map = useMap();
+    
     useEffect(() => {
-      if (isFullscreen) {
+      if (map) {
+        mapRef.current = map;
+      }
+      if (isFullscreen && map) {
         map.invalidateSize();
       }
     }, [isFullscreen, map]);
@@ -301,11 +306,11 @@ export default function AdvancedPropertyMap({
               style={{ color: area.color, weight: 2.5, fillOpacity: 0.2, fillColor: area.color }}
               onEachFeature={(feature, layer) => {
                 layer.on('click', () => {
-                  if (!mapRef.current) return;
+                  if (!map) return;
                   const bounds = L.latLngBounds(
                     area.coordinates.map(([lng, lat]) => [lat, lng])
                   );
-                  mapRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+                  map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
                 });
               }}
             />
@@ -320,12 +325,12 @@ export default function AdvancedPropertyMap({
             style={{ color: layer.color, weight: 2, fillOpacity: 0.18, fillColor: layer.color }}
             onEachFeature={(feature, geoJsonLayer) => {
               geoJsonLayer.on('click', () => {
-                if (!mapRef.current || !layer.geojson?.geometry?.coordinates) return;
+                if (!map || !layer.geojson?.geometry?.coordinates) return;
                 const coords = layer.geojson.geometry.coordinates[0];
                 const bounds = L.latLngBounds(
                   coords.map(([lng, lat]) => [lat, lng])
                 );
-                mapRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
               });
             }}
           />

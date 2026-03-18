@@ -126,17 +126,17 @@ export default function ClimateMonitoring() {
         console.log('[CLIMATE] Resposta da API recebida:', response);
 
         const cleanedResponse = {
-          temperature_current: Math.isFinite(response.temperature_current) ? response.temperature_current : 0,
+          temperature_current: typeof response.temperature_current === 'number' ? response.temperature_current : 0,
           humidity: Math.min(100, Math.max(0, response.humidity ?? 0)),
-          precipitation: Math.isFinite(response.precipitation) ? response.precipitation : 0,
-          wind_speed: Math.isFinite(response.wind_speed) ? response.wind_speed : 0,
+          precipitation: typeof response.precipitation === 'number' ? response.precipitation : 0,
+          wind_speed: typeof response.wind_speed === 'number' ? response.wind_speed : 0,
           wind_direction: response.wind_direction?.toString() || 'N',
-          uv_index: Math.isFinite(response.uv_index) ? response.uv_index : 0,
+          uv_index: typeof response.uv_index === 'number' ? response.uv_index : 0,
           soil_moisture: Math.min(100, Math.max(0, response.soil_moisture ?? 0)),
           forecast_7days: Array.isArray(response.forecast_7days) ? (response.forecast_7days || []).map(day => ({
             date: day?.date?.toString() || new Date().toISOString().split('T')[0],
-            temp_max: Math.isFinite(day?.temp_max) ? day.temp_max : 25,
-            temp_min: Math.isFinite(day?.temp_min) ? day.temp_min : 15,
+            temp_max: typeof day?.temp_max === 'number' ? day.temp_max : 25,
+            temp_min: typeof day?.temp_min === 'number' ? day.temp_min : 15,
             precipitation_chance: Math.min(100, Math.max(0, day?.precipitation_chance ?? 0)),
             description: day?.description?.toString() || 'Sem informação'
           })) : []

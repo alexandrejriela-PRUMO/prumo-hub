@@ -111,15 +111,8 @@ export default function AdvancedPropertyMap({
   };
 
   const handleFinishDraw = () => {
-    if (featureGroupRef.current && featureGroupRef.current.getLayers().length > 0) {
-      const layer = featureGroupRef.current.getLayers()[0];
-      const geojson = layer.toGeoJSON();
-      setDrawnGeometry(geojson);
-      setIsDrawing(false);
-      toast.success('Polígono desenhado com sucesso');
-    } else {
-      toast.error('Desenhe um polígono primeiro');
-    }
+   setIsDrawing(false);
+   toast.success('Clique com botão direito para finalizar o polígono');
   };
 
   const handleCancelDraw = () => {

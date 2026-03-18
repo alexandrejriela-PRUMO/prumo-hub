@@ -63,16 +63,24 @@ const LAYER_STYLES = {
 // Random colors for user-uploaded KML layers
 const KML_COLORS = ['#e11d48', '#0284c7', '#7c3aed', '#b45309', '#0f766e', '#be123c', '#1d4ed8'];
 
-function FitBoundsLayer({ geoJson }) {
+function FitBoundsLayer({ geoJsonList }) {
   const map = useMap();
   useEffect(() => {
-    if (!geoJson) return;
+    if (!geoJsonList || geoJsonList.length === 0) return;
     try {
-      const layer = L.geoJSON(geoJson);
-      const bounds = layer.getBounds();
+      const combined = L.featureGroup();
+      geoJsonList.forEach(gj => {
+        if (!gj) return;
+        try {
+          const layer = L.geoJSON(gj);
+          const b = layer.getBounds();
+          if (b.isValid()) combined.addLayer(layer);
+        } catch {}
+      });
+      const bounds = combined.getBounds();
       if (bounds.isValid()) map.fitBounds(bounds, { padding: [40, 40] });
     } catch {}
-  }, [geoJson, map]);
+  }, [geoJsonList, map]);
   return null;
 }
 

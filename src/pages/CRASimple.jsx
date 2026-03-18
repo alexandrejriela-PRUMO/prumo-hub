@@ -17,6 +17,8 @@ export default function CRASimple() {
   const [user, setUser] = useState(null);
   const [editingOrigin, setEditingOrigin] = useState(null);
   const [editingTitle, setEditingTitle] = useState(null);
+  const [originFormData, setOriginFormData] = useState({});
+  const [titleFormData, setTitleFormData] = useState({});
   const queryClient = useQueryClient();
 
   useEffect(() => {

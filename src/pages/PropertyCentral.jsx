@@ -23,13 +23,16 @@ export default function PropertyCentral() {
     queryFn: () => base44.auth.me(),
   });
 
-  // Fetch properties
+  // Fetch properties - Dinâmico baseado no tipo de usuário
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
-    queryKey: ['properties', user?.email],
-    queryFn: () => base44.entities.Property.filter(
-      { owner_email: user.email },
-      '-created_date'
-    ),
+    queryKey: ['properties', user?.email, user?.user_type],
+    queryFn: () => {
+      if (!user?.email) return [];
+      const filter = user?.user_type === 'consultor' || user?.user_type === 'equipe'
+        ? { consultor_email: user.email }
+        : { owner_email: user.email };
+      return base44.entities.Property.filter(filter, '-created_date');
+    },
     enabled: !!user?.email,
   });
 

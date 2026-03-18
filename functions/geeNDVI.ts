@@ -172,6 +172,7 @@ Deno.serve(async (req) => {
       const m = email.match(/@(.+)\.iam\.gserviceaccount\.com/);
       projectId = m ? m[1] : null;
     }
+    if (!projectId) projectId = Deno.env.get('GEE_PROJECT_ID') || null;
     if (!projectId) return Response.json({ error: 'Não foi possível determinar o project_id do GEE' }, { status: 500 });
 
     const geomObj = normalizeGeometry(geometry);

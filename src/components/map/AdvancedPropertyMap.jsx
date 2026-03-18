@@ -31,14 +31,15 @@ function DrawingLayer({ onPolygonCreated, featureGroupRef }) {
     };
 
     const handleRightClick = (e) => {
-      if (polygon.length > 2) {
-        polygon.push(polygon[0]); // Close polygon
-        const geojson = {
-          type: 'Feature',
-          geometry: { type: 'Polygon', coordinates: [[...polygon.map(p => [p[1], p[0]])]] },
-          properties: { name: 'Polígono desenhado' }
-        };
-        onPolygonCreated(geojson);
+       if (polygon.length > 2) {
+         polygon.push(polygon[0]); // Close polygon
+         const geojson = {
+           type: 'Feature',
+           geometry: { type: 'Polygon', coordinates: [[...polygon.map(p => [p[1], p[0]])]] },
+           properties: { name: 'Polígono desenhado' }
+         };
+         console.log('[DrawingLayer] Polígono criado:', JSON.stringify(geojson));
+         onPolygonCreated(geojson);
         polylineLayer.remove();
         pointsLayer.remove();
         map.off('click', handleClick);

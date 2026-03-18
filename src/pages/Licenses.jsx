@@ -590,9 +590,9 @@ export default function Licenses() {
                         <p className="text-xs sm:text-sm text-gray-500 truncate">{license.license_number || 'Sem número'}</p>
                       </div>
                     </div>
-                    <Badge className={`${statusInfo.color} flex-shrink-0`}>
+                    <Badge className={`${statusInfo.color} flex-shrink-0 border-2 border-current`}>
                       <StatusIcon className="w-3 h-3 mr-1" />
-                      <span className="text-xs sm:text-sm">{statusInfo.label}</span>
+                      <span className="text-xs sm:text-sm font-semibold">{statusInfo.label}</span>
                     </Badge>
                   </div>
                 </CardHeader>

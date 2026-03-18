@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
     // Initialize ee with the access token
     await new Promise((resolve, reject) => {
       ee.data.setAuthToken('', 'Bearer', accessToken, 3600, [], () => resolve(), false);
-      ee.initialize(null, null, resolve, reject, null, `projects/${projectId}`);
+      ee.initialize(null, null, resolve, reject, null, projectId);
     });
 
     let geometry;

@@ -33,10 +33,16 @@ export default function DocumentsHub() {
   const [selectedPropertyId, setSelectedPropertyId] = useState(null);
   const [filters, setFilters] = useState({
     entityType: 'all',
+    module: 'all',
     documentType: 'all',
     dateFrom: '',
     dateTo: ''
   });
+
+  const MODULES = [
+    'Trabalhista', 'Contábil', 'Ambiental', 'Tributário',
+    'Imobiliário', 'Civil', 'Fiscal', 'Recursos Humanos', 'Administrativo'
+  ];
   const [orderedIds, setOrderedIds] = useState([]);
 
   const queryClient = useQueryClient();

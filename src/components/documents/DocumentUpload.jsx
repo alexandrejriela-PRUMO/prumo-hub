@@ -29,17 +29,7 @@ export default function DocumentUpload({
     module: ''
   });
 
-  const MODULES = [
-    'Trabalhista',
-    'Contábil',
-    'Ambiental',
-    'Tributário',
-    'Imobiliário',
-    'Civil',
-    'Fiscal',
-    'Recursos Humanos',
-    'Administrativo',
-  ];
+
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];

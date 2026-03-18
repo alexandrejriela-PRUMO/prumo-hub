@@ -34,17 +34,19 @@ async function getGEEToken(email, pem) {
 }
 
 function buildExpr(geometry, startDate, endDate) {
-  // Filter.date para filtrar por data
-  // Collection.filter para aplicar o filtro
-  // Filter.intersects para filtrar por bounds
+  // Convert date strings to milliseconds for Filter.rangeContains on system:time_start
+  const startMs = new Date(startDate).getTime();
+  const endMs = new Date(endDate).getTime();
+
   return {
     result: '6',
     values: {
+      // Load collection
       '0': { functionInvocationValue: { functionName: 'ImageCollection.load', arguments: { id: { constantValue: 'MODIS/061/MOD13Q1' } } } },
-      // Filter by date
-      'f1': { functionInvocationValue: { functionName: 'Filter.date', arguments: { start: { constantValue: startDate }, end: { constantValue: endDate } } } },
+      // Filter by date using rangeContains on system:time_start
+      'f1': { functionInvocationValue: { functionName: 'Filter.rangeContains', arguments: { field: { constantValue: 'system:time_start' }, minValue: { constantValue: startMs }, maxValue: { constantValue: endMs } } } },
       '1': { functionInvocationValue: { functionName: 'Collection.filter', arguments: { collection: { valueReference: '0' }, filter: { valueReference: 'f1' } } } },
-      // Filter by bounds
+      // Filter by bounds using intersects
       'f2': { functionInvocationValue: { functionName: 'Filter.intersects', arguments: { leftField: { constantValue: '.geo' }, rightValue: { constantValue: geometry } } } },
       '2': { functionInvocationValue: { functionName: 'Collection.filter', arguments: { collection: { valueReference: '1' }, filter: { valueReference: 'f2' } } } },
       // Select NDVI band via map
@@ -63,10 +65,11 @@ function buildExpr(geometry, startDate, endDate) {
         }
       },
       '3a': { functionInvocationValue: { functionName: 'Image.select', arguments: { input: { argumentReference: 'img' }, bandSelectors: { constantValue: ['NDVI'] } } } },
-      // Reduce collection to mean image
+      // Reduce collection to mean image (bands named NDVI_mean after reduce)
       '4': { functionInvocationValue: { functionName: 'ImageCollection.reduce', arguments: { collection: { valueReference: '3' }, reducer: { functionInvocationValue: { functionName: 'Reducer.mean', arguments: {} } } } } },
-      // Reduce region
+      // Rename NDVI_mean to NDVI
       '5': { functionInvocationValue: { functionName: 'Image.rename', arguments: { input: { valueReference: '4' }, names: { constantValue: ['NDVI'] } } } },
+      // Reduce region to get mean NDVI value
       '6': { functionInvocationValue: { functionName: 'Image.reduceRegion', arguments: {
         image: { valueReference: '5' },
         reducer: { functionInvocationValue: { functionName: 'Reducer.mean', arguments: {} } },

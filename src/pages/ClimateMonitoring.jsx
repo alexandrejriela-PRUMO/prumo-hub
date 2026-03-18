@@ -172,7 +172,28 @@ export default function ClimateMonitoring() {
   });
 
   if (!user) {
-    return <div className="flex items-center justify-center min-h-screen"><p className="text-gray-600">Carregando...</p></div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="text-gray-600">Carregando dados...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (properties.length === 0) {
+    return (
+      <div className="max-w-7xl mx-auto space-y-6 p-6">
+        <h1 className="text-3xl font-bold">Monitoramento Climático</h1>
+        <Card className="border-dashed">
+          <CardContent className="py-12 text-center">
+            <Cloud className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600">Nenhuma propriedade encontrada. Cadastre uma propriedade para começar.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   const currentProperty = selectedProperty || properties[0];

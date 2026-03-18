@@ -11,7 +11,12 @@ async function getGEEToken(email, pem) {
     iat: now,
   })}`;
 
-  const keyPem = pem.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\n|\r/g, '');
+  // Normaliza a chave: converte \n literal em quebra de linha real, remove headers PEM e espaços
+  const normalized = pem.replace(/\\n/g, '\n');
+  const keyPem = normalized
+    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+    .replace(/-----END PRIVATE KEY-----/g, '')
+    .replace(/\s+/g, '');
   const keyBytes = Uint8Array.from(atob(keyPem), c => c.charCodeAt(0));
   const key = await crypto.subtle.importKey('pkcs8', keyBytes, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
   const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(sigInput));

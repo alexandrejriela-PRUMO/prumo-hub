@@ -43,13 +43,13 @@ const EVENTO_COLORS = {
 };
 
 const EMPTY = {
-  cultura: '', area_plantada: '', area_afetada: '', data_evento: '',
-  tipo_evento: 'Seca', produtividade_esperada: '', produtividade_obtida: '',
-  unidade_produtividade: 'sc/ha', percentual_perda: '', status: 'Registrado',
-  seguro_rural: false, seguradora: '', numero_apolice: '',
-  property_id: '', client_name: '', notas: '',
-  evidencias: [], documentos: [],
-};
+   cultura: '', area_plantada: '', area_afetada: '', data_evento: '',
+   tipo_evento: 'Seca', produtividade_esperada: '', produtividade_obtida: '',
+   unidade_produtividade: 'sc/ha', percentual_perda: '', status: 'Registrado',
+   seguro_rural: false, seguradora: '', numero_apolice: '',
+   property_id: '', client_name: '', client_email: '', notas: '',
+   evidencias: [], documentos: [],
+ };
 
 const fmt = (v, u = 'sc/ha') => `${Number(v || 0).toLocaleString('pt-BR')} ${u}`;
 
@@ -105,8 +105,21 @@ export default function HarvestLossPage() {
   const setF = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
   const openForm = (item = null) => {
-    setEditing(item);
-    setForm(item ? { ...EMPTY, ...item, area_plantada: String(item.area_plantada || ''), area_afetada: String(item.area_afetada || ''), produtividade_esperada: String(item.produtividade_esperada || ''), produtividade_obtida: String(item.produtividade_obtida || ''), percentual_perda: String(item.percentual_perda || '') } : EMPTY);
+    if (item?.id) {
+      setEditing(item);
+      setForm({
+        ...EMPTY,
+        ...item,
+        area_plantada: String(item.area_plantada || ''),
+        area_afetada: String(item.area_afetada || ''),
+        produtividade_esperada: String(item.produtividade_esperada || ''),
+        produtividade_obtida: String(item.produtividade_obtida || ''),
+        percentual_perda: String(item.percentual_perda || '')
+      });
+    } else {
+      setEditing(null);
+      setForm(EMPTY);
+    }
     setShowForm(true);
   };
   const closeForm = () => { setShowForm(false); setEditing(null); };

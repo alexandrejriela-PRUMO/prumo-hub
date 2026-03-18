@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import MapDrawingToolbar from './MapDrawingToolbar';
 import CoordinateInputPanel from './CoordinateInputPanel';
 import MapMeasurementTools from './MapMeasurementTools';
+import LayerCategoryModal from './LayerCategoryModal';
 import { toast } from 'sonner';
 
 // Simple drawing layer component

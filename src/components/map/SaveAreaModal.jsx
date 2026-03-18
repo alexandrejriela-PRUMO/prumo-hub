@@ -16,7 +16,7 @@ const AREA_TYPES = {
 
 export default function SaveAreaModal({ isOpen, onClose, geometry, onSave, existingAreas = [] }) {
   const [name, setName] = useState('');
-  const [type, setType] = useState('analise');
+  const [type, setType] = useState('total');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -72,7 +72,7 @@ export default function SaveAreaModal({ isOpen, onClose, geometry, onSave, exist
 
       onSave(newArea);
       setName('');
-      setType('analise');
+      setType('total');
       setError('');
       onClose();
     } catch (err) {

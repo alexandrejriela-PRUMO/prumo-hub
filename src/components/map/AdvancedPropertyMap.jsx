@@ -103,6 +103,7 @@ export default function AdvancedPropertyMap({
   const [drawnGeometry, setDrawnGeometry] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [saveAreaModalOpen, setSaveAreaModalOpen] = useState(false);
+  const [lastSavedAreaId, setLastSavedAreaId] = useState(null);
   const featureGroupRef = useRef(null);
   const mapRef = useRef(null);
 
@@ -158,12 +159,27 @@ export default function AdvancedPropertyMap({
 
   const handleSaveArea = (area) => {
     console.log('[AdvancedPropertyMap] Área salva:', JSON.stringify(area));
-    // Callback onSave recebe a área com nome e tipo
     onSave(area);
     setDrawnGeometry(null);
     setIsDrawing(false);
-    toast.success(`Área "${area.name}" salva com sucesso!`);
+    setLastSavedAreaId(area.id);
+    toast.success(`Área "${area.name}" salva como ${AREA_TYPES[area.type]?.label || area.type}!`);
   };
+
+  // Zoom automático para última área salva
+  useEffect(() => {
+    if (!lastSavedAreaId || !mapRef.current) return;
+    const map = mapRef.current;
+    const area = propertyAreas.find(a => a.id === lastSavedAreaId);
+    if (area?.coordinates) {
+      const bounds = L.latLngBounds(
+        area.coordinates.map(([lng, lat]) => [lat, lng])
+      );
+      setTimeout(() => {
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+      }, 100);
+    }
+  }, [lastSavedAreaId, propertyAreas]);
 
   // Calcula área de um polígono (GeoJSON)
   const calculateArea = (geojson) => {

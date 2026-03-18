@@ -199,14 +199,15 @@ export default function PropertyMapView() {
     }
   }, [properties]);
 
-  // Carregar KML layers e areas ao trocar propriedade
+  // Carregar areas e KML layers ao trocar propriedade
    useEffect(() => {
      if (!selectedProperty) return;
-     const saved = selectedProperty.kml_layers || [];
-     setKmlLayers(saved);
      const areas = selectedProperty.areas || [];
+     const saved = selectedProperty.kml_layers || [];
      setPropertyAreas(areas);
+     setKmlLayers(saved);
      setDrawnGeometry(null);
+     console.log(`[PropertyMapView] Carregadas ${areas.length} áreas e ${saved.length} KML layers`);
    }, [selectedPropertyId]);
 
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);

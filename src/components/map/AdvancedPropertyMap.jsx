@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import MapDrawingToolbar from './MapDrawingToolbar';
 import CoordinateInputPanel from './CoordinateInputPanel';
 import MapMeasurementTools from './MapMeasurementTools';
-import DrawnGeometryCategoryModal from './DrawnGeometryCategoryModal';
+import SaveAreaModal from './SaveAreaModal';
 import { toast } from 'sonner';
 
 // Simple drawing layer component
@@ -101,8 +101,7 @@ export default function AdvancedPropertyMap({
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawnGeometry, setDrawnGeometry] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
-  const [showNdviQuickAction, setShowNdviQuickAction] = useState(false);
+  const [saveAreaModalOpen, setSaveAreaModalOpen] = useState(false);
   const featureGroupRef = useRef(null);
   const mapRef = useRef(null);
 
@@ -151,25 +150,17 @@ export default function AdvancedPropertyMap({
       toast.error('Nenhuma área desenhada para salvar');
       return;
     }
-    // Abre modal para categorizar a camada
-    setCategoryModalOpen(true);
+    // Abre modal para salvar a área com nome e tipo
+    setSaveAreaModalOpen(true);
   };
 
-  const handleSaveCategorizedLayer = (layer) => {
-    console.log('[AdvancedPropertyMap] Camada categorizada sendo salva:', JSON.stringify(layer));
-    // Salva o layer como antes, mas agora com tipo e cor
-    onSave(drawnGeometry, layer);
+  const handleSaveArea = (area) => {
+    console.log('[AdvancedPropertyMap] Área salva:', JSON.stringify(area));
+    // Callback onSave recebe a área com nome e tipo
+    onSave(area);
     setDrawnGeometry(null);
     setIsDrawing(false);
-    toast.success(`Camada "${layer.name}" salva no mapa`);
-  };
-
-  const handleNdviAnalysis = (geometry) => {
-    // Ativa análise NDVI com a geometria desenhada
-    console.log('[AdvancedPropertyMap] Iniciando análise NDVI com geometria:', JSON.stringify(geometry));
-    // A geometria já está em drawnGeometry, o NDVIPanel irá detectá-la
-    setShowNdviQuickAction(false);
-    toast.success('Geometria ativa para análise NDVI. Role para baixo para acessar o painel.');
+    toast.success(`Área "${area.name}" salva com sucesso!`);
   };
 
   // Calcula área de um polígono (GeoJSON)
@@ -353,20 +344,12 @@ export default function AdvancedPropertyMap({
               )}
             </div>
             <div className="flex flex-col gap-2 pt-2">
-              <div className="flex gap-2">
-                <button
-                  onClick={handleSaveGeometry}
-                  className="flex-1 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-all"
-                >
-                  💾 Salvar Camada
-                </button>
-                <button
-                  onClick={() => setShowNdviQuickAction(!showNdviQuickAction)}
-                  className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-all"
-                >
-                  🛰️ NDVI
-                </button>
-              </div>
+              <button
+                onClick={handleSaveGeometry}
+                className="w-full px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-all"
+              >
+                💾 Salvar Área
+              </button>
               <button
                 onClick={handleCancelDraw}
                 className="w-full px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-all"
@@ -378,21 +361,12 @@ export default function AdvancedPropertyMap({
         </div>
       )}
 
-      {/* NDVI Quick Action Notice */}
-      {showNdviQuickAction && drawnGeometry && (
-        <div className="absolute bottom-32 left-4 right-4 z-[500] bg-blue-50 border-l-4 border-blue-600 rounded-lg p-3 shadow-md">
-          <p className="text-xs font-semibold text-blue-900 mb-1">✓ Geometria Ativa para Análise</p>
-          <p className="text-xs text-blue-700">Role para baixo e acesse o painel NDVI abaixo do mapa para analisar a área com Google Earth Engine.</p>
-        </div>
-      )}
-
-      {/* Drawn Geometry Category Modal */}
-      <DrawnGeometryCategoryModal
-        isOpen={categoryModalOpen}
-        onClose={() => setCategoryModalOpen(false)}
+      {/* Save Area Modal */}
+      <SaveAreaModal
+        isOpen={saveAreaModalOpen}
+        onClose={() => setSaveAreaModalOpen(false)}
         geometry={drawnGeometry}
-        onSave={handleSaveCategorizedLayer}
-        onNdviAnalysis={handleNdviAnalysis}
+        onSave={handleSaveArea}
       />
     </div>
   );

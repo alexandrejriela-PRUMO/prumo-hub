@@ -40,10 +40,12 @@ export default function ClimateMonitoring() {
     enabled: !!user?.email
   });
 
-  const { data: climateData = [] } = useQuery({
+  const { data: climateData = [], refetch: refetchClimateData } = useQuery({
     queryKey: ['climateMonitoring', selectedProperty?.id],
     queryFn: () => base44.entities.ClimateMonitoring.filter({ property_id: selectedProperty?.id }, '-created_date'),
-    enabled: !!selectedProperty?.id
+    enabled: !!selectedProperty?.id,
+    staleTime: 0,
+    refetchOnWindowFocus: true
   });
 
   const updateClimateDataMutation = useMutation({
@@ -124,15 +126,17 @@ export default function ClimateMonitoring() {
           });
         }
 
-        queryClient.invalidateQueries({ queryKey: ['climateMonitoring'] });
+        await refetchClimateData();
+        setSelectedLocation(null);
         toast.success('Dados climáticos atualizados com sucesso!');
       } catch (error) {
         toast.error('Erro ao buscar dados climáticos. Tente novamente.');
         console.error(error);
       }
     },
-    onError: () => {
+    onError: (error) => {
       toast.error('Erro ao atualizar dados climáticos');
+      console.error(error);
     }
   });
 

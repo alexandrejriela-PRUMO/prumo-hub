@@ -12,6 +12,10 @@ const AREA_TYPES = {
   rl: { label: '🌳 Reserva Legal', color: '#f59e0b' },
   uso: { label: '🏞️ Área de Uso', color: '#8b5cf6' },
   analise: { label: '🔍 Área para Análise', color: '#ef4444' },
+  servidao: { label: '⚖️ Servidões Administrativas', color: '#dc2626' },
+  remanescente: { label: '🌲 Remanescente de Vegetação Nativa', color: '#059669' },
+  pousio: { label: '🛤️ Pousio', color: '#d97706' },
+  outro_restrito: { label: '📋 Outro Uso Restrito', color: '#7c3aed' },
 };
 
 export default function SaveAreaModal({ isOpen, onClose, geometry, onSave, existingAreas = [] }) {

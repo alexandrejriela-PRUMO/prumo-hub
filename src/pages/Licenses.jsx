@@ -375,7 +375,7 @@ export default function Licenses() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Tipo de Licença</Label>
+                  <Label>Tipo de Licença ou Projeto</Label>
                   <Select
                     value={formData.license_type}
                     onValueChange={(v) => setFormData({ ...formData, license_type: v })}
@@ -391,7 +391,7 @@ export default function Licenses() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Número da Licença</Label>
+                  <Label>Número</Label>
                   <Input
                     value={formData.license_number}
                     onChange={(e) => setFormData({ ...formData, license_number: e.target.value })}
@@ -459,7 +459,7 @@ export default function Licenses() {
               </div>
 
               <div className="space-y-2">
-                <Label>Documentos da Licença</Label>
+                <Label>Documentos</Label>
                 <div className="space-y-3">
                   <div className="grid grid-cols-3 gap-2">
                     <div className="col-span-2">

@@ -77,6 +77,10 @@ export default function CRASimple() {
   // ============ MUTATIONS ============
   const saveOriginMutation = useMutation({
     mutationFn: async (data) => {
+      if (!data.property_id || !data.car_number || !data.biome) {
+        throw new Error('Preencha todos os campos obrigatórios');
+      }
+      
       const existing = parseFloat(data.existing_legal_reserve_hectares) || 0;
       const required = parseFloat(data.required_legal_reserve_hectares) || 0;
       const total = parseFloat(data.total_area_hectares) || 0;
@@ -87,8 +91,13 @@ export default function CRASimple() {
 
       const surplus = Math.max(0, existing - required);
       const payload = {
-        ...data,
+        property_id: data.property_id,
+        car_number: data.car_number,
+        biome: data.biome,
+        state: data.state,
+        municipality: data.municipality,
         owner_email: user.email,
+        consultor_email: user.email,
         total_area_hectares: total,
         required_legal_reserve_hectares: required,
         existing_legal_reserve_hectares: existing,
@@ -105,9 +114,13 @@ export default function CRASimple() {
     onSuccess: async () => {
       await refetchOrigins();
       setEditingOrigin(null);
-      toast.success('Salvo com sucesso!');
+      setOriginFormData({});
+      toast.success('Origem CRA salva com sucesso!');
     },
-    onError: (err) => toast.error(err.message || 'Erro ao salvar')
+    onError: (err) => {
+      console.error('[CRA] Erro ao salvar origem:', err);
+      toast.error(err.message || 'Erro ao salvar');
+    }
   });
 
   const deleteOriginMutation = useMutation({

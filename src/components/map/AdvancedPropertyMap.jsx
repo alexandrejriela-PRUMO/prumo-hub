@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import MapDrawingToolbar from './MapDrawingToolbar';
 import CoordinateInputPanel from './CoordinateInputPanel';
 import MapMeasurementTools from './MapMeasurementTools';
-import LayerCategoryModal from './LayerCategoryModal';
+import DrawnGeometryCategoryModal from './DrawnGeometryCategoryModal';
 import { toast } from 'sonner';
 
 // Simple drawing layer component
@@ -162,6 +162,14 @@ export default function AdvancedPropertyMap({
     setDrawnGeometry(null);
     setIsDrawing(false);
     toast.success(`Camada "${layer.name}" salva no mapa`);
+  };
+
+  const handleNdviAnalysis = (geometry) => {
+    // Ativa análise NDVI com a geometria desenhada
+    console.log('[AdvancedPropertyMap] Iniciando análise NDVI com geometria:', JSON.stringify(geometry));
+    // A geometria já está em drawnGeometry, o NDVIPanel irá detectá-la
+    setShowNdviQuickAction(false);
+    toast.success('Geometria ativa para análise NDVI. Role para baixo para acessar o painel.');
   };
 
   // Calcula área de um polígono (GeoJSON)
@@ -378,13 +386,13 @@ export default function AdvancedPropertyMap({
         </div>
       )}
 
-      {/* Layer Category Modal */}
-      <LayerCategoryModal
+      {/* Drawn Geometry Category Modal */}
+      <DrawnGeometryCategoryModal
         isOpen={categoryModalOpen}
         onClose={() => setCategoryModalOpen(false)}
         geometry={drawnGeometry}
         onSave={handleSaveCategorizedLayer}
-        existingLayers={kmlLayers}
+        onNdviAnalysis={handleNdviAnalysis}
       />
     </div>
   );

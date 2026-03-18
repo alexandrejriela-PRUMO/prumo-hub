@@ -19,7 +19,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { MapPin, BarChart3, ChevronLeft } from 'lucide-react';
+import { MapPin, BarChart3, ChevronLeftIcon as ChevronLeft } from 'lucide-react';
 import { subDays, isAfter, isBefore } from 'date-fns';
 import { createPageUrl } from '@/utils';
 import { useNavigate } from 'react-router-dom';

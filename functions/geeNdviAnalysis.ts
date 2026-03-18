@@ -126,17 +126,23 @@ function buildExpr(geometry, startDate, endDate) {
 }
 
 async function computeNDVI(projectId, token, geometry, startDate, endDate) {
-  const res = await fetch(`https://earthengine.googleapis.com/v1/projects/${projectId}/value:compute`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ expression: buildExpr(geometry, startDate, endDate) }),
-  });
-  const data = await res.json();
-  if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
-  // GEE returns raw NDVI * 10000 for MODIS MOD13Q1
-  const raw = data.result?.NDVI ?? data.result?.values?.NDVI ?? null;
-  return raw != null ? raw / 10000 : null;
-}
+   const expr = buildExpr(geometry, startDate, endDate);
+   console.log('[GEE] Expression being sent to GEE (geo node):', JSON.stringify(expr.values.geo, null, 2));
+
+   const res = await fetch(`https://earthengine.googleapis.com/v1/projects/${projectId}/value:compute`, {
+     method: 'POST',
+     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+     body: JSON.stringify({ expression: expr }),
+   });
+   const data = await res.json();
+   if (data.error) {
+     console.error('[GEE] API Error:', JSON.stringify(data.error));
+     throw new Error(data.error.message || JSON.stringify(data.error));
+   }
+   // GEE returns raw NDVI * 10000 for MODIS MOD13Q1
+   const raw = data.result?.NDVI ?? data.result?.values?.NDVI ?? null;
+   return raw != null ? raw / 10000 : null;
+ }
 
 function classify(ndvi) {
   if (ndvi >= 0.6) return { status: 'Vegetação Densa e Saudável', color: 'emerald', emoji: '🌿', desc: 'Excelente cobertura vegetal. Vegetação densa, ativa e bem estabelecida.' };

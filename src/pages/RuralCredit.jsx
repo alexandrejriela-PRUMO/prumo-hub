@@ -30,12 +30,12 @@ const STATUS_MAP = {
 const DOC_TIPOS = ['Contrato de Financiamento', 'CPR', 'Garantia', 'Aditivo Contratual', 'Outro'];
 
 const EMPTY = {
-  instituicao: '', tipo_credito: 'Custeio', programa: '', numero_contrato: '',
-  data_contratacao: '', data_vencimento: '', valor_contratado: '', saldo_devedor: '',
-  taxa_juros: '', prazo_total_meses: '', num_parcelas: '', parcelas_pagas: '0',
-  garantia: '', status: 'Em dia', property_id: '', client_name: '', notas: '',
-  parcelas: [], documentos: [],
-};
+   instituicao: '', tipo_credito: 'Custeio', programa: '', numero_contrato: '',
+   data_contratacao: '', data_vencimento: '', valor_contratado: '', saldo_devedor: '',
+   taxa_juros: '', prazo_total_meses: '', num_parcelas: '', parcelas_pagas: '0',
+   garantia: '', status: 'Em dia', property_id: '', client_name: '', client_email: '', notas: '',
+   parcelas: [], documentos: [],
+ };
 
 const fmt = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -102,8 +102,22 @@ export default function RuralCreditPage() {
   const setF = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
   const openForm = (item = null) => {
-    setEditing(item);
-    setForm(item ? { ...EMPTY, ...item, valor_contratado: String(item.valor_contratado || ''), saldo_devedor: String(item.saldo_devedor || ''), taxa_juros: String(item.taxa_juros || ''), prazo_total_meses: String(item.prazo_total_meses || ''), num_parcelas: String(item.num_parcelas || ''), parcelas_pagas: String(item.parcelas_pagas || 0) } : EMPTY);
+    if (item?.id) {
+      setEditing(item);
+      setForm({
+        ...EMPTY,
+        ...item,
+        valor_contratado: String(item.valor_contratado || ''),
+        saldo_devedor: String(item.saldo_devedor || ''),
+        taxa_juros: String(item.taxa_juros || ''),
+        prazo_total_meses: String(item.prazo_total_meses || ''),
+        num_parcelas: String(item.num_parcelas || ''),
+        parcelas_pagas: String(item.parcelas_pagas || '0')
+      });
+    } else {
+      setEditing(null);
+      setForm(EMPTY);
+    }
     setShowForm(true);
   };
   const closeForm = () => { setShowForm(false); setEditing(null); };
@@ -333,7 +347,7 @@ export default function RuralCreditPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div><Label>Número do Contrato</Label><Input value={form.numero_contrato} onChange={e => setF('numero_contrato', e.target.value)} placeholder="Nº do contrato" /></div>
+                <div><Label>Número do Contrato</Label><Input value={form.numero_contrato || ''} onChange={e => setF('numero_contrato', e.target.value)} placeholder="Nº do contrato" /></div>
                 <div>
                   <Label>Status</Label>
                   <Select value={form.status} onValueChange={v => setF('status', v)}>

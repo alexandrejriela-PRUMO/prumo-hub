@@ -55,11 +55,11 @@ async function getGEEToken(email, pemRaw) {
 }
 
 // ── EE expression helpers ──────────────────────────────────────────────────
-const c = (val) => ({ constantValue: val });
-const fn = (name, args = {}) => ({ functionInvocationValue: { functionName: name, arguments: args } });
+function eeConst(val) { return { constantValue: val }; }
+function eeFunc(name, args) { return { functionInvocationValue: { functionName: name, arguments: args || {} } }; }
 
 function buildGeometry(geom) {
-  return fn('Geometry', { geoJson: c(geom), geodesic: c(false) });
+  return eeFunc('Geometry', { geoJson: eeConst(geom), geodesic: eeConst(false) });
 }
 
 function buildNDVIImage(geomExpr, start, end, dataset) {
@@ -68,60 +68,60 @@ function buildNDVIImage(geomExpr, start, end, dataset) {
   const nir = isLandsat ? 'SR_B5' : 'B8';
   const red = isLandsat ? 'SR_B4' : 'B4';
 
-  return fn('Image.normalizedDifference', {
-    input: fn('ImageCollection.median', {
-      collection: fn('ImageCollection.select', {
-        input: fn('ImageCollection.filterDate', {
-          collection: fn('ImageCollection.filterBounds', {
-            collection: fn('ImageCollection.load', { id: c(colId) }),
+  return eeFunc('Image.normalizedDifference', {
+    input: eeFunc('ImageCollection.median', {
+      collection: eeFunc('ImageCollection.select', {
+        input: eeFunc('ImageCollection.filterDate', {
+          collection: eeFunc('ImageCollection.filterBounds', {
+            collection: eeFunc('ImageCollection.load', { id: eeConst(colId) }),
             geometry: geomExpr
           }),
-          start: c(start), end: c(end)
+          start: eeConst(start), end: eeConst(end)
         }),
-        bandSelectors: c([nir, red])
+        bandSelectors: eeConst([nir, red])
       })
     }),
-    bandNames: c([nir, red])
+    bandNames: eeConst([nir, red])
   });
 }
 
 function buildStatsExpr(geojsonGeom, start, end, dataset) {
   const scale = dataset === 'landsat8' ? 30 : 10;
   const geomExpr = buildGeometry(geojsonGeom);
-  const ndvi = fn('Image.rename', { input: buildNDVIImage(geomExpr, start, end, dataset), names: c(['NDVI']) });
+  const ndvi = eeFunc('Image.rename', { input: buildNDVIImage(geomExpr, start, end, dataset), names: eeConst(['NDVI']) });
 
-  const reducer = fn('Reducer.combine', {
-    reducer1: fn('Reducer.combine', {
-      reducer1: fn('Reducer.combine', {
-        reducer1: fn('Reducer.mean', {}),
-        reducer2: fn('Reducer.min', {}),
-        sharedInputs: c(true)
+  const reducer = eeFunc('Reducer.combine', {
+    reducer1: eeFunc('Reducer.combine', {
+      reducer1: eeFunc('Reducer.combine', {
+        reducer1: eeFunc('Reducer.mean', {}),
+        reducer2: eeFunc('Reducer.min', {}),
+        sharedInputs: eeConst(true)
       }),
-      reducer2: fn('Reducer.max', {}),
-      sharedInputs: c(true)
+      reducer2: eeFunc('Reducer.max', {}),
+      sharedInputs: eeConst(true)
     }),
-    reducer2: fn('Reducer.stdDev', {}),
-    sharedInputs: c(true)
+    reducer2: eeFunc('Reducer.stdDev', {}),
+    sharedInputs: eeConst(true)
   });
 
-  return fn('Image.reduceRegion', {
+  return eeFunc('Image.reduceRegion', {
     image: ndvi, reducer,
     geometry: geomExpr,
-    scale: c(scale),
-    maxPixels: c(1e10),
-    bestEffort: c(true),
-    tileScale: c(4)
+    scale: eeConst(scale),
+    maxPixels: eeConst(1e10),
+    bestEffort: eeConst(true),
+    tileScale: eeConst(4)
   });
 }
 
 function buildMapExpr(geojsonGeom, start, end, dataset) {
   const geomExpr = buildGeometry(geojsonGeom);
   const ndvi = buildNDVIImage(geomExpr, start, end, dataset);
-  return fn('Image.visualize', {
+  return eeFunc('Image.visualize', {
     input: ndvi,
-    bands: c(['nd']),
-    min: c(-0.2), max: c(0.8),
-    palette: c(['a50026','d73027','f46d43','fdae61','fee08b','ffffbf','d9ef8b','a6d96a','66bd63','1a9850','006837'])
+    bands: eeConst(['nd']),
+    min: eeConst(-0.2), max: eeConst(0.8),
+    palette: eeConst(['a50026','d73027','f46d43','fdae61','fee08b','ffffbf','d9ef8b','a6d96a','66bd63','1a9850','006837'])
   });
 }
 

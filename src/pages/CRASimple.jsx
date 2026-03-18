@@ -210,8 +210,8 @@ export default function CRASimple() {
             <Card className="bg-blue-50 border-blue-200">
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <CardTitle>Editar Origem</CardTitle>
-                  <Button size="sm" variant="ghost" onClick={() => setEditingOrigin(null)}>
+                  <CardTitle>{editingOrigin.id ? 'Editar Origem' : 'Nova Origem'}</CardTitle>
+                  <Button size="sm" variant="ghost" onClick={() => { setEditingOrigin(null); setOriginFormData({}); }}>
                     <X className="w-4 h-4" />
                   </Button>
                 </div>
@@ -220,9 +220,12 @@ export default function CRASimple() {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <Label>Propriedade *</Label>
-                    <Select defaultValue={editingOrigin.property_id} onValueChange={(value) => setEditingOrigin({ ...editingOrigin, property_id: value })}>
+                    <Select 
+                      value={originFormData.property_id || ''} 
+                      onValueChange={(value) => setOriginFormData({ ...originFormData, property_id: value })}
+                    >
                       <SelectTrigger className="mt-1">
-                        <SelectValue />
+                        <SelectValue placeholder="Selecione uma propriedade" />
                       </SelectTrigger>
                       <SelectContent>
                         {properties.map(p => (
@@ -234,16 +237,19 @@ export default function CRASimple() {
                   <div>
                     <Label>CAR *</Label>
                     <Input 
-                      defaultValue={editingOrigin.car_number} 
-                      onChange={(e) => setEditingOrigin({ ...editingOrigin, car_number: e.target.value })} 
+                      value={originFormData.car_number || ''} 
+                      onChange={(e) => setOriginFormData({ ...originFormData, car_number: e.target.value })} 
                       placeholder="123.456.789-12"
                     />
                   </div>
                   <div>
                     <Label>Bioma *</Label>
-                    <Select defaultValue={editingOrigin.biome} onValueChange={(value) => setEditingOrigin({ ...editingOrigin, biome: value })}>
+                    <Select 
+                      value={originFormData.biome || ''} 
+                      onValueChange={(value) => setOriginFormData({ ...originFormData, biome: value })}
+                    >
                       <SelectTrigger className="mt-1">
-                        <SelectValue />
+                        <SelectValue placeholder="Selecione um bioma" />
                       </SelectTrigger>
                       <SelectContent>
                         {BIOMAS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
@@ -253,16 +259,16 @@ export default function CRASimple() {
                   <div>
                     <Label>Estado *</Label>
                     <Input 
-                      defaultValue={editingOrigin.state} 
-                      onChange={(e) => setEditingOrigin({ ...editingOrigin, state: e.target.value })} 
+                      value={originFormData.state || ''} 
+                      onChange={(e) => setOriginFormData({ ...originFormData, state: e.target.value })} 
                       placeholder="SP"
                     />
                   </div>
                   <div>
                     <Label>Município *</Label>
                     <Input 
-                      defaultValue={editingOrigin.municipality} 
-                      onChange={(e) => setEditingOrigin({ ...editingOrigin, municipality: e.target.value })} 
+                      value={originFormData.municipality || ''} 
+                      onChange={(e) => setOriginFormData({ ...originFormData, municipality: e.target.value })} 
                       placeholder="São Paulo"
                     />
                   </div>
@@ -271,8 +277,8 @@ export default function CRASimple() {
                     <Input 
                       type="number" 
                       step="0.01" 
-                      defaultValue={editingOrigin.total_area_hectares} 
-                      onChange={(e) => setEditingOrigin({ ...editingOrigin, total_area_hectares: e.target.value })} 
+                      value={originFormData.total_area_hectares || ''} 
+                      onChange={(e) => setOriginFormData({ ...originFormData, total_area_hectares: e.target.value })} 
                     />
                   </div>
                   <div>
@@ -280,8 +286,8 @@ export default function CRASimple() {
                     <Input 
                       type="number" 
                       step="0.01" 
-                      defaultValue={editingOrigin.required_legal_reserve_hectares} 
-                      onChange={(e) => setEditingOrigin({ ...editingOrigin, required_legal_reserve_hectares: e.target.value })} 
+                      value={originFormData.required_legal_reserve_hectares || ''} 
+                      onChange={(e) => setOriginFormData({ ...originFormData, required_legal_reserve_hectares: e.target.value })} 
                     />
                   </div>
                   <div>
@@ -289,14 +295,14 @@ export default function CRASimple() {
                     <Input 
                       type="number" 
                       step="0.01" 
-                      defaultValue={editingOrigin.existing_legal_reserve_hectares} 
-                      onChange={(e) => setEditingOrigin({ ...editingOrigin, existing_legal_reserve_hectares: e.target.value })} 
+                      value={originFormData.existing_legal_reserve_hectares || ''} 
+                      onChange={(e) => setOriginFormData({ ...originFormData, existing_legal_reserve_hectares: e.target.value })} 
                     />
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setEditingOrigin(null)} className="flex-1">Cancelar</Button>
-                  <Button onClick={() => saveOriginMutation.mutate(editingOrigin)} className="flex-1 bg-emerald-600 hover:bg-emerald-700" disabled={saveOriginMutation.isPending}>
+                  <Button variant="outline" onClick={() => { setEditingOrigin(null); setOriginFormData({}); }} className="flex-1">Cancelar</Button>
+                  <Button onClick={() => saveOriginMutation.mutate({ ...editingOrigin, ...originFormData })} className="flex-1 bg-emerald-600 hover:bg-emerald-700" disabled={saveOriginMutation.isPending}>
                     <Save className="w-4 h-4 mr-2" />
                     {saveOriginMutation.isPending ? 'Salvando...' : 'Salvar'}
                   </Button>
@@ -304,16 +310,19 @@ export default function CRASimple() {
               </CardContent>
             </Card>
           ) : (
-            <Button onClick={() => setEditingOrigin({
-              property_id: '',
-              car_number: '',
-              biome: '',
-              state: '',
-              municipality: '',
-              total_area_hectares: '',
-              required_legal_reserve_hectares: '',
-              existing_legal_reserve_hectares: ''
-            })} className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto">
+            <Button onClick={() => {
+              setEditingOrigin({});
+              setOriginFormData({
+                property_id: '',
+                car_number: '',
+                biome: '',
+                state: '',
+                municipality: '',
+                total_area_hectares: '',
+                required_legal_reserve_hectares: '',
+                existing_legal_reserve_hectares: ''
+              });
+            }} className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               Nova Origem
             </Button>

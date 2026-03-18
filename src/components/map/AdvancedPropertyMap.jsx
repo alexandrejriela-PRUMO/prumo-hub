@@ -360,6 +360,15 @@ export default function AdvancedPropertyMap({
           </div>
         </div>
       )}
+
+      {/* Layer Category Modal */}
+      <LayerCategoryModal
+        isOpen={categoryModalOpen}
+        onClose={() => setCategoryModalOpen(false)}
+        geometry={drawnGeometry}
+        onSave={handleSaveCategorizedLayer}
+        existingLayers={kmlLayers}
+      />
     </div>
   );
 }

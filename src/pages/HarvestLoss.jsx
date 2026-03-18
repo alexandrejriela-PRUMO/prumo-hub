@@ -170,17 +170,27 @@ export default function HarvestLossPage() {
      }
 
      const clientProp = properties.find(p => p.id === form.property_id);
-     const payload = { 
-       ...form, 
+     const payload = {
+       cultura: form.cultura,
        area_plantada: areaPlantada,
        area_afetada: areaAfetada,
+       data_evento: form.data_evento,
+       tipo_evento: form.tipo_evento,
        produtividade_esperada: prodEsperada,
        produtividade_obtida: prodObtida,
+       unidade_produtividade: form.unidade_produtividade,
        percentual_perda: perda,
+       status: form.status,
+       seguro_rural: form.seguro_rural,
+       seguradora: form.seguradora,
+       numero_apolice: form.numero_apolice,
+       property_id: form.property_id || clientProp?.id || '',
+       notas: form.notas,
        consultor_email: user?.email,
        client_email: clientProp?.owner_email || user?.email,
        client_name: clientProp?.client_name || form.client_name || 'Sem nome',
-       property_id: form.property_id || clientProp?.id || ''
+       evidencias: form.evidencias || [],
+       documentos: form.documentos || []
      };
      if (editing) updateM.mutate({ id: editing.id, data: payload });
      else createM.mutate(payload);

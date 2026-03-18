@@ -150,10 +150,17 @@ export default function AdvancedPropertyMap({
       toast.error('Nenhuma área desenhada para salvar');
       return;
     }
-    console.log('[AdvancedPropertyMap] Geometria sendo salva:', JSON.stringify(drawnGeometry));
-    onSave(drawnGeometry);
+    // Abre modal para categorizar a camada
+    setCategoryModalOpen(true);
+  };
+
+  const handleSaveCategorizedLayer = (layer) => {
+    console.log('[AdvancedPropertyMap] Camada categorizada sendo salva:', JSON.stringify(layer));
+    // Salva o layer como antes, mas agora com tipo e cor
+    onSave(drawnGeometry, layer);
     setDrawnGeometry(null);
     setIsDrawing(false);
+    toast.success(`Camada "${layer.name}" salva no mapa`);
   };
 
   // Calcula área de um polígono (GeoJSON)

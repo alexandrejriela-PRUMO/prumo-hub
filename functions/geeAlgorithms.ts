@@ -49,7 +49,12 @@ Deno.serve(async (req) => {
     });
     const data = await res.json();
 
-    return Response.json({ raw: data, keys: Object.keys(data).slice(0, 20) });
+    const algos = (data.algorithms || []);
+    const names = algos
+      .map(a => a.name.replace('algorithms/', ''))
+      .filter(n => n.includes('Collection') || n.includes('Filter') || n.includes('Reducer') || n.includes('ImageCollection'))
+      .sort();
+    return Response.json({ names, total: names.length });
   } catch (err) {
     return Response.json({ error: err.message }, { status: 500 });
   }

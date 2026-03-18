@@ -40,6 +40,12 @@ export default function ClimateMonitoring() {
     enabled: !!user?.email
   });
 
+  useEffect(() => {
+    if (properties.length > 0 && !selectedProperty) {
+      setSelectedProperty(properties[0]);
+    }
+  }, [properties, selectedProperty]);
+
   const { data: climateData = [], refetch: refetchClimateData } = useQuery({
     queryKey: ['climateMonitoring', selectedProperty?.id],
     queryFn: () => base44.entities.ClimateMonitoring.filter({ property_id: selectedProperty?.id }, '-created_date'),

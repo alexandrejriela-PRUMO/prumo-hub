@@ -43,10 +43,6 @@ export default function DocumentsHub() {
     dateTo: ''
   });
 
-  const MODULES = [
-    'Trabalhista', 'Contábil', 'Ambiental', 'Tributário',
-    'Imobiliário', 'Civil', 'Fiscal', 'Recursos Humanos', 'Administrativo'
-  ];
   const [orderedIds, setOrderedIds] = useState([]);
 
   const queryClient = useQueryClient();

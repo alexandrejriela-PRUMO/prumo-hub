@@ -62,9 +62,15 @@ export default function NDVIPanel({ geometry, coordinates, propertyName }) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
-  const hasGeometry = (geometry && (
-    geometry.type === 'FeatureCollection' ? geometry.features?.length > 0 : !!geometry.type
-  )) || !!coordinates;
+   const hasGeometry = (geometry && (
+     geometry.type === 'FeatureCollection' ? geometry.features?.length > 0 : !!geometry.type
+   )) || !!coordinates;
+
+   useEffect(() => {
+     if (geometry) {
+       console.log('[NDVIPanel] Geometria recebida:', JSON.stringify(geometry));
+     }
+   }, [geometry]);
 
   const normalizeCoordinates = (coords) => {
     // Converte qualquer formato de coordinate para [number, number]

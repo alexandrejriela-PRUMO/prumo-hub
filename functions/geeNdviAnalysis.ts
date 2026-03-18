@@ -365,30 +365,43 @@ Deno.serve(async (req) => {
 
     if (ndviCurrent === null) {
       console.warn('[GEE] Aviso: NDVI atual é null (sem imagens MODIS para o período/área)');
+      const classification = classify(0);
       return Response.json({ 
-        error: 'Sem imagens MODIS disponíveis para o período/área selecionado.',
         ndvi_mean: null,
-        type: 'NO_DATA'
-      });
+        ndvi_prev_year: ndviPrev !== null ? Math.round(ndviPrev * 1000) / 1000 : null,
+        trend: null,
+        ...classification,
+        date_range: { 
+          start: new Date(Date.now() - 90 * 86400000).toISOString().split('T')[0],
+          end: new Date().toISOString().split('T')[0]
+        },
+        source: 'MODIS Terra NDVI 16-day (250m)',
+        analysis_date: new Date().toISOString().split('T')[0],
+        warning: 'Sem imagens MODIS disponíveis para o período/área selecionado.'
+      }, { status: 200 });
     }
 
     const classification = classify(ndviCurrent);
     const trend = ndviPrev !== null ? ndviCurrent - ndviPrev : null;
+
+    const now = new Date();
+    const endDate = now.toISOString().split('T')[0];
+    const startDate = new Date(now - 90 * 86400000).toISOString().split('T')[0];
 
     const result = {
       ndvi_mean: Math.round(ndviCurrent * 1000) / 1000,
       ndvi_prev_year: ndviPrev !== null ? Math.round(ndviPrev * 1000) / 1000 : null,
       trend: trend !== null ? Math.round(trend * 1000) / 1000 : null,
       ...classification,
-      date_range: { start: new Date().toISOString().split('T')[0] },
+      date_range: { start: startDate, end: endDate },
       source: 'MODIS Terra NDVI 16-day (250m)',
-      analysis_date: new Date().toISOString().split('T')[0],
+      analysis_date: endDate,
     };
 
-    console.log('[GEE] Análise completa com sucesso');
+    console.log('[GEE] Análise completa com sucesso. NDVI:', result.ndvi_mean);
     console.log('=== NDVI REQUEST END (SUCCESS) ===');
 
-    return Response.json(result);
+    return Response.json(result, { status: 200 });
 
   } catch (err) {
     console.error('[GEE] Erro não capturado:', err.message);

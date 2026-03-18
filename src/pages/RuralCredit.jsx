@@ -112,8 +112,20 @@ export default function RuralCreditPage() {
 
   const handleSubmit = () => {
     if (!form.instituicao || !form.valor_contratado || !form.data_vencimento) { toast.error('Preencha instituição, valor e data de vencimento.'); return; }
-    const clientProp = properties.find(p => p.id === form.property_id);
-    const payload = { ...form, valor_contratado: parseFloat(form.valor_contratado) || 0, saldo_devedor: parseFloat(form.saldo_devedor) || 0, taxa_juros: parseFloat(form.taxa_juros) || 0, prazo_total_meses: parseInt(form.prazo_total_meses) || 0, num_parcelas: parseInt(form.num_parcelas) || 0, parcelas_pagas: parseInt(form.parcelas_pagas) || 0, consultor_email: user?.email, client_name: clientProp?.client_name || form.client_name };
+    const clientProp = properties.find(p => p.id === form.property_id) || properties[0];
+    const payload = { 
+      ...form, 
+      valor_contratado: parseFloat(form.valor_contratado) || 0, 
+      saldo_devedor: parseFloat(form.saldo_devedor) || 0, 
+      taxa_juros: parseFloat(form.taxa_juros) || 0, 
+      prazo_total_meses: parseInt(form.prazo_total_meses) || 0, 
+      num_parcelas: parseInt(form.num_parcelas) || 0, 
+      parcelas_pagas: parseInt(form.parcelas_pagas) || 0, 
+      consultor_email: user?.email,
+      client_name: clientProp?.client_name || clientProp?.property_name || form.client_name,
+      client_email: clientProp?.owner_email || user?.email,
+      property_id: form.property_id || clientProp?.id || ''
+    };
     if (editing) updateM.mutate({ id: editing.id, data: payload });
     else createM.mutate(payload);
   };

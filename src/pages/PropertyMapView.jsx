@@ -533,13 +533,22 @@ export default function PropertyMapView() {
         return <NDVIPanel geometry={geometry} coordinates={selectedProperty.coordinates} propertyName={selectedProperty.property_name} />;
       })()}
 
-      {/* Help */}
-      <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-700">
-        <Info className="w-4 h-4 mt-0.5 flex-shrink-0 text-blue-500" />
-        <p>
-          Importe arquivos <strong>.KML</strong> (ex: do Google Earth, SICAR, CAR) para sobrepor camadas diretamente no mapa. 
-          Use os botões <strong>Exportar</strong> para baixar qualquer camada cadastrada como KML compatível com o Google Earth.
-        </p>
+      {/* Help & Instructions */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-700">
+          <Info className="w-4 h-4 mt-0.5 flex-shrink-0 text-blue-500" />
+          <div>
+            <p className="font-semibold mb-1">Desenho de Áreas</p>
+            <p>Clique em "Desenhar Área" e crie polígonos no mapa clicando para adicionar vértices. Clique no primeiro ponto ou use "Finalizar" para fechar.</p>
+          </div>
+        </div>
+        <div className="flex items-start gap-2 p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-xs text-emerald-700">
+          <Info className="w-4 h-4 mt-0.5 flex-shrink-0 text-emerald-500" />
+          <div>
+            <p className="font-semibold mb-1">Importação & Exportação</p>
+            <p>Importe <strong>.KML</strong> (Google Earth, SICAR) e exporte camadas como KML. Use "Coordenadas" para criar polígonos por inserção manual de pontos.</p>
+          </div>
+        </div>
       </div>
     </div>
   );

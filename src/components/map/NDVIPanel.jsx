@@ -63,7 +63,10 @@ export default function NDVIPanel({ geometry, coordinates, propertyName }) {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
    const hasGeometry = (geometry && (
-     geometry.type === 'FeatureCollection' ? geometry.features?.length > 0 : !!geometry.type
+     geometry.type === 'FeatureCollection' ? geometry.features?.length > 0 : 
+     geometry.type === 'Feature' ? !!geometry.geometry :
+     geometry.type === 'Polygon' || geometry.type === 'MultiPolygon' ? !!geometry.coordinates : 
+     !!geometry.type
    )) || !!coordinates;
 
    useEffect(() => {

@@ -29,75 +29,21 @@ async function getGEEToken(email, pem) {
 }
 
 function buildExpr(geometry, startDate, endDate) {
-  const startMs = new Date(startDate).getTime();
-  const endMs = new Date(endDate).getTime();
   return {
-    result: '6',
+    result: '4',
     values: {
-      '0': {
-        functionInvocationValue: {
-          functionName: 'ImageCollection.load',
-          arguments: { id: { constantValue: 'MODIS/061/MOD13Q1' } }
-        }
-      },
-      '1': {
-        functionInvocationValue: {
-          functionName: 'DateRange',
-          arguments: {
-            start: { constantValue: startMs },
-            end: { constantValue: endMs }
-          }
-        }
-      },
-      '2': {
-        functionInvocationValue: {
-          functionName: 'Collection.filterDate',
-          arguments: {
-            collection: { valueReference: '0' },
-            start_time: { constantValue: startMs },
-            end_time: { constantValue: endMs }
-          }
-        }
-      },
-      '3': {
-        functionInvocationValue: {
-          functionName: 'Collection.filterBounds',
-          arguments: {
-            collection: { valueReference: '2' },
-            geometry: { constantValue: geometry }
-          }
-        }
-      },
-      '4': {
-        functionInvocationValue: {
-          functionName: 'ImageCollection.select',
-          arguments: {
-            input: { valueReference: '3' },
-            bandSelectors: { constantValue: ['NDVI'] }
-          }
-        }
-      },
-      '5': {
-        functionInvocationValue: {
-          functionName: 'reduce.mean',
-          arguments: {
-            collection: { valueReference: '4' }
-          }
-        }
-      },
-      '6': {
-        functionInvocationValue: {
-          functionName: 'Image.reduceRegion',
-          arguments: {
-            image: { valueReference: '5' },
-            reducer: { functionInvocationValue: { functionName: 'Reducer.mean', arguments: {} } },
-            geometry: { constantValue: geometry },
-            scale: { constantValue: 500 },
-            maxPixels: { constantValue: 1e8 },
-            bestEffort: { constantValue: true }
-          }
-        }
-      }
+      '0': { functionInvocationValue: { functionName: 'ImageCollection.load', arguments: { id: { constantValue: 'MODIS/061/MOD13Q1' } } } },
+      '1': { functionInvocationValue: { functionName: 'Collection.filterBounds', arguments: { collection: { valueReference: '0' }, geometry: { constantValue: geometry } } } },
+      '2': { functionInvocationValue: { functionName: 'Collection.filterDate', arguments: { collection: { valueReference: '1' }, start_time: { constantValue: startDate }, end_time: { constantValue: endDate } } } },
+      '3': { functionInvocationValue: { functionName: 'ImageCollection.reduce', arguments: { collection: { valueReference: '2' }, reducer: { functionInvocationValue: { functionName: 'Reducer.mean', arguments: {} } } } } },
+      '4': { functionInvocationValue: { functionName: 'Image.reduceRegion', arguments: {
+        image: { valueReference: '3' },
+        reducer: { functionInvocationValue: { functionName: 'Reducer.mean', arguments: {} } },
+        geometry: { constantValue: geometry },
+        scale: { constantValue: 500 },
+        maxPixels: { constantValue: 100000000 },
+        bestEffort: { constantValue: true }
+      }}}
     }
   };
 }

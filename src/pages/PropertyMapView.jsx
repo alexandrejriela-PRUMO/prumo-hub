@@ -165,19 +165,18 @@ export default function PropertyMapView() {
    const [user, setUser] = useState(null);
    const [selectedPropertyId, setSelectedPropertyId] = useState('');
    const [activeLayers, setActiveLayers] = useState({
-     satellite: true,
-     car: true,
-     app: true,
-     legalReserve: true,
-     recovery: false,
-     consolidated: false,
-   });
-   const [kmlLayers, setKmlLayers] = useState([]); // { id, name, geojson, color, visible }
-   const [drawnGeometry, setDrawnGeometry] = useState(null); // Geometria desenhada atual
-   const [ndviTileUrl, setNdviTileUrl] = useState(null);
-   const [ndviToken, setNdviToken] = useState(null);
-   const fileInputRef = useRef(null);
-   const savingRef = useRef(false);
+      satellite: true,
+      car: true,
+      app: true,
+      legalReserve: true,
+      recovery: false,
+      consolidated: false,
+    });
+    const [kmlLayers, setKmlLayers] = useState([]);
+    const [propertyAreas, setPropertyAreas] = useState([]);
+    const [drawnGeometry, setDrawnGeometry] = useState(null);
+    const fileInputRef = useRef(null);
+    const savingRef = useRef(false);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -200,17 +199,14 @@ export default function PropertyMapView() {
     }
   }, [properties]);
 
-  // Carregar camadas KML salvas e geometria desenhada ao trocar propriedade
+  // Carregar KML layers e areas ao trocar propriedade
    useEffect(() => {
      if (!selectedProperty) return;
      const saved = selectedProperty.kml_layers || [];
      setKmlLayers(saved);
-     // Carrega a geometria desenhada se existir no banco
-     const drawnGeom = selectedProperty.boundaries ? 
-       (typeof selectedProperty.boundaries === 'string' ? 
-         JSON.parse(selectedProperty.boundaries) : 
-         selectedProperty.boundaries) : null;
-     setDrawnGeometry(drawnGeom);
+     const areas = selectedProperty.areas || [];
+     setPropertyAreas(areas);
+     setDrawnGeometry(null);
    }, [selectedPropertyId]);
 
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
@@ -323,20 +319,22 @@ export default function PropertyMapView() {
     { key: 'consolidated', label: 'Consolidada', icon: '🟣' },
   ];
 
-  const handleSaveDrawnArea = async (geojson) => {
-     if (!selectedProperty) return;
-     try {
-       // Salva localmente para o NDVIPanel usar imediatamente
-       console.log('[PropertyMapView] Salvando geometria desenhada:', JSON.stringify(geojson));
-       setDrawnGeometry(geojson);
-       // Salva também na base de dados
-       await base44.entities.Property.update(selectedProperty.id, { boundaries: geojson });
-       toast.success('Área salva com sucesso!');
-     } catch (err) {
-       toast.error('Erro ao salvar área');
-       console.error(err);
-     }
-   };
+  const handleSaveArea = async (area) => {
+      if (!selectedProperty || savingRef.current) return;
+      savingRef.current = true;
+      try {
+        const updatedAreas = [...propertyAreas, area];
+        setPropertyAreas(updatedAreas);
+        // Persiste no banco
+        await base44.entities.Property.update(selectedProperty.id, { areas: updatedAreas });
+        toast.success(`Área "${area.name}" salva na propriedade!`);
+      } catch (err) {
+        toast.error('Erro ao salvar área');
+        console.error(err);
+      } finally {
+        savingRef.current = false;
+      }
+    };
 
   return (
     <div className="space-y-4">

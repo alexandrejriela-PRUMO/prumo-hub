@@ -576,7 +576,7 @@ export default function PropertyMapView() {
         const kmlGeom = kmlLayers.find(l => l.visible && l.geojson)?.geojson;
         const carGeom = carGeoJson;
         const geometry = kmlGeom || carGeom;
-        return <NDVIPanel geometry={geometry} propertyName={selectedProperty.property_name} />;
+        return <NDVIPanel geometry={geometry} coordinates={selectedProperty.coordinates} propertyName={selectedProperty.property_name} />;
       })()}
 
       {/* Help */}

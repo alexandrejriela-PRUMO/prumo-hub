@@ -318,6 +318,16 @@ export default function AdvancedPropertyMap({
             key={layer.id}
             data={layer.geojson}
             style={{ color: layer.color, weight: 2, fillOpacity: 0.18, fillColor: layer.color }}
+            onEachFeature={(feature, geoJsonLayer) => {
+              geoJsonLayer.on('click', () => {
+                if (!mapRef.current || !layer.geojson?.geometry?.coordinates) return;
+                const coords = layer.geojson.geometry.coordinates[0];
+                const bounds = L.latLngBounds(
+                  coords.map(([lng, lat]) => [lat, lng])
+                );
+                mapRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+              });
+            }}
           />
         ))}
 

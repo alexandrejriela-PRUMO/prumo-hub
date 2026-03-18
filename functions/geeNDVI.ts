@@ -58,7 +58,8 @@ async function computeNDVI(projectId, token, geometry, startDate, endDate) {
   });
   const data = await res.json();
   if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
-  const raw = data.result?.NDVI ?? data.result?.values?.NDVI ?? null;
+  const result = data.result ?? {};
+  const raw = result['NDVI_mean'] ?? result['NDVI'] ?? null;
   return raw != null ? raw / 10000 : null;
 }
 

@@ -323,11 +323,38 @@ export default function PropertyMapView() {
       if (!selectedProperty || savingRef.current) return;
       savingRef.current = true;
       try {
+        // Converter area para GeoJSON para KML
+        const geoJson = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [area.coordinates]
+          },
+          properties: { name: area.name, type: area.type }
+        };
+
+        // Criar KML layer com coordenadas
+        const kmlLayer = {
+          id: area.id,
+          name: `${area.name} (${area.type})`,
+          geojson: geoJson,
+          color: area.color,
+          visible: true
+        };
+
         const updatedAreas = [...propertyAreas, area];
+        const updatedKmlLayers = [...kmlLayers, kmlLayer];
+        
         setPropertyAreas(updatedAreas);
-        // Persiste no banco
-        await base44.entities.Property.update(selectedProperty.id, { areas: updatedAreas });
-        toast.success(`Área "${area.name}" salva na propriedade!`);
+        setKmlLayers(updatedKmlLayers);
+        
+        // Persiste ambas as coleções no banco
+        await base44.entities.Property.update(selectedProperty.id, { 
+          areas: updatedAreas,
+          kml_layers: updatedKmlLayers
+        });
+        
+        toast.success(`Área "${area.name}" salva como KML na propriedade!`);
       } catch (err) {
         toast.error('Erro ao salvar área');
         console.error(err);

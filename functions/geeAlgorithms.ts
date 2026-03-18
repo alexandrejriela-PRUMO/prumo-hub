@@ -54,7 +54,8 @@ Deno.serve(async (req) => {
     const filterNames = all.filter(n => n.startsWith('Filter.')).sort();
     const reducerNames = all.filter(n => n.startsWith('Reducer.')).sort();
     const imageCollNames = all.filter(n => n.startsWith('ImageCollection.')).sort();
-    return Response.json({ filterNames, reducerNames, imageCollNames, all: all.sort() });
+    const dateRelated = all.filter(n => n.toLowerCase().includes('date') || n.toLowerCase().includes('time') || n.toLowerCase().includes('range')).sort();
+    return Response.json({ filterNames, imageCollNames, dateRelated });
   } catch (err) {
     return Response.json({ error: err.message }, { status: 500 });
   }

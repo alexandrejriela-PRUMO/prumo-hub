@@ -148,6 +148,7 @@ export default function DocumentsHub() {
 
     const propertyMatch = !selectedPropertyId || doc.entity_id === selectedPropertyId || doc.property_id === selectedPropertyId;
     const entityMatch = filters.entityType === 'all' || doc.entity_type === filters.entityType;
+    const moduleMatch = filters.module === 'all' || doc.module === filters.module;
     const typeMatch = filters.documentType === 'all' || doc.document_type === filters.documentType;
     
     const dateFrom = filters.dateFrom ? new Date(filters.dateFrom) : null;

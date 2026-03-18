@@ -54,7 +54,10 @@ export default function CRATransactionSection({ user }) {
       total_value: parseFloat(data.area_hectares) * parseFloat(data.price_per_hectare)
     }),
     onSuccess: () => {
+      // 🟡 MÉDIO #9: Invalidar cache de títulos também
       queryClient.invalidateQueries({ queryKey: ['cra-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['cra-titles'] });
+      queryClient.invalidateQueries({ queryKey: ['cra-titles-for-transaction'] });
       setShowForm(false);
       setSelectedTitle(null);
       setFormData({
@@ -68,6 +71,10 @@ export default function CRATransactionSection({ user }) {
         transaction_date: '',
         status: 'Em negociação'
       });
+      console.log('[CRA] Transação criada com sucesso');
+    },
+    onError: (error) => {
+      console.error('[CRA] Erro ao criar transação:', error);
     }
   });
 
@@ -183,7 +190,7 @@ export default function CRATransactionSection({ user }) {
 
       {/* Form Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl sm:max-w-lg md:max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Registrar Nova Transação de CRA</DialogTitle>
             <p className="text-xs text-gray-600 mt-2">Você é o VENDEDOR. Indique quem será o COMPRADOR (que fará compensação)</p>

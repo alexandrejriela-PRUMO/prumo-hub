@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, CheckCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function CRACompensationSection({ user }) {
   const [showForm, setShowForm] = useState(false);
@@ -58,14 +59,35 @@ export default function CRACompensationSection({ user }) {
         environmental_agency: '',
         protocol_number: ''
       });
+      toast.success('Compensação registrada com sucesso!');
+      console.log('[CRA] Compensação criada com sucesso');
+    },
+    onError: (error) => {
+      console.error('[CRA] Erro ao criar compensação:', error);
     }
   });
 
   const handleSubmit = () => {
-    if (!formData.compensation_number || !formData.car_number || !formData.cra_title_id) {
-      alert('Preencha os campos obrigatórios');
+    // 🟡 MÉDIO #10: Toast ao invés de alert()
+    const errors = [];
+    if (!formData.compensation_number) errors.push('Número da compensação');
+    if (!formData.car_number) errors.push('CAR compensado');
+    if (!formData.cra_title_id) errors.push('CRA utilizada');
+
+    if (errors.length > 0) {
+      toast.error(`Campos obrigatórios: ${errors.join(', ')}`);
       return;
     }
+
+    // 🟡 MÉDIO #12: Validação de duplicatas
+    const exists = compensations.some(c => c.compensation_number === formData.compensation_number);
+    if (exists) {
+      toast.error(`Compensação "${formData.compensation_number}" já existe`);
+      console.warn('[CRA] Tentativa de duplicação:', formData.compensation_number);
+      return;
+    }
+
+    console.log('[CRA] Salvando compensação:', formData.compensation_number);
     createCompensationMutation.mutate(formData);
   };
 
@@ -146,7 +168,7 @@ export default function CRACompensationSection({ user }) {
 
       {/* Form Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl sm:max-w-lg md:max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Registrar Nova Compensação</DialogTitle>
           </DialogHeader>

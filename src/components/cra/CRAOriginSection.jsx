@@ -41,13 +41,44 @@ export default function CRAOriginSection({ user }) {
 
   const createOriginMutation = useMutation({
     mutationFn: async (data) => {
-      const surplus = Math.max(0, data.existing_legal_reserve_hectares - data.required_legal_reserve_hectares);
+      // 🔴 CRÍTICO #4: Validação de tipos e valores
+      const existing = parseFloat(data.existing_legal_reserve_hectares) || 0;
+      const required = parseFloat(data.required_legal_reserve_hectares) || 0;
+      const total = parseFloat(data.total_area_hectares) || 0;
+
+      if (isNaN(existing) || isNaN(required) || isNaN(total)) {
+        throw new Error('Valores numéricos inválidos');
+      }
+
+      if (existing < 0 || required < 0 || total < 0) {
+        throw new Error('Valores não podem ser negativos');
+      }
+
+      if (total === 0) {
+        throw new Error('Área total não pode ser zero');
+      }
+
+      if (required > total) {
+        throw new Error('Reserva Legal exigida não pode ser maior que a área total');
+      }
+
+      const surplus = Math.max(0, existing - required);
+      
+      if (existing < required) {
+        console.warn('[CRA] Aviso: Reserva existente menor que exigida. Potencial CRA será zero.');
+      }
+
+      console.log('[CRA] Validações OK - Surplus calculado:', surplus);
+
       const payload = {
         ...data,
         owner_email: user.email,
         surplus_native_vegetation_hectares: surplus,
         potential_cra_area_hectares: surplus,
-        status: editingOrigin?.status || 'Pendente'
+        status: editingOrigin?.status || 'Pendente',
+        total_area_hectares: total,
+        required_legal_reserve_hectares: required,
+        existing_legal_reserve_hectares: existing
       };
       
       if (documents.length > 0) {
@@ -55,8 +86,10 @@ export default function CRAOriginSection({ user }) {
       }
 
       if (editingOrigin) {
+        console.log('[CRA] Atualizando origem:', editingOrigin.id);
         return base44.entities.CRAOrigin.update(editingOrigin.id, payload);
       }
+      console.log('[CRA] Criando nova origem:', payload);
       return base44.entities.CRAOrigin.create(payload);
     },
     onSuccess: () => {
@@ -64,6 +97,10 @@ export default function CRAOriginSection({ user }) {
       setShowForm(false);
       setEditingOrigin(null);
       resetForm();
+      console.log('[CRA] Origem salva com sucesso');
+    },
+    onError: (error) => {
+      console.error('[CRA] Erro ao salvar origem:', error);
     }
   });
 
@@ -106,15 +143,43 @@ export default function CRAOriginSection({ user }) {
   };
 
   const handleSubmit = () => {
-    if (!formData.property_id || !formData.biome || !formData.car_number || !formData.total_area_hectares) {
-      alert('Preencha os campos obrigatórios');
+    // 🟡 MÉDIO #10: Substituir alert() por toast()
+    const errors = [];
+    if (!formData.property_id) errors.push('Propriedade');
+    if (!formData.car_number) errors.push('CAR');
+    if (!formData.biome) errors.push('Bioma');
+    if (!formData.total_area_hectares) errors.push('Área total');
+    if (!formData.required_legal_reserve_hectares) errors.push('Reserva Legal exigida');
+    if (!formData.existing_legal_reserve_hectares) errors.push('Reserva Legal existente');
+
+    if (errors.length > 0) {
+      const errorMsg = `Campos obrigatórios: ${errors.join(', ')}`;
+      toast.error(errorMsg);
+      console.warn('[CRA] Validação falhou:', errorMsg);
       return;
     }
+
+    // 🟡 MÉDIO #11: Validação de números negativos
+    const total = parseFloat(formData.total_area_hectares);
+    const required = parseFloat(formData.required_legal_reserve_hectares);
+    const existing = parseFloat(formData.existing_legal_reserve_hectares);
+
+    if (total <= 0 || required < 0 || existing < 0) {
+      toast.error('Valores devem ser positivos');
+      return;
+    }
+
+    if (required > total) {
+      toast.error('Reserva Legal exigida não pode ser maior que a área total');
+      return;
+    }
+
+    console.log('[CRA] Iniciando salvamento da origem...');
     createOriginMutation.mutate({
       ...formData,
-      total_area_hectares: parseFloat(formData.total_area_hectares) || 0,
-      required_legal_reserve_hectares: parseFloat(formData.required_legal_reserve_hectares) || 0,
-      existing_legal_reserve_hectares: parseFloat(formData.existing_legal_reserve_hectares) || 0
+      total_area_hectares: total,
+      required_legal_reserve_hectares: required,
+      existing_legal_reserve_hectares: existing
     });
   };
 
@@ -228,7 +293,7 @@ export default function CRAOriginSection({ user }) {
         setShowForm(open);
         if (!open) resetForm();
       }}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl sm:max-w-lg md:max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingOrigin ? 'Editar Origem de CRA' : 'Adicionar Origem de CRA'}</DialogTitle>
           </DialogHeader>

@@ -209,7 +209,7 @@ export default function CRATitleSection({ user }) {
 
       {/* Form Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl sm:max-w-lg md:max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Emitir Novo Título de CRA</DialogTitle>
             <p className="text-xs text-gray-600 mt-2">Selecione a propriedade de origem que gerará a CRA</p>

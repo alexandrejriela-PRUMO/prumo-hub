@@ -50,14 +50,36 @@ export default function ClimateMonitoring() {
 
   const updateClimateDataMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedProperty?.coordinates) {
-        toast.error('Propriedade sem coordenadas');
+      // 🔴 CRÍTICO #1: Validação de coordenadas
+      if (!selectedProperty?.coordinates || typeof selectedProperty.coordinates !== 'string') {
+        toast.error('Propriedade sem coordenadas válidas. Configure antes de atualizar.');
+        console.warn('[CLIMATE] Coordenadas inválidas:', selectedProperty?.coordinates);
         return;
       }
 
-      const [lat, lng] = selectedProperty.coordinates.split(',').map(c => c.trim());
+      const parts = selectedProperty.coordinates.split(',');
+      if (parts.length !== 2) {
+        toast.error('Formato de coordenadas inválido. Use: latitude,longitude');
+        console.warn('[CLIMATE] Formato de coordenadas errado:', selectedProperty.coordinates);
+        return;
+      }
+
+      let lat, lng;
+      try {
+        lat = parseFloat(parts[0].trim());
+        lng = parseFloat(parts[1].trim());
+        if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+          throw new Error('Coordenadas fora do intervalo válido');
+        }
+        console.log('[CLIMATE] Coordenadas validadas:', { lat, lng });
+      } catch (e) {
+        toast.error('Coordenadas inválidas. Verifique: latitude (-90 a 90), longitude (-180 a 180)');
+        console.error('[CLIMATE] Erro ao parsear coordenadas:', e);
+        return;
+      }
       
       try {
+        // 🔴 CRÍTICO #2: Tratamento de erro API robusto
         const response = await base44.integrations.Core.InvokeLLM({
           prompt: `Forneça dados climáticos atuais e previsão de 7 dias para as coordenadas ${lat},${lng}. 
           Inclua: temperatura atual (número), umidade (0-100%), precipitação (mm), velocidade do vento (km/h), 
@@ -90,21 +112,28 @@ export default function ClimateMonitoring() {
           }
         });
 
+        // Validar resposta
+        if (!response || typeof response !== 'object') {
+          throw new Error('Resposta inválida da API');
+        }
+
+        console.log('[CLIMATE] Resposta da API recebida:', response);
+
         const cleanedResponse = {
-          temperature_current: response.temperature_current || 0,
-          humidity: Math.min(100, Math.max(0, response.humidity || 0)),
-          precipitation: response.precipitation || 0,
-          wind_speed: response.wind_speed || 0,
-          wind_direction: response.wind_direction || 'N',
-          uv_index: response.uv_index || 0,
-          soil_moisture: Math.min(100, Math.max(0, response.soil_moisture || 0)),
-          forecast_7days: (response.forecast_7days || []).map(day => ({
-            date: day.date || new Date().toISOString().split('T')[0],
-            temp_max: day.temp_max || 25,
-            temp_min: day.temp_min || 15,
-            precipitation_chance: Math.min(100, Math.max(0, day.precipitation_chance || 0)),
-            description: day.description || 'Sem informação'
-          }))
+          temperature_current: Math.isFinite(response.temperature_current) ? response.temperature_current : 0,
+          humidity: Math.min(100, Math.max(0, response.humidity ?? 0)),
+          precipitation: Math.isFinite(response.precipitation) ? response.precipitation : 0,
+          wind_speed: Math.isFinite(response.wind_speed) ? response.wind_speed : 0,
+          wind_direction: response.wind_direction?.toString() || 'N',
+          uv_index: Math.isFinite(response.uv_index) ? response.uv_index : 0,
+          soil_moisture: Math.min(100, Math.max(0, response.soil_moisture ?? 0)),
+          forecast_7days: Array.isArray(response.forecast_7days) ? (response.forecast_7days || []).map(day => ({
+            date: day?.date?.toString() || new Date().toISOString().split('T')[0],
+            temp_max: Math.isFinite(day?.temp_max) ? day.temp_max : 25,
+            temp_min: Math.isFinite(day?.temp_min) ? day.temp_min : 15,
+            precipitation_chance: Math.min(100, Math.max(0, day?.precipitation_chance ?? 0)),
+            description: day?.description?.toString() || 'Sem informação'
+          })) : []
         };
 
         const mainLocation = climateData.find(c => c.location_name === `Principal - ${selectedProperty.property_name}`);
@@ -114,6 +143,7 @@ export default function ClimateMonitoring() {
             ...cleanedResponse,
             last_update: new Date().toISOString()
           });
+          console.log('[CLIMATE] Registro atualizado:', mainLocation.id);
         } else {
           await base44.entities.ClimateMonitoring.create({
             property_id: selectedProperty.id,
@@ -124,19 +154,20 @@ export default function ClimateMonitoring() {
             data_source: 'API Pública',
             alerts: []
           });
+          console.log('[CLIMATE] Novo registro criado');
         }
 
         await refetchClimateData();
         setSelectedLocation(null);
         toast.success('Dados climáticos atualizados com sucesso!');
       } catch (error) {
-        toast.error('Erro ao buscar dados climáticos. Tente novamente.');
-        console.error(error);
+        console.error('[CLIMATE] Erro ao buscar dados:', error);
+        toast.error(error?.message || 'Erro ao buscar dados climáticos. Tente novamente.');
       }
     },
     onError: (error) => {
+      console.error('[CLIMATE] Erro na mutação:', error);
       toast.error('Erro ao atualizar dados climáticos');
-      console.error(error);
     }
   });
 

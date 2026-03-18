@@ -63,16 +63,20 @@ export default function RuralCreditPage() {
 
   React.useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);
 
+  const isConsultor = user?.user_type === 'consultor' || user?.user_type === 'equipe';
+
   const { data: properties = [] } = useQuery({
     queryKey: ['props-credit', user?.email],
-    queryFn: () => base44.entities.Property.filter({ consultor_email: user.email }, 'client_name', 300),
+    queryFn: () => isConsultor
+      ? base44.entities.Property.filter({ consultor_email: user.email }, 'client_name', 300)
+      : base44.entities.Property.filter({ owner_email: user.email }, 'client_name', 300),
     enabled: !!user?.email,
   });
 
   const { data: credits = [], isLoading } = useQuery({
     queryKey: ['rural-credits', user?.email, selectedPropertyId],
     queryFn: () => {
-      const filter = { consultor_email: user.email };
+      const filter = isConsultor ? { consultor_email: user.email } : { client_email: user.email };
       if (selectedPropertyId) filter.property_id = selectedPropertyId;
       return base44.entities.RuralCredit.filter(filter, '-created_date', 200);
     },
@@ -130,12 +134,34 @@ export default function RuralCreditPage() {
         </Button>
       </div>
 
-      <ConsultorPropertySelector
-        properties={properties}
-        selectedPropertyId={selectedPropertyId}
-        onSelect={setSelectedPropertyId}
-        isLoading={!user}
-      />
+      {isConsultor && (
+        <ConsultorPropertySelector
+          properties={properties}
+          selectedPropertyId={selectedPropertyId}
+          onSelect={setSelectedPropertyId}
+          isLoading={!user}
+        />
+      )}
+
+      {!isConsultor && properties.length > 1 && (
+        <Card>
+          <CardContent className="pt-6">
+            <label className="text-sm font-medium text-gray-700 mb-2 block">Propriedade ou Empreendimento</label>
+            <select
+              value={selectedPropertyId || ''}
+              onChange={(e) => setSelectedPropertyId(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="">Selecione uma propriedade</option>
+              {properties.map(prop => (
+                <option key={prop.id} value={prop.id}>
+                  {prop.property_name} - {prop.city}/{prop.state}
+                </option>
+              ))}
+            </select>
+          </CardContent>
+        </Card>
+      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

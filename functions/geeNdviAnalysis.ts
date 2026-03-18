@@ -317,6 +317,11 @@ Deno.serve(async (req) => {
         if (ring.length < 3) {
           throw new Error(`Polígono requer mínimo 3 pontos. Recebido: ${ring.length}`);
         }
+      } else if (geometry.type === 'MultiPolygon') {
+        console.log('[GEE] MultiPolygon com', geometry.coordinates.length, 'polígonos');
+        if (geometry.coordinates.length === 0 || !geometry.coordinates[0]?.[0]) {
+          throw new Error('MultiPolygon sem coordenadas válidas');
+        }
       }
     } catch (e) {
       console.error('[GEE] Erro de validação de geometria:', e.message);

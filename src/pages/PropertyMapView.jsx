@@ -526,20 +526,21 @@ export default function PropertyMapView() {
       </Card>
 
       {/* Advanced Map */}
-      {selectedProperty ? (
-        <AdvancedPropertyMap
-          property={selectedProperty}
-          onSave={handleSaveArea}
-          LAYER_STYLES={LAYER_STYLES}
-          carGeoJson={carGeoJson}
-          carLayers={carLayers}
-          kmlLayers={kmlLayers}
-          propertyAreas={propertyAreas}
-          activeLayers={activeLayers}
-          onLayerToggle={toggleLayer}
-          parseGeoJson={parseGeoJson}
-          onKmlImport={handleKmlUpload}
-        />
+       {selectedProperty ? (
+         <AdvancedPropertyMap
+           property={selectedProperty}
+           onSave={handleSaveArea}
+           LAYER_STYLES={LAYER_STYLES}
+           carGeoJson={carGeoJson}
+           carLayers={carLayers}
+           kmlLayers={kmlLayers}
+           propertyAreas={propertyAreas}
+           activeLayers={activeLayers}
+           onLayerToggle={toggleLayer}
+           parseGeoJson={parseGeoJson}
+           onKmlImport={handleKmlUpload}
+           allGeoJsonLayers={allGeoJsonLayers}
+         />
       ) : (
         <Card>
           <CardContent className="py-12 text-center">

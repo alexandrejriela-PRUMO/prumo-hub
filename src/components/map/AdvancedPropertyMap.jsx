@@ -112,7 +112,8 @@ export default function AdvancedPropertyMap({
   activeLayers,
   onLayerToggle,
   parseGeoJson,
-  onKmlImport
+  onKmlImport,
+  allGeoJsonLayers = []
 }) {
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawnGeometry, setDrawnGeometry] = useState(null);
@@ -200,22 +201,31 @@ export default function AdvancedPropertyMap({
       }
     }
 
-    // Caso contrário, calcula bounds de todas as áreas salvas
-    const allCoordinates = [];
-    propertyAreas?.forEach(area => {
-      if (area.coordinates) {
-        allCoordinates.push(...area.coordinates.map(([lng, lat]) => [lat, lng]));
-      }
-    });
+    // Senão, tenta usar todas as camadas (CAR + KML + áreas)
+    if (allGeoJsonLayers && allGeoJsonLayers.length > 0) {
+      try {
+        const combined = L.featureGroup();
+        allGeoJsonLayers.forEach(gj => {
+          if (gj) {
+            try {
+              const layer = L.geoJSON(gj);
+              const b = layer.getBounds();
+              if (b.isValid()) combined.addLayer(layer);
+            } catch {}
+          }
+        });
+        const bounds = combined.getBounds();
+        if (bounds.isValid()) {
+          setTimeout(() => {
+            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+          }, 100);
+          return;
+        }
+      } catch {}
+    }
 
-    // Se tem áreas, faz zoom para englobar todas
-    if (allCoordinates.length > 0) {
-      const bounds = L.latLngBounds(allCoordinates);
-      setTimeout(() => {
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
-      }, 100);
-    } else if (property?.coordinates) {
-      // Se não tem áreas, centraliza na propriedade
+    // Se não funcionar, centraliza na propriedade
+    if (property?.coordinates) {
       const coordStr = String(property.coordinates).trim();
       const [lat, lng] = coordStr.split(/[,;]/).map(c => Number(c.trim()));
       if (!isNaN(lat) && !isNaN(lng)) {
@@ -224,7 +234,7 @@ export default function AdvancedPropertyMap({
         }, 100);
       }
     }
-  }, [propertyAreas, property?.coordinates]);
+  }, [allGeoJsonLayers, property?.coordinates]);
 
   // Calcula área de um polígono (GeoJSON)
   const calculateArea = (geojson) => {

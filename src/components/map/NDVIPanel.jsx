@@ -81,11 +81,25 @@ export default function NDVIPanel({ geometry, coordinates, propertyName }) {
           geom = geometry.features[0].geometry;
         }
 
-        // Valida que coordinates seja um array válido
-        if (!geom || !geom.coordinates || !Array.isArray(geom.coordinates)) {
-          setError('Geometria inválida: coordenadas não são um array válido');
+        // Valida estrutura básica
+        if (!geom || !geom.type) {
+          setError('Geometria inválida: estrutura incorreta');
           setLoading(false);
           return;
+        }
+
+        // Se Polygon, garante que coordinates seja [[[lng,lat],...]]
+        if (geom.type === 'Polygon') {
+          if (!Array.isArray(geom.coordinates) || geom.coordinates.length === 0) {
+            setError('Polígono sem coordenadas válidas');
+            setLoading(false);
+            return;
+          }
+          if (!Array.isArray(geom.coordinates[0]) || geom.coordinates[0].length < 3) {
+            setError('Polígono deve ter pelo menos 3 pontos');
+            setLoading(false);
+            return;
+          }
         }
 
         payload.boundaries_geojson = geom;

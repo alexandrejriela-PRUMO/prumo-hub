@@ -34,17 +34,41 @@ async function getGEEToken(email, pem) {
 }
 
 function buildExpr(geometry, startDate, endDate) {
+  // Filter.date para filtrar por data
+  // Collection.filter para aplicar o filtro
+  // Filter.intersects para filtrar por bounds
   return {
-    result: '5',
+    result: '6',
     values: {
       '0': { functionInvocationValue: { functionName: 'ImageCollection.load', arguments: { id: { constantValue: 'MODIS/061/MOD13Q1' } } } },
-      '1': { functionInvocationValue: { functionName: 'Collection.filterDate', arguments: { collection: { valueReference: '0' }, start: { constantValue: startDate }, end: { constantValue: endDate } } } },
-      '2': { functionInvocationValue: { functionName: 'Collection.filterBounds', arguments: { collection: { valueReference: '1' }, geometry: { constantValue: geometry } } } },
-      '3': { functionInvocationValue: { functionName: 'Collection.map', arguments: { collection: { valueReference: '2' }, baseAlgorithm: { functionDefinitionValue: { argumentNames: ['img'], body: '3a' } } } } },
+      // Filter by date
+      'f1': { functionInvocationValue: { functionName: 'Filter.date', arguments: { start: { constantValue: startDate }, end: { constantValue: endDate } } } },
+      '1': { functionInvocationValue: { functionName: 'Collection.filter', arguments: { collection: { valueReference: '0' }, filter: { valueReference: 'f1' } } } },
+      // Filter by bounds
+      'f2': { functionInvocationValue: { functionName: 'Filter.intersects', arguments: { leftField: { constantValue: '.geo' }, rightValue: { constantValue: geometry } } } },
+      '2': { functionInvocationValue: { functionName: 'Collection.filter', arguments: { collection: { valueReference: '1' }, filter: { valueReference: 'f2' } } } },
+      // Select NDVI band via map
+      '3': {
+        functionInvocationValue: {
+          functionName: 'Collection.map',
+          arguments: {
+            collection: { valueReference: '2' },
+            baseAlgorithm: {
+              functionDefinitionValue: {
+                argumentNames: ['img'],
+                body: '3a'
+              }
+            }
+          }
+        }
+      },
       '3a': { functionInvocationValue: { functionName: 'Image.select', arguments: { input: { argumentReference: 'img' }, bandSelectors: { constantValue: ['NDVI'] } } } },
+      // Reduce collection to mean image
       '4': { functionInvocationValue: { functionName: 'ImageCollection.reduce', arguments: { collection: { valueReference: '3' }, reducer: { functionInvocationValue: { functionName: 'Reducer.mean', arguments: {} } } } } },
-      '5': { functionInvocationValue: { functionName: 'Image.reduceRegion', arguments: {
-        image: { valueReference: '4' },
+      // Reduce region
+      '5': { functionInvocationValue: { functionName: 'Image.rename', arguments: { input: { valueReference: '4' }, names: { constantValue: ['NDVI'] } } } },
+      '6': { functionInvocationValue: { functionName: 'Image.reduceRegion', arguments: {
+        image: { valueReference: '5' },
         reducer: { functionInvocationValue: { functionName: 'Reducer.mean', arguments: {} } },
         geometry: { constantValue: geometry },
         scale: { constantValue: 500 },

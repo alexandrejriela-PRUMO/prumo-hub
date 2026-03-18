@@ -87,6 +87,10 @@ Deno.serve(async (req) => {
       privateKey = keyRaw;
     }
 
+    console.log('KEY_START:', JSON.stringify(privateKey?.substring(0, 80)));
+    console.log('KEY_HAS_LITERAL_SLASH_N:', privateKey?.includes('\\n'));
+    console.log('KEY_HAS_REAL_NEWLINE:', privateKey?.includes('\n'));
+
     let geometry;
     if (boundaries_geojson) {
       const gj = typeof boundaries_geojson === 'string' ? JSON.parse(boundaries_geojson) : boundaries_geojson;

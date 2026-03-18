@@ -150,6 +150,7 @@ export default function HarvestLossPage() {
   const removeItem = (target, idx) => setForm(p => ({ ...p, [target]: p[target].filter((_, i) => i !== idx) }));
 
   const handleSubmit = () => {
+     console.log('Submit form:', form);
      if (!form.cultura || !form.cultura.trim()) { toast.error('Preencha a cultura'); return; }
      if (!form.tipo_evento) { toast.error('Selecione o tipo de evento'); return; }
      if (!form.data_evento) { toast.error('Preencha a data do evento'); return; }

@@ -137,6 +137,7 @@ export default function RuralCreditPage() {
   const removeDoc = (idx) => setForm(p => ({ ...p, documentos: p.documentos.filter((_, i) => i !== idx) }));
 
   const handleSubmit = () => {
+     console.log('Submit form:', form);
      if (!form.instituicao || !form.valor_contratado) { 
        toast.error('Preencha instituição e valor contratado');
        return; 

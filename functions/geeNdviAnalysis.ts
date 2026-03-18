@@ -278,11 +278,13 @@ Deno.serve(async (req) => {
         console.log('[GEE] Geometria recebida (raw):', JSON.stringify(geometry));
       } else if (center_coordinates) {
         console.log('[GEE] Criando geometria a partir de coordenadas centrais:', center_coordinates);
-        const [lat, lng] = String(center_coordinates).split(',').map(Number);
+        const coords = String(center_coordinates).split(',').map(Number);
+        const lng = coords[0]; // Primeira coordenada é longitude
+        const lat = coords[1]; // Segunda coordenada é latitude
         if (isNaN(lat) || isNaN(lng)) throw new Error('Coordenadas centrais inválidas (não são números)');
         const d = 0.045;
         geometry = { type: 'Polygon', coordinates: [[[lng-d,lat-d],[lng+d,lat-d],[lng+d,lat+d],[lng-d,lat+d],[lng-d,lat-d]]] };
-        console.log('[GEE] Geometria criada com sucesso');
+        console.log('[GEE] Geometria criada com sucesso. Center: [' + lng + ', ' + lat + ']');
       } else {
         console.error('[GEE] Erro: Nenhuma geometria fornecida');
         return Response.json({ error: 'Geometria não fornecida (boundaries_geojson ou center_coordinates obrigatórios)' }, { status: 400 });

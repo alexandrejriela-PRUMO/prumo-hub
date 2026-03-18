@@ -64,9 +64,41 @@ export default function PropertyCentral() {
     { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin, color: 'bg-teal-50 text-teal-700 border-teal-200' },
   ];
 
+  const [showModuleNav, setShowModuleNav] = useState(false);
+
   return (
     <div className="space-y-6">
-      {/* Quick Return Button */}
+      {/* Module Quick Navigation */}
+      <div className="bg-gradient-to-r from-emerald-50 to-blue-50 rounded-xl border border-emerald-200 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-emerald-900">Navegação Rápida de Módulos</h3>
+          <button
+            onClick={() => setShowModuleNav(!showModuleNav)}
+            className="text-xs px-2 py-1 rounded bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors"
+          >
+            {showModuleNav ? 'Fechar' : 'Expandir'}
+          </button>
+        </div>
+        {showModuleNav && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+            {modules.map((module) => {
+              const Icon = module.icon;
+              return (
+                <Link
+                  key={module.page}
+                  to={createPageUrl(module.page)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white hover:bg-emerald-50 transition-colors text-xs font-medium text-gray-700 hover:text-emerald-700 border border-emerald-100"
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="truncate">{module.name}</span>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      
+      {/* Quick Return Button (if came from a module) */}
       {returnFrom && (
         <Link
           to={createPageUrl(returnFrom)}

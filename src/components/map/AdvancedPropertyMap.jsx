@@ -344,21 +344,37 @@ export default function AdvancedPropertyMap({
                 </div>
               )}
             </div>
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={handleSaveGeometry}
-                className="flex-1 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-all"
-              >
-                💾 Salvar
-              </button>
+            <div className="flex flex-col gap-2 pt-2">
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveGeometry}
+                  className="flex-1 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-all"
+                >
+                  💾 Salvar Camada
+                </button>
+                <button
+                  onClick={() => setShowNdviQuickAction(!showNdviQuickAction)}
+                  className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-all"
+                >
+                  🛰️ NDVI
+                </button>
+              </div>
               <button
                 onClick={handleCancelDraw}
-                className="flex-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-all"
+                className="w-full px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-all"
               >
                 ✕ Cancelar
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* NDVI Quick Action Notice */}
+      {showNdviQuickAction && drawnGeometry && (
+        <div className="absolute bottom-32 left-4 right-4 z-[500] bg-blue-50 border-l-4 border-blue-600 rounded-lg p-3 shadow-md">
+          <p className="text-xs font-semibold text-blue-900 mb-1">✓ Geometria Ativa para Análise</p>
+          <p className="text-xs text-blue-700">Role para baixo e acesse o painel NDVI abaixo do mapa para analisar a área com Google Earth Engine.</p>
         </div>
       )}
 

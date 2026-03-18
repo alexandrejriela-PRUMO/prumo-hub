@@ -52,7 +52,7 @@ function StatCard({ label, value, unit = '' }) {
   );
 }
 
-export default function NDVIPanel({ geometry, propertyName }) {
+export default function NDVIPanel({ geometry, coordinates, propertyName }) {
   const [startDate, setStartDate] = useState(() => {
     const d = new Date(); d.setMonth(d.getMonth() - 3);
     return d.toISOString().split('T')[0];
@@ -81,6 +81,12 @@ export default function NDVIPanel({ geometry, propertyName }) {
       setLoading(false);
     }
   };
+
+  const historyData = result?.history?.filter(h => h?.mean != null).map(h => ({
+    name: h.label,
+    NDVI: parseFloat(h.mean?.toFixed(3)),
+    period: h.period
+  })) || [];
 
   return (
     <Card className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-white">

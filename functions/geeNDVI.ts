@@ -96,7 +96,12 @@ async function getAccessToken(email, pemRaw) {
   const sigInput = `${header}.${payload}`;
 
   // Strip PEM headers and all whitespace to get pure base64
-  const pemBody = pem.replace(/-----BEGIN[^-]+-----/g, '').replace(/-----END[^-]+-----/g, '').replace(/\s+/g, '');
+  const pemBody = pem
+    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+    .replace(/-----END PRIVATE KEY-----/g, '')
+    .replace(/-----BEGIN RSA PRIVATE KEY-----/g, '')
+    .replace(/-----END RSA PRIVATE KEY-----/g, '')
+    .replace(/[^A-Za-z0-9+/=]/g, ''); // remove everything that isn't valid base64
   const keyBytes = Uint8Array.from(atob(pemBody), ch => ch.charCodeAt(0));
   const key = await crypto.subtle.importKey(
     'pkcs8', keyBytes.buffer,

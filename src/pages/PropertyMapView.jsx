@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MapPin, Layers, Info, TreePine, Droplets, Upload, Download, X, FileText } from 'lucide-react';
+import { MapPin, Layers, Info, TreePine, Droplets, Upload, Download, X, FileText, Satellite } from 'lucide-react';
 import NDVIPanel from '@/components/map/NDVIPanel';
 import { cn } from '@/lib/utils';
 // KML to GeoJSON inline parser (no external dependency)
@@ -169,6 +169,8 @@ export default function PropertyMapView() {
     consolidated: false,
   });
   const [kmlLayers, setKmlLayers] = useState([]); // { id, name, geojson, color, visible }
+  const [ndviTileUrl, setNdviTileUrl] = useState(null);
+  const [ndviToken, setNdviToken] = useState(null);
   const fileInputRef = useRef(null);
   const savingRef = useRef(false);
 
@@ -555,9 +557,6 @@ export default function PropertyMapView() {
           </CardContent>
         </Card>
       </div>
-
-      {/* NDVI Panel */}
-      {selectedProperty && <NDVIPanel selectedProperty={selectedProperty} />}
 
       {/* Help */}
       <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-700">

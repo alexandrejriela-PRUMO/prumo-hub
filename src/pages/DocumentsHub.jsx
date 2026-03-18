@@ -458,7 +458,7 @@ export default function DocumentsHub() {
                                 )}
                                 <div className="flex items-center gap-2 mt-2 flex-wrap">
                                   {doc.module && (
-                                    <Badge className="bg-emerald-100 text-emerald-800 text-xs border border-emerald-200">
+                                    <Badge className={`text-xs border ${MODULE_COLORS[doc.module] || 'bg-gray-100 text-gray-800 border-gray-200'}`}>
                                       {doc.module}
                                     </Badge>
                                   )}

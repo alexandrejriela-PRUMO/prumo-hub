@@ -435,6 +435,11 @@ export default function DocumentsHub() {
                                   <p className="text-sm text-gray-600 truncate">{doc.description}</p>
                                 )}
                                 <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                  {doc.module && (
+                                    <Badge className="bg-emerald-100 text-emerald-800 text-xs border border-emerald-200">
+                                      {doc.module}
+                                    </Badge>
+                                  )}
                                   <Badge variant="outline" className="text-xs">
                                     {entityTypeLabels[doc.entity_type] || doc.entity_type}
                                   </Badge>

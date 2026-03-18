@@ -254,14 +254,18 @@ export default function PropertyMapView() {
         const geojson = kml(doc);
         if (geojson && geojson.features?.length > 0) {
           const color = KML_COLORS[kmlLayers.length % KML_COLORS.length];
-          setKmlLayers(prev => [...prev, {
-            id: Date.now() + Math.random(),
+          const newLayer = {
+            id: String(Date.now() + Math.random()),
             name: file.name.replace('.kml', ''),
             geojson,
             color,
             visible: true,
-            file,
-          }]);
+          };
+          setKmlLayers(prev => {
+            const updated = [...prev, newLayer];
+            saveKmlLayers(updated);
+            return updated;
+          });
         }
       };
       reader.readAsText(file);

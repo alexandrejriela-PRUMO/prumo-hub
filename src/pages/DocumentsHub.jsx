@@ -126,6 +126,8 @@ export default function DocumentsHub() {
     createMutation.mutate(documentData);
   };
 
+  const handleSaveEdit = (id, data) => updateMutation.mutateAsync({ id, data });
+
   const handleDelete = (doc) => {
     if (window.confirm(`Tem certeza que deseja remover "${doc.document_name}"?`)) {
       deleteMutation.mutate(doc.id);

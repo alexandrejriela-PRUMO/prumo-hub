@@ -52,22 +52,34 @@ function buildGeomExpr(geometry) {
   // Build the geometry expression node based on type
   let coords = geometry.coordinates;
   
+  console.log('[GEE] Input geometry type:', geometry.type);
+  console.log('[GEE] Input coordinates:', JSON.stringify(coords));
+  
   if (geometry.type === 'Polygon') {
     // Polygon: coordinates = [[[lng, lat], ...]]
-    if (Array.isArray(coords[0])) {
-      coords = [normalizeCoordinatesForGEE(coords[0])];
+    // coords[0] é o exterior ring: [[lng, lat], [lng, lat], ...]
+    const normalized = normalizeCoordinatesForGEE(coords[0]);
+    console.log('[GEE] Normalized ring length:', normalized?.length);
+    console.log('[GEE] Normalized ring:', JSON.stringify(normalized));
+    
+    if (!normalized || normalized.length < 3) {
+      throw new Error(`LinearRing requer pelo menos 3 pontos. Recebido: ${normalized?.length || 0}`);
     }
-    console.log('[GEE] Polygon coordinates (normalized):', JSON.stringify(coords));
+    
+    // GEE espera: [[[[lng, lat], [lng, lat], ...]]]  para Polygon
+    coords = [normalized];
   } else if (geometry.type === 'MultiPolygon') {
     // MultiPolygon: coordinates = [[[[lng, lat], ...]]]
-    coords = coords.map(ring => normalizeCoordinatesForGEE(ring[0] || ring));
-    console.log('[GEE] MultiPolygon coordinates (normalized):', JSON.stringify(coords));
+    coords = coords.map(ring => {
+      const normalized = normalizeCoordinatesForGEE(ring[0] || ring);
+      if (!normalized || normalized.length < 3) {
+        throw new Error(`LinearRing requer pelo menos 3 pontos. Recebido: ${normalized?.length || 0}`);
+      }
+      return normalized;
+    });
   }
   
-  // Validação: garante que temos arrays de arrays de números
-  if (!coords || coords.length === 0) {
-    throw new Error('Coordenadas inválidas ou vazias após normalização');
-  }
+  console.log('[GEE] Final coords structure:', JSON.stringify(coords));
   
   return {
     functionInvocationValue: {

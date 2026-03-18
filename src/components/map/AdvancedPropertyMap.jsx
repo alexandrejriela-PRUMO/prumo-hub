@@ -171,7 +171,13 @@ export default function AdvancedPropertyMap({
   };
 
   const MapContent = () => {
-    const map = useMap();
+    let map;
+    try {
+      map = useMap();
+    } catch (e) {
+      // useMap pode falhar se não estiver dentro de MapContainer
+      map = null;
+    }
     useEffect(() => {
       if (isFullscreen) {
         map.invalidateSize();

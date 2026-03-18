@@ -201,11 +201,6 @@ export default function ClimateMonitoring() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* TARJA DE CONSTRUÇÃO */}
-      <div className="w-full bg-yellow-400 border-4 border-yellow-600 p-4 rounded-lg">
-        <p className="text-center font-bold text-black text-lg">⚠️ EM CONSTRUÇÃO - Esta funcionalidade está em desenvolvimento</p>
-      </div>
-
       {/* Header */}
       <div className="space-y-2">
         <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">

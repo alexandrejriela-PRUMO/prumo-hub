@@ -23,24 +23,20 @@ export default function MapDrawingToolbar({
         {!isDrawing ? (
           <Button
             size="sm"
-            variant={isDrawing ? "default" : "outline"}
+            variant="outline"
             onClick={onStartDraw}
             className="h-8 text-xs gap-1.5 justify-start"
-            title="Clique no mapa para criar vértices, clique novamente no primeiro ponto para fechar"
+            title="Clique no mapa para criar vértices, clique com botão direito para fechar"
           >
             <Pencil className="w-3 h-3" />
             Desenhar Área
           </Button>
         ) : (
           <>
-            <Button
-              size="sm"
-              onClick={onFinishDraw}
-              className="h-8 text-xs gap-1.5 justify-start bg-emerald-600 hover:bg-emerald-700"
-            >
-              <CheckCircle2 className="w-3 h-3" />
-              Finalizar
-            </Button>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-xs text-blue-700 font-medium">
+              📍 Clique no mapa para adicionar pontos<br/>
+              🖱️ Botão direito para finalizar
+            </div>
             <Button
               size="sm"
               variant="outline"

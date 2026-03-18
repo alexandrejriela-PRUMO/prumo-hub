@@ -90,7 +90,6 @@ const consultorNavItems = [
 const produtorNavItems = [
   { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
   { name: 'Central da Propriedade', page: 'PropertyCentral', icon: Building2 },
-  { name: 'Minhas Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
   { 
     name: 'Agricultura de Precisão', 
     icon: Sparkles,

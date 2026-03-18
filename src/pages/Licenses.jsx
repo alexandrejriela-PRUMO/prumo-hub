@@ -30,6 +30,7 @@ import { toast } from 'sonner';
 import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
 
 const licenseTypes = [
+  // Licenças Ambientais
   'LP - Licença Prévia',
   'LI - Licença de Instalação',
   'LO - Licença de Operação',
@@ -44,24 +45,57 @@ const licenseTypes = [
   'Licença de Pesca / Aquicultura',
   'Licença Sanitária',
   'Licença de Funcionamento',
+  // Responsabilidade Técnica
   'ART - Anotação de Responsabilidade Técnica',
   'TRT - Termo de Responsabilidade Técnica',
   'RRT - Registro de Responsabilidade Técnica',
+  // Laudos
   'Laudo Técnico Ambiental',
   'Laudo de Vistoria',
   'Laudo de Avaliação de Imóvel Rural',
   'Laudo Agronômico',
   'Laudo Fitossanitário',
   'Laudo de Conformidade de Estrutura',
+  'Laudo Geológico',
+  'Laudo Hidrológico',
+  'Laudo Zootécnico',
+  'Laudo Veterinário',
+  'Laudo de Inspeção Elétrica',
+  'Laudo de Inspeção Mecânica',
+  'Laudo Biológico',
+  'Laudo de Estabilidade Estrutural',
+  // Pareceres e Relatórios
   'Parecer Técnico',
   'Relatório de Conformidade Ambiental',
   'Relatório de Monitoramento',
+  'Relatório de Impacto Ambiental (RIMA)',
+  'Relatório Hidrológico',
+  'Relatório Geológico',
+  // Certificados
   'Certificado de Conformidade',
   'Certificado Fitossanitário',
+  // Projetos de Engenharia e Técnicos
   'Projeto Técnico de Engenharia',
+  'Projeto Agronômico',
+  'Projeto Geológico / Geotécnico',
+  'Projeto Hidrológico / Hidrográfico',
+  'Projeto Elétrico',
+  'Projeto Estrutural',
+  'Projeto Mecânico',
   'Projeto de Drenagem',
   'Projeto de Irrigação',
   'Projeto de Saneamento',
+  'Projeto Biológico / Ecológico',
+  'Projeto Zootécnico',
+  'Projeto Veterinário',
+  'Projeto de Recuperação de Área Degradada (PRAD)',
+  'Projeto de Manejo Florestal',
+  'Projeto de Arborização / Paisagismo',
+  'Projeto Arquitetônico Rural',
+  'Projeto de Topografia / Georreferenciamento',
+  'Projeto de Barragem / Reservatório',
+  'Projeto de Estrada / Infraestrutura Rural',
+  'Projeto de Energia Solar / Renovável',
   'Outro',
 ];
 
@@ -316,7 +350,7 @@ export default function Licenses() {
           </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Adicionar Licença</DialogTitle>
+              <DialogTitle>Adicionar Licença ou Projeto</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 mt-4">
               <div className="space-y-2">
@@ -491,7 +525,7 @@ export default function Licenses() {
               </div>
 
               <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={createMutation.isPending}>
-                {createMutation.isPending ? 'Salvando...' : 'Salvar Licença'}
+                {createMutation.isPending ? 'Salvando...' : 'Salvar'}
               </Button>
             </form>
           </DialogContent>

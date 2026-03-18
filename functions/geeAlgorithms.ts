@@ -50,11 +50,11 @@ Deno.serve(async (req) => {
     const data = await res.json();
 
     const algos = (data.algorithms || []);
-    const names = algos
-      .map(a => a.name.replace('algorithms/', ''))
-      .filter(n => n.includes('Collection') || n.includes('Filter') || n.includes('Reducer') || n.includes('ImageCollection'))
-      .sort();
-    return Response.json({ names, total: names.length });
+    const all = algos.map(a => a.name.replace('algorithms/', ''));
+    const filterNames = all.filter(n => n.startsWith('Filter.')).sort();
+    const reducerNames = all.filter(n => n.startsWith('Reducer.')).sort();
+    const imageCollNames = all.filter(n => n.startsWith('ImageCollection.')).sort();
+    return Response.json({ filterNames, reducerNames, imageCollNames });
   } catch (err) {
     return Response.json({ error: err.message }, { status: 500 });
   }

@@ -82,12 +82,6 @@ export default function NDVIPanel({ geometry, propertyName }) {
     }
   };
 
-  const historyData = result?.history?.filter(h => h?.mean != null).map(h => ({
-    name: h.label,
-    NDVI: parseFloat(h.mean?.toFixed(3)),
-    period: h.period
-  })) || [];
-
   return (
     <Card className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-white">
       <CardContent className="p-4 space-y-4">

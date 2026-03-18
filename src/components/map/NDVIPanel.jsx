@@ -52,7 +52,7 @@ function StatCard({ label, value, unit = '' }) {
   );
 }
 
-export default function NDVIPanel({ geometry, coordinates, propertyName, kmlLayers = [], carData = {} }) {
+export default function NDVIPanel({ geometry, coordinates, propertyName, kmlLayers = [], carData = {}, drawnGeometry = null }) {
   const [startDate, setStartDate] = useState(() => {
     const d = new Date(); d.setMonth(d.getMonth() - 3);
     return d.toISOString().split('T')[0];
@@ -62,10 +62,11 @@ export default function NDVIPanel({ geometry, coordinates, propertyName, kmlLaye
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
-  const [selectedArea, setSelectedArea] = useState('main');
+  const [selectedArea, setSelectedArea] = useState(() => drawnGeometry ? 'drawn' : 'main');
 
   // Monta lista de áreas disponíveis
   const availableAreas = [
+    ...(drawnGeometry ? [{ id: 'drawn', label: '🎯 Polígono Desenhado (Ativo)', geom: drawnGeometry }] : []),
     { id: 'main', label: 'Polígono/Coordenadas Informadas', geom: geometry || null },
     ...kmlLayers.map(layer => ({ id: layer.id, label: layer.name, geom: layer.geojson })),
     ...(carData?.car_polygon ? [{ id: 'car', label: 'CAR', geom: carData.car_polygon }] : []),

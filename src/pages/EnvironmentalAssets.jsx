@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Leaf, Plus, Edit2, Trash2, AlertCircle, Save, X, TrendingUp, TrendingDown } from 'lucide-react';
+import { Leaf, Plus, Edit2, Trash2, Save, X, TrendingUp, TrendingDown, Upload, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 const BIOMAS = ['Amazônia', 'Cerrado', 'Mata Atlântica', 'Caatinga', 'Pantanal', 'Pampas'];
@@ -57,15 +57,13 @@ export default function EnvironmentalAssets() {
     enabled: !!user?.email
   });
 
-  const { data: craTitles = [], refetch: refetchTitles } = useQuery({
-    queryKey: ['cra-titles', user?.email],
-    queryFn: () => base44.entities.CRATitle.filter({ owner_email: user?.email }),
-    enabled: !!user?.email
-  });
-
   const { data: transactions = [], refetch: refetchTransactions } = useQuery({
     queryKey: ['cra-transactions', user?.email],
-    queryFn: () => base44.entities.CRATransaction.filter({ seller_email: user?.email }),
+    queryFn: async () => {
+      const sells = await base44.entities.CRATransaction.filter({ seller_email: user?.email });
+      const buys = await base44.entities.CRATransaction.filter({ buyer_email: user?.email });
+      return [...sells, ...buys];
+    },
     enabled: !!user?.email
   });
 
@@ -80,6 +78,7 @@ export default function EnvironmentalAssets() {
       const existing = parseFloat(data.existing_legal_reserve_hectares) || 0;
       
       if (total <= 0) throw new Error('Área deve ser maior que zero');
+      if (existing > total) throw new Error('Vegetação nativa não pode exceder área total');
 
       const percentual = LEGAL_RESERVE_PERCENTAGES[data.biome] || 20;
       const required = (total * percentual) / 100;
@@ -110,7 +109,7 @@ export default function EnvironmentalAssets() {
       await refetchCRA();
       setEditingCRA(null);
       setCRAFormData({});
-      toast.success('CRA salva com sucesso!');
+      toast.success(editingCRA?.id ? 'CRA atualizada!' : 'CRA criada com sucesso!');
     },
     onError: (err) => toast.error(err.message)
   });
@@ -123,20 +122,30 @@ export default function EnvironmentalAssets() {
       }
 
       const origin = craOrigins.find(o => o.id === data.origin_id);
-      if (!origin || origin.surplus_native_vegetation_hectares < parseFloat(data.area_hectares)) {
-        throw new Error('Área disponível insuficiente');
-      }
+      if (!origin) throw new Error('Origem inválida');
+      
+      const areaToSell = parseFloat(data.area_hectares);
+      const available = origin.surplus_native_vegetation_hectares || 0;
+      
+      if (areaToSell <= 0) throw new Error('Área deve ser maior que zero');
+      if (areaToSell > available) throw new Error(`Área disponível: ${available.toFixed(2)}ha`);
 
       const payload = {
         origin_id: data.origin_id,
         seller_email: user.email,
         seller_property_id: origin.property_id,
-        buyer_email: data.buyer_email || '',
-        area_hectares: parseFloat(data.area_hectares),
+        buyer_email: data.buyer_email || 'pendente@exemplo.com',
+        buyer_property_id: data.buyer_property_id || '',
+        buyer_car: data.buyer_car || '',
+        cra_title_id: data.cra_title_id || '',
+        cra_number: data.cra_number || '',
+        area_hectares: areaToSell,
+        available_area_hectares: available,
         price_per_hectare: parseFloat(data.price_per_hectare),
-        total_value: parseFloat(data.area_hectares) * parseFloat(data.price_per_hectare),
+        total_value: areaToSell * parseFloat(data.price_per_hectare),
         transaction_date: new Date().toISOString().split('T')[0],
-        status: 'Proposta',
+        status: 'Em negociação',
+        documents: data.documents || [],
         notes: data.notes || ''
       };
 
@@ -149,7 +158,7 @@ export default function EnvironmentalAssets() {
       await refetchTransactions();
       setEditingSale(null);
       setSaleFormData({});
-      toast.success('Oferta de venda criada!');
+      toast.success('Oferta criada com sucesso!');
     },
     onError: (err) => toast.error(err.message)
   });
@@ -161,20 +170,24 @@ export default function EnvironmentalAssets() {
         throw new Error('Preencha os campos obrigatórios');
       }
 
-      const property = properties.find(p => p.id === data.property_id);
-      const targetCRA = craOrigins.find(c => c.property_id === data.property_id);
-      if (!targetCRA) throw new Error('Propriedade sem CRA registrada');
+      const areaToBuy = parseFloat(data.area_hectares);
+      if (areaToBuy <= 0) throw new Error('Área deve ser maior que zero');
 
       const payload = {
         buyer_email: user.email,
         buyer_property_id: data.property_id,
-        seller_email: data.seller_email || '',
-        cra_title_id: data.cra_title_id || 'PENDENTE',
-        area_hectares: parseFloat(data.area_hectares),
+        buyer_car: data.buyer_car || '',
+        seller_email: data.seller_email || 'pendente@exemplo.com',
+        seller_property_id: data.seller_property_id || '',
+        cra_title_id: data.cra_title_id || '',
+        cra_number: data.cra_number || '',
+        area_hectares: areaToBuy,
+        available_area_hectares: areaToBuy,
         price_per_hectare: parseFloat(data.price_per_hectare),
-        total_value: parseFloat(data.area_hectares) * parseFloat(data.price_per_hectare),
+        total_value: areaToBuy * parseFloat(data.price_per_hectare),
         transaction_date: new Date().toISOString().split('T')[0],
-        status: 'Proposta',
+        status: 'Em negociação',
+        documents: data.documents || [],
         notes: data.notes || ''
       };
 
@@ -184,7 +197,7 @@ export default function EnvironmentalAssets() {
       await refetchTransactions();
       setEditingBuy(null);
       setBuyFormData({});
-      toast.success('Requisição de compra criada!');
+      toast.success('Requisição criada com sucesso!');
     },
     onError: (err) => toast.error(err.message)
   });
@@ -197,6 +210,24 @@ export default function EnvironmentalAssets() {
     },
     onError: () => toast.error('Erro ao remover')
   });
+
+  const handleFileUpload = async (file, setterFn, fieldName) => {
+    try {
+      const fileData = await base44.integrations.Core.UploadFile({ file });
+      setterFn(prev => ({
+        ...prev,
+        documents: [...(prev.documents || []), {
+          name: file.name,
+          url: fileData.file_url,
+          type: 'Contrato',
+          upload_date: new Date().toISOString()
+        }]
+      }));
+      toast.success('Arquivo enviado!');
+    } catch (err) {
+      toast.error('Erro ao enviar arquivo');
+    }
+  };
 
   const resetCRAForm = () => {
     setEditingCRA(null);
@@ -226,27 +257,17 @@ export default function EnvironmentalAssets() {
         </div>
         <div>
           <h1 className="text-4xl font-bold text-emerald-900">Cotas de Reserva Ambiental</h1>
-          <p className="text-sm text-emerald-600">Gestão de CRA conforme Lei 12.651/2012</p>
+          <p className="text-sm text-emerald-600">Lei 12.651/2012</p>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5 bg-emerald-50">
-          <TabsTrigger value="origem" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-xs sm:text-sm">
-            Origem
-          </TabsTrigger>
-          <TabsTrigger value="venda" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-xs sm:text-sm">
-            Vender
-          </TabsTrigger>
-          <TabsTrigger value="compra" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-xs sm:text-sm">
-            Comprar
-          </TabsTrigger>
-          <TabsTrigger value="transacoes" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-xs sm:text-sm">
-            Transações
-          </TabsTrigger>
-          <TabsTrigger value="info" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-xs sm:text-sm">
-            Info
-          </TabsTrigger>
+          <TabsTrigger value="origem" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-xs sm:text-sm">Origem</TabsTrigger>
+          <TabsTrigger value="venda" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-xs sm:text-sm">Vender</TabsTrigger>
+          <TabsTrigger value="compra" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-xs sm:text-sm">Comprar</TabsTrigger>
+          <TabsTrigger value="transacoes" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-xs sm:text-sm">Transações</TabsTrigger>
+          <TabsTrigger value="info" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-xs sm:text-sm">Info</TabsTrigger>
         </TabsList>
 
         {/* ORIGEM */}
@@ -255,13 +276,8 @@ export default function EnvironmentalAssets() {
             <Button onClick={() => {
               setEditingCRA({});
               setCRAFormData({
-                property_id: '',
-                car_number: '',
-                biome: '',
-                state: '',
-                municipality: '',
-                total_area_hectares: '',
-                existing_legal_reserve_hectares: ''
+                property_id: '', car_number: '', biome: '', state: '', municipality: '',
+                total_area_hectares: '', existing_legal_reserve_hectares: ''
               });
             }} className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700">
               <Plus className="w-4 h-4 mr-2" />
@@ -273,10 +289,8 @@ export default function EnvironmentalAssets() {
             <Card className="border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-white">
               <CardHeader className="border-b border-emerald-200">
                 <div className="flex justify-between items-center">
-                  <CardTitle className="text-emerald-900">Registrar Origem CRA</CardTitle>
-                  <Button size="sm" variant="ghost" onClick={resetCRAForm}>
-                    <X className="w-4 h-4" />
-                  </Button>
+                  <CardTitle className="text-emerald-900">{editingCRA.id ? 'Editar' : 'Registrar'} CRA</CardTitle>
+                  <Button size="sm" variant="ghost" onClick={resetCRAForm}><X className="w-4 h-4" /></Button>
                 </div>
               </CardHeader>
               <CardContent className="pt-6 space-y-6">
@@ -301,12 +315,8 @@ export default function EnvironmentalAssets() {
                   <div className="space-y-2">
                     <Label className="font-semibold text-emerald-900">Bioma *</Label>
                     <Select value={craFormData.biome || ''} onValueChange={(value) => setCRAFormData({ ...craFormData, biome: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {BIOMAS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
-                      </SelectContent>
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>{BIOMAS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
@@ -348,9 +358,7 @@ export default function EnvironmentalAssets() {
           <div className="grid gap-3">
             {craOrigins.length === 0 ? (
               <Card className="border-dashed border-2">
-                <CardContent className="py-12 text-center text-gray-500">
-                  Nenhuma origem registrada
-                </CardContent>
+                <CardContent className="py-12 text-center text-gray-500">Nenhuma origem registrada</CardContent>
               </Card>
             ) : (
               craOrigins.map(cra => {
@@ -359,14 +367,20 @@ export default function EnvironmentalAssets() {
                   <Card key={cra.id} className="hover:shadow-lg transition-all">
                     <CardContent className="p-4">
                       <div className="space-y-4">
-                        <div className="flex justify-between items-start">
+                        <div className="flex justify-between items-start gap-4">
                           <div>
                             <h3 className="font-bold text-lg">{properties.find(p => p.id === cra.property_id)?.property_name}</h3>
                             <p className="text-sm text-gray-600">{cra.biome} | CAR: {cra.car_number}</p>
                           </div>
-                          <Badge variant="outline" className={surplus > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}>
-                            Potencial: {surplus.toFixed(2)}ha
-                          </Badge>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={() => handleEditCRA(cra)}>
+                              <Edit2 className="w-3 h-3 mr-1" />
+                              Editar
+                            </Button>
+                            <Badge variant="outline" className={surplus > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}>
+                              {surplus.toFixed(2)}ha
+                            </Badge>
+                          </div>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                           <div className="bg-blue-50 p-2 rounded"><p className="text-blue-600 font-medium">Total</p><p className="font-bold">{cra.total_area_hectares}ha</p></div>
@@ -389,11 +403,7 @@ export default function EnvironmentalAssets() {
             <Button onClick={() => {
               setEditingSale({});
               setSaleFormData({
-                origin_id: '',
-                area_hectares: '',
-                price_per_hectare: '',
-                buyer_email: '',
-                notes: ''
+                origin_id: '', area_hectares: '', price_per_hectare: '', buyer_email: '', buyer_property_id: '', buyer_car: '', documents: [], notes: ''
               });
             }} className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700">
               <TrendingUp className="w-4 h-4 mr-2" />
@@ -406,9 +416,7 @@ export default function EnvironmentalAssets() {
               <CardHeader className="border-b border-emerald-200">
                 <div className="flex justify-between items-center">
                   <CardTitle className="text-emerald-900">Oferta de Venda</CardTitle>
-                  <Button size="sm" variant="ghost" onClick={() => { setEditingSale(null); setSaleFormData({}); }}>
-                    <X className="w-4 h-4" />
-                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => { setEditingSale(null); setSaleFormData({}); }}><X className="w-4 h-4" /></Button>
                 </div>
               </CardHeader>
               <CardContent className="pt-6 space-y-6">
@@ -416,14 +424,10 @@ export default function EnvironmentalAssets() {
                   <div className="space-y-2">
                     <Label className="font-semibold text-emerald-900">Origem com CRA *</Label>
                     <Select value={saleFormData.origin_id || ''} onValueChange={(value) => setSaleFormData({ ...saleFormData, origin_id: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent>
                         {craOrigins.filter(o => (o.surplus_native_vegetation_hectares || 0) > 0).map(o => (
-                          <SelectItem key={o.id} value={o.id}>
-                            {properties.find(p => p.id === o.property_id)?.property_name} ({o.surplus_native_vegetation_hectares?.toFixed(2)}ha)
-                          </SelectItem>
+                          <SelectItem key={o.id} value={o.id}>{properties.find(p => p.id === o.property_id)?.property_name} ({o.surplus_native_vegetation_hectares?.toFixed(2)}ha)</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -440,9 +444,33 @@ export default function EnvironmentalAssets() {
                     <Label className="font-semibold text-emerald-900">Email do Comprador</Label>
                     <Input type="email" value={saleFormData.buyer_email || ''} onChange={(e) => setSaleFormData({ ...saleFormData, buyer_email: e.target.value })} />
                   </div>
-                  <div className="md:col-span-2 space-y-2">
+                  <div className="space-y-2">
+                    <Label className="font-semibold text-emerald-900">CAR do Comprador</Label>
+                    <Input value={saleFormData.buyer_car || ''} onChange={(e) => setSaleFormData({ ...saleFormData, buyer_car: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
                     <Label className="font-semibold text-emerald-900">Observações</Label>
-                    <Input value={saleFormData.notes || ''} onChange={(e) => setSaleFormData({ ...saleFormData, notes: e.target.value })} placeholder="Detalhes adicionais" />
+                    <Input value={saleFormData.notes || ''} onChange={(e) => setSaleFormData({ ...saleFormData, notes: e.target.value })} />
+                  </div>
+                  <div className="md:col-span-2 space-y-2">
+                    <Label className="font-semibold text-emerald-900">Upload de Contrato</Label>
+                    <div className="flex gap-2">
+                      <Input type="file" accept=".pdf,.doc,.docx" onChange={(e) => {
+                        if (e.target.files?.[0]) handleFileUpload(e.target.files[0], setSaleFormData, 'documents');
+                        e.target.value = '';
+                      }} />
+                      <Button type="button" size="sm" variant="outline"><Upload className="w-4 h-4" /></Button>
+                    </div>
+                    {saleFormData.documents?.length > 0 && (
+                      <div className="space-y-1 text-sm">
+                        {saleFormData.documents.map((doc, idx) => (
+                          <div key={idx} className="flex items-center gap-2 p-2 bg-emerald-50 rounded">
+                            <FileText className="w-3 h-3 text-emerald-600" />
+                            <span className="text-emerald-900">{doc.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   {saleFormData.area_hectares && saleFormData.price_per_hectare && (
                     <div className="md:col-span-2 bg-emerald-100 p-3 rounded-lg border border-emerald-300">
@@ -464,21 +492,30 @@ export default function EnvironmentalAssets() {
           <div className="grid gap-3">
             {transactions.filter(t => t.seller_email === user.email).length === 0 ? (
               <Card className="border-dashed border-2">
-                <CardContent className="py-12 text-center text-gray-500">
-                  Nenhuma oferta de venda
-                </CardContent>
+                <CardContent className="py-12 text-center text-gray-500">Nenhuma oferta de venda</CardContent>
               </Card>
             ) : (
               transactions.filter(t => t.seller_email === user.email).map(tx => (
                 <Card key={tx.id} className="hover:shadow-lg transition-all border-emerald-100">
                   <CardContent className="p-4">
-                    <div className="flex justify-between items-start gap-4">
-                      <div className="flex-1">
-                        <p className="font-bold text-lg text-emerald-900">{tx.area_hectares}ha @ R$ {tx.price_per_hectare}/ha</p>
-                        <p className="text-sm text-gray-600">Total: R$ {tx.total_value?.toLocaleString('pt-BR')}</p>
-                        <p className="text-xs text-gray-500 mt-1">Comprador: {tx.buyer_email || 'Não especificado'}</p>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-start gap-4">
+                        <div className="flex-1">
+                          <p className="font-bold text-lg text-emerald-900">{tx.area_hectares}ha @ R$ {tx.price_per_hectare}/ha</p>
+                          <p className="text-sm text-gray-600">Total: R$ {tx.total_value?.toLocaleString('pt-BR')}</p>
+                          <p className="text-xs text-gray-500 mt-1">Comprador: {tx.buyer_email}</p>
+                        </div>
+                        <Badge>{tx.status}</Badge>
                       </div>
-                      <Badge>{tx.status}</Badge>
+                      {tx.documents?.length > 0 && (
+                        <div className="flex gap-2 flex-wrap">
+                          {tx.documents.map((doc, idx) => (
+                            <a key={idx} href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                              <FileText className="w-3 h-3" /> {doc.name}
+                            </a>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -493,15 +530,11 @@ export default function EnvironmentalAssets() {
             <Button onClick={() => {
               setEditingBuy({});
               setBuyFormData({
-                property_id: '',
-                area_hectares: '',
-                price_per_hectare: '',
-                seller_email: '',
-                notes: ''
+                property_id: '', area_hectares: '', price_per_hectare: '', seller_email: '', seller_property_id: '', buyer_car: '', documents: [], notes: ''
               });
             }} className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700">
               <TrendingDown className="w-4 h-4 mr-2" />
-              Requisitar Compra de CRA
+              Requisitar Compra
             </Button>
           )}
 
@@ -510,19 +543,15 @@ export default function EnvironmentalAssets() {
               <CardHeader className="border-b border-emerald-200">
                 <div className="flex justify-between items-center">
                   <CardTitle className="text-emerald-900">Requisição de Compra</CardTitle>
-                  <Button size="sm" variant="ghost" onClick={() => { setEditingBuy(null); setBuyFormData({}); }}>
-                    <X className="w-4 h-4" />
-                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => { setEditingBuy(null); setBuyFormData({}); }}><X className="w-4 h-4" /></Button>
                 </div>
               </CardHeader>
               <CardContent className="pt-6 space-y-6">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="font-semibold text-emerald-900">Propriedade para Regularizar *</Label>
+                    <Label className="font-semibold text-emerald-900">Propriedade *</Label>
                     <Select value={buyFormData.property_id || ''} onValueChange={(value) => setBuyFormData({ ...buyFormData, property_id: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent>
                         {properties.map(p => (
                           <SelectItem key={p.id} value={p.id}>{p.property_name}</SelectItem>
@@ -542,13 +571,37 @@ export default function EnvironmentalAssets() {
                     <Label className="font-semibold text-emerald-900">Email do Vendedor</Label>
                     <Input type="email" value={buyFormData.seller_email || ''} onChange={(e) => setBuyFormData({ ...buyFormData, seller_email: e.target.value })} />
                   </div>
-                  <div className="md:col-span-2 space-y-2">
+                  <div className="space-y-2">
+                    <Label className="font-semibold text-emerald-900">CAR da Propriedade</Label>
+                    <Input value={buyFormData.buyer_car || ''} onChange={(e) => setBuyFormData({ ...buyFormData, buyer_car: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
                     <Label className="font-semibold text-emerald-900">Observações</Label>
-                    <Input value={buyFormData.notes || ''} onChange={(e) => setBuyFormData({ ...buyFormData, notes: e.target.value })} placeholder="Detalhes" />
+                    <Input value={buyFormData.notes || ''} onChange={(e) => setBuyFormData({ ...buyFormData, notes: e.target.value })} />
+                  </div>
+                  <div className="md:col-span-2 space-y-2">
+                    <Label className="font-semibold text-emerald-900">Upload de Contrato</Label>
+                    <div className="flex gap-2">
+                      <Input type="file" accept=".pdf,.doc,.docx" onChange={(e) => {
+                        if (e.target.files?.[0]) handleFileUpload(e.target.files[0], setBuyFormData, 'documents');
+                        e.target.value = '';
+                      }} />
+                      <Button type="button" size="sm" variant="outline"><Upload className="w-4 h-4" /></Button>
+                    </div>
+                    {buyFormData.documents?.length > 0 && (
+                      <div className="space-y-1 text-sm">
+                        {buyFormData.documents.map((doc, idx) => (
+                          <div key={idx} className="flex items-center gap-2 p-2 bg-emerald-50 rounded">
+                            <FileText className="w-3 h-3 text-emerald-600" />
+                            <span className="text-emerald-900">{doc.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   {buyFormData.area_hectares && buyFormData.price_per_hectare && (
                     <div className="md:col-span-2 bg-emerald-100 p-3 rounded-lg border border-emerald-300">
-                      <p className="font-bold text-emerald-900">Investimento Máximo: R$ {(parseFloat(buyFormData.area_hectares) * parseFloat(buyFormData.price_per_hectare)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                      <p className="font-bold text-emerald-900">Máximo: R$ {(parseFloat(buyFormData.area_hectares) * parseFloat(buyFormData.price_per_hectare)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                     </div>
                   )}
                 </div>
@@ -566,21 +619,30 @@ export default function EnvironmentalAssets() {
           <div className="grid gap-3">
             {transactions.filter(t => t.buyer_email === user.email).length === 0 ? (
               <Card className="border-dashed border-2">
-                <CardContent className="py-12 text-center text-gray-500">
-                  Nenhuma requisição de compra
-                </CardContent>
+                <CardContent className="py-12 text-center text-gray-500">Nenhuma requisição de compra</CardContent>
               </Card>
             ) : (
               transactions.filter(t => t.buyer_email === user.email).map(tx => (
                 <Card key={tx.id} className="hover:shadow-lg transition-all border-emerald-100">
                   <CardContent className="p-4">
-                    <div className="flex justify-between items-start gap-4">
-                      <div className="flex-1">
-                        <p className="font-bold text-lg text-emerald-900">{tx.area_hectares}ha @ até R$ {tx.price_per_hectare}/ha</p>
-                        <p className="text-sm text-gray-600">Máximo: R$ {tx.total_value?.toLocaleString('pt-BR')}</p>
-                        <p className="text-xs text-gray-500 mt-1">Vendedor: {tx.seller_email || 'Não especificado'}</p>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-start gap-4">
+                        <div className="flex-1">
+                          <p className="font-bold text-lg text-emerald-900">{tx.area_hectares}ha @ até R$ {tx.price_per_hectare}/ha</p>
+                          <p className="text-sm text-gray-600">Máximo: R$ {tx.total_value?.toLocaleString('pt-BR')}</p>
+                          <p className="text-xs text-gray-500 mt-1">Vendedor: {tx.seller_email}</p>
+                        </div>
+                        <Badge>{tx.status}</Badge>
                       </div>
-                      <Badge>{tx.status}</Badge>
+                      {tx.documents?.length > 0 && (
+                        <div className="flex gap-2 flex-wrap">
+                          {tx.documents.map((doc, idx) => (
+                            <a key={idx} href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                              <FileText className="w-3 h-3" /> {doc.name}
+                            </a>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -594,9 +656,7 @@ export default function EnvironmentalAssets() {
           <div className="grid gap-3">
             {transactions.length === 0 ? (
               <Card className="border-dashed border-2">
-                <CardContent className="py-12 text-center text-gray-500">
-                  Nenhuma transação registrada
-                </CardContent>
+                <CardContent className="py-12 text-center text-gray-500">Nenhuma transação</CardContent>
               </Card>
             ) : (
               transactions.map(tx => (
@@ -614,10 +674,19 @@ export default function EnvironmentalAssets() {
                         <p><strong>Vendedor:</strong> {tx.seller_email}</p>
                         <p><strong>Comprador:</strong> {tx.buyer_email}</p>
                       </div>
+                      {tx.documents?.length > 0 && (
+                        <div className="flex gap-2 flex-wrap">
+                          {tx.documents.map((doc, idx) => (
+                            <a key={idx} href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                              <FileText className="w-3 h-3" /> {doc.name}
+                            </a>
+                          ))}
+                        </div>
+                      )}
                       {tx.notes && <p className="text-sm text-gray-600 italic">{tx.notes}</p>}
                       <div className="flex gap-2 justify-end pt-2 border-t">
                         <Button size="sm" variant="destructive" onClick={() => {
-                          if (confirm('Remover transação?')) deleteTransactionMutation.mutate(tx.id);
+                          if (confirm('Remover?')) deleteTransactionMutation.mutate(tx.id);
                         }} disabled={deleteTransactionMutation.isPending}>
                           <Trash2 className="w-3 h-3 mr-1" />
                           Remover
@@ -631,7 +700,7 @@ export default function EnvironmentalAssets() {
           </div>
         </TabsContent>
 
-        {/* INFORMAÇÕES */}
+        {/* INFO */}
         <TabsContent value="info" className="mt-6">
           <Card>
             <CardHeader>

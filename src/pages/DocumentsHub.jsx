@@ -26,6 +26,7 @@ import DocumentUpload from '../components/documents/DocumentUpload';
 import DocumentViewer from '../components/documents/DocumentViewer';
 import DocumentEditModal from '../components/documents/DocumentEditModal';
 import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
+import { MODULES, MODULE_COLORS } from '../components/documents/documentConstants';
 
 export default function DocumentsHub() {
   const [user, setUser] = useState(null);

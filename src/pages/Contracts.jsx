@@ -12,8 +12,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   ClipboardList, Plus, Calendar, DollarSign, Users, FileText, AlertTriangle,
-  CheckCircle, Clock, XCircle, Edit3, Trash2, Upload, Download, Eye, Building2
+  CheckCircle, Clock, XCircle, Edit3, Trash2, Upload, Download, Eye, Building2,
+  ChevronLeft
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '../utils';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -234,6 +237,14 @@ export default function Contracts() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-5">
+      <Link
+        to={createPageUrl('PropertyCentral')}
+        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-emerald-700 hover:bg-emerald-50 transition-colors text-xs font-medium"
+      >
+        <ChevronLeft className="w-3 h-3" />
+        Voltar
+      </Link>
+
       {/* Consultor Selector */}
       {isConsultor && (
         <ConsultorPropertySelector

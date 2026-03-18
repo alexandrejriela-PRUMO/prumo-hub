@@ -23,8 +23,11 @@ import {
   Archive,
   Trash2,
   MapPin,
-  DollarSign
+  DollarSign,
+  ChevronLeft
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '../utils';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import ProcessHistory from '../components/history/ProcessHistory';
@@ -460,6 +463,14 @@ export default function Processes() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-4">
+      <Link
+        to={createPageUrl('PropertyCentral')}
+        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-emerald-700 hover:bg-emerald-50 transition-colors text-xs font-medium"
+      >
+        <ChevronLeft className="w-3 h-3" />
+        Voltar
+      </Link>
+
       {/* Consultor Selector */}
       {isConsultor && (
         <ConsultorPropertySelector

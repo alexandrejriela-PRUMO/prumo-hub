@@ -25,8 +25,11 @@ import {
   Trash2,
   FileText,
   Image as ImageIcon,
-  User
+  User,
+  ChevronLeft
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '../utils';
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -349,6 +352,14 @@ export default function EnvironmentalAlerts() {
   return (
     <PullToRefresh onRefresh={handleRefresh}>
     <div className="max-w-7xl mx-auto space-y-6">
+      <Link
+        to={createPageUrl('PropertyCentral')}
+        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-emerald-700 hover:bg-emerald-50 transition-colors text-xs font-medium"
+      >
+        <ChevronLeft className="w-3 h-3" />
+        Voltar
+      </Link>
+
       {/* Consultor Selector */}
       {isConsultor && (
         <ConsultorPropertySelector

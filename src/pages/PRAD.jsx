@@ -16,8 +16,11 @@ import {
   Clock,
   MapPin,
   FileText,
-  TrendingUp
+  TrendingUp,
+  ChevronLeft
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
 import PRADForm from '../components/prad/PRADForm';
 import PRADDetails from '../components/prad/PRADDetails';
@@ -114,6 +117,13 @@ export default function PRAD() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 p-3 sm:p-6">
       <div className="max-w-7xl mx-auto">
+        <Link
+          to={createPageUrl('PropertyCentral')}
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-emerald-700 hover:bg-emerald-50 transition-colors text-xs font-medium mb-4"
+        >
+          <ChevronLeft className="w-3 h-3" />
+          Voltar
+        </Link>
         {/* Consultor Selector */}
         {isConsultor && (
           <div className="mb-4 sm:mb-6">

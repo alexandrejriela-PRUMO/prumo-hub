@@ -20,7 +20,10 @@ import {
   FileText,
   Upload,
   Trash2,
+  ChevronLeft
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '../utils';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -306,6 +309,14 @@ export default function Licenses() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
+      <Link
+        to={createPageUrl('PropertyCentral')}
+        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-emerald-700 hover:bg-emerald-50 transition-colors text-xs font-medium"
+      >
+        <ChevronLeft className="w-3 h-3" />
+        Voltar
+      </Link>
+
       {/* Consultor Selector */}
       {isConsultor && (
         <ConsultorPropertySelector

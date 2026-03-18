@@ -155,12 +155,14 @@ export default function NDVIPanel({ geometry, coordinates, propertyName }) {
         }
 
         payload.boundaries_geojson = geom;
-      } else if (coordinates) {
+        console.log('[NDVIPanel] Geometria normalizada enviada:', JSON.stringify(geom));
+        } else if (coordinates) {
         payload.center_coordinates = coordinates;
-      }
+        }
 
-      const resp = await base44.functions.invoke('geeNdviAnalysis', payload);
-      setResult(resp.data);
+        console.log('[NDVIPanel] Payload completo:', JSON.stringify(payload));
+        const resp = await base44.functions.invoke('geeNdviAnalysis', payload);
+        setResult(resp.data);
     } catch (e) {
       setError(e?.response?.data?.error || e.message || 'Erro ao consultar GEE');
     } finally {

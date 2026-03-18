@@ -223,9 +223,12 @@ export default function NDVIPanel({ geometry, coordinates, propertyName, kmlLaye
         </div>
 
         {!hasGeometry && (
-          <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700">
+          <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-700">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            Cadastre coordenadas ou importe um KML da propriedade para ativar a análise NDVI.
+            <div>
+              <p className="font-semibold">NDVI Pronto para Uso</p>
+              <p className="text-xs mt-0.5">Desenhe uma área no mapa, importe um KML ou use coordenadas para ativar a análise de satélite.</p>
+            </div>
           </div>
         )}
 

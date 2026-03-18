@@ -29,7 +29,8 @@ export default function CRATitleSection({ user }) {
   const { data: origins = [] } = useQuery({
     queryKey: ['cra-origins', user?.email],
     queryFn: () => base44.entities.CRAOrigin.filter({ owner_email: user?.email }),
-    enabled: !!user?.email
+    enabled: !!user?.email,
+    initialData: []
   });
 
   const { data: titles = [] } = useQuery({
@@ -107,7 +108,15 @@ export default function CRATitleSection({ user }) {
         </Button>
       </div>
 
-      {titles.length === 0 ? (
+      {origins.length === 0 ? (
+        <Card className="border-dashed border-amber-200 bg-amber-50">
+          <CardContent className="py-12 text-center">
+            <Award className="w-12 h-12 mx-auto text-amber-300 mb-4" />
+            <p className="text-amber-900 font-medium">Nenhuma origem de CRA cadastrada</p>
+            <p className="text-xs text-amber-700 mt-1">Cadastre uma origem primeiro na aba "Origem das CRA"</p>
+          </CardContent>
+        </Card>
+      ) : titles.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="py-12 text-center">
             <Award className="w-12 h-12 mx-auto text-gray-300 mb-4" />
@@ -198,7 +207,7 @@ export default function CRATitleSection({ user }) {
 
       {/* Form Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Emitir Novo Título de CRA</DialogTitle>
             <p className="text-xs text-gray-600 mt-2">Selecione a propriedade de origem que gerará a CRA</p>

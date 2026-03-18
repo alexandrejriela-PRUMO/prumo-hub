@@ -34,7 +34,7 @@ export default function CRAOriginSection({ user }) {
 
   const { data: origins = [] } = useQuery({
     queryKey: ['cra-origins', user?.email],
-    queryFn: () => base44.entities.CRAOrigin.filter({ consultor_email: user?.email }),
+    queryFn: () => base44.entities.CRAOrigin.filter({ owner_email: user?.email }),
     enabled: !!user?.email
   });
 
@@ -44,9 +44,9 @@ export default function CRAOriginSection({ user }) {
       return base44.entities.CRAOrigin.create({
         ...data,
         owner_email: user.email,
-        consultor_email: user.email,
         surplus_native_vegetation_hectares: surplus,
         potential_cra_area_hectares: surplus,
+        status: 'Pendente',
         documents
       });
     },

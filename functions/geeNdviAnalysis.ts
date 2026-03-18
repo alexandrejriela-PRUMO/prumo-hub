@@ -145,41 +145,77 @@ async function computeNDVI(projectId, token, geometry, startDate, endDate) {
     console.log('[GEE:computeNDVI] Expression geo node:', JSON.stringify(expr.values.geo, null, 2));
 
     console.log('[GEE:computeNDVI] Enviando request para GEE...');
-    const res = await fetch(`https://earthengine.googleapis.com/v1/projects/${projectId}/value:compute`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ expression: expr }),
-    });
 
-    console.log('[GEE:computeNDVI] Response status:', res.status);
+    // AbortController com timeout de 60 segundos
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
 
-    const data = await res.json();
-
-    if (!res.ok || data.error) {
-      console.error('[GEE:computeNDVI] GEE API Error:');
-      console.error('[GEE:computeNDVI] - Status:', res.status);
-      console.error('[GEE:computeNDVI] - Error:', JSON.stringify(data.error || data, null, 2));
-
-      const errorMsg = data.error?.message || data.error?.code || JSON.stringify(data.error || data);
-      throw new Error(`GEE API Error (${res.status}): ${errorMsg}`);
+    let res;
+    try {
+      res = await fetch(`https://earthengine.googleapis.com/v1/projects/${projectId}/value:compute`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ expression: expr }),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
     }
 
-    console.log('[GEE:computeNDVI] Response data:', JSON.stringify(data));
+    console.log('[GEE:computeNDVI] Response status:', res.status);
+    console.log('[GEE:computeNDVI] Response headers:', Object.fromEntries(res.headers));
+
+    // Verifica se response é válida antes de parsear JSON
+    if (!res.ok) {
+      console.error('[GEE:computeNDVI] HTTP Error:', res.status, res.statusText);
+      let errorText = '';
+      try {
+        errorText = await res.text();
+        console.error('[GEE:computeNDVI] Response body:', errorText);
+      } catch (e) {
+        console.error('[GEE:computeNDVI] Erro ao ler response body:', e.message);
+      }
+      throw new Error(`GEE HTTP Error ${res.status}: ${res.statusText} - ${errorText}`);
+    }
+
+    let data;
+    try {
+      const text = await res.text();
+      console.log('[GEE:computeNDVI] Response text length:', text.length);
+      if (!text) throw new Error('Response body vazio');
+      data = JSON.parse(text);
+      console.log('[GEE:computeNDVI] Response parsed:', JSON.stringify(data).substring(0, 500));
+    } catch (e) {
+      console.error('[GEE:computeNDVI] Erro ao parsear JSON:', e.message);
+      throw new Error(`Erro ao parsear resposta GEE: ${e.message}`);
+    }
+
+    if (data.error) {
+      console.error('[GEE:computeNDVI] GEE API returned error:');
+      console.error('[GEE:computeNDVI] - Error code:', data.error.code);
+      console.error('[GEE:computeNDVI] - Error message:', data.error.message);
+      console.error('[GEE:computeNDVI] - Full error:', JSON.stringify(data.error, null, 2));
+
+      const errorMsg = data.error.message || data.error.code || JSON.stringify(data.error);
+      throw new Error(`GEE API Error: ${errorMsg}`);
+    }
 
     // GEE returns raw NDVI * 10000 for MODIS MOD13Q1
     const raw = data.result?.NDVI ?? data.result?.values?.NDVI ?? null;
 
     if (raw === null || raw === undefined) {
-      console.warn('[GEE:computeNDVI] Sem valor NDVI na resposta (sem imagens para o período)');
+      console.warn('[GEE:computeNDVI] Sem valor NDVI na resposta');
+      console.warn('[GEE:computeNDVI] Data.result:', JSON.stringify(data.result));
       return null;
     }
 
-    const ndvi = raw / 10000;
+    const ndvi = Number(raw) / 10000;
     console.log('[GEE:computeNDVI] NDVI calculado:', ndvi);
 
     return ndvi;
   } catch (err) {
-    console.error('[GEE:computeNDVI] Erro:', err.message);
+    console.error('[GEE:computeNDVI] Erro crítico:', err.message);
+    console.error('[GEE:computeNDVI] Stack:', err.stack);
     throw err;
   }
 }

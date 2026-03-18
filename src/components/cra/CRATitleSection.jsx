@@ -26,17 +26,18 @@ export default function CRATitleSection({ user }) {
   });
   const queryClient = useQueryClient();
 
-  const { data: origins = [] } = useQuery({
+  const { data: origins = [], refetch: refetchOrigins } = useQuery({
     queryKey: ['cra-origins', user?.email],
     queryFn: () => base44.entities.CRAOrigin.filter({ owner_email: user?.email }),
     enabled: !!user?.email,
-    initialData: []
+    staleTime: 0
   });
 
-  const { data: titles = [] } = useQuery({
+  const { data: titles = [], refetch: refetchTitles } = useQuery({
     queryKey: ['cra-titles', user?.email],
     queryFn: () => base44.entities.CRATitle.filter({ owner_email: user?.email }),
-    enabled: !!user?.email
+    enabled: !!user?.email,
+    staleTime: 0
   });
 
   const createTitleMutation = useMutation({
@@ -45,10 +46,11 @@ export default function CRATitleSection({ user }) {
       owner_email: user.email,
       available_area_hectares: parseFloat(data.cra_area_hectares),
       current_holder_email: user.email,
-      transaction_history: []
+      transaction_history: [],
+      status: 'Disponível'
     }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cra-titles'] });
+    onSuccess: async () => {
+      await refetchTitles();
       setShowForm(false);
       setSelectedOrigin(null);
       setFormData({

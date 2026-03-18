@@ -28,9 +28,10 @@ export default function CRA() {
   const { data: craOrigins = [] } = useQuery({
     queryKey: ['cra-origins', user?.email],
     queryFn: () => base44.entities.CRAOrigin.filter({ 
-      consultor_email: user?.email 
+      owner_email: user?.email 
     }),
-    enabled: !!user?.email
+    enabled: !!user?.email,
+    staleTime: 0
   });
 
   const { data: craTitles = [] } = useQuery({
@@ -38,7 +39,8 @@ export default function CRA() {
     queryFn: () => base44.entities.CRATitle.filter({ 
       owner_email: user?.email 
     }),
-    enabled: !!user?.email
+    enabled: !!user?.email,
+    staleTime: 0
   });
 
   const { data: craTransactions = [] } = useQuery({

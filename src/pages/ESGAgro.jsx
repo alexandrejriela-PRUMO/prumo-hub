@@ -233,6 +233,17 @@ export default function ESGAgro() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
+      {/* Em Construção Banner */}
+      <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 flex items-center gap-3">
+        <div className="w-6 h-6 rounded-full bg-amber-400 flex items-center justify-center flex-shrink-0">
+          <span className="text-white font-bold text-sm">!</span>
+        </div>
+        <div>
+          <p className="font-semibold text-amber-900">Em Construção</p>
+          <p className="text-sm text-amber-800">Este módulo está sendo desenvolvido. Algumas funcionalidades podem não estar disponíveis.</p>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="text-center space-y-4">
         <div className="flex items-center justify-center gap-3">

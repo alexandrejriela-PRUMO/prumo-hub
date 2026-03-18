@@ -12,7 +12,7 @@ async function getGEEToken(email, pemRaw) {
 
   let keyBytes;
   try {
-    keyBytes = Uint8Array.from(atob(padded), c => c.charCodeAt(0));
+    keyBytes = Uint8Array.from(atob(padded), ch => ch.charCodeAt(0));
   } catch (e) {
     throw new Error(`Falha ao decodificar chave PEM (base64). Verifique o formato da GEE_PRIVATE_KEY. Detalhes: ${e.message}. KeyLen:${pemBody.length}`);
   }

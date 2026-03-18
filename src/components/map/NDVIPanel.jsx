@@ -166,7 +166,7 @@ export default function NDVIPanel({ geometry, coordinates, propertyName }) {
          } else if (coordinates) {
            // Valida coordenadas centrais antes de enviar
            const coordStr = String(coordinates).trim();
-           const coordArray = coordStr.split(',').map(c => Number(c.trim()));
+           const coordArray = coordStr.split(/[,;]/).map(c => Number(c.trim()));
 
            if (coordArray.length < 2 || coordArray.some(isNaN)) {
              setError(`Coordenadas centrais inválidas: "${coordStr}" não são números válidos`);

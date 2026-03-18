@@ -260,7 +260,7 @@ export default function PropertyMapView() {
   const carLayers = carData?.map_layers;
 
   // Collect all registered GeoJSON layers to fit bounds on load
-  const allGeoJsonLayers = React.useMemo(() => {
+  const allGeoJsonLayers = useMemo(() => {
     const list = [];
     if (carGeoJson) list.push(carGeoJson);
     if (carLayers?.app_layer_url) { const gj = parseGeoJson(carLayers.app_layer_url); if (gj) list.push(gj); }

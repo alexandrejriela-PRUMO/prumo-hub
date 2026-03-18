@@ -4,8 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { base44 } from '@/api/base44Client';
-import { Leaf, Satellite, BarChart3, Loader2, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { Leaf, Satellite, Loader2, AlertCircle } from 'lucide-react';
 
 const NDVI_LEVELS = [
   { min: 0.6, label: 'Vegetação Densa', color: '#006837', bg: 'bg-emerald-100', text: 'text-emerald-800' },

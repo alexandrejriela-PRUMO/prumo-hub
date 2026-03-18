@@ -66,6 +66,43 @@ export default function NDVIPanel({ geometry, coordinates, propertyName }) {
     geometry.type === 'FeatureCollection' ? geometry.features?.length > 0 : !!geometry.type
   )) || !!coordinates;
 
+  const normalizeCoordinates = (coords) => {
+    // Converte qualquer formato de coordinate para [number, number]
+    if (!Array.isArray(coords)) return null;
+
+    // Se for um objeto {lat, lng} ou similar
+    if (coords.lat !== undefined && coords.lng !== undefined) {
+      return [Number(coords.lng), Number(coords.lat)];
+    }
+    if (coords.lat !== undefined && coords.lon !== undefined) {
+      return [Number(coords.lon), Number(coords.lat)];
+    }
+
+    // Se for array [lng, lat]
+    if (Array.isArray(coords) && coords.length === 2) {
+      return [Number(coords[0]), Number(coords[1])];
+    }
+
+    return null;
+  };
+
+  const validateAndNormalizePolygon = (coords) => {
+    if (!Array.isArray(coords) || coords.length === 0) return null;
+
+    // Normaliza cada ponto
+    const normalized = coords.map(normalizeCoordinates).filter(c => c !== null);
+    if (normalized.length < 3) return null;
+
+    // Garante que o polígono está fechado (primeiro ponto = último ponto)
+    const first = normalized[0];
+    const last = normalized[normalized.length - 1];
+    if (first[0] !== last[0] || first[1] !== last[1]) {
+      normalized.push([first[0], first[1]]);
+    }
+
+    return normalized;
+  };
+
   const analyze = async () => {
     if (!hasGeometry) return;
     setLoading(true);
@@ -88,24 +125,34 @@ export default function NDVIPanel({ geometry, coordinates, propertyName }) {
           return;
         }
 
-        // Se Polygon, garante que coordinates seja [[[lng,lat],...]]
+        // Se Polygon, valida e normaliza coordenadas
         if (geom.type === 'Polygon') {
           if (!Array.isArray(geom.coordinates) || geom.coordinates.length === 0) {
             setError('Polígono sem coordenadas válidas');
             setLoading(false);
             return;
           }
-          if (!Array.isArray(geom.coordinates[0]) || geom.coordinates[0].length < 3) {
-            setError('Polígono deve ter pelo menos 3 pontos');
+
+          // Normaliza o array de coordenadas (exterior ring)
+          const normalized = validateAndNormalizePolygon(geom.coordinates[0]);
+          if (!normalized) {
+            setError('Polígono deve ter pelo menos 3 pontos válidos');
             setLoading(false);
             return;
           }
+
+          // Reconstrói a geometria com coordenadas normalizadas
+          geom = {
+            type: 'Polygon',
+            coordinates: [normalized]
+          };
         }
 
         payload.boundaries_geojson = geom;
       } else if (coordinates) {
         payload.center_coordinates = coordinates;
       }
+
       const resp = await base44.functions.invoke('geeNdviAnalysis', payload);
       setResult(resp.data);
     } catch (e) {

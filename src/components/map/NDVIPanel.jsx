@@ -62,9 +62,9 @@ export default function NDVIPanel({ geometry, coordinates, propertyName }) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
-  const hasGeometry = geometry && (
+  const hasGeometry = (geometry && (
     geometry.type === 'FeatureCollection' ? geometry.features?.length > 0 : !!geometry.type
-  );
+  )) || !!coordinates;
 
   const analyze = async () => {
     if (!hasGeometry) return;

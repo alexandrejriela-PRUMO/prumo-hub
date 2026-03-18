@@ -71,9 +71,10 @@ export default function NDVIPanel({ geometry, coordinates, propertyName }) {
     setLoading(true);
     setError(null);
     try {
-      const resp = await base44.functions.invoke('geeNdviAnalysis', {
-        boundaries_geojson: geometry,
-      });
+      const payload = {};
+      if (geometry) payload.boundaries_geojson = geometry;
+      else if (coordinates) payload.center_coordinates = coordinates;
+      const resp = await base44.functions.invoke('geeNdviAnalysis', payload);
       setResult(resp.data);
     } catch (e) {
       setError(e?.response?.data?.error || e.message || 'Erro ao consultar GEE');

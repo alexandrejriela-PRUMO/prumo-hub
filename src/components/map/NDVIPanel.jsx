@@ -106,7 +106,7 @@ export default function NDVIPanel({ geometry, coordinates, propertyName }) {
         {!hasGeometry && (
           <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            Importe um arquivo KML com o polígono da propriedade para ativar a análise NDVI.
+            Cadastre coordenadas ou importe um KML da propriedade para ativar a análise NDVI.
           </div>
         )}
 

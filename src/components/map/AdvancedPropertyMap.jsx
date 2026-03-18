@@ -159,7 +159,41 @@ export default function AdvancedPropertyMap({
     setIsDrawing(false);
   };
 
-  const measurements = drawnGeometry ? getGeometryStats(drawnGeometry) : null;
+  // Calcula área de um polígono (GeoJSON)
+  const calculateArea = (geojson) => {
+    if (!geojson || geojson.type !== 'Polygon' && geojson.type !== 'Feature') return null;
+    
+    const coords = geojson.type === 'Feature' 
+      ? geojson.geometry?.coordinates[0] 
+      : geojson.coordinates[0];
+    
+    if (!coords || coords.length < 3) return null;
+    
+    // Shoelace formula para área
+    const area = Math.abs(
+      coords.reduce((sum, [lng, lat], i) => {
+        const next = coords[(i + 1) % coords.length];
+        return sum + (lng * next[1] - lat * next[0]);
+      }, 0) / 2
+    );
+    
+    // Converte de graus² para metros²
+    const metersPerDegree = 111320;
+    const areaMeters = area * metersPerDegree * metersPerDegree;
+    const hectares = (areaMeters / 10000).toFixed(2);
+    const km2 = (areaMeters / 1000000).toFixed(2);
+    const m2 = Math.round(areaMeters);
+    
+    return { hectares, km2, m2, meters: areaMeters };
+  };
+
+  const measurements = drawnGeometry ? (() => {
+    const areaData = calculateArea(drawnGeometry);
+    return areaData ? {
+      area: `${areaData.hectares} ha (${areaData.km2} km²) • ${areaData.m2.toLocaleString('pt-BR')} m²`,
+      vertices: drawnGeometry.geometry?.coordinates[0]?.length - 1 || 0,
+    } : null;
+  })() : null;
 
   const getCenter = () => {
     if (property?.coordinates) {

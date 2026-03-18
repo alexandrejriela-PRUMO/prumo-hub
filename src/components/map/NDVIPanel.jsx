@@ -65,18 +65,35 @@ export default function NDVIPanel({ geometry, coordinates, propertyName, kmlLaye
   const [error, setError] = useState(null);
   const [selectedArea, setSelectedArea] = useState(() => drawnGeometry ? 'drawn' : 'main');
 
-  // Monta lista de áreas disponíveis
+  // Monta lista de áreas disponíveis (propertyAreas é prioritário)
   const availableAreas = [
-    ...(drawnGeometry ? [{ id: 'drawn', label: '🎯 Polígono Desenhado (Ativo)', geom: drawnGeometry }] : []),
-    { id: 'main', label: 'Polígono/Coordenadas Informadas', geom: geometry || null },
-    ...kmlLayers.map(layer => ({ id: layer.id, label: layer.name, geom: layer.geojson })),
-    ...(carData?.car_polygon ? [{ id: 'car', label: 'CAR', geom: carData.car_polygon }] : []),
-    ...(carData?.app ? [{ id: 'app', label: 'APP', geom: carData.app }] : []),
-    ...(carData?.legal_reserve ? [{ id: 'legal_reserve', label: 'Reserva Legal', geom: carData.legal_reserve }] : []),
-  ];
+    ...propertyAreas.map(area => ({ 
+      id: area.id, 
+      label: `${area.name} (${area.type})`,
+      coordinates: area.coordinates,
+      isPropertyArea: true 
+    })),
+    { id: 'car', label: 'CAR', geom: carData?.car_polygon },
+    { id: 'app', label: 'APP', geom: carData?.app },
+    { id: 'legal_reserve', label: 'Reserva Legal', geom: carData?.legal_reserve },
+    ...kmlLayers.map(layer => ({ id: layer.id, label: `KML: ${layer.name}`, geom: layer.geojson })),
+    { id: 'main', label: 'Coordenadas da Propriedade', geom: geometry },
+  ].filter(a => a.geom || a.coordinates);
 
-  const selectedAreaGeom = availableAreas.find(a => a.id === selectedArea)?.geom;
-  const hasGeometry = !!selectedAreaGeom || !!coordinates;
+  // Pega geometria da área selecionada
+  const getSelectedGeometry = () => {
+    if (selectedAreaId) {
+      const area = availableAreas.find(a => a.id === selectedAreaId);
+      if (area?.coordinates) {
+        return { type: 'Feature', geometry: { type: 'Polygon', coordinates: [area.coordinates] } };
+      }
+      return area?.geom;
+    }
+    return null;
+  };
+
+  const selectedGeometry = getSelectedGeometry();
+  const hasGeometry = !!selectedGeometry;
 
    useEffect(() => {
      if (geometry) {

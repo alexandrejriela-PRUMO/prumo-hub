@@ -259,6 +259,18 @@ export default function PropertyMapView() {
   const carGeoJson = parseGeoJson(selectedProperty?.boundaries);
   const carLayers = carData?.map_layers;
 
+  // Collect all registered GeoJSON layers to fit bounds on load
+  const allGeoJsonLayers = React.useMemo(() => {
+    const list = [];
+    if (carGeoJson) list.push(carGeoJson);
+    if (carLayers?.app_layer_url) { const gj = parseGeoJson(carLayers.app_layer_url); if (gj) list.push(gj); }
+    if (carLayers?.legal_reserve_url) { const gj = parseGeoJson(carLayers.legal_reserve_url); if (gj) list.push(gj); }
+    if (carLayers?.recovery_area_url) { const gj = parseGeoJson(carLayers.recovery_area_url); if (gj) list.push(gj); }
+    if (carLayers?.consolidated_area_url) { const gj = parseGeoJson(carLayers.consolidated_area_url); if (gj) list.push(gj); }
+    kmlLayers.forEach(l => { if (l.visible && l.geojson) list.push(l.geojson); });
+    return list;
+  }, [carGeoJson, carLayers, kmlLayers]);
+
   const builtinLayerButtons = [
     { key: 'car', label: 'CAR', icon: '📋' },
     { key: 'app', label: 'APP', icon: '💧' },

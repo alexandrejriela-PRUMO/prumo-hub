@@ -491,8 +491,8 @@ export default function HarvestLossPage() {
           </Tabs>
 
           <div className="flex justify-end gap-3 pt-2 border-t border-gray-100 mt-4">
-            <Button variant="outline" onClick={closeForm}>Cancelar</Button>
-            <Button type="button" className="bg-emerald-600 hover:bg-emerald-700" onClick={e => { e.preventDefault(); handleSubmit(); }} disabled={createM.isPending || updateM.isPending}>
+            <Button variant="outline" onClick={closeForm} disabled={createM.isPending || updateM.isPending}>Cancelar</Button>
+            <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleSubmit} disabled={createM.isPending || updateM.isPending}>
               {createM.isPending || updateM.isPending ? 'Salvando...' : 'Salvar'}
             </Button>
           </div>

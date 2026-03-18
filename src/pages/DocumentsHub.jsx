@@ -158,7 +158,7 @@ export default function DocumentsHub() {
     const dateMatch = (!dateFrom || (docDate && docDate >= dateFrom)) &&
                       (!dateTo || (docDate && docDate <= dateTo));
 
-    return searchMatch && propertyMatch && entityMatch && typeMatch && dateMatch && doc.is_active !== false;
+    return searchMatch && propertyMatch && entityMatch && moduleMatch && typeMatch && dateMatch && doc.is_active !== false;
   }).sort((a, b) => {
     const ai = orderedIds.indexOf(a.id);
     const bi = orderedIds.indexOf(b.id);

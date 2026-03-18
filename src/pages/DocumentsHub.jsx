@@ -335,13 +335,13 @@ export default function DocumentsHub() {
               <div>
                 <label className="text-xs text-gray-600 mb-1 block">Módulo</label>
                 <select
-                  value={filters.entityType}
-                  onChange={(e) => setFilters({ ...filters, entityType: e.target.value })}
+                  value={filters.module}
+                  onChange={(e) => setFilters({ ...filters, module: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                 >
                   <option value="all">Todos os Módulos</option>
-                  {Object.entries(entityTypeLabels).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
+                  {MODULES.map(m => (
+                    <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
               </div>

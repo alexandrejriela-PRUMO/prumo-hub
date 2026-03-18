@@ -21,6 +21,7 @@ const RuralCredit = React.lazy(() => import('./pages/RuralCredit'));
 const HarvestLoss = React.lazy(() => import('./pages/HarvestLoss'));
 const CRA = React.lazy(() => import('./pages/CRA'));
 const CampMode = React.lazy(() => import('./pages/CampMode'));
+const PropertyCentral = React.lazy(() => import('./pages/PropertyCentral'));
 import OfflineIndicator from '@/components/offline/OfflineIndicator';
 import { useOfflineSync } from '@/components/offline/OfflineSyncHook';
 import { initializeOfflineDB } from '@/components/offline/OfflineStorageManager';

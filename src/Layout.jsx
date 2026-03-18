@@ -119,9 +119,9 @@ const produtorNavItems = [
   },
   { name: 'Relatórios', page: 'Reports', icon: FileText },
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
-  { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
   { name: 'Minha Equipe', page: 'MyTeam', icon: Users, separator: true },
   { name: 'Modo Campo', page: 'CampMode', icon: Building2 },
+  { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
 ];
 
 // Equipe do consultor: igual ao consultor, sem "Minha Equipe"

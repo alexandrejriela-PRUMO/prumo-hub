@@ -62,8 +62,6 @@ export default function NDVIPanel({ geometry, propertyName }) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
-  const [showHistory, setShowHistory] = useState(false);
-
   const hasGeometry = geometry && (
     geometry.type === 'FeatureCollection' ? geometry.features?.length > 0 : !!geometry.type
   );

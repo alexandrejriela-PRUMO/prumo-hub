@@ -138,23 +138,51 @@ function buildExpr(geometry, startDate, endDate) {
 }
 
 async function computeNDVI(projectId, token, geometry, startDate, endDate) {
-   const expr = buildExpr(geometry, startDate, endDate);
-   console.log('[GEE] Expression being sent to GEE (geo node):', JSON.stringify(expr.values.geo, null, 2));
+  try {
+    console.log('[GEE:computeNDVI] Iniciando computação para período:', { startDate, endDate });
 
-   const res = await fetch(`https://earthengine.googleapis.com/v1/projects/${projectId}/value:compute`, {
-     method: 'POST',
-     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-     body: JSON.stringify({ expression: expr }),
-   });
-   const data = await res.json();
-   if (data.error) {
-     console.error('[GEE] API Error:', JSON.stringify(data.error));
-     throw new Error(data.error.message || JSON.stringify(data.error));
-   }
-   // GEE returns raw NDVI * 10000 for MODIS MOD13Q1
-   const raw = data.result?.NDVI ?? data.result?.values?.NDVI ?? null;
-   return raw != null ? raw / 10000 : null;
- }
+    const expr = buildExpr(geometry, startDate, endDate);
+    console.log('[GEE:computeNDVI] Expression geo node:', JSON.stringify(expr.values.geo, null, 2));
+
+    console.log('[GEE:computeNDVI] Enviando request para GEE...');
+    const res = await fetch(`https://earthengine.googleapis.com/v1/projects/${projectId}/value:compute`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ expression: expr }),
+    });
+
+    console.log('[GEE:computeNDVI] Response status:', res.status);
+
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      console.error('[GEE:computeNDVI] GEE API Error:');
+      console.error('[GEE:computeNDVI] - Status:', res.status);
+      console.error('[GEE:computeNDVI] - Error:', JSON.stringify(data.error || data, null, 2));
+
+      const errorMsg = data.error?.message || data.error?.code || JSON.stringify(data.error || data);
+      throw new Error(`GEE API Error (${res.status}): ${errorMsg}`);
+    }
+
+    console.log('[GEE:computeNDVI] Response data:', JSON.stringify(data));
+
+    // GEE returns raw NDVI * 10000 for MODIS MOD13Q1
+    const raw = data.result?.NDVI ?? data.result?.values?.NDVI ?? null;
+
+    if (raw === null || raw === undefined) {
+      console.warn('[GEE:computeNDVI] Sem valor NDVI na resposta (sem imagens para o período)');
+      return null;
+    }
+
+    const ndvi = raw / 10000;
+    console.log('[GEE:computeNDVI] NDVI calculado:', ndvi);
+
+    return ndvi;
+  } catch (err) {
+    console.error('[GEE:computeNDVI] Erro:', err.message);
+    throw err;
+  }
+}
 
 function classify(ndvi) {
   if (ndvi >= 0.6) return { status: 'Vegetação Densa e Saudável', color: 'emerald', emoji: '🌿', desc: 'Excelente cobertura vegetal. Vegetação densa, ativa e bem estabelecida.' };

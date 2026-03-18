@@ -134,15 +134,24 @@ export default function CRASimple() {
 
   const saveTitleMutation = useMutation({
     mutationFn: async (data) => {
+      if (!data.cra_number || !data.origin_id || !data.biome) {
+        throw new Error('Preencha todos os campos obrigatórios');
+      }
+      
       const area = parseFloat(data.cra_area_hectares) || 0;
       if (area <= 0) throw new Error('Área deve ser positiva');
 
+      const origin = origins.find(o => o.id === data.origin_id);
       const payload = {
-        ...data,
+        cra_number: data.cra_number,
+        origin_id: data.origin_id,
+        property_id: origin?.property_id,
+        biome: data.biome,
         cra_area_hectares: area,
         owner_email: user.email,
         current_holder_email: user.email,
         available_area_hectares: area,
+        issue_date: data.issue_date || new Date().toISOString().split('T')[0],
         status: editingTitle?.id ? (editingTitle.status || 'Disponível') : 'Disponível'
       };
 
@@ -154,9 +163,13 @@ export default function CRASimple() {
     onSuccess: async () => {
       await refetchTitles();
       setEditingTitle(null);
-      toast.success('Salvo com sucesso!');
+      setTitleFormData({});
+      toast.success('Título CRA criado com sucesso!');
     },
-    onError: (err) => toast.error(err.message || 'Erro ao salvar')
+    onError: (err) => {
+      console.error('[CRA] Erro ao salvar título:', err);
+      toast.error(err.message || 'Erro ao salvar');
+    }
   });
 
   const deleteTitleMutation = useMutation({

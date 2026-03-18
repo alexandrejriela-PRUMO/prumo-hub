@@ -93,6 +93,7 @@ export default function AdvancedPropertyMap({
   carGeoJson,
   carLayers,
   kmlLayers,
+  propertyAreas = [],
   activeLayers,
   onLayerToggle,
   parseGeoJson,
@@ -257,6 +258,25 @@ export default function AdvancedPropertyMap({
           const gj = parseGeoJson(carLayers.legal_reserve_url);
           return gj ? <GeoJSON data={gj} style={LAYER_STYLES.legalReserve} /> : null;
         })()}
+
+        {/* Property Areas */}
+        {propertyAreas?.map(area => {
+          const geojson = {
+            type: 'Feature',
+            geometry: {
+              type: 'Polygon',
+              coordinates: [area.coordinates]
+            },
+            properties: { name: area.name, type: area.type }
+          };
+          return (
+            <GeoJSON
+              key={area.id}
+              data={geojson}
+              style={{ color: area.color, weight: 2.5, fillOpacity: 0.2, fillColor: area.color }}
+            />
+          );
+        })}
 
         {/* KML layers */}
         {kmlLayers?.filter(l => l.visible).map(layer => (

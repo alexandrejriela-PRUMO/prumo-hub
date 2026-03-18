@@ -674,11 +674,34 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
             </div>
           </div>
           {!isUrban && (
-            <div className="space-y-2">
-              <Label>Número do CAR</Label>
-              <Input value={formData.car_number || ''}
-                onChange={(e) => setFormData({ ...formData, car_number: e.target.value })}
-                placeholder="Ex: RS-4300000-XXXX..." />
+            <div className="space-y-2 md:col-span-2">
+              <Label>Número(s) do CAR</Label>
+              {carNumbers.length > 0 && (
+                <div className="space-y-1.5 mb-2">
+                  {carNumbers.map((car, idx) => (
+                    <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-sm">
+                      <span className="flex-1 text-amber-900 font-mono font-medium">{car}</span>
+                      <button type="button" onClick={() => removeCarNumber(idx)} className="text-red-400 hover:text-red-600">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Input
+                  value={newCarNumber}
+                  onChange={(e) => setNewCarNumber(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCarNumber(); }}}
+                  placeholder="Ex: RS-4300000-XXXX..."
+                  className="flex-1"
+                />
+                <Button type="button" variant="outline" onClick={addCarNumber}
+                  className="border-amber-500 text-amber-700 hover:bg-amber-50 shrink-0 gap-1">
+                  <Plus className="w-4 h-4" />
+                  Adicionar
+                </Button>
+              </div>
             </div>
           )}
           {isUrban && (

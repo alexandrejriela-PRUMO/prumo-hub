@@ -161,21 +161,22 @@ function downloadKml(content, filename) {
 }
 
 export default function PropertyMapView() {
-  const [user, setUser] = useState(null);
-  const [selectedPropertyId, setSelectedPropertyId] = useState('');
-  const [activeLayers, setActiveLayers] = useState({
-    satellite: true,
-    car: true,
-    app: true,
-    legalReserve: true,
-    recovery: false,
-    consolidated: false,
-  });
-  const [kmlLayers, setKmlLayers] = useState([]); // { id, name, geojson, color, visible }
-  const [ndviTileUrl, setNdviTileUrl] = useState(null);
-  const [ndviToken, setNdviToken] = useState(null);
-  const fileInputRef = useRef(null);
-  const savingRef = useRef(false);
+   const [user, setUser] = useState(null);
+   const [selectedPropertyId, setSelectedPropertyId] = useState('');
+   const [activeLayers, setActiveLayers] = useState({
+     satellite: true,
+     car: true,
+     app: true,
+     legalReserve: true,
+     recovery: false,
+     consolidated: false,
+   });
+   const [kmlLayers, setKmlLayers] = useState([]); // { id, name, geojson, color, visible }
+   const [drawnGeometry, setDrawnGeometry] = useState(null); // Geometria desenhada atual
+   const [ndviTileUrl, setNdviTileUrl] = useState(null);
+   const [ndviToken, setNdviToken] = useState(null);
+   const fileInputRef = useRef(null);
+   const savingRef = useRef(false);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});

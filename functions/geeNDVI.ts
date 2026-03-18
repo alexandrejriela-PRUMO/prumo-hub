@@ -74,6 +74,11 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const keyRawDebug = Deno.env.get('GEE_PRIVATE_KEY') || '';
+    console.log('RAW_KEY_TYPE:', keyRawDebug.startsWith('{') ? 'json' : keyRawDebug.startsWith('-----') ? 'pem' : 'other');
+    console.log('RAW_KEY_LENGTH:', keyRawDebug.length);
+    console.log('RAW_KEY_START:', JSON.stringify(keyRawDebug.substring(0, 60)));
+
     const { boundaries_geojson, center_coordinates } = await req.json();
 
     const serviceEmail = Deno.env.get('GEE_SERVICE_ACCOUNT_EMAIL');

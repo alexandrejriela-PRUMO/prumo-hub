@@ -40,7 +40,8 @@ function buildExpr(geometry, startDate, endDate) {
       '0': { functionInvocationValue: { functionName: 'ImageCollection.load', arguments: { id: { constantValue: 'MODIS/061/MOD13Q1' } } } },
       '1': { functionInvocationValue: { functionName: 'Collection.filterDate', arguments: { collection: { valueReference: '0' }, start: { constantValue: startDate }, end: { constantValue: endDate } } } },
       '2': { functionInvocationValue: { functionName: 'Collection.filterBounds', arguments: { collection: { valueReference: '1' }, geometry: { constantValue: geometry } } } },
-      '3': { functionInvocationValue: { functionName: 'ImageCollection.select', arguments: { input: { valueReference: '2' }, bandSelectors: { constantValue: ['NDVI'] } } } },
+      '3': { functionInvocationValue: { functionName: 'Collection.map', arguments: { collection: { valueReference: '2' }, baseAlgorithm: { functionDefinitionValue: { argumentNames: ['img'], body: '3a' } } } } },
+      '3a': { functionInvocationValue: { functionName: 'Image.select', arguments: { input: { argumentReference: 'img' }, bandSelectors: { constantValue: ['NDVI'] } } } },
       '4': { functionInvocationValue: { functionName: 'ImageCollection.reduce', arguments: { collection: { valueReference: '3' }, reducer: { functionInvocationValue: { functionName: 'Reducer.mean', arguments: {} } } } } },
       '5': { functionInvocationValue: { functionName: 'Image.reduceRegion', arguments: {
         image: { valueReference: '4' },

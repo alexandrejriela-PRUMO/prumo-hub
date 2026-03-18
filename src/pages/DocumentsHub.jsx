@@ -31,6 +31,7 @@ export default function DocumentsHub() {
   const [user, setUser] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState(null);
+  const [editingDoc, setEditingDoc] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPropertyId, setSelectedPropertyId] = useState(null);
   const [filters, setFilters] = useState({

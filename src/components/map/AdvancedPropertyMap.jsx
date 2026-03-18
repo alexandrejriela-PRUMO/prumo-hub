@@ -181,20 +181,50 @@ export default function AdvancedPropertyMap({
     toast.success(`Área "${area.name}" salva como ${AREA_TYPES[area.type]?.label || area.type}!`);
   };
 
-  // Zoom automático para última área salva
+  // Zoom automático para última área salva ou para todas as áreas ao carregar
   useEffect(() => {
-    if (!lastSavedAreaId || !mapRef.current) return;
+    if (!mapRef.current) return;
     const map = mapRef.current;
-    const area = propertyAreas.find(a => a.id === lastSavedAreaId);
-    if (area?.coordinates) {
-      const bounds = L.latLngBounds(
-        area.coordinates.map(([lng, lat]) => [lat, lng])
-      );
-      setTimeout(() => {
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
-      }, 100);
+    
+    // Se tem área recém-salva, foca nela
+    if (lastSavedAreaId) {
+      const area = propertyAreas.find(a => a.id === lastSavedAreaId);
+      if (area?.coordinates) {
+        const bounds = L.latLngBounds(
+          area.coordinates.map(([lng, lat]) => [lat, lng])
+        );
+        setTimeout(() => {
+          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+        }, 100);
+        return;
+      }
     }
-  }, [lastSavedAreaId, propertyAreas]);
+
+    // Caso contrário, calcula bounds de todas as áreas salvas
+    const allCoordinates = [];
+    propertyAreas?.forEach(area => {
+      if (area.coordinates) {
+        allCoordinates.push(...area.coordinates.map(([lng, lat]) => [lat, lng]));
+      }
+    });
+
+    // Se tem áreas, faz zoom para englobar todas
+    if (allCoordinates.length > 0) {
+      const bounds = L.latLngBounds(allCoordinates);
+      setTimeout(() => {
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+      }, 100);
+    } else if (property?.coordinates) {
+      // Se não tem áreas, centraliza na propriedade
+      const coordStr = String(property.coordinates).trim();
+      const [lat, lng] = coordStr.split(/[,;]/).map(c => Number(c.trim()));
+      if (!isNaN(lat) && !isNaN(lng)) {
+        setTimeout(() => {
+          map.setView([lat, lng], 13);
+        }, 100);
+      }
+    }
+  }, [propertyAreas, property?.coordinates]);
 
   // Calcula área de um polígono (GeoJSON)
   const calculateArea = (geojson) => {

@@ -562,11 +562,21 @@ export default function PropertyMapView() {
 
       {/* NDVI GEE Panel */}
       {selectedProperty && (() => {
-        // Prioridade: geometria desenhada > first visible KML layer > CAR boundaries
         const kmlGeom = kmlLayers.find(l => l.visible && l.geojson)?.geojson;
         const carGeom = carGeoJson;
         const geometry = drawnGeometry || kmlGeom || carGeom;
-        return <NDVIPanel geometry={geometry} coordinates={selectedProperty.coordinates} propertyName={selectedProperty.property_name} />;
+        const carData = {
+          car_polygon: carGeoJson,
+          app: null,
+          legal_reserve: null
+        };
+        return <NDVIPanel 
+          geometry={geometry} 
+          coordinates={selectedProperty.coordinates} 
+          propertyName={selectedProperty.property_name}
+          kmlLayers={kmlLayers}
+          carData={carData}
+        />;
       })()}
 
       {/* Help & Instructions */}

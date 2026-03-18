@@ -135,7 +135,7 @@ export default function Support() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Telefone</p>
-              <p className="font-semibold text-gray-900">(XX) XXXXX-XXXX</p>
+              <p className="font-semibold text-gray-900">(55) 9.99480489</p>
             </div>
           </CardContent>
         </Card>
@@ -146,7 +146,7 @@ export default function Support() {
             </div>
             <div>
               <p className="text-sm text-gray-500">E-mail</p>
-              <p className="font-semibold text-gray-900">contato@santarute.com.br</p>
+              <p className="font-semibold text-gray-900">prumohub@gmail.com</p>
             </div>
           </CardContent>
         </Card>
@@ -240,7 +240,7 @@ export default function Support() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Esta ação não pode ser revertida. Sua conta e todos os dados associados serão permanentemente excluídos. Para prosseguir com a exclusão, entre em contato com o suporte em <strong>contato@santarute.com.br</strong> informando seu e-mail cadastrado.
+                    Esta ação não pode ser revertida. Sua conta e todos os dados associados serão permanentemente excluídos. Para prosseguir com a exclusão, entre em contato com o suporte em <strong>prumohub@gmail.com</strong> informando seu e-mail cadastrado.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -248,8 +248,8 @@ export default function Support() {
                   <AlertDialogAction
                     className="bg-red-600 hover:bg-red-700"
                     onClick={() => {
-                      window.location.href = `mailto:contato@santarute.com.br?subject=Solicita%C3%A7%C3%A3o%20de%20exclus%C3%A3o%20de%20conta&body=Ol%C3%A1%2C%20gostaria%20de%20solicitar%20a%20exclus%C3%A3o%20da%20minha%20conta%20com%20e-mail%3A%20${user?.email}`;
-                    }}
+                       window.location.href = `mailto:prumohub@gmail.com?subject=Solicita%C3%A7%C3%A3o%20de%20exclus%C3%A3o%20de%20conta&body=Ol%C3%A1%2C%20gostaria%20de%20solicitar%20a%20exclus%C3%A3o%20da%20minha%20conta%20com%20e-mail%3A%20${user?.email}`;
+                     }}
                   >
                     Confirmar e enviar solicitação
                   </AlertDialogAction>

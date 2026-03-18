@@ -11,7 +11,6 @@ import {
 
 export default function PropertyCentral() {
   const [selectedPropertyId, setSelectedPropertyId] = useState(null);
-  const [showModuleNav, setShowModuleNav] = useState(false);
   const location = useLocation();
   
   // Detecta se veio de um módulo (tem search params com return_from)
@@ -67,44 +66,14 @@ export default function PropertyCentral() {
 
   return (
     <div className="space-y-6">
-      {/* Module Quick Navigation */}
-      <div className="bg-gradient-to-r from-emerald-50 to-blue-50 rounded-xl border border-emerald-200 p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-emerald-900">Navegação Rápida de Módulos</h3>
-          <button
-            onClick={() => setShowModuleNav(!showModuleNav)}
-            className="text-xs px-2 py-1 rounded bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors"
-          >
-            {showModuleNav ? 'Fechar' : 'Expandir'}
-          </button>
-        </div>
-        {showModuleNav && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-            {modules.map((module) => {
-              const Icon = module.icon;
-              return (
-                <Link
-                  key={module.page}
-                  to={createPageUrl(module.page)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white hover:bg-emerald-50 transition-colors text-xs font-medium text-gray-700 hover:text-emerald-700 border border-emerald-100"
-                >
-                  <Icon className="w-4 h-4" />
-                  <span className="truncate">{module.name}</span>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-      </div>
-      
       {/* Quick Return Button (if came from a module) */}
       {returnFrom && (
         <Link
           to={createPageUrl(returnFrom)}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors text-sm font-medium"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-emerald-700 hover:bg-emerald-50 transition-colors text-xs font-medium"
         >
-          <ChevronLeft className="w-4 h-4" />
-          Voltar para {returnFrom}
+          <ChevronLeft className="w-3 h-3" />
+          Voltar
         </Link>
       )}
 

@@ -20,7 +20,7 @@ const FinancialDashboard = React.lazy(() => import('./pages/FinancialDashboard')
 const RuralCredit = React.lazy(() => import('./pages/RuralCredit'));
 const HarvestLoss = React.lazy(() => import('./pages/HarvestLoss'));
 const CRA = React.lazy(() => import('./pages/CRA'));
-const CRASimple = React.lazy(() => import('./pages/CRASimple'));
+
 const CampMode = React.lazy(() => import('./pages/CampMode'));
 const PropertyCentral = React.lazy(() => import('./pages/PropertyCentral'));
 import OfflineIndicator from '@/components/offline/OfflineIndicator';
@@ -102,7 +102,7 @@ const AuthenticatedApp = () => {
       <Route path="/FinancialDashboard" element={<LayoutWrapper currentPageName="FinancialDashboard"><Suspense fallback={<LoadingSpinner />}><FinancialDashboard /></Suspense></LayoutWrapper>} />
       <Route path="/RuralCredit" element={<LayoutWrapper currentPageName="RuralCredit"><Suspense fallback={<LoadingSpinner />}><RuralCredit /></Suspense></LayoutWrapper>} />
       <Route path="/HarvestLoss" element={<LayoutWrapper currentPageName="HarvestLoss"><Suspense fallback={<LoadingSpinner />}><HarvestLoss /></Suspense></LayoutWrapper>} />
-      <Route path="/CRA" element={<LayoutWrapper currentPageName="CRASimple"><Suspense fallback={<LoadingSpinner />}><CRASimple /></Suspense></LayoutWrapper>} />
+
       <Route path="/CampMode" element={<LayoutWrapper currentPageName="CampMode"><Suspense fallback={<LoadingSpinner />}><CampMode /></Suspense></LayoutWrapper>} />
       <Route path="/PropertyCentral" element={<LayoutWrapper currentPageName="PropertyCentral"><Suspense fallback={<LoadingSpinner />}><PropertyCentral /></Suspense></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />

@@ -2,17 +2,20 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
 // ── JWT / OAuth ────────────────────────────────────────────────────────────
 async function getGEEToken(email, pemRaw) {
-  // Normalize newlines
-  let pem = pemRaw;
-  if (pem.includes('\\n')) pem = pem.replace(/\\n/g, '\n');
+  // Normalize: convert literal \n to actual newlines
+  let pem = pemRaw.indexOf('\\n') !== -1 ? pemRaw.replace(/\\n/g, '\n') : pemRaw;
 
-  // Extract base64 body from PEM
-  const pemBody = pem
-    .split('\n')
-    .filter(l => !l.startsWith('---') && l.trim().length > 0)
-    .join('');
+  // Extract only valid base64 chars (strip all whitespace, headers, etc.)
+  const pemBody = pem.replace(/[^A-Za-z0-9+/=]/g, '');
+  // Add padding if needed
+  const padded = pemBody + '==='.slice(0, (4 - (pemBody.length % 4)) % 4);
 
-  const keyBytes = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0));
+  let keyBytes;
+  try {
+    keyBytes = Uint8Array.from(atob(padded), c => c.charCodeAt(0));
+  } catch (e) {
+    throw new Error(`Falha ao decodificar chave PEM (base64). Verifique o formato da GEE_PRIVATE_KEY. Detalhes: ${e.message}. KeyLen:${pemBody.length}`);
+  }
   const key = await crypto.subtle.importKey(
     'pkcs8', keyBytes.buffer,
     { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']

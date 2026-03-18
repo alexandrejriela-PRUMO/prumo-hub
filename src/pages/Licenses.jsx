@@ -583,7 +583,7 @@ export default function Licenses() {
             return (
               <Card key={license.id} className="hover:shadow-lg transition-all duration-300 border-emerald-100 hover:border-emerald-200">
                 <CardHeader className="pb-2 sm:pb-3">
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="flex items-start gap-2 sm:gap-3 flex-1">
                       <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0 ${
                         statusInfo.status === 'expired' ? 'bg-red-100' :
@@ -599,7 +599,7 @@ export default function Licenses() {
                         <p className="text-xs sm:text-sm text-gray-500 truncate">{license.license_number || 'Sem número'}</p>
                       </div>
                     </div>
-                    <Badge className={`${statusInfo.color} flex-shrink-0 border-2 border-current`}>
+                    <Badge className={`${statusInfo.color} flex-shrink-0 border-2 border-current whitespace-nowrap`}>
                       <StatusIcon className="w-3 h-3 mr-1" />
                       <span className="text-xs sm:text-sm font-semibold">{statusInfo.label}</span>
                     </Badge>

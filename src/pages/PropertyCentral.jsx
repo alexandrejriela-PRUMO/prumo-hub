@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import PropertySelector from '@/components/properties/PropertySelector';
 import { 
   Building2, FileText, MapPin, AlertTriangle, FileCheck, 
-  Leaf, Map, Scale, TreePine, BarChart3, ChevronRight, ScrollText
+  Leaf, Map, Scale, TreePine, BarChart3, ChevronRight, ScrollText, ChevronLeft
 } from 'lucide-react';
 
 export default function PropertyCentral() {
   const [selectedPropertyId, setSelectedPropertyId] = useState(null);
+  const location = useLocation();
+  
+  // Detecta se veio de um módulo (tem search params com return_from)
+  const searchParams = new URLSearchParams(location.search);
+  const returnFrom = searchParams.get('return_from');
 
   // Fetch user data
   const { data: user } = useQuery({
@@ -61,6 +66,17 @@ export default function PropertyCentral() {
 
   return (
     <div className="space-y-6">
+      {/* Quick Return Button */}
+      {returnFrom && (
+        <Link
+          to={createPageUrl(returnFrom)}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors text-sm font-medium"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Voltar para {returnFrom}
+        </Link>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -108,7 +124,7 @@ export default function PropertyCentral() {
           return (
             <Link
               key={module.page}
-              to={createPageUrl(module.page)}
+              to={`${createPageUrl(module.page)}?return_from=PropertyCentral`}
               className={`${module.color} p-6 rounded-xl border transition-all hover:shadow-md group`}
             >
               <div className="flex items-start justify-between">

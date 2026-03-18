@@ -14,8 +14,11 @@ import {
   Map as MapIcon,
   TreePine,
   Briefcase,
-  User
+  User,
+  ChevronLeft
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
 import PropertyForm from '../components/properties/PropertyForm';
 import PropertyMap from '../components/properties/PropertyMap';
@@ -199,6 +202,14 @@ export default function Properties() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+      <Link
+        to={createPageUrl('PropertyCentral')}
+        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-emerald-700 hover:bg-emerald-50 transition-colors text-xs font-medium"
+      >
+        <ChevronLeft className="w-3 h-3" />
+        Voltar
+      </Link>
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="min-w-0">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Propriedades e Empreendimentos</h1>

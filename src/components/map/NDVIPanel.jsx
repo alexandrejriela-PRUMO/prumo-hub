@@ -166,12 +166,24 @@ export default function NDVIPanel({ geometry, coordinates, propertyName }) {
 
         console.log('[NDVIPanel] Payload completo:', JSON.stringify(payload));
         const resp = await base44.functions.invoke('geeNdviAnalysis', payload);
+        console.log('[NDVIPanel] Response status:', resp.status);
+        console.log('[NDVIPanel] Response data:', resp.data);
+
+        if (resp.status !== 200 && !resp.data?.ndvi_mean) {
+          setError(resp.data?.details || resp.data?.error || `Erro HTTP ${resp.status}`);
+          setLoading(false);
+          return;
+        }
+
         setResult(resp.data);
-    } catch (e) {
-      setError(e?.response?.data?.error || e.message || 'Erro ao consultar GEE');
-    } finally {
-      setLoading(false);
-    }
+        setError(null);
+        } catch (e) {
+        console.error('[NDVIPanel] Erro capturado:', e);
+        const errorMsg = e?.response?.data?.details || e?.response?.data?.error || e.message || 'Erro ao consultar Google Earth Engine';
+        setError(errorMsg);
+        } finally {
+        setLoading(false);
+        }
   };
 
   const historyData = result?.history?.filter(h => h?.mean != null).map(h => ({

@@ -29,23 +29,75 @@ async function getGEEToken(email, pem) {
 }
 
 function buildExpr(geometry, startDate, endDate) {
+  const startMs = new Date(startDate).getTime();
+  const endMs = new Date(endDate).getTime();
   return {
     result: '6',
     values: {
-      '0': { functionInvocationValue: { functionName: 'ImageCollection.load', arguments: { id: { constantValue: 'MODIS/061/MOD13Q1' } } } },
-      '1': { functionInvocationValue: { functionName: 'Filter.date', arguments: { start: { constantValue: startDate }, end: { constantValue: endDate } } } },
-      '2': { functionInvocationValue: { functionName: 'Collection.filter', arguments: { collection: { valueReference: '0' }, filter: { valueReference: '1' } } } },
-      '3': { functionInvocationValue: { functionName: 'Filter.intersects', arguments: { left: { constantValue: geometry } } } },
-      '4': { functionInvocationValue: { functionName: 'Collection.filter', arguments: { collection: { valueReference: '2' }, filter: { valueReference: '3' } } } },
-      '5': { functionInvocationValue: { functionName: 'ImageCollection.reduce', arguments: { collection: { valueReference: '4' }, reducer: { functionInvocationValue: { functionName: 'Reducer.mean', arguments: {} } } } } },
-      '6': { functionInvocationValue: { functionName: 'Image.reduceRegion', arguments: {
-        image: { valueReference: '5' },
-        reducer: { functionInvocationValue: { functionName: 'Reducer.mean', arguments: {} } },
-        geometry: { constantValue: geometry },
-        scale: { constantValue: 500 },
-        maxPixels: { constantValue: 100000000 },
-        bestEffort: { constantValue: true }
-      }}}
+      '0': {
+        functionInvocationValue: {
+          functionName: 'ImageCollection.load',
+          arguments: { id: { constantValue: 'MODIS/061/MOD13Q1' } }
+        }
+      },
+      '1': {
+        functionInvocationValue: {
+          functionName: 'DateRange',
+          arguments: {
+            start: { constantValue: startMs },
+            end: { constantValue: endMs }
+          }
+        }
+      },
+      '2': {
+        functionInvocationValue: {
+          functionName: 'Collection.filterDate',
+          arguments: {
+            collection: { valueReference: '0' },
+            start_time: { constantValue: startMs },
+            end_time: { constantValue: endMs }
+          }
+        }
+      },
+      '3': {
+        functionInvocationValue: {
+          functionName: 'Collection.filterBounds',
+          arguments: {
+            collection: { valueReference: '2' },
+            geometry: { constantValue: geometry }
+          }
+        }
+      },
+      '4': {
+        functionInvocationValue: {
+          functionName: 'ImageCollection.select',
+          arguments: {
+            input: { valueReference: '3' },
+            bandSelectors: { constantValue: ['NDVI'] }
+          }
+        }
+      },
+      '5': {
+        functionInvocationValue: {
+          functionName: 'reduce.mean',
+          arguments: {
+            collection: { valueReference: '4' }
+          }
+        }
+      },
+      '6': {
+        functionInvocationValue: {
+          functionName: 'Image.reduceRegion',
+          arguments: {
+            image: { valueReference: '5' },
+            reducer: { functionInvocationValue: { functionName: 'Reducer.mean', arguments: {} } },
+            geometry: { constantValue: geometry },
+            scale: { constantValue: 500 },
+            maxPixels: { constantValue: 1e8 },
+            bestEffort: { constantValue: true }
+          }
+        }
+      }
     }
   };
 }

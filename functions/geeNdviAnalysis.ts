@@ -33,28 +33,45 @@ async function getGEEToken(email, pem) {
   return data.access_token;
 }
 
+function normalizeCoordinatesForGEE(coords) {
+  // Força cast de coordenadas para [[number, number], ...]
+  if (!Array.isArray(coords) || coords.length === 0) return null;
+  
+  return coords.map(coord => {
+    if (!Array.isArray(coord)) return null;
+    if (coord.length < 2) return null;
+    // Cast explícito para número
+    const lng = Number(coord[0]);
+    const lat = Number(coord[1]);
+    if (isNaN(lng) || isNaN(lat)) return null;
+    return [lng, lat];
+  }).filter(c => c !== null);
+}
+
 function buildGeomExpr(geometry) {
   // Build the geometry expression node based on type
-  const coords = geometry.coordinates;
+  let coords = geometry.coordinates;
+  
   if (geometry.type === 'Polygon') {
-    return {
-      functionInvocationValue: {
-        functionName: 'GeometryConstructors.Polygon',
-        arguments: { coordinates: { constantValue: coords } }
-      }
-    };
+    // Polygon: coordinates = [[[lng, lat], ...]]
+    if (Array.isArray(coords[0])) {
+      coords = [normalizeCoordinatesForGEE(coords[0])];
+    }
+    console.log('[GEE] Polygon coordinates (normalized):', JSON.stringify(coords));
   } else if (geometry.type === 'MultiPolygon') {
-    return {
-      functionInvocationValue: {
-        functionName: 'GeometryConstructors.MultiPolygon',
-        arguments: { coordinates: { constantValue: coords } }
-      }
-    };
+    // MultiPolygon: coordinates = [[[[lng, lat], ...]]]
+    coords = coords.map(ring => normalizeCoordinatesForGEE(ring[0] || ring));
+    console.log('[GEE] MultiPolygon coordinates (normalized):', JSON.stringify(coords));
   }
-  // Fallback: Polygon from first ring
+  
+  // Validação: garante que temos arrays de arrays de números
+  if (!coords || coords.length === 0) {
+    throw new Error('Coordenadas inválidas ou vazias após normalização');
+  }
+  
   return {
     functionInvocationValue: {
-      functionName: 'GeometryConstructors.Polygon',
+      functionName: geometry.type === 'MultiPolygon' ? 'GeometryConstructors.MultiPolygon' : 'GeometryConstructors.Polygon',
       arguments: { coordinates: { constantValue: coords } }
     }
   };

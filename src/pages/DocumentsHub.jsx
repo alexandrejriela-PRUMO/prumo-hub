@@ -16,13 +16,15 @@ import {
   Trash2,
   FolderOpen,
   Calendar,
-  GripVertical
+  GripVertical,
+  Pencil
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import DocumentUpload from '../components/documents/DocumentUpload';
 import DocumentViewer from '../components/documents/DocumentViewer';
+import DocumentEditModal from '../components/documents/DocumentEditModal';
 import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
 
 export default function DocumentsHub() {

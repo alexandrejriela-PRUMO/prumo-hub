@@ -165,15 +165,37 @@ function classify(ndvi) {
 }
 
 Deno.serve(async (req) => {
+  console.log('=== NDVI REQUEST START ===');
+
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user) {
+      console.error('[GEE] Erro: Usuário não autenticado');
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    console.log('[GEE] Usuário autenticado:', user.email);
 
-    const { boundaries_geojson, center_coordinates } = await req.json();
+    let boundaries_geojson, center_coordinates;
+    try {
+      const body = await req.json();
+      boundaries_geojson = body.boundaries_geojson;
+      center_coordinates = body.center_coordinates;
+      console.log('[GEE] Request body recebido');
+      console.log('[GEE] - boundaries_geojson:', !!boundaries_geojson);
+      console.log('[GEE] - center_coordinates:', center_coordinates);
+    } catch (e) {
+      console.error('[GEE] Erro ao parsear request body:', e.message);
+      return Response.json({ error: 'Request body inválido', details: e.message }, { status: 400 });
+    }
 
     const serviceEmail = Deno.env.get('GEE_SERVICE_ACCOUNT_EMAIL');
     const keyRaw = Deno.env.get('GEE_PRIVATE_KEY');
+
+    if (!serviceEmail || !keyRaw) {
+      console.error('[GEE] Erro: Credenciais GEE não configuradas');
+      return Response.json({ error: 'GEE credentials not configured' }, { status: 500 });
+    }
 
     let privateKey;
     try {
@@ -184,61 +206,135 @@ Deno.serve(async (req) => {
     }
 
     let geometry;
-     if (boundaries_geojson) {
-       const gj = typeof boundaries_geojson === 'string' ? JSON.parse(boundaries_geojson) : boundaries_geojson;
-       geometry = gj.type === 'FeatureCollection' ? gj.features[0]?.geometry :
-                  gj.type === 'Feature' ? gj.geometry : gj;
-       console.log('[GEE] Geometria recebida (raw):', JSON.stringify(geometry));
-     } else if (center_coordinates) {
-       const [lat, lng] = String(center_coordinates).split(',').map(Number);
-       const d = 0.045;
-       geometry = { type: 'Polygon', coordinates: [[[lng-d,lat-d],[lng+d,lat-d],[lng+d,lat+d],[lng-d,lat+d],[lng-d,lat-d]]] };
-       console.log('[GEE] Geometria criada a partir de coordenadas centrais:', JSON.stringify(geometry));
-     } else {
-       return Response.json({ error: 'Geometria não fornecida' }, { status: 400 });
-     }
+    try {
+      if (boundaries_geojson) {
+        const gj = typeof boundaries_geojson === 'string' ? JSON.parse(boundaries_geojson) : boundaries_geojson;
+        geometry = gj.type === 'FeatureCollection' ? gj.features[0]?.geometry :
+                   gj.type === 'Feature' ? gj.geometry : gj;
+        console.log('[GEE] Geometria recebida (raw):', JSON.stringify(geometry));
+      } else if (center_coordinates) {
+        console.log('[GEE] Criando geometria a partir de coordenadas centrais:', center_coordinates);
+        const [lat, lng] = String(center_coordinates).split(',').map(Number);
+        if (isNaN(lat) || isNaN(lng)) throw new Error('Coordenadas centrais inválidas (não são números)');
+        const d = 0.045;
+        geometry = { type: 'Polygon', coordinates: [[[lng-d,lat-d],[lng+d,lat-d],[lng+d,lat+d],[lng-d,lat+d],[lng-d,lat-d]]] };
+        console.log('[GEE] Geometria criada com sucesso');
+      } else {
+        console.error('[GEE] Erro: Nenhuma geometria fornecida');
+        return Response.json({ error: 'Geometria não fornecida (boundaries_geojson ou center_coordinates obrigatórios)' }, { status: 400 });
+      }
+    } catch (e) {
+      console.error('[GEE] Erro ao processar geometria:', e.message);
+      return Response.json({ error: 'Erro ao processar geometria', details: e.message }, { status: 400 });
+    }
 
-     // Validação pré-GEE
-     if (!geometry || !geometry.type || !geometry.coordinates) {
-       console.error('[GEE] Geometria inválida:', JSON.stringify(geometry));
-       return Response.json({ error: 'Geometria inválida (ausência de type ou coordinates)' }, { status: 400 });
-     }
+    // Validação rigorosa da geometria
+    try {
+      if (!geometry) throw new Error('Geometria é nula ou indefinida');
+      if (!geometry.type) throw new Error('Geometria não possui atributo "type"');
+      if (!geometry.coordinates || !Array.isArray(geometry.coordinates)) throw new Error('Geometria não possui atributo "coordinates" ou não é um array');
 
-    let projectId = serviceEmail?.match(/@([^.]+)\.iam\.gserviceaccount\.com/)?.[1];
-    if (!projectId) projectId = Deno.env.get('GEE_PROJECT_ID') || null;
-    if (!projectId) throw new Error('Não foi possível extrair o Project ID do e-mail da conta de serviço. Configure GEE_PROJECT_ID.');
+      console.log('[GEE] Geometria validada. Type:', geometry.type);
 
-    const token = await getGEEToken(serviceEmail, privateKey);
+      if (geometry.type === 'Polygon' && Array.isArray(geometry.coordinates[0])) {
+        const ring = geometry.coordinates[0];
+        console.log('[GEE] Polygon ring points:', ring.length);
 
-    const now = new Date();
-    const endDate = now.toISOString().split('T')[0];
-    const startDate = new Date(now - 90 * 86400000).toISOString().split('T')[0];
-    const prevEnd = new Date(now - 365 * 86400000).toISOString().split('T')[0];
-    const prevStart = new Date(now - 455 * 86400000).toISOString().split('T')[0];
+        if (ring.length < 3) {
+          throw new Error(`Polígono requer mínimo 3 pontos. Recebido: ${ring.length}`);
+        }
+      }
+    } catch (e) {
+      console.error('[GEE] Erro de validação de geometria:', e.message);
+      return Response.json({ error: 'Geometria inválida', details: e.message }, { status: 400 });
+    }
 
-    const [ndviCurrent, ndviPrev] = await Promise.all([
-      computeNDVI(projectId, token, geometry, startDate, endDate),
-      computeNDVI(projectId, token, geometry, prevStart, prevEnd),
-    ]);
+    let projectId;
+    try {
+      projectId = serviceEmail?.match(/@([^.]+)\.iam\.gserviceaccount\.com/)?.[1];
+      if (!projectId) projectId = Deno.env.get('GEE_PROJECT_ID') || null;
+      if (!projectId) throw new Error('Não foi possível extrair o Project ID do e-mail da conta de serviço. Configure GEE_PROJECT_ID.');
+      console.log('[GEE] Project ID:', projectId);
+    } catch (e) {
+      console.error('[GEE] Erro ao obter Project ID:', e.message);
+      return Response.json({ error: 'Erro ao obter Project ID', details: e.message }, { status: 500 });
+    }
+
+    let token;
+    try {
+      console.log('[GEE] Obtendo token de autenticação...');
+      token = await getGEEToken(serviceEmail, privateKey);
+      console.log('[GEE] Token obtido com sucesso');
+    } catch (e) {
+      console.error('[GEE] Erro ao obter token GEE:', e.message);
+      return Response.json({ error: 'Erro de autenticação GEE', details: e.message }, { status: 500 });
+    }
+
+    let ndviCurrent, ndviPrev;
+    try {
+      const now = new Date();
+      const endDate = now.toISOString().split('T')[0];
+      const startDate = new Date(now - 90 * 86400000).toISOString().split('T')[0];
+      const prevEnd = new Date(now - 365 * 86400000).toISOString().split('T')[0];
+      const prevStart = new Date(now - 455 * 86400000).toISOString().split('T')[0];
+
+      console.log('[GEE] Período atual:', { startDate, endDate });
+      console.log('[GEE] Período anterior:', { prevStart, prevEnd });
+      console.log('[GEE] Iniciando cálculo de NDVI (2 períodos em paralelo)...');
+
+      [ndviCurrent, ndviPrev] = await Promise.all([
+        computeNDVI(projectId, token, geometry, startDate, endDate),
+        computeNDVI(projectId, token, geometry, prevStart, prevEnd),
+      ]);
+
+      console.log('[GEE] NDVI atual:', ndviCurrent);
+      console.log('[GEE] NDVI ano anterior:', ndviPrev);
+    } catch (e) {
+      console.error('[GEE] Erro ao calcular NDVI:', e.message);
+      console.error('[GEE] Stack:', e.stack);
+      return Response.json({ 
+        error: 'Erro ao calcular NDVI com Google Earth Engine',
+        details: e.message,
+        type: 'GEE_COMPUTATION_ERROR'
+      }, { status: 500 });
+    }
 
     if (ndviCurrent === null) {
-      return Response.json({ error: 'Sem imagens MODIS disponíveis para o período/área selecionado.', ndvi_mean: null });
+      console.warn('[GEE] Aviso: NDVI atual é null (sem imagens MODIS para o período/área)');
+      return Response.json({ 
+        error: 'Sem imagens MODIS disponíveis para o período/área selecionado.',
+        ndvi_mean: null,
+        type: 'NO_DATA'
+      });
     }
 
     const classification = classify(ndviCurrent);
     const trend = ndviPrev !== null ? ndviCurrent - ndviPrev : null;
 
-    return Response.json({
+    const result = {
       ndvi_mean: Math.round(ndviCurrent * 1000) / 1000,
       ndvi_prev_year: ndviPrev !== null ? Math.round(ndviPrev * 1000) / 1000 : null,
       trend: trend !== null ? Math.round(trend * 1000) / 1000 : null,
       ...classification,
-      date_range: { start: startDate, end: endDate },
+      date_range: { start: new Date().toISOString().split('T')[0] },
       source: 'MODIS Terra NDVI 16-day (250m)',
-      analysis_date: endDate,
-    });
+      analysis_date: new Date().toISOString().split('T')[0],
+    };
+
+    console.log('[GEE] Análise completa com sucesso');
+    console.log('=== NDVI REQUEST END (SUCCESS) ===');
+
+    return Response.json(result);
 
   } catch (err) {
-    return Response.json({ error: err.message }, { status: 500 });
+    console.error('[GEE] Erro não capturado:', err.message);
+    console.error('[GEE] Stack trace:', err.stack);
+    console.log('=== NDVI REQUEST END (ERROR) ===');
+
+    return Response.json({ 
+      error: 'Erro interno ao processar NDVI',
+      details: err.message,
+      type: 'INTERNAL_ERROR'
+    }, { status: 500 });
   }
 });

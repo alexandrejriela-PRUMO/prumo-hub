@@ -8,6 +8,59 @@ import CoordinateInputPanel from './CoordinateInputPanel';
 import MapMeasurementTools from './MapMeasurementTools';
 import { toast } from 'sonner';
 
+// Simple drawing layer component
+function DrawingLayer({ onPolygonCreated, featureGroupRef }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    const polygon = [];
+    const polylineLayer = L.polyline([], { color: '#10b981', weight: 2, dashArray: '5, 5' });
+    const pointsLayer = L.featureGroup();
+    polylineLayer.addTo(map);
+    pointsLayer.addTo(map);
+
+    const handleClick = (e) => {
+      const { lat, lng } = e.latlng;
+      polygon.push([lat, lng]);
+      
+      // Add marker
+      L.circleMarker([lat, lng], { radius: 5, color: '#10b981', fillColor: '#10b981', fillOpacity: 0.8 })
+        .addTo(pointsLayer);
+      
+      // Update polyline
+      polylineLayer.setLatLngs(polygon);
+    };
+
+    const handleRightClick = (e) => {
+      if (polygon.length > 2) {
+        polygon.push(polygon[0]); // Close polygon
+        const geojson = {
+          type: 'Feature',
+          geometry: { type: 'Polygon', coordinates: [[...polygon.map(p => [p[1], p[0]])]] },
+          properties: { name: 'Polígono desenhado' }
+        };
+        onPolygonCreated(geojson);
+        polylineLayer.remove();
+        pointsLayer.remove();
+        map.off('click', handleClick);
+        map.off('contextmenu', handleRightClick);
+      }
+    };
+
+    map.on('click', handleClick);
+    map.on('contextmenu', handleRightClick);
+
+    return () => {
+      map.off('click', handleClick);
+      map.off('contextmenu', handleRightClick);
+      polylineLayer.remove();
+      pointsLayer.remove();
+    };
+  }, [map, onPolygonCreated]);
+
+  return null;
+}
+
 // Calculate area and perimeter
 function getGeometryStats(geojson) {
   if (!geojson || !geojson.geometry) return {};

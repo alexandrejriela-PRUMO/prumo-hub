@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { MapContainer, TileLayer, GeoJSON, useMap, Marker, Popup } from 'react-leaflet';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MapPin, Layers, Info, TreePine, Droplets, Upload, Download, X, FileText, Satellite } from 'lucide-react';
+import { MapPin, Layers, Info, TreePine, Droplets, Upload, Download, X, FileText, Satellite, ChevronLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
 import NDVIPanel from '@/components/map/NDVIPanel';
+import AdvancedPropertyMap from '@/components/map/AdvancedPropertyMap';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 // KML to GeoJSON inline parser (no external dependency)
 function kml(doc) {
   const features = [];

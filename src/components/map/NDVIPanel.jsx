@@ -52,7 +52,7 @@ function StatCard({ label, value, unit = '' }) {
   );
 }
 
-export default function NDVIPanel({ geometry, coordinates, propertyName }) {
+export default function NDVIPanel({ geometry, coordinates, propertyName, kmlLayers = [], carData = {} }) {
   const [startDate, setStartDate] = useState(() => {
     const d = new Date(); d.setMonth(d.getMonth() - 3);
     return d.toISOString().split('T')[0];
@@ -62,12 +62,19 @@ export default function NDVIPanel({ geometry, coordinates, propertyName }) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
-   const hasGeometry = (geometry && (
-     geometry.type === 'FeatureCollection' ? geometry.features?.length > 0 : 
-     geometry.type === 'Feature' ? !!geometry.geometry :
-     geometry.type === 'Polygon' || geometry.type === 'MultiPolygon' ? !!geometry.coordinates : 
-     !!geometry.type
-   )) || !!coordinates;
+  const [selectedArea, setSelectedArea] = useState('main');
+
+  // Monta lista de áreas disponíveis
+  const availableAreas = [
+    { id: 'main', label: 'Polígono/Coordenadas Informadas', geom: geometry || null },
+    ...kmlLayers.map(layer => ({ id: layer.id, label: layer.name, geom: layer.geojson })),
+    ...(carData?.car_polygon ? [{ id: 'car', label: 'CAR', geom: carData.car_polygon }] : []),
+    ...(carData?.app ? [{ id: 'app', label: 'APP', geom: carData.app }] : []),
+    ...(carData?.legal_reserve ? [{ id: 'legal_reserve', label: 'Reserva Legal', geom: carData.legal_reserve }] : []),
+  ];
+
+  const selectedAreaGeom = availableAreas.find(a => a.id === selectedArea)?.geom;
+  const hasGeometry = !!selectedAreaGeom || !!coordinates;
 
    useEffect(() => {
      if (geometry) {

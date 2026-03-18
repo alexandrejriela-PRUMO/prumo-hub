@@ -83,9 +83,21 @@ export default function RuralCreditPage() {
     enabled: !!user?.email,
   });
 
-  const createM = useMutation({ mutationFn: d => base44.entities.RuralCredit.create(d), onSuccess: () => { qc.invalidateQueries(['rural-credits']); closeForm(); toast.success('Crédito cadastrado!'); } });
-  const updateM = useMutation({ mutationFn: ({ id, data }) => base44.entities.RuralCredit.update(id, data), onSuccess: () => { qc.invalidateQueries(['rural-credits']); closeForm(); toast.success('Atualizado!'); } });
-  const deleteM = useMutation({ mutationFn: id => base44.entities.RuralCredit.delete(id), onSuccess: () => { qc.invalidateQueries(['rural-credits']); toast.success('Removido.'); } });
+  const createM = useMutation({ 
+    mutationFn: d => base44.entities.RuralCredit.create(d), 
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['rural-credits'] }); closeForm(); toast.success('Crédito cadastrado!'); },
+    onError: (err) => toast.error(err.message || 'Erro ao criar')
+  });
+  const updateM = useMutation({ 
+    mutationFn: ({ id, data }) => base44.entities.RuralCredit.update(id, data), 
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['rural-credits'] }); closeForm(); toast.success('Atualizado!'); },
+    onError: (err) => toast.error(err.message || 'Erro ao atualizar')
+  });
+  const deleteM = useMutation({ 
+    mutationFn: id => base44.entities.RuralCredit.delete(id), 
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['rural-credits'] }); toast.success('Removido.'); },
+    onError: (err) => toast.error(err.message || 'Erro ao remover')
+  });
 
   const setF = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
@@ -111,24 +123,37 @@ export default function RuralCreditPage() {
   const removeDoc = (idx) => setForm(p => ({ ...p, documentos: p.documentos.filter((_, i) => i !== idx) }));
 
   const handleSubmit = () => {
-    if (!form.instituicao || !form.valor_contratado || !form.data_vencimento) { toast.error('Preencha instituição, valor e data de vencimento.'); return; }
-    const clientProp = properties.find(p => p.id === form.property_id) || properties[0];
-    const payload = { 
-      ...form, 
-      valor_contratado: parseFloat(form.valor_contratado) || 0, 
-      saldo_devedor: parseFloat(form.saldo_devedor) || 0, 
-      taxa_juros: parseFloat(form.taxa_juros) || 0, 
-      prazo_total_meses: parseInt(form.prazo_total_meses) || 0, 
-      num_parcelas: parseInt(form.num_parcelas) || 0, 
-      parcelas_pagas: parseInt(form.parcelas_pagas) || 0, 
-      consultor_email: user?.email,
-      client_name: clientProp?.client_name || clientProp?.property_name || form.client_name,
-      client_email: clientProp?.owner_email || user?.email,
-      property_id: form.property_id || clientProp?.id || ''
-    };
-    if (editing) updateM.mutate({ id: editing.id, data: payload });
-    else createM.mutate(payload);
-  };
+     if (!form.instituicao || !form.valor_contratado) { 
+       toast.error('Preencha instituição e valor contratado');
+       return; 
+     }
+     if (!form.data_vencimento) {
+       toast.error('Data de vencimento é obrigatória');
+       return;
+     }
+
+     const valor = parseFloat(form.valor_contratado);
+     const saldo = parseFloat(form.saldo_devedor) || 0;
+     if (valor <= 0) { toast.error('Valor contratado deve ser maior que zero'); return; }
+     if (saldo < 0) { toast.error('Saldo devedor não pode ser negativo'); return; }
+
+     const clientProp = properties.find(p => p.id === form.property_id) || properties[0];
+     const payload = { 
+       ...form, 
+       valor_contratado: valor,
+       saldo_devedor: saldo, 
+       taxa_juros: parseFloat(form.taxa_juros) || 0, 
+       prazo_total_meses: parseInt(form.prazo_total_meses) || 0, 
+       num_parcelas: parseInt(form.num_parcelas) || 0, 
+       parcelas_pagas: Math.min(parseInt(form.parcelas_pagas) || 0, parseInt(form.num_parcelas) || 0),
+       consultor_email: user?.email,
+       client_email: clientProp?.owner_email || user?.email,
+       client_name: clientProp?.client_name || clientProp?.property_name || form.client_name || 'Sem nome',
+       property_id: form.property_id || clientProp?.id || ''
+     };
+     if (editing) updateM.mutate({ id: editing.id, data: payload });
+     else createM.mutate(payload);
+   };
 
   const totalContratado = credits.reduce((s, c) => s + (c.valor_contratado || 0), 0);
   const totalSaldo = credits.reduce((s, c) => s + (c.saldo_devedor || 0), 0);

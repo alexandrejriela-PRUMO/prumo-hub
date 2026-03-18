@@ -45,10 +45,23 @@ export default function PropertyCentral() {
 
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
 
-  if (propertiesLoading || !selectedProperty) {
+  if (propertiesLoading) {
     return (
       <div className="flex items-center justify-center w-full h-96">
         <div className="w-8 h-8 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!selectedProperty && properties.length === 0) {
+    return (
+      <div className="flex items-center justify-center w-full h-96">
+        <div className="text-center">
+          <p className="text-gray-600 font-medium">Você não tem propriedades cadastradas.</p>
+          <Link to={createPageUrl('Properties')} className="text-emerald-600 hover:underline text-sm mt-2 inline-block">
+            Cadastre sua propriedade
+          </Link>
+        </div>
       </div>
     );
   }

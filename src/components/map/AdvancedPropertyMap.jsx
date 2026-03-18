@@ -115,8 +115,7 @@ export default function AdvancedPropertyMap({
   };
 
   const handleFinishDraw = () => {
-   setIsDrawing(false);
-   toast.success('Clique com botão direito para finalizar o polígono');
+   toast.info('Clique com botão direito no mapa para finalizar o polígono');
   };
 
   const handleCancelDraw = () => {

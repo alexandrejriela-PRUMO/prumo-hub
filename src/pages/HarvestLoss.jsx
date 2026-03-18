@@ -86,9 +86,21 @@ export default function HarvestLossPage() {
     enabled: !!user?.email,
   });
 
-  const createM = useMutation({ mutationFn: d => base44.entities.HarvestLoss.create(d), onSuccess: () => { qc.invalidateQueries(['harvest-loss']); closeForm(); toast.success('Evento registrado!'); } });
-  const updateM = useMutation({ mutationFn: ({ id, data }) => base44.entities.HarvestLoss.update(id, data), onSuccess: () => { qc.invalidateQueries(['harvest-loss']); closeForm(); toast.success('Atualizado!'); } });
-  const deleteM = useMutation({ mutationFn: id => base44.entities.HarvestLoss.delete(id), onSuccess: () => { qc.invalidateQueries(['harvest-loss']); toast.success('Removido.'); } });
+  const createM = useMutation({ 
+    mutationFn: d => base44.entities.HarvestLoss.create(d), 
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['harvest-loss'] }); closeForm(); toast.success('Evento registrado!'); },
+    onError: (err) => toast.error(err.message || 'Erro ao criar')
+  });
+  const updateM = useMutation({ 
+    mutationFn: ({ id, data }) => base44.entities.HarvestLoss.update(id, data), 
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['harvest-loss'] }); closeForm(); toast.success('Atualizado!'); },
+    onError: (err) => toast.error(err.message || 'Erro ao atualizar')
+  });
+  const deleteM = useMutation({ 
+    mutationFn: id => base44.entities.HarvestLoss.delete(id), 
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['harvest-loss'] }); toast.success('Removido.'); },
+    onError: (err) => toast.error(err.message || 'Erro ao remover')
+  });
 
   const setF = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
@@ -125,12 +137,41 @@ export default function HarvestLossPage() {
   const removeItem = (target, idx) => setForm(p => ({ ...p, [target]: p[target].filter((_, i) => i !== idx) }));
 
   const handleSubmit = () => {
-    if (!form.cultura || !form.tipo_evento || !form.data_evento) { toast.error('Preencha cultura, tipo de evento e data.'); return; }
-    const clientProp = properties.find(p => p.id === form.property_id);
-    const payload = { ...form, area_plantada: parseFloat(form.area_plantada) || 0, area_afetada: parseFloat(form.area_afetada) || 0, produtividade_esperada: parseFloat(form.produtividade_esperada) || 0, produtividade_obtida: parseFloat(form.produtividade_obtida) || 0, percentual_perda: parseFloat(form.percentual_perda) || 0, consultor_email: user?.email, client_name: clientProp?.client_name || form.client_name };
-    if (editing) updateM.mutate({ id: editing.id, data: payload });
-    else createM.mutate(payload);
-  };
+     if (!form.cultura || !form.cultura.trim()) { toast.error('Preencha a cultura'); return; }
+     if (!form.tipo_evento) { toast.error('Selecione o tipo de evento'); return; }
+     if (!form.data_evento) { toast.error('Preencha a data do evento'); return; }
+
+     const areaPlantada = parseFloat(form.area_plantada) || 0;
+     const areaAfetada = parseFloat(form.area_afetada) || 0;
+     const prodEsperada = parseFloat(form.produtividade_esperada) || 0;
+     const prodObtida = parseFloat(form.produtividade_obtida) || 0;
+     const perda = parseFloat(form.percentual_perda) || 0;
+
+     if (areaAfetada > 0 && areaPlantada > 0 && areaAfetada > areaPlantada) {
+       toast.error('Área afetada não pode exceder área plantada');
+       return;
+     }
+     if (perda < 0 || perda > 100) {
+       toast.error('Percentual de perda deve estar entre 0 e 100%');
+       return;
+     }
+
+     const clientProp = properties.find(p => p.id === form.property_id);
+     const payload = { 
+       ...form, 
+       area_plantada: areaPlantada,
+       area_afetada: areaAfetada,
+       produtividade_esperada: prodEsperada,
+       produtividade_obtida: prodObtida,
+       percentual_perda: perda,
+       consultor_email: user?.email,
+       client_email: clientProp?.owner_email || user?.email,
+       client_name: clientProp?.client_name || form.client_name || 'Sem nome',
+       property_id: form.property_id || clientProp?.id || ''
+     };
+     if (editing) updateM.mutate({ id: editing.id, data: payload });
+     else createM.mutate(payload);
+   };
 
   const totalArea = records.reduce((s, r) => s + (r.area_afetada || 0), 0);
   const mediaPerda = records.length > 0 ? Math.round(records.reduce((s, r) => s + (r.percentual_perda || 0), 0) / records.length) : 0;

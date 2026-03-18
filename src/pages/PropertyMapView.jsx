@@ -318,18 +318,19 @@ export default function PropertyMapView() {
   ];
 
   const handleSaveDrawnArea = async (geojson) => {
-    if (!selectedProperty) return;
-    try {
-      // Salva localmente para o NDVIPanel usar imediatamente
-      setDrawnGeometry(geojson);
-      // Salva também na base de dados
-      await base44.entities.Property.update(selectedProperty.id, { boundaries: geojson });
-      toast.success('Área salva com sucesso!');
-    } catch (err) {
-      toast.error('Erro ao salvar área');
-      console.error(err);
-    }
-  };
+     if (!selectedProperty) return;
+     try {
+       // Salva localmente para o NDVIPanel usar imediatamente
+       console.log('[PropertyMapView] Salvando geometria desenhada:', JSON.stringify(geojson));
+       setDrawnGeometry(geojson);
+       // Salva também na base de dados
+       await base44.entities.Property.update(selectedProperty.id, { boundaries: geojson });
+       toast.success('Área salva com sucesso!');
+     } catch (err) {
+       toast.error('Erro ao salvar área');
+       console.error(err);
+     }
+   };
 
   return (
     <div className="space-y-4">

@@ -74,11 +74,17 @@ function buildMapExpr(geojsonGeom, start, end, dataset) {
 
 // ── JWT / OAuth ────────────────────────────────────────────────────────────
 async function getAccessToken(email, pemRaw) {
+  // Normalize: handle both literal \n and actual newlines
   const pem = pemRaw.replace(/\\n/g, '\n');
   const now = Math.floor(Date.now() / 1000);
 
-  const b64u = (obj) => btoa(typeof obj === 'string' ? obj : JSON.stringify(obj))
-    .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  const b64u = (obj) => {
+    const str = typeof obj === 'string' ? obj : JSON.stringify(obj);
+    const bytes = new TextEncoder().encode(str);
+    let b = '';
+    for (const byte of bytes) b += String.fromCharCode(byte);
+    return btoa(b).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  };
 
   const header = b64u({ alg: 'RS256', typ: 'JWT' });
   const payload = b64u({
@@ -89,7 +95,8 @@ async function getAccessToken(email, pemRaw) {
   });
   const sigInput = `${header}.${payload}`;
 
-  const pemBody = pem.replace(/-----[^-]+-----/g, '').replace(/\s/g, '');
+  // Strip PEM headers and all whitespace to get pure base64
+  const pemBody = pem.replace(/-----BEGIN[^-]+-----/g, '').replace(/-----END[^-]+-----/g, '').replace(/\s+/g, '');
   const keyBytes = Uint8Array.from(atob(pemBody), ch => ch.charCodeAt(0));
   const key = await crypto.subtle.importKey(
     'pkcs8', keyBytes.buffer,

@@ -101,6 +101,16 @@ export default function DocumentsHub() {
     }
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.UnifiedDocument.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['unifiedDocuments'] });
+      setEditingDoc(null);
+      toast.success('Documento atualizado com sucesso!');
+    },
+    onError: () => toast.error('Erro ao atualizar documento')
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.UnifiedDocument.delete(id),
     onSuccess: () => {

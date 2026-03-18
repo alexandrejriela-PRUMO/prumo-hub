@@ -169,18 +169,28 @@ Deno.serve(async (req) => {
     if (!email || !pkRaw) return Response.json({ error: 'Credenciais GEE não configuradas' }, { status: 500 });
 
     let privateKey = pkRaw;
-    let projectId;
+    let projectId = Deno.env.get('GEE_PROJECT_ID') || null;
+
+    // Try to parse as JSON service account file
     try {
       const parsed = JSON.parse(pkRaw);
-      if (parsed.private_key) { privateKey = parsed.private_key; projectId = parsed.project_id; }
-    } catch {}
+      if (parsed.private_key) {
+        privateKey = parsed.private_key;
+        if (parsed.project_id) projectId = parsed.project_id;
+      }
+    } catch {
+      // pkRaw is already a raw PEM key string
+    }
 
     if (!projectId) {
       const m = email.match(/@(.+)\.iam\.gserviceaccount\.com/);
       projectId = m ? m[1] : null;
     }
-    if (!projectId) projectId = Deno.env.get('GEE_PROJECT_ID') || null;
     if (!projectId) return Response.json({ error: 'Não foi possível determinar o project_id do GEE' }, { status: 500 });
+
+    console.log('[GEE] project_id:', projectId);
+    console.log('[GEE] email:', email);
+    console.log('[GEE] key starts with:', privateKey?.substring(0, 50));
 
     const geomObj = normalizeGeometry(geometry);
     if (!geomObj) return Response.json({ error: 'Geometria inválida' }, { status: 400 });

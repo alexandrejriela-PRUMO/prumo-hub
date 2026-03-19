@@ -353,7 +353,7 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-              <Button onClick={() => navigate(createPageUrl('Processes'))} className="w-full bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-semibold group/btn">
+              <Button onClick={() => navigate(createPageUrl('Requests'))} className="w-full bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-semibold group/btn">
                 <TrendingUp className="w-4 h-4 mr-2 group-hover/btn:scale-110 transition-transform" />
                 Ver Requerimentos
               </Button>

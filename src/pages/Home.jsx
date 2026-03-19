@@ -114,7 +114,7 @@ export default function Home() {
     initialData: []
   });
 
-  const { data: environmentalAlerts, isLoading: loadingAlerts } = useQuery({
+  const { data: environmentalAlerts = [], isLoading: loadingAlerts } = useQuery({
     queryKey: ['environmental-alerts'],
     queryFn: () => base44.entities.EnvironmentalAlert.list(),
     enabled: true,

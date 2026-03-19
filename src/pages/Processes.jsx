@@ -24,7 +24,9 @@ import {
   Trash2,
   MapPin,
   DollarSign,
-  ChevronLeft
+  ChevronLeft,
+  Radio,
+  RefreshCw
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';

@@ -399,6 +399,24 @@ export default function Home() {
         </div>
       )}
 
+      {/* Botão flutuante Rute */}
+      <button
+        onClick={() => setRuteChatOpen(true)}
+        title="RUTE - Assistente Virtual"
+        className="fixed bottom-24 right-5 lg:bottom-8 lg:right-8 z-40 flex items-center gap-3 bg-white border border-amber-200 shadow-xl rounded-2xl px-4 py-3 hover:shadow-2xl hover:scale-105 transition-all duration-300 group"
+      >
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-md flex-shrink-0">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="white" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <circle cx="12" cy="12" r="3" fill="rgba(255,255,255,0.4)"/>
+          </svg>
+        </div>
+        <div className="text-left hidden sm:block">
+          <p className="text-sm font-bold text-gray-900 leading-tight">RUTE</p>
+          <p className="text-xs text-amber-600 leading-tight">Assistente Virtual</p>
+        </div>
+      </button>
+
       {/* Rute AI Chat Modal */}
       <RuteAIChat 
         user={user} 

@@ -179,6 +179,19 @@ export default function Processes() {
 
   const [selectedProcess, setSelectedProcess] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [scanLoading, setScanLoading] = useState(false);
+  const [scanResult, setScanResult] = useState(null);
+
+  const handleScanDOE = async () => {
+    setScanLoading(true);
+    setScanResult(null);
+    const response = await base44.functions.invoke('checkDOEInfracoes', {});
+    setScanResult(response.data);
+    setScanLoading(false);
+    if (response.data?.matches_found > 0) {
+      queryClient.invalidateQueries({ queryKey: ['processes'] });
+    }
+  };
 
   const ProcessCard = ({ process }) => {
     const StatusIcon = statusConfig[process.status]?.icon || AlertCircle;

@@ -60,7 +60,7 @@ export default function Home() {
     loadUser();
   }, []);
 
-  const { data: properties, isLoading: loadingProperties } = useQuery({
+  const { data: properties = [], isLoading: loadingProperties } = useQuery({
     queryKey: ['properties', user?.email, user?.user_type],
     queryFn: () => {
       if (user?.user_type === 'consultor') {

@@ -121,7 +121,7 @@ Deno.serve(async (req) => {
                                 <p><strong>Link DOE-RS:</strong> <a href="${item.link}">${item.link}</a></p>
                                 <p>Um novo processo foi criado automaticamente na plataforma PRUMO Hub para acompanhamento.</p>
                                 <hr>
-                                <p><small>Monitoramento automático semanal do Diário Oficial do Estado do RS - FEPAM</small></p>
+                                <p><small>Monitoramento automático diário do Diário Oficial do Estado do RS - FEPAM</small></p>
                             `
                         });
 

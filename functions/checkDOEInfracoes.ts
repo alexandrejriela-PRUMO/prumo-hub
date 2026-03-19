@@ -64,16 +64,14 @@ Deno.serve(async (req) => {
         if (isConsultor) {
             clients = await base44.entities.ClientCRM.filter({ consultor_email: user.email });
         } else {
-            // Produtor: busca propriedades próprias
+            // Produtor: busca propriedades próprias com CPF/CNPJ cadastrados
             const props = await base44.entities.Property.filter({ owner_email: user.email });
-            // Simula clientes a partir das propriedades (usa owner como referência)
             clients = props.map(p => ({
                 client_email: p.owner_email,
                 client_name: p.owner_names || p.property_name,
-                cpf: null,
-                cnpj: null,
-                property_id: p.id,
-                _owner_names: p.owner_names
+                cpf: p.owner_cpf || null,
+                cnpj: p.owner_cnpj || null,
+                property_id: p.id
             }));
         }
 

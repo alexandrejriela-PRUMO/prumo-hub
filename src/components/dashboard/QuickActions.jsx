@@ -4,26 +4,26 @@ import { createPageUrl } from '@/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
   FileText, 
-  MessageCircle, 
-  Users, 
   Scale,
+  TreePine,
+  Map,
   ArrowRight
 } from 'lucide-react';
 
 const actions = [
   {
-    title: 'Consultoria e Requerimentos',
-    description: 'Acesso direto à equipe',
-    icon: Users,
-    page: 'Requests',
-    color: 'from-teal-500 to-teal-600'
+    title: 'Gestão do CAR',
+    description: 'Cadastro Ambiental Rural',
+    icon: TreePine,
+    page: 'CARModule',
+    color: 'from-green-500 to-green-600'
   },
   {
-    title: 'Chat IA Rute',
-    description: 'Tire suas dúvidas',
-    icon: MessageCircle,
-    page: 'ChatRute',
-    color: 'from-amber-500 to-amber-600'
+    title: 'Mapa Interativo',
+    description: 'Visualize sua propriedade',
+    icon: Map,
+    page: 'PropertyMapView',
+    color: 'from-blue-500 to-blue-600'
   },
   {
     title: 'Documentos',
@@ -37,19 +37,14 @@ const actions = [
     description: 'Acompanhe processos',
     icon: Scale,
     page: 'Processes',
-    color: 'from-blue-500 to-blue-600'
+    color: 'from-purple-500 to-purple-600'
   },
 ];
 
 export default function QuickActions({ userType }) {
-  const visibleActions = actions.filter(a => {
-    if (a.page === 'Requests' && ['consultor', 'equipe', 'client_consultor'].includes(userType)) return false;
-    return true;
-  });
-
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-      {visibleActions.map((action, index) => (
+      {actions.map((action, index) => (
         <Link 
           key={index} 
           to={createPageUrl(action.page)}

@@ -93,7 +93,7 @@ export default function Home() {
     initialData: []
   });
 
-  const { data: processes, isLoading: loadingProcesses } = useQuery({
+  const { data: processes = [], isLoading: loadingProcesses } = useQuery({
     queryKey: ['processes', user?.email],
     queryFn: () => base44.entities.Process.filter({ client_email: user.email }),
     enabled: !!user?.email,

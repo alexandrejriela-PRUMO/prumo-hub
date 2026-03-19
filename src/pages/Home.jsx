@@ -79,7 +79,7 @@ export default function Home() {
     initialData: []
   });
 
-  const { data: invoices, isLoading: loadingInvoices } = useQuery({
+  const { data: invoices = [], isLoading: loadingInvoices } = useQuery({
     queryKey: ['invoices', user?.email],
     queryFn: () => base44.entities.Invoice.filter({ client_email: user.email }),
     enabled: !!user?.email,

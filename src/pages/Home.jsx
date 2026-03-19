@@ -403,7 +403,8 @@ export default function Home() {
       <button
         onClick={() => setRuteChatOpen(true)}
         title="RUTE - Assistente Virtual"
-        className="fixed bottom-24 right-5 lg:bottom-8 lg:right-8 z-40 flex items-center gap-3 bg-white border border-amber-200 shadow-xl rounded-2xl px-4 py-3 hover:shadow-2xl hover:scale-105 transition-all duration-300 group"
+        style={{ position: 'fixed', bottom: '6rem', right: '1.25rem', zIndex: 9999 }}
+        className="lg:bottom-8 lg:right-8 flex items-center gap-3 bg-white border border-amber-200 shadow-xl rounded-2xl px-4 py-3 hover:shadow-2xl hover:scale-105 transition-all duration-300 group"
       >
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-md flex-shrink-0">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

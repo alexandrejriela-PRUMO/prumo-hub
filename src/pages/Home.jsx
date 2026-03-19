@@ -249,18 +249,7 @@ export default function Home() {
              <p className="text-gray-500 mt-2 text-xs sm:text-sm lg:text-base break-words">{user?.user_type === 'produtor' ? 'Seja bem-vindo ao PRUMO Hub. O seu software inteligente para gestão da propriedade, empresas e dados ambientais' : 'Bem-vindo ao PRUMO Hub - Consultoria Ambiental'}</p>
            </div>
          </div>
-         <button
-           onClick={() => setRuteChatOpen(true)}
-           className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg hover:shadow-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-300 group hover:scale-105"
-           title="Consultar com IA Rute"
-         >
-           <svg width="24" height="24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="group-hover:scale-110 transition-transform">
-             <circle cx="50" cy="50" r="45" fill="white" opacity="0.2" stroke="white" strokeWidth="2"/>
-             <path d="M50 20C35 20 25 30 25 50C25 70 50 85 50 85C50 85 75 70 75 50C75 30 65 20 50 20Z" fill="white"/>
-             <circle cx="50" cy="50" r="8" fill="#10b981"/>
-           </svg>
-           <span className="text-sm font-semibold hidden sm:inline">IA Rute</span>
-         </button>
+         <div />
        </div>
 
       {/* Property Selector */}

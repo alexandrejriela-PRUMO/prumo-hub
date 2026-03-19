@@ -515,6 +515,46 @@ export default function Processes() {
         </div>
       )}
 
+      {/* Monitoramento DOE-RS */}
+      <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-3">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-2">
+            <Radio className="w-5 h-5 text-amber-600" />
+            <div>
+              <p className="text-sm font-semibold text-amber-900">Monitoramento DOE-RS / FEPAM</p>
+              <p className="text-xs text-amber-700">Verificação automática semanal (toda segunda-feira) de Autos de Infração no Diário Oficial do RS</p>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleScanDOE}
+            disabled={scanLoading}
+            className="border-amber-400 text-amber-800 hover:bg-amber-100 whitespace-nowrap"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${scanLoading ? 'animate-spin' : ''}`} />
+            {scanLoading ? 'Verificando...' : 'Verificar Agora'}
+          </Button>
+        </div>
+        {scanResult && (
+          <div className={`text-sm p-3 rounded-lg ${scanResult.matches_found > 0 ? 'bg-red-100 border border-red-300 text-red-800' : 'bg-green-100 border border-green-300 text-green-800'}`}>
+            {scanResult.error ? (
+              <p>❌ Erro: {scanResult.error}</p>
+            ) : scanResult.matches_found > 0 ? (
+              <div>
+                <p className="font-semibold">⚠️ {scanResult.matches_found} correspondência(s) encontrada(s)!</p>
+                {scanResult.new_processes?.map((r, i) => (
+                  <p key={i} className="text-xs mt-1">• {r.client} — {r.matchType} — {r.title?.substring(0, 80)}...</p>
+                ))}
+                <p className="text-xs mt-1 opacity-70">Novos processos criados automaticamente. Verifique a aba Administrativos.</p>
+              </div>
+            ) : (
+              <p>✅ Nenhuma infração encontrada. {scanResult.scanned_items} publicações da FEPAM verificadas para {scanResult.clients_checked} clientes.</p>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
         <div className="min-w-0">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2 sm:gap-3 flex-wrap">

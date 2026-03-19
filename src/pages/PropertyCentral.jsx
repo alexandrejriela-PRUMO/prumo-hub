@@ -53,7 +53,7 @@ export default function PropertyCentral() {
     );
   }
 
-  if (!selectedProperty && properties.length === 0) {
+  if (!selectedProperty) {
     return (
       <div className="flex items-center justify-center w-full h-96">
         <div className="text-center">

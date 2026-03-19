@@ -72,7 +72,7 @@ export default function Home() {
     initialData: []
   });
 
-  const { data: licenses, isLoading: loadingLicenses } = useQuery({
+  const { data: licenses = [], isLoading: loadingLicenses } = useQuery({
     queryKey: ['licenses', user?.email],
     queryFn: () => base44.entities.License.filter({ owner_email: user.email }),
     enabled: !!user?.email,

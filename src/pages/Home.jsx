@@ -86,7 +86,7 @@ export default function Home() {
     initialData: []
   });
 
-  const { data: documents, isLoading: loadingDocuments } = useQuery({
+  const { data: documents = [], isLoading: loadingDocuments } = useQuery({
     queryKey: ['documents', user?.email],
     queryFn: () => base44.entities.Document.filter({ owner_email: user.email }),
     enabled: !!user?.email,

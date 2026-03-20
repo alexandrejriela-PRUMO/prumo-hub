@@ -50,14 +50,23 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Email inválido ou não fornecido.' }, { status: 400 });
       }
 
-      // 2. Checar duplicidade (qualquer status exceto Inativo)
-      const existing = await base44.asServiceRole.entities.TeamMember.filter({
-        primary_user_email: user.email,
+      // 2. Checar duplicidade GLOBAL — um membro não pode estar vinculado a dois consultores ativos ao mesmo tempo
+      const globalExisting = await base44.asServiceRole.entities.TeamMember.filter({
         member_email,
       });
-      const activeConflict = existing.find(m => m.status !== 'Inativo');
-      if (activeConflict) {
-        const statusLabel = activeConflict.status === 'Ativo' ? 'já é membro ativo' : 'já possui convite pendente';
+
+      for (const m of globalExisting) {
+        if (m.status === 'Inativo') continue; // Inativos são ignorados
+
+        if (m.primary_user_email !== user.email) {
+          // Conflito: membro já está ativo/pendente com OUTRO consultor
+          return Response.json({
+            error: `Este usuário já está vinculado à equipe de outro consultor. Um membro só pode pertencer a uma equipe ativa por vez.`
+          }, { status: 400 });
+        }
+
+        // Conflito com o mesmo consultor
+        const statusLabel = m.status === 'Ativo' ? 'já é membro ativo' : 'já possui convite pendente';
         return Response.json({ error: `Este usuário ${statusLabel}. Use "reenviar convite" se necessário.` }, { status: 400 });
       }
 

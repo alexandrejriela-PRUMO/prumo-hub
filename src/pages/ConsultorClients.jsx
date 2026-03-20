@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,30 +16,27 @@ import ClientFinancialSummary from '../components/consultor/ClientFinancialSumma
 import ClientChargesPanel from '../components/consultor/ClientChargesPanel';
 import ClientProfilePanel from '../components/consultor/ClientProfilePanel';
 import ClientARTPanel from '../components/consultor/ClientARTPanel';
+import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 export default function ConsultorClients() {
-  const [user, setUser] = React.useState(null);
   const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const [clientToDelete, setClientToDelete] = useState(null);
   const queryClient = useQueryClient();
+  const { effectiveEmail, isEquipe, actualEmail } = useEffectiveUser();
 
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
-
-  // Busca apenas clientes Ativos do CRM
+  // Busca apenas clientes Ativos do CRM (usando effectiveEmail = consultor)
   const { data: crmClients = [], isLoading } = useQuery({
-    queryKey: ['consultor-crm-clients', user?.email],
-    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: user.email, status: 'Ativo' }),
-    enabled: !!user?.email,
+    queryKey: ['consultor-crm-clients', effectiveEmail],
+    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: effectiveEmail, status: 'Ativo' }),
+    enabled: !!effectiveEmail,
   });
 
   // Busca propriedades para vincular ao perfil
   const { data: properties = [] } = useQuery({
-    queryKey: ['consultor-properties', user?.email],
-    queryFn: () => base44.entities.Property.filter({ consultor_email: user.email }),
-    enabled: !!user?.email,
+    queryKey: ['consultor-properties', effectiveEmail],
+    queryFn: () => base44.entities.Property.filter({ consultor_email: effectiveEmail }),
+    enabled: !!effectiveEmail,
   });
 
   const deleteClientMutation = useMutation({

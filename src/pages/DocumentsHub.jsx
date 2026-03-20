@@ -30,8 +30,10 @@ import DocumentViewer from '../components/documents/DocumentViewer';
 import DocumentEditModal from '../components/documents/DocumentEditModal';
 import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
 import { MODULES, MODULE_COLORS } from '../components/documents/documentConstants';
+import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 export default function DocumentsHub() {
+  const { effectiveEmail, isEquipe, userType, loading: effectiveLoading } = useEffectiveUser();
   const [user, setUser] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState(null);

@@ -233,10 +233,27 @@ export default function MyTeam() {
 
         {/* ---- FUNÇÕES ---- */}
         <TabsContent value="roles" className="space-y-4">
+          {/* Cartão Informativo */}
+          <Card className="bg-gradient-to-r from-emerald-50 to-blue-50 border-emerald-200">
+            <CardHeader>
+              <CardTitle className="text-base text-emerald-900">📋 Guia de Funções da Equipe</CardTitle>
+              <p className="text-sm text-gray-600 mt-2">Cada função define os módulos que o membro pode acessar. Ao convidar, escolha a função adequada para a responsabilidade do colaborador.</p>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-white rounded-lg p-4 border border-gray-100 space-y-2 text-sm">
+                <div className="flex items-start gap-3"><span className="text-blue-600 font-bold">🔧</span><div><strong>Engenheiro:</strong> Acesso técnico completo (editar propriedades, módulos avançados, PRAD)</div></div>
+                <div className="flex items-start gap-3"><span className="text-purple-600 font-bold">⚖️</span><div><strong>Advogado:</strong> Acesso jurídico (visualizar propriedades, processos, relatórios — sem criar PRAD/Geo)</div></div>
+                <div className="flex items-start gap-3"><span className="text-amber-600 font-bold">👑</span><div><strong>Administrador:</strong> Gestão total (gerir equipe, ver financeiro, todas as permissões)</div></div>
+                <div className="flex items-start gap-3"><span className="text-gray-600 font-bold">🎓</span><div><strong>Estagiário:</strong> Acesso limitado (visualizar propriedades, usar chat IA apenas)</div></div>
+                <div className="flex items-start gap-3"><span className="text-gray-600 font-bold">❓</span><div><strong>Outro:</strong> Permissões personalizadas (consulte o administrador)</div></div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Cards de Funções */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base text-emerald-900">Guia de Funções da Equipe</CardTitle>
-              <p className="text-sm text-gray-500">Cada função define os módulos que o membro pode acessar. Ao convidar, escolha a função adequada para a responsabilidade do colaborador.</p>
+              <CardTitle className="text-base text-emerald-900">Detalhes Técnicos por Função</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

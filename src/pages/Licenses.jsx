@@ -341,7 +341,7 @@ export default function Licenses() {
               <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
-              {properties.map(prop => (
+              {allProperties.map(prop => (
               <SelectItem key={prop.id} value={prop.id}>
                 {prop.property_name} - {prop.city}/{prop.state}
               </SelectItem>

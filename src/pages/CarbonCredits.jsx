@@ -29,7 +29,6 @@ import { useEffectiveUser } from '../hooks/useEffectiveUser';
 import AccessGuardTeam from '../components/AccessGuardTeam';
 
 function CarbonCreditsContent() {
-  const [user, setUser] = useState(null);
   const [selectedProperty, setSelectedProperty] = useState('all');
   const [showForm, setShowForm] = useState(false);
   const [editingCredit, setEditingCredit] = useState(null);
@@ -38,18 +37,7 @@ function CarbonCreditsContent() {
   const [statusFilter, setStatusFilter] = useState('all');
 
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      } catch (e) {
-        console.log('User not logged in');
-      }
-    };
-    loadUser();
-  }, []);
+  const { user, linkedConsultant } = useEffectiveUser();
 
   const { user, linkedConsultant, memberRole, permissions, isLoading: userLoading } = useEffectiveUser();
 

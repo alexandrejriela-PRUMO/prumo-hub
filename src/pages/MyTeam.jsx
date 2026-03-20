@@ -9,9 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UserPlus, Trash2, Users, Mail, Briefcase, Clock, CheckCircle, AlertCircle, ClipboardList, Search, Activity, Plus, RefreshCw, Calendar, User } from 'lucide-react';
+import { UserPlus, Trash2, Users, Mail, Briefcase, Clock, CheckCircle, AlertCircle, ClipboardList, Search, Activity, Plus, RefreshCw, Calendar, User, BookOpen } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { RoleCard, RolePermissionsInline } from '../components/equipe/RolePermissionsPreview';
 
 const ROLES = ['Estagiário', 'Engenheiro', 'Advogado', 'Administrador', 'Outro'];
 

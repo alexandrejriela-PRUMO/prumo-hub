@@ -62,12 +62,12 @@ Deno.serve(async (req) => {
       }
 
       // 3. inviteUser PRIMEIRO — se falhar, não cria nada
-      console.log(`[TeamInvite] Enviando convite para ${member_email} pelo consultor ${user.email}`);
+      console.log(`[TeamInvite] Iniciando convite para ${member_email} pelo consultor ${user.email}`);
       try {
         await base44.users.inviteUser(member_email, 'user');
-        console.log(`[TeamInvite] inviteUser bem-sucedido para ${member_email}`);
+        console.log(`[TeamInvite] inviteUser OK para ${member_email}`);
       } catch (inviteErr) {
-        console.error(`[TeamInvite] Falha no inviteUser para ${member_email}:`, inviteErr.message);
+        console.error(`[TeamInvite] FALHA inviteUser para ${member_email}: ${inviteErr.message}`);
         return Response.json({
           error: `Não foi possível enviar o convite para ${member_email}. Verifique o email e tente novamente.`,
           detail: inviteErr.message
@@ -88,25 +88,39 @@ Deno.serve(async (req) => {
         invited_at: now,
         expires_at: expiresAt(),
       });
+      console.log(`[TeamInvite] TeamMember criado id=${member.id} para ${member_email}`);
 
-      // 5. Email personalizado adicional (não-bloqueante)
+      // 5. Email personalizado — obrigatório, erro é retornado mas não desfaz o convite
+      const emailSubject = `Você foi convidado para a equipe de ${user.full_name || user.email} no PRUMO Hub`;
+      const emailBody = `<div style="font-family:sans-serif;max-width:560px;margin:0 auto">
+<h2 style="color:#1B4332">Convite para equipe PRUMO Hub</h2>
+<p>Olá${member_name ? ', <strong>' + member_name + '</strong>' : ''},</p>
+<p><strong>${user.full_name || user.email}</strong> convidou você para fazer parte da equipe de consultoria no <strong>PRUMO Hub</strong>.</p>
+<table style="width:100%;background:#f5f5f5;border-radius:8px;padding:16px;margin:16px 0">
+  <tr><td><strong>Função:</strong></td><td>${member_role || 'Membro da Equipe'}</td></tr>
+  <tr><td><strong>Consultor:</strong></td><td>${user.full_name || user.email}</td></tr>
+  <tr><td><strong>Expira em:</strong></td><td>7 dias</td></tr>
+</table>
+<p>Ao fazer seu primeiro login, seu perfil será configurado automaticamente com acesso às ferramentas de consultoria.</p>
+<p style="margin-top:24px">
+  <a href="https://prumo.app" style="background:#1B4332;color:white;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block">
+    Acessar PRUMO Hub →
+  </a>
+</p>
+<p style="color:#888;font-size:12px;margin-top:32px">Equipe PRUMO Hub | prumo.app</p>
+</div>`;
+
       try {
         await base44.asServiceRole.integrations.Core.SendEmail({
           from_name: 'PRUMO Hub',
           to: member_email,
-          subject: `Você foi convidado para a equipe de ${user.full_name || user.email} no PRUMO Hub`,
-          body: `<p>Olá${member_name ? ', <strong>' + member_name + '</strong>' : ''},</p>
-<p><strong>${user.full_name || user.email}</strong> convidou você para fazer parte da equipe de consultoria no <strong>PRUMO Hub</strong>.</p>
-<p><strong>Função:</strong> ${member_role || 'Membro da Equipe'}</p>
-<p>Ao aceitar o convite e fazer seu primeiro login, seu perfil será configurado automaticamente com acesso completo às ferramentas de consultoria ambiental.</p>
-<p>⚠️ Este convite expira em <strong>7 dias</strong>.</p>
-<p><a href="https://prumo.app" style="background:#1B4332;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:8px;">Acessar PRUMO Hub</a></p>
-<br/>
-<p>Atenciosamente,<br/>Equipe PRUMO Hub</p>`
+          subject: emailSubject,
+          body: emailBody
         });
-        console.log(`[TeamInvite] Email personalizado enviado para ${member_email}`);
+        console.log(`[TeamInvite] Email personalizado enviado OK para ${member_email}`);
       } catch (emailErr) {
-        console.warn('[TeamInvite] Falha ao enviar email personalizado (convite principal já foi):', emailErr.message);
+        console.error(`[TeamInvite] FALHA ao enviar email para ${member_email}: ${emailErr.message}`);
+        // Não desfaz o convite — usuário pode reenviar depois
       }
 
       return Response.json({ success: true, member });

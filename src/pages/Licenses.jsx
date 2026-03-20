@@ -198,7 +198,7 @@ export default function Licenses() {
 
   const resetForm = () => {
     setFormData({
-      property_id: properties.length > 0 ? properties[0].id : '',
+      property_id: allProperties.length > 0 ? allProperties[0].id : '',
       license_type: '',
       other_license_description: '',
       license_number: '',

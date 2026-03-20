@@ -26,8 +26,9 @@ import CarbonCreditDetails from '../components/carbon/CarbonCreditDetails';
 import CarbonMarketNews from '../components/carbon/CarbonMarketNews';
 import CarbonReports from '../components/carbon/CarbonReports';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
+import AccessGuardTeam from '../components/AccessGuardTeam';
 
-export default function CarbonCreditsPage() {
+function CarbonCreditsContent() {
   const [user, setUser] = useState(null);
   const [selectedProperty, setSelectedProperty] = useState('all');
   const [showForm, setShowForm] = useState(false);

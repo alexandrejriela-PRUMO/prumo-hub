@@ -184,15 +184,18 @@ export default function PropertyMapView() {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
 
+  const isConsultorFamily = userType === 'consultor' || userType === 'equipe';
+
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties', user?.email],
+    queryKey: ['properties', effectiveEmail, userType],
     queryFn: () => {
-      if (user?.user_type === 'consultor' || user?.user_type === 'equipe') {
-        return base44.entities.Property.filter({ consultor_email: user.email });
+      if (!effectiveEmail) return [];
+      if (isConsultorFamily) {
+        return base44.entities.Property.filter({ consultor_email: effectiveEmail });
       }
-      return base44.entities.Property.filter({ owner_email: user.email });
+      return base44.entities.Property.filter({ owner_email: effectiveEmail });
     },
-    enabled: !!user?.email,
+    enabled: !!effectiveEmail,
   });
 
   useEffect(() => {

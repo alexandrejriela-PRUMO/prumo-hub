@@ -54,8 +54,6 @@ export default function Properties() {
   const properties = consultorProperties.length > 0
     ? consultorProperties.filter(p => !p.is_client_only)
     : ownerProperties.filter(p => !p.is_client_only);
-  const isLoading = false;
-
   const isLoading = effectiveLoading;
 
   const createMutation = useMutation({

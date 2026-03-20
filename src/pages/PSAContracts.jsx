@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 import PSAContractForm from '../components/psa/PSAContractForm';
 import PSAContractDetails from '../components/psa/PSAContractDetails';
 import PSAReports from '../components/psa/PSAReports';
+import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 export default function PSAContractsPage() {
   const [user, setUser] = useState(null);
@@ -47,20 +48,24 @@ export default function PSAContractsPage() {
     loadUser();
   }, []);
 
-  const isConsultor = user?.user_type === 'consultor' || user?.user_type === 'equipe';
+  const { effectiveEmail, userType } = useEffectiveUser();
+  const isConsultor = userType === 'consultor' || userType === 'equipe';
 
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties', user?.email],
+    queryKey: ['properties', effectiveEmail, userType],
     queryFn: () => isConsultor
-      ? base44.entities.Property.filter({ consultor_email: user.email })
-      : base44.entities.Property.filter({ owner_email: user.email }),
-    enabled: !!user?.email
+      ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
+      : base44.entities.Property.filter({ owner_email: effectiveEmail }),
+    enabled: !!effectiveEmail
   });
 
+  const propertyIds = new Set(properties.map(p => p.id));
+
   const { data: allContracts = [], isLoading } = useQuery({
-    queryKey: ['psaContracts'],
+    queryKey: ['psaContracts', effectiveEmail],
     queryFn: () => base44.entities.PSAContract.list('-created_date', 1000),
-    enabled: !!user
+    enabled: !!effectiveEmail,
+    select: (data) => data.filter(c => propertyIds.size === 0 || propertyIds.has(c.property_id)),
   });
 
   const createMutation = useMutation({

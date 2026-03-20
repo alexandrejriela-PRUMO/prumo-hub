@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import EasementForm from '../components/easement/EasementForm';
 import EasementDetails from '../components/easement/EasementDetails';
 import EasementReports from '../components/easement/EasementReports';
+import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 export default function EnvironmentalEasementsPage() {
   const [user, setUser] = useState(null);
@@ -45,20 +46,24 @@ export default function EnvironmentalEasementsPage() {
     loadUser();
   }, []);
 
-  const isConsultor = user?.user_type === 'consultor' || user?.user_type === 'equipe';
+  const { effectiveEmail, userType } = useEffectiveUser();
+  const isConsultor = userType === 'consultor' || userType === 'equipe';
 
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties', user?.email],
+    queryKey: ['properties', effectiveEmail, userType],
     queryFn: () => isConsultor
-      ? base44.entities.Property.filter({ consultor_email: user.email })
-      : base44.entities.Property.filter({ owner_email: user.email }),
-    enabled: !!user?.email
+      ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
+      : base44.entities.Property.filter({ owner_email: effectiveEmail }),
+    enabled: !!effectiveEmail
   });
 
+  const propertyIds = new Set(properties.map(p => p.id));
+
   const { data: allEasements = [], isLoading } = useQuery({
-    queryKey: ['environmentalEasements'],
+    queryKey: ['environmentalEasements', effectiveEmail],
     queryFn: () => base44.entities.EnvironmentalEasement.list('-created_date', 1000),
-    enabled: !!user
+    enabled: !!effectiveEmail,
+    select: (data) => data.filter(e => propertyIds.size === 0 || propertyIds.has(e.property_id)),
   });
 
   const createMutation = useMutation({

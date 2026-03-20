@@ -61,10 +61,13 @@ export default function CarbonCreditsPage() {
     enabled: !!effectiveEmail
   });
 
+  const propertyIds = new Set(properties.map(p => p.id));
+
   const { data: allCredits = [], isLoading } = useQuery({
-    queryKey: ['carbonCredits'],
+    queryKey: ['carbonCredits', effectiveEmail],
     queryFn: () => base44.entities.CarbonCredit.list('-created_date', 1000),
-    enabled: !!user
+    enabled: !!effectiveEmail,
+    select: (data) => data.filter(c => propertyIds.size === 0 || propertyIds.has(c.property_id)),
   });
 
   const createMutation = useMutation({

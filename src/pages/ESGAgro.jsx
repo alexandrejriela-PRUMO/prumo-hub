@@ -25,6 +25,7 @@ import ESGDashboard from '../components/esg/ESGDashboard';
 import ESGRecommendations from '../components/esg/ESGRecommendations';
 import GreenLoanWizard from '../components/esg/GreenLoanWizard';
 import TaxIncentiveWizard from '../components/esg/TaxIncentiveWizard';
+import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 export default function ESGAgro() {
   const [user, setUser] = useState(null);
@@ -47,32 +48,33 @@ export default function ESGAgro() {
     loadUser();
   }, []);
 
+  const { effectiveEmail, userType } = useEffectiveUser();
+  const isConsultor = userType === 'consultor' || userType === 'equipe';
+
+  const { data: properties = [] } = useQuery({
+    queryKey: ['properties', effectiveEmail, userType],
+    queryFn: () => isConsultor
+      ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
+      : base44.entities.Property.filter({ owner_email: effectiveEmail }),
+    enabled: !!effectiveEmail
+  });
+
   const { data: greenLoans = [] } = useQuery({
-    queryKey: ['greenLoans', user?.email],
-    queryFn: () => base44.entities.GreenLoan.filter({ applicant_email: user.email }),
-    enabled: !!user?.email
+    queryKey: ['greenLoans', effectiveEmail],
+    queryFn: () => base44.entities.GreenLoan.filter({ applicant_email: effectiveEmail }),
+    enabled: !!effectiveEmail
   });
 
   const { data: taxIncentives = [] } = useQuery({
-    queryKey: ['taxIncentives', user?.email],
-    queryFn: () => base44.entities.TaxIncentive.filter({ applicant_email: user.email }),
-    enabled: !!user?.email
+    queryKey: ['taxIncentives', effectiveEmail],
+    queryFn: () => base44.entities.TaxIncentive.filter({ applicant_email: effectiveEmail }),
+    enabled: !!effectiveEmail
   });
 
   const { data: certifications = [] } = useQuery({
-    queryKey: ['certifications', user?.email],
-    queryFn: () => base44.entities.Certification.filter({ applicant_email: user.email }),
-    enabled: !!user?.email
-  });
-
-  const isConsultor = user?.user_type === 'consultor' || user?.user_type === 'equipe';
-
-  const { data: properties = [] } = useQuery({
-    queryKey: ['properties', user?.email],
-    queryFn: () => isConsultor
-      ? base44.entities.Property.filter({ consultor_email: user.email })
-      : base44.entities.Property.filter({ owner_email: user.email }),
-    enabled: !!user?.email
+    queryKey: ['certifications', effectiveEmail],
+    queryFn: () => base44.entities.Certification.filter({ applicant_email: effectiveEmail }),
+    enabled: !!effectiveEmail
   });
 
   const generateReport = async (metrics) => {

@@ -272,8 +272,8 @@ export default function DocumentsHub() {
         </Card>
       ) : null}
 
-      {/* Conteúdo principal - oculto para consultor sem propriedade */}
-      {(!isConsultor || selectedPropertyId) && (
+      {/* Conteúdo principal - oculto para consultor/equipe sem propriedade */}
+      {(!isConsultorFamily || selectedPropertyId) && (
       <div className="space-y-6">
 
       {/* Header */}

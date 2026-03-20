@@ -64,16 +64,30 @@ Deno.serve(async (req) => {
     const membership = memberships[0];
     const consultorEmail = membership.primary_user_email;
 
-    // Busca dados do consultor para retornar nome, etc.
+    // Busca dados do consultor (nome + plano)
     let consultorName = consultorEmail;
+    let consultorPlan = 'start';
     try {
       const consultorUsers = await base44.asServiceRole.entities.User.filter({ email: consultorEmail });
       if (consultorUsers.length > 0) {
         consultorName = consultorUsers[0].full_name || consultorEmail;
+        consultorPlan = consultorUsers[0].consultor_plan || 'start';
       }
     } catch (e) {
       console.warn('[getEffectiveUser] Não foi possível buscar dados do consultor:', e.message);
     }
+
+    // Permissões efetivas do membro (usa default se não tiver)
+    const VIEWER_PERMS = {
+      office:           { view: true,  edit: false },
+      property_center:  { view: true,  edit: false },
+      advanced_modules: { access: false },
+      reports:          { view: false },
+      ai_chat:          { access: true },
+      team_management:  { manage: false },
+      financial:        { view: false },
+    };
+    const permissions = membership.permissions || VIEWER_PERMS;
 
     return Response.json({
       email: consultorEmail,           // email para usar em queries (como se fosse o consultor)
@@ -82,7 +96,9 @@ Deno.serve(async (req) => {
       user_type: user.user_type,       // 'equipe'
       consultor_email: consultorEmail, // alias explícito
       consultor_name: consultorName,
+      consultor_plan: consultorPlan,
       member_role: membership.member_role,
+      permissions,
       is_equipe: true,
       is_pending: false,
     });

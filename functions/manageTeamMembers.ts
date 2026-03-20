@@ -327,7 +327,42 @@ Deno.serve(async (req) => {
       return Response.json({ success: true });
     }
 
-    return Response.json({ error: 'Ação inválida. Use: list | invite | resend_invite | activate | apply_user_type | remove' }, { status: 400 });
+    // ─── UPDATE_PERMISSIONS ──────────────────────────────────────────────────
+    if (action === 'update_permissions') {
+      const { member_id, permissions } = body;
+      if (!member_id || !permissions) return Response.json({ error: 'member_id e permissions são obrigatórios.' }, { status: 400 });
+
+      const members = await base44.asServiceRole.entities.TeamMember.filter({ primary_user_email: user.email });
+      const member = members.find(m => m.id === member_id);
+      if (!member) return Response.json({ error: 'Membro não encontrado.' }, { status: 404 });
+
+      // Equipe não pode gerenciar permissões de outros membros
+      if (user.user_type === 'equipe') {
+        return Response.json({ error: 'Apenas consultores podem alterar permissões.' }, { status: 403 });
+      }
+
+      await base44.asServiceRole.entities.TeamMember.update(member_id, { permissions });
+      return Response.json({ success: true });
+    }
+
+    // ─── GET_PLAN_INFO ────────────────────────────────────────────────────────
+    if (action === 'get_plan_info') {
+      const consultorUsers = await base44.asServiceRole.entities.User.filter({ email: user.email });
+      const plan = consultorUsers[0]?.consultor_plan || 'start';
+      const config = PLAN_CONFIG[plan] || PLAN_CONFIG.start;
+      const activeMembers = await base44.asServiceRole.entities.TeamMember.filter({ primary_user_email: user.email, status: 'Ativo' });
+      const pendingMembers = await base44.asServiceRole.entities.TeamMember.filter({ primary_user_email: user.email, status: 'Pendente' });
+
+      return Response.json({
+        plan,
+        max_team_members: config.max_team_members,
+        current_active: activeMembers.length,
+        current_pending: pendingMembers.length,
+        can_add_more: (activeMembers.length + pendingMembers.length) < config.max_team_members,
+      });
+    }
+
+    return Response.json({ error: 'Ação inválida. Use: list | invite | resend_invite | activate | apply_user_type | remove | update_permissions | get_plan_info' }, { status: 400 });
 
   } catch (error) {
     console.error('[manageTeamMembers] Erro inesperado:', error.message);

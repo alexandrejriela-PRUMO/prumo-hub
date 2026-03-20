@@ -11,6 +11,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import NDVIPanel from '@/components/map/NDVIPanel';
 import AdvancedPropertyMap from '@/components/map/AdvancedPropertyMap';
+import { useEffectiveUser } from '@/hooks/useEffectiveUser';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 // KML to GeoJSON inline parser (no external dependency)

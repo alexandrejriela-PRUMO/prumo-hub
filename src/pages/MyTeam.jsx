@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { UserPlus, Trash2, Users, Mail, Briefcase, Clock, CheckCircle, AlertCircle, ClipboardList, Search, Activity, Plus, RefreshCw, Calendar, User, BookOpen } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { toast } from 'sonner';
 import { RoleCard, RolePermissionsInline } from '../components/equipe/RolePermissionsPreview';
 import InviteExpirationInfo from '../components/equipe/InviteExpirationInfo';
 
@@ -64,42 +65,73 @@ export default function MyTeam() {
   });
 
   const removeMutation = useMutation({
-    mutationFn: (id) => base44.entities.TeamMember.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['teamMembers'] }),
-  });
+     mutationFn: (id) => base44.entities.TeamMember.delete(id),
+     onSuccess: (res, memberId) => {
+       const member = members.find(m => m.id === memberId);
+       toast.success(`👋 ${member?.member_name || member?.member_email} removido da equipe`);
+       queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
+     },
+     onError: (err) => {
+       toast.error('Erro ao remover membro');
+     }
+   });
 
   const activateMutation = useMutation({
      mutationFn: (id) => base44.functions.invoke('manageTeamMembers', { action: 'activate', member_id: id }),
-     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['teamMembers'] }),
+     onSuccess: (res, memberId) => {
+       const member = members.find(m => m.id === memberId);
+       toast.success(`✅ ${member?.member_name || member?.member_email} ativado(a)!`);
+       queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
+     }
    });
 
    const resendInviteMutation = useMutation({
      mutationFn: (id) => base44.functions.invoke('manageTeamMembers', { action: 'resend_invite', member_id: id }),
-     onSuccess: () => {
+     onSuccess: (res, memberId) => {
+       const member = members.find(m => m.id === memberId);
+       toast.success(`✉️ Convite reenviado para ${member?.member_email}!`);
        queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
-       // Toast de sucesso
      },
+     onError: (err) => {
+       toast.error(err?.message || 'Erro ao reenviar convite');
+     }
+   });
+
+   const activateToastMutation = useMutation({
+     mutationFn: (id) => base44.functions.invoke('manageTeamMembers', { action: 'activate', member_id: id }),
+     onSuccess: (res, memberId) => {
+       const member = members.find(m => m.id === memberId);
+       toast.success(`✅ ${member?.member_name || member?.member_email} ativado(a) com sucesso!`);
+       queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
+     },
+     onError: (err) => {
+       toast.error(err?.message || 'Erro ao ativar membro');
+     }
    });
 
   const handleInvite = async () => {
-    if (!inviteForm.member_email || !inviteForm.member_role) return;
-    setIsInviting(true);
-    setInviteError('');
-    try {
-      const res = await base44.functions.invoke('manageTeamMembers', { action: 'invite', ...inviteForm });
-      if (res.data?.error) {
-        setInviteError(res.data.error);
-      } else {
-        queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
-        setShowInviteDialog(false);
-        setInviteForm({ member_email: '', member_name: '', member_role: '' });
-      }
-    } catch (err) {
-      setInviteError(err?.message || 'Erro ao enviar convite. Tente novamente.');
-    } finally {
-      setIsInviting(false);
-    }
-  };
+     if (!inviteForm.member_email || !inviteForm.member_role) return;
+     setIsInviting(true);
+     setInviteError('');
+     try {
+       const res = await base44.functions.invoke('manageTeamMembers', { action: 'invite', ...inviteForm });
+       if (res.data?.error) {
+         setInviteError(res.data.error);
+         toast.error(res.data.error);
+       } else {
+         toast.success(`✅ Convite enviado para ${inviteForm.member_email}!`);
+         queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
+         setShowInviteDialog(false);
+         setInviteForm({ member_email: '', member_name: '', member_role: '' });
+       }
+     } catch (err) {
+       const msg = err?.message || 'Erro ao enviar convite. Tente novamente.';
+       setInviteError(msg);
+       toast.error(msg);
+     } finally {
+       setIsInviting(false);
+     }
+   };
 
   const filteredLogs = logs.filter(log => {
     const q = logSearch.toLowerCase();
@@ -233,7 +265,7 @@ export default function MyTeam() {
                                  <Button variant="outline" size="sm" className="text-blue-700 border-blue-200 hover:bg-blue-50 text-xs whitespace-nowrap" onClick={() => resendInviteMutation.mutate(member.id)}>
                                    Reenviar
                                  </Button>
-                                 <Button variant="outline" size="sm" className="text-green-700 border-green-200 hover:bg-green-50 text-xs whitespace-nowrap" onClick={() => activateMutation.mutate(member.id)}>
+                                 <Button variant="outline" size="sm" className="text-green-700 border-green-200 hover:bg-green-50 text-xs whitespace-nowrap" onClick={() => activateToastMutation.mutate(member.id)}>
                                    Ativar
                                  </Button>
                                </>

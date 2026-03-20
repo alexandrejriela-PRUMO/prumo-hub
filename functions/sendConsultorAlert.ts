@@ -1,4 +1,9 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
+/**
+ * sendConsultorAlert — Consultor envia alerta manual para client_consultor.
+ * Requer plano Enterprise para notificar client_consultor.
+ * SMS: ignorado (canal não implementado).
+ */
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 
 Deno.serve(async (req) => {
   try {
@@ -13,7 +18,7 @@ Deno.serve(async (req) => {
     const {
       property_id,
       viewer_email,
-      alert_type, // 'license', 'prad', 'document', 'custom'
+      alert_type,
       title,
       message,
       severity = 'info',
@@ -21,7 +26,6 @@ Deno.serve(async (req) => {
       send_email = true
     } = payload;
 
-    // Validação básica
     if (!property_id || !viewer_email || !alert_type || !title || !message) {
       return Response.json({
         error: 'Campos obrigatórios: property_id, viewer_email, alert_type, title, message'
@@ -29,9 +33,27 @@ Deno.serve(async (req) => {
     }
 
     // Verifica se o consultor é responsável pela propriedade
-    const property = await base44.asServiceRole.entities.Property.filter({ id: property_id });
-    if (property.length === 0 || property[0].consultor_email !== user.email) {
+    const properties = await base44.asServiceRole.entities.Property.filter({ id: property_id });
+    if (properties.length === 0 || properties[0].consultor_email !== user.email) {
       return Response.json({ error: 'Não autorizado para esta propriedade' }, { status: 403 });
+    }
+
+    // ─── VERIFICAÇÃO DE PLANO (CRÍTICO) ──────────────────────────────────
+    // Verifica se o destinatário é client_consultor
+    const recipientUsers = await base44.asServiceRole.entities.User.filter({ email: viewer_email });
+    const recipientType = recipientUsers[0]?.user_type;
+
+    if (recipientType === 'client_consultor') {
+      const consultorPlan = user.plan || recipientUsers[0]?.consultor_plan;
+      const isEnterprise = consultorPlan === 'enterprise' || consultorPlan === 'Enterprise';
+
+      if (!isEnterprise) {
+        console.log(`[ConsultorAlert] BLOQUEADO: consultor ${user.email} sem plano Enterprise tentou notificar client_consultor ${viewer_email}`);
+        return Response.json({
+          error: 'Notificações para clientes visualizadores requerem o plano Enterprise.',
+          blocked_by: 'plan_restriction'
+        }, { status: 403 });
+      }
     }
 
     // Cria notificação in-app
@@ -39,7 +61,7 @@ Deno.serve(async (req) => {
       user_email: viewer_email,
       title,
       message,
-      event_type: alert_type === 'license' ? 'licenca_vencendo' : 
+      event_type: alert_type === 'license' ? 'licenca_vencendo' :
                   alert_type === 'prad' ? 'outro' :
                   alert_type === 'document' ? 'documento_vencendo' : 'outro',
       severity,
@@ -55,13 +77,18 @@ Deno.serve(async (req) => {
       }
     });
 
-    // Envia email se habilitado
+    // Envia email se habilitado (SMS ignorado)
     if (send_email) {
-      await base44.integrations.Core.SendEmail({
-        to: viewer_email,
-        subject: `📬 Alerta do Consultor: ${title}`,
-        body: `Olá,\n\n${user.full_name || 'Seu consultor'} enviou um alerta para você:\n\n${title}\n\n${message}\n\nPor favor, verifique a plataforma para mais detalhes.\n\nAtenciosamente,\nPRUMO Hub`
-      });
+      try {
+        await base44.integrations.Core.SendEmail({
+          from_name: 'PRUMO Hub',
+          to: viewer_email,
+          subject: `📬 Alerta do Consultor: ${title}`,
+          body: `Olá,\n\n${user.full_name || 'Seu consultor'} enviou um alerta para você:\n\n${title}\n\n${message}\n\nPor favor, verifique a plataforma para mais detalhes.\n\nAtenciosamente,\nPRUMO Hub`
+        });
+      } catch (emailErr) {
+        console.warn('[ConsultorAlert] Falha ao enviar email:', emailErr.message);
+      }
     }
 
     // Log da ação
@@ -83,7 +110,7 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Erro ao enviar alerta:', error);
+    console.error('[ConsultorAlert] Erro:', error);
     return Response.json({ success: false, error: error.message }, { status: 500 });
   }
 });

@@ -442,7 +442,7 @@ export default function EnvironmentalAlerts() {
       )}
 
       {/* Property Selector */}
-      {!isConsultor && properties.length > 1 && (
+      {!isConsultorFamily && properties.length > 1 && (
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">

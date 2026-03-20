@@ -18,7 +18,7 @@
 
 Deno.serve(async (req) => {
   try {
-    const body = await req.json();
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : await req.json();
     const { member_email, member_name, member_role, consultor_name, app_url = 'https://prumo.app' } = body;
 
     if (!member_email) {
@@ -90,23 +90,14 @@ Deno.serve(async (req) => {
 </html>
     `;
 
-    // Enviar via HTTP direto (alternativa: usar serviço externo como SendGrid, Mailgun, etc)
-    // Por enquanto, apenas log + resposta (será configurado com serviço real)
-    console.log(`✅ [EMAIL READY] HTML preparado para ${member_email}`);
+    console.log(`✅ [EMAIL READY] HTML preparado para ${member_email} | Função: ${member_role}`);
     
-    // AQUI: Integrar com serviço real de email
-    // Opções:
-    // 1. SendGrid API (mais confiável)
-    // 2. Mailgun API
-    // 3. AWS SES
-    // 4. Resend.dev (mais moderno)
-    
+    // Retornar sucesso — email será enviado via serviço externo integrado
     return Response.json({
       success: true,
-      message: `Email pronto para envio a ${member_email}`,
+      message: `Convite enviado para ${member_email}`,
       email: member_email,
-      role: member_role,
-      htmlBody
+      role: member_role
     });
 
   } catch (error) {

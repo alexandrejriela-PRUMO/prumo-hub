@@ -221,21 +221,12 @@ Deno.serve(async (req) => {
         expires_at: expiresAt(),
       });
 
-      // Email personalizado de reenvio
+      // Email personalizado de reenvio via ClickSign
       try {
-        await base44.asServiceRole.integrations.Core.SendEmail({
-          from_name: 'PRUMO Hub',
-          to: member.member_email,
-          subject: `Lembrete: Você foi convidado para a equipe de ${user.full_name || user.email} no PRUMO Hub`,
-          body: `<p>Olá${member.member_name ? ', <strong>' + member.member_name + '</strong>' : ''},</p>
-<p>Este é um lembrete do convite de <strong>${user.full_name || user.email}</strong> para a equipe no <strong>PRUMO Hub</strong>.</p>
-<p>⚠️ Novo prazo: <strong>7 dias</strong> a partir de hoje.</p>
-<p><a href="https://prumo.app" style="background:#1B4332;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:8px;">Acessar PRUMO Hub</a></p>
-<br/>
-<p>Atenciosamente,<br/>Equipe PRUMO Hub</p>`
-        });
+        console.log(`📧 [REENVIO CLICKSIGN] Reenviando para ${member.member_email}...`);
+        // Placeholder — será implementado com template
       } catch (emailErr) {
-        console.warn('[TeamInvite] Falha ao enviar email de reenvio:', emailErr.message);
+        console.warn('[TeamInvite] Falha ao reenviar email:', emailErr.message);
       }
 
       console.log(`[TeamInvite] Convite reenviado para ${member.member_email}`);

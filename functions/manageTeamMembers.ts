@@ -204,12 +204,20 @@ Deno.serve(async (req) => {
         expires_at: expiresAt(),
       });
 
-      // Email personalizado de reenvio via ClickSign
+      // Email personalizado de reenvio
       try {
-        console.log(`📧 [REENVIO CLICKSIGN] Reenviando para ${member.member_email}...`);
-        // Placeholder — será implementado com template
+        const emailRes = await base44.asServiceRole.functions.invoke('sendTeamInviteEmail', {
+          member_email: member.member_email,
+          member_name: member.member_name || '',
+          member_role: member.member_role || 'Membro da Equipe',
+          consultor_name: user.full_name || user.email,
+          app_url: 'https://prumo.app'
+        });
+        if (emailRes.data?.success) {
+          console.log(`✅ [REENVIO ENVIADO] Convite reenviado para ${member.member_email}`);
+        }
       } catch (emailErr) {
-        console.warn('[TeamInvite] Falha ao reenviar email:', emailErr.message);
+        console.warn(`[TeamInvite] Falha ao reenviar: ${emailErr.message}`);
       }
 
       console.log(`[TeamInvite] Convite reenviado para ${member.member_email}`);

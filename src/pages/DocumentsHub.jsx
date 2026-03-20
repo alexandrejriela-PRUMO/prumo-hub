@@ -232,8 +232,8 @@ export default function DocumentsHub() {
         Voltar
       </Link>
 
-      {/* Consultor Property Selector */}
-      {isConsultor && (
+      {/* Consultor/Equipe Property Selector */}
+      {isConsultorFamily && (
         <ConsultorPropertySelector
           properties={properties}
           selectedPropertyId={selectedPropertyId}
@@ -243,7 +243,7 @@ export default function DocumentsHub() {
       )}
 
       {/* Produtor Property Selector */}
-      {!isConsultor && properties.length > 1 && (
+      {!isConsultorFamily && properties.length > 1 && (
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-white rounded-xl border border-emerald-100 shadow-sm">
           <div className="flex items-center gap-2 flex-shrink-0">
             <Filter className="w-4 h-4 text-gray-500" />

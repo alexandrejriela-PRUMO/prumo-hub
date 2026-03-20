@@ -46,14 +46,14 @@ export default function PRAD() {
     loadUser();
   }, []);
 
-  const isConsultor = user?.user_type === 'consultor';
+  const isConsultorFamily = userType === 'consultor' || userType === 'equipe';
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
-    queryKey: ['properties', user?.email],
-    queryFn: () => isConsultor
-      ? base44.entities.Property.filter({ consultor_email: user.email })
-      : base44.entities.Property.filter({ owner_email: user.email }),
-    enabled: !!user?.email,
+    queryKey: ['properties', effectiveEmail, userType],
+    queryFn: () => isConsultorFamily
+      ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
+      : base44.entities.Property.filter({ owner_email: effectiveEmail }),
+    enabled: !!effectiveEmail,
   });
 
   const { data: prads = [] } = useQuery({

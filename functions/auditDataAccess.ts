@@ -332,6 +332,70 @@ Deno.serve(async (req) => {
     }
 
     // ─────────────────────────────────────────────────────────────────
+    // CHECK: Conflitos Cross-User (documentos/propriedades compartilhadas)
+    // ─────────────────────────────────────────────────────────────────
+    const documentConflicts = [];
+    const propertyConflicts = [];
+    
+    // Detectar documentos que aparecem em múltiplos usuários
+    const docOwnerMap = {};
+    documents.forEach(d => {
+      if (!docOwnerMap[d.id]) docOwnerMap[d.id] = [];
+      docOwnerMap[d.id].push(d.owner_email);
+    });
+    Object.entries(docOwnerMap).forEach(([docId, owners]) => {
+      if (new Set(owners).size > 1) {
+        documentConflicts.push({
+          doc_id: docId,
+          owners: Array.from(new Set(owners)),
+          conflict_type: 'multiple_owners'
+        });
+      }
+    });
+
+    if (documentConflicts.length > 0) {
+      auditReport.issues.push({
+        severity: 'critical',
+        type: 'document_multi_owner',
+        count: documentConflicts.length,
+        detail: 'Documentos pertencendo a múltiplos usuários',
+        conflicts: documentConflicts
+      });
+      console.error(`   ❌ ${documentConflicts.length} documentos com múltiplos owners!`);
+    }
+
+    // Detectar propriedades vinculadas a múltiplos consultores
+    if (auditScope === 'consultant') {
+      const propConsultorMap = {};
+      properties.forEach(p => {
+        if (p.consultor_email) {
+          if (!propConsultorMap[p.id]) propConsultorMap[p.id] = [];
+          propConsultorMap[p.id].push(p.consultor_email);
+        }
+      });
+      Object.entries(propConsultorMap).forEach(([propId, consultors]) => {
+        if (new Set(consultors).size > 1) {
+          propertyConflicts.push({
+            property_id: propId,
+            consultors: Array.from(new Set(consultors)),
+            conflict_type: 'multiple_consultors'
+          });
+        }
+      });
+
+      if (propertyConflicts.length > 0) {
+        auditReport.issues.push({
+          severity: 'critical',
+          type: 'property_multi_consultor',
+          count: propertyConflicts.length,
+          detail: 'Propriedades vinculadas a múltiplos consultores',
+          conflicts: propertyConflicts
+        });
+        console.error(`   ❌ ${propertyConflicts.length} propriedades com múltiplos consultores!`);
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────
     // SUMMARY
     // ─────────────────────────────────────────────────────────────────
     const criticalIssues = auditReport.issues.filter(i => i.severity === 'critical');

@@ -140,22 +140,25 @@ export default function Licenses() {
     loadUser();
   }, []);
 
-  const isConsultor = user?.user_type === 'consultor';
+  const isConsultor = user?.user_type === 'consultor' || isEquipe;
+  const queryEmail = effectiveEmail || user?.email;
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
-    queryKey: ['properties', user?.email],
-    queryFn: () => isConsultor
-      ? base44.entities.Property.filter({ consultor_email: user.email })
-      : base44.entities.Property.filter({ owner_email: user.email }),
-    enabled: !!user?.email
+    queryKey: ['properties', queryEmail],
+    queryFn: () => base44.entities.Property.filter({ consultor_email: queryEmail }),
+    enabled: !!queryEmail && (user?.user_type === 'consultor' || isEquipe),
   });
 
-  const effectiveOwnerId = isConsultor
-    ? properties.find(p => p.id === consultorPropertyId)?.owner_email
-    : user?.email;
+  const { data: ownerProperties = [] } = useQuery({
+    queryKey: ['properties-owner', user?.email],
+    queryFn: () => base44.entities.Property.filter({ owner_email: user.email }),
+    enabled: !!user?.email && !isEquipe && user?.user_type !== 'consultor',
+  });
+
+  const allProperties = (user?.user_type === 'consultor' || isEquipe) ? properties : ownerProperties;
 
   const { data: licenses, isLoading } = useQuery({
-    queryKey: ['licenses', effectiveOwnerId, consultorPropertyId],
+    queryKey: ['licenses', consultorPropertyId, queryEmail],
     queryFn: () => {
       if (isConsultor) {
         return base44.entities.License.filter({ property_id: consultorPropertyId });

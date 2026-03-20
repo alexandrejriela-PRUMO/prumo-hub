@@ -24,6 +24,42 @@ function expiresAt() {
   return d.toISOString();
 }
 
+// ── Plan config ──────────────────────────────────────────────────────────────
+const PLAN_CONFIG = {
+  start:      { max_team_members: 0 },
+  pro:        { max_team_members: 1 },
+  enterprise: { max_team_members: 3 },
+};
+
+// ── Default permissions por role ─────────────────────────────────────────────
+function normalizeRole(role) {
+  return (role || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+}
+
+function getDefaultPermissions(role) {
+  const viewer = {
+    office:           { view: true,  edit: false },
+    property_center:  { view: true,  edit: false },
+    advanced_modules: { access: false },
+    reports:          { view: false },
+    ai_chat:          { access: true },
+    team_management:  { manage: false },
+    financial:        { view: false },
+  };
+
+  switch (normalizeRole(role)) {
+    case 'engenheiro':
+      return { ...viewer, office: { view: true, edit: true }, property_center: { view: true, edit: true }, advanced_modules: { access: true }, reports: { view: true } };
+    case 'advogado':
+      return { ...viewer, office: { view: true, edit: false }, property_center: { view: true, edit: false }, reports: { view: true } };
+    case 'administrador':
+      return { office: { view: true, edit: true }, property_center: { view: true, edit: true }, advanced_modules: { access: true }, reports: { view: true }, ai_chat: { access: true }, team_management: { manage: true }, financial: { view: true } };
+    case 'estagiario':
+    default:
+      return viewer;
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);

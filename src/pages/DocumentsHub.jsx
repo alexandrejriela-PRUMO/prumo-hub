@@ -262,8 +262,8 @@ export default function DocumentsHub() {
         </div>
       )}
 
-      {/* Bloqueio para consultor sem propriedade selecionada */}
-      {isConsultor && !selectedPropertyId ? (
+      {/* Bloqueio para consultor/equipe sem propriedade selecionada */}
+      {isConsultorFamily && !selectedPropertyId ? (
         <Card className="text-center py-16 border-dashed border-2 border-amber-200">
           <CardContent>
             <FileText className="w-16 h-16 mx-auto text-amber-300 mb-4" />

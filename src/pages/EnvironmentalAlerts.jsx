@@ -431,7 +431,7 @@ export default function EnvironmentalAlerts() {
         </Button>
       </div>
 
-      {isConsultor && !selectedPropertyId && (
+      {isConsultorFamily && !selectedPropertyId && (
         <Card className="border-dashed border-2 border-amber-200">
           <CardContent className="py-16 text-center">
             <AlertTriangle className="w-16 h-16 mx-auto text-amber-300 mb-4" />

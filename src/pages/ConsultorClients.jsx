@@ -25,6 +25,7 @@ export default function ConsultorClients() {
   const queryClient = useQueryClient();
   const { effectiveEmail, isEquipe, actualEmail, memberRole } = useEffectiveUser();
   const canCreate = !isEquipe || memberRole === 'Administrador';
+  const canViewFinancial = !isEquipe || memberRole === 'Administrador';
 
   // Busca apenas clientes Ativos do CRM (usando effectiveEmail = consultor)
   const { data: crmClients = [], isLoading } = useQuery({

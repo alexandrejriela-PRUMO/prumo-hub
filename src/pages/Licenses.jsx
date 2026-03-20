@@ -31,6 +31,7 @@ import LicenseHistory from '../components/history/LicenseHistory';
 import LicenseDocuments from '../components/license/LicenseDocuments';
 import { toast } from 'sonner';
 import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
+import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 const licenseTypes = [
   // Licenças Ambientais

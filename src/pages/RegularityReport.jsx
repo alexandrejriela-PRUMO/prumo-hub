@@ -102,7 +102,7 @@ export default function RegularityReport() {
   const { data: environmentalAlerts = [] } = useQuery({
     queryKey: ['envAlerts', user?.email, propertyIds.join(',')],
     queryFn: async () => {
-      if (isConsultor && propertyIds.length > 0) {
+      if (isConsultorFamily && propertyIds.length > 0) {
         const results = await Promise.all(
           propertyIds.map(pid => base44.entities.EnvironmentalAlert.filter({ property_id: pid }))
         );
@@ -110,7 +110,7 @@ export default function RegularityReport() {
       }
       return base44.entities.EnvironmentalAlert.filter({ property_id: { $in: propertyIds } });
     },
-    enabled: !!user?.email && (isConsultor ? properties.length > 0 : true)
+    enabled: !!effectiveEmail && (isConsultorFamily ? properties.length > 0 : true)
   });
 
   const { data: processes = [] } = useQuery({

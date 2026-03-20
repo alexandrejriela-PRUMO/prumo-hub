@@ -22,6 +22,15 @@ export const AuthProvider = ({ children }) => {
       window.location.hostname.includes("base44.com") ||
       window.location.hostname.includes("localhost");
 
+    if (isDev) {
+      const mockUser = {
+        id: "dev-user",
+        name: "Dev Mode",
+        email: "dev@prumo.local"
+      };
+      localStorage.setItem("user", JSON.stringify(mockUser));
+    }
+
     try {
       setIsLoadingPublicSettings(true);
       setAuthError(null);

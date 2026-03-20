@@ -13,6 +13,7 @@ import { UserPlus, Trash2, Users, Mail, Briefcase, Clock, CheckCircle, AlertCirc
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { RoleCard, RolePermissionsInline } from '../components/equipe/RolePermissionsPreview';
+import InviteExpirationInfo from '../components/equipe/InviteExpirationInfo';
 
 const ROLES = ['Estagiário', 'Engenheiro', 'Advogado', 'Administrador', 'Outro'];
 
@@ -210,6 +211,13 @@ export default function MyTeam() {
                                    {member.status}
                                  </Badge>
                                </div>
+                               
+                               {/* Info de expiração se pendente */}
+                               {member.status === 'Pendente' && (
+                                 <div className="mt-2">
+                                   <InviteExpirationInfo member={member} />
+                                 </div>
+                               )}
                              </div>
                            </div>
 

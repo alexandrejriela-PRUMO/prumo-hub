@@ -69,7 +69,7 @@ export default function ConsultorClients() {
             Meus Clientes
           </h1>
           <p className="text-gray-500 mt-1">
-            Olá, {user?.full_name?.split(' ')[0]}! Você tem {crmClients.length} cliente(s) ativo(s).
+            {isEquipe ? `Visualizando clientes do consultor vinculado. ` : ''}Você tem {crmClients.length} cliente(s) ativo(s).
           </p>
         </div>
         <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowNewClientForm(true)}>
@@ -162,7 +162,7 @@ export default function ConsultorClients() {
       <NewClientForm
         isOpen={showNewClientForm}
         onClose={() => setShowNewClientForm(false)}
-        consultorEmail={user?.email}
+        consultorEmail={effectiveEmail}
         initialStatus="Ativo"
         onSuccess={() => setShowNewClientForm(false)}
       />

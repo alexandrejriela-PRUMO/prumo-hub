@@ -50,24 +50,23 @@ export default function CarbonCreditsPage() {
     loadUser();
   }, []);
 
-  const { effectiveEmail, userType } = useEffectiveUser();
-  const isConsultor = userType === 'consultor' || userType === 'equipe';
+  const { user, linkedConsultant, memberRole, permissions, isLoading: userLoading } = useEffectiveUser();
 
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties', effectiveEmail, userType],
-    queryFn: () => isConsultor
-      ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
-      : base44.entities.Property.filter({ owner_email: effectiveEmail }),
-    enabled: !!effectiveEmail
+    queryKey: ['properties', linkedConsultant],
+    queryFn: () => base44.entities.Property.filter({ 
+      consultor_email: linkedConsultant 
+    }),
+    enabled: !!linkedConsultant
   });
 
-  const propertyIds = new Set(properties.map(p => p.id));
-
   const { data: allCredits = [], isLoading } = useQuery({
-    queryKey: ['carbonCredits', effectiveEmail],
-    queryFn: () => base44.entities.CarbonCredit.list('-created_date', 1000),
-    enabled: !!effectiveEmail,
-    select: (data) => data.filter(c => propertyIds.size === 0 || propertyIds.has(c.property_id)),
+    queryKey: ['carbonCredits', linkedConsultant],
+    // ✅ SEGURANÇA: Filtra SEMPRE por consultor_email
+    queryFn: () => base44.entities.CarbonCredit.filter({
+      consultor_email: linkedConsultant
+    }),
+    enabled: !!linkedConsultant,
   });
 
   const createMutation = useMutation({

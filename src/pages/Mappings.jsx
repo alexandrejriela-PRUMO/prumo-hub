@@ -24,6 +24,7 @@ import {
   Activity
 } from 'lucide-react';
 import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
+import { useEffectiveUser } from '../hooks/useEffectiveUser';
 import { toast } from 'sonner';
 
 export default function Mappings() {
@@ -42,14 +43,15 @@ export default function Mappings() {
     loadUser();
   }, []);
 
-  const isConsultor = user?.user_type === 'consultor' || user?.user_type === 'equipe';
+  const { effectiveEmail, userType } = useEffectiveUser();
+  const isConsultor = userType === 'consultor' || userType === 'equipe';
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
-    queryKey: ['properties', user?.email],
+    queryKey: ['properties', effectiveEmail, userType],
     queryFn: () => isConsultor
-      ? base44.entities.Property.filter({ consultor_email: user.email })
-      : base44.entities.Property.filter({ owner_email: user.email }),
-    enabled: !!user?.email,
+      ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
+      : base44.entities.Property.filter({ owner_email: effectiveEmail }),
+    enabled: !!effectiveEmail,
   });
 
   const { data: mappings = [] } = useQuery({
@@ -209,10 +211,10 @@ export default function Mappings() {
   };
 
   useEffect(() => {
-    if (properties.length > 0 && !selectedProperty && !isConsultor) {
+    if (properties.length > 0 && !selectedProperty && !isConsultor && effectiveEmail) {
       setSelectedProperty(properties[0]);
     }
-  }, [properties, selectedProperty, isConsultor]);
+  }, [properties, selectedProperty, isConsultor, effectiveEmail]);
 
   if (!user) {
     return (

@@ -25,6 +25,7 @@ import CarbonCreditForm from '../components/carbon/CarbonCreditForm';
 import CarbonCreditDetails from '../components/carbon/CarbonCreditDetails';
 import CarbonMarketNews from '../components/carbon/CarbonMarketNews';
 import CarbonReports from '../components/carbon/CarbonReports';
+import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 export default function CarbonCreditsPage() {
   const [user, setUser] = useState(null);
@@ -49,14 +50,15 @@ export default function CarbonCreditsPage() {
     loadUser();
   }, []);
 
-  const isConsultor = user?.user_type === 'consultor' || user?.user_type === 'equipe';
+  const { effectiveEmail, userType } = useEffectiveUser();
+  const isConsultor = userType === 'consultor' || userType === 'equipe';
 
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties', user?.email],
+    queryKey: ['properties', effectiveEmail, userType],
     queryFn: () => isConsultor
-      ? base44.entities.Property.filter({ consultor_email: user.email })
-      : base44.entities.Property.filter({ owner_email: user.email }),
-    enabled: !!user?.email
+      ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
+      : base44.entities.Property.filter({ owner_email: effectiveEmail }),
+    enabled: !!effectiveEmail
   });
 
   const { data: allCredits = [], isLoading } = useQuery({

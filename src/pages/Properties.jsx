@@ -56,8 +56,14 @@ export default function Properties() {
     : ownerProperties.filter(p => !p.is_client_only);
   const isLoading = false;
 
+  const isLoading = effectiveLoading;
+
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Property.create(data),
+    mutationFn: (data) => base44.entities.Property.create({
+      ...data,
+      // Equipe cria propriedades vinculadas ao consultor
+      consultor_email: effectiveEmail,
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries(['properties-owner']);
       queryClient.invalidateQueries(['properties-consultor']);

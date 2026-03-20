@@ -281,7 +281,7 @@ export default function Licenses() {
     e.preventDefault();
     createMutation.mutate({
       ...formData,
-      owner_email: user.email,
+      owner_email: effectiveEmail || user?.email,
     });
   };
 

@@ -206,7 +206,7 @@ export default function Properties() {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Propriedades e Empreendimentos</h1>
           <p className="text-gray-500 mt-1 text-sm sm:text-base">Gerencie suas propriedades rurais e empreendimentos</p>
         </div>
-        <Button 
+        {canCreate && <Button 
           onClick={() => {
             setEditingProperty(null);
             setFormDialogOpen(true);
@@ -216,7 +216,7 @@ export default function Properties() {
           <Plus className="w-4 h-4 mr-2" />
           <span className="hidden sm:inline">Nova Propriedade ou Empreendimento</span>
           <span className="sm:hidden">Nova Prop.</span>
-        </Button>
+        </Button>}
       </div>
 
       {isLoading ? (

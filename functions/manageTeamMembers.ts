@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
       // 3. inviteUser PRIMEIRO — se falhar, não cria nada
       console.log(`[TeamInvite] Iniciando convite para ${member_email} pelo consultor ${user.email}`);
       try {
-        await base44.users.inviteUser(member_email, 'user');
+        await base44.asServiceRole.users.inviteUser(member_email, 'user');
         console.log(`[TeamInvite] inviteUser OK para ${member_email}`);
       } catch (inviteErr) {
         console.error(`[TeamInvite] FALHA inviteUser para ${member_email}: ${inviteErr.message}`);

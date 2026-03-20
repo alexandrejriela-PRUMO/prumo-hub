@@ -402,16 +402,41 @@ Deno.serve(async (req) => {
     const highIssues = auditReport.issues.filter(i => i.severity === 'high');
     const mediumIssues = auditReport.issues.filter(i => i.severity === 'medium');
 
+    // Estatísticas por tipo de dado
+    const statsReport = {
+      scope: auditScope,
+      target_email: targetEmail,
+      data_summary: {
+        properties: {
+          total: properties.length,
+          valid: properties.filter(p => !duplicatedProperties.includes(p)).length,
+          duplicated: duplicatedProperties.length,
+          conflicts: propertyConflicts.length
+        },
+        documents: {
+          total: documents.length,
+          valid: documents.filter(d => !invalidDocs.includes(d) && !documentConflicts.some(c => c.doc_id === d.id)).length,
+          invalid_owner: invalidDocs.length,
+          conflicts: documentConflicts.length
+        },
+        orphans: orphanDocs.length,
+        repairs_applied: auditReport.repairs.length
+      }
+    };
+
     auditReport.summary = {
       total_issues: auditReport.issues.length,
       critical: criticalIssues.length,
       high: highIssues.length,
       medium: mediumIssues.length,
       repairs_made: auditReport.repairs.length,
-      status: criticalIssues.length > 0 ? 'FAILED' : highIssues.length > 0 ? 'WARNINGS' : 'PASSED'
+      status: criticalIssues.length > 0 ? 'FAILED' : highIssues.length > 0 ? 'WARNINGS' : 'PASSED',
+      statistics: statsReport
     };
 
     console.log(`\n✅ [AUDIT] Auditoria concluída | Status: ${auditReport.summary.status} | Issues: ${auditReport.summary.total_issues}`);
+    console.log(`   📊 Propriedades: ${statsReport.data_summary.properties.valid}/${statsReport.data_summary.properties.total} válidas | Conflitos: ${statsReport.data_summary.property_conflicts}`);
+    console.log(`   📄 Documentos: ${statsReport.data_summary.documents.valid}/${statsReport.data_summary.documents.total} válidos | Conflitos: ${statsReport.data_summary.document_conflicts}`);
 
     return Response.json(auditReport);
 

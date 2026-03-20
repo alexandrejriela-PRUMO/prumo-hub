@@ -110,28 +110,35 @@ export default function MyTeam() {
    });
 
   const handleInvite = async () => {
-     if (!inviteForm.member_email || !inviteForm.member_role) return;
-     setIsInviting(true);
-     setInviteError('');
-     try {
-       const res = await base44.functions.invoke('manageTeamMembers', { action: 'invite', ...inviteForm });
-       if (res.data?.error) {
-         setInviteError(res.data.error);
-         toast.error(res.data.error);
-       } else {
-         toast.success(`✅ Convite enviado para ${inviteForm.member_email}!`);
-         queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
-         setShowInviteDialog(false);
-         setInviteForm({ member_email: '', member_name: '', member_role: '' });
-       }
-     } catch (err) {
-       const msg = err?.message || 'Erro ao enviar convite. Tente novamente.';
-       setInviteError(msg);
-       toast.error(msg);
-     } finally {
-       setIsInviting(false);
-     }
-   };
+    if (!inviteForm.member_email || !inviteForm.member_role) return;
+    setIsInviting(true);
+    setInviteError('');
+    try {
+      const res = await base44.functions.invoke('manageTeamMembers', { action: 'invite', ...inviteForm });
+      if (res.data?.error) {
+        // Se erro 403, é limite de plano
+        const errorMsg = res.data.error;
+        if (errorMsg.includes('Limite de membros') || errorMsg.includes('plano')) {
+          setInviteError(`${errorMsg}\n\n💡 Faça upgrade para PRO ou ENTERPRISE para adicionar mais membros.`);
+          toast.error('Limite de plano atingido. Faça upgrade!');
+        } else {
+          setInviteError(errorMsg);
+          toast.error(errorMsg);
+        }
+      } else {
+        toast.success(`✅ Convite enviado para ${inviteForm.member_email}!`);
+        queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
+        setShowInviteDialog(false);
+        setInviteForm({ member_email: '', member_name: '', member_role: '' });
+      }
+    } catch (err) {
+      const msg = err?.response?.data?.error || err?.message || 'Erro ao enviar convite. Tente novamente.';
+      setInviteError(msg);
+      toast.error(msg);
+    } finally {
+      setIsInviting(false);
+    }
+  };
 
   const filteredLogs = logs.filter(log => {
     const q = logSearch.toLowerCase();

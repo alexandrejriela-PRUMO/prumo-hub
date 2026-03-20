@@ -163,6 +163,7 @@ function downloadKml(content, filename) {
 }
 
 export default function PropertyMapView() {
+   const { effectiveEmail, isEquipe, userType } = useEffectiveUser();
    const [user, setUser] = useState(null);
    const [selectedPropertyId, setSelectedPropertyId] = useState('');
    const [activeLayers, setActiveLayers] = useState({

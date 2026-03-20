@@ -70,27 +70,28 @@ export default function DocumentsHub() {
     enabled: !!user
   });
 
-  const isConsultor = user?.user_type === 'consultor';
+  const isConsultorFamily = userType === 'consultor' || userType === 'equipe';
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
-    queryKey: ['properties', user?.email],
+    queryKey: ['properties', effectiveEmail, userType],
     queryFn: () => {
+      if (!effectiveEmail) return [];
       if (user?.role === 'admin') {
         return base44.entities.Property.list('-created_date', 1000);
       }
-      if (isConsultor) {
-        return base44.entities.Property.filter({ consultor_email: user.email }, '-created_date', 100);
+      if (isConsultorFamily) {
+        return base44.entities.Property.filter({ consultor_email: effectiveEmail }, '-created_date', 100);
       }
-      return base44.entities.Property.filter({ owner_email: user.email }, '-created_date', 100);
+      return base44.entities.Property.filter({ owner_email: effectiveEmail }, '-created_date', 100);
     },
-    enabled: !!user?.email
+    enabled: !!effectiveEmail
   });
 
   useEffect(() => {
-    if (properties.length > 0 && !selectedPropertyId && !isConsultor) {
+    if (properties.length > 0 && !selectedPropertyId && !isConsultorFamily) {
       setSelectedPropertyId(properties[0].id);
     }
-  }, [properties, selectedPropertyId, isConsultor]);
+  }, [properties, selectedPropertyId, isConsultorFamily]);
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.UnifiedDocument.create({

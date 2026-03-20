@@ -34,6 +34,11 @@ export default function Properties() {
   
   const queryClient = useQueryClient();
   const { effectiveEmail, isEquipe, loading: effectiveLoading } = useEffectiveUser();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    base44.auth.me().then(setUser).catch(() => {});
+  }, []);
 
   // consultor e equipe usam filtro por consultor_email (effectiveEmail já aponta para o consultor)
   const isConsultorOrEquipe = true; // Properties sempre filtra por consultor_email quando disponível

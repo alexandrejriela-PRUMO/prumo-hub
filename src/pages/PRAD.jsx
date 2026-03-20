@@ -79,10 +79,10 @@ export default function PRAD() {
   });
 
   useEffect(() => {
-    if (properties.length > 0 && !selectedProperty && !isConsultor) {
+    if (properties.length > 0 && !selectedProperty && !isConsultorFamily) {
       setSelectedProperty(properties[0]);
     }
-  }, [properties, selectedProperty, isConsultor]);
+  }, [properties, selectedProperty, isConsultorFamily]);
 
   if (!user) {
     return (

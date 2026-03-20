@@ -126,8 +126,8 @@ export default function PRAD() {
           <ChevronLeft className="w-3 h-3" />
           Voltar
         </Link>
-        {/* Consultor Selector */}
-        {isConsultor && (
+        {/* Consultor/Equipe Selector */}
+        {isConsultorFamily && (
           <div className="mb-4 sm:mb-6">
             <ConsultorPropertySelector
               properties={properties}

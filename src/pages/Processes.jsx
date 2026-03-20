@@ -34,8 +34,10 @@ import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import ProcessHistory from '../components/history/ProcessHistory';
 import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
+import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 export default function Processes() {
+  const { effectiveEmail, userType, loading: effectiveLoading } = useEffectiveUser();
   const [user, setUser] = useState(null);
   const [consultorPropertyId, setConsultorPropertyId] = useState(null);
   const [showDialog, setShowDialog] = useState(false);

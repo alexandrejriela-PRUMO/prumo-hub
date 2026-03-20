@@ -73,10 +73,10 @@ export default function ConsultorClients() {
             {isEquipe ? `Visualizando clientes do consultor vinculado. ` : ''}Você tem {crmClients.length} cliente(s) ativo(s).
           </p>
         </div>
-        <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowNewClientForm(true)}>
+        {canCreate && <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowNewClientForm(true)}>
           <Plus className="w-4 h-4 mr-2" />
           Novo Cliente
-        </Button>
+        </Button>}
       </div>
 
       {isLoading && (
@@ -93,10 +93,10 @@ export default function ConsultorClients() {
             <p className="text-gray-500 mt-2 max-w-md mx-auto">
               Cadastre seu primeiro cliente ou converta um lead no CRM.
             </p>
-            <Button className="mt-4 bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowNewClientForm(true)}>
+            {canCreate && <Button className="mt-4 bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowNewClientForm(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Cadastrar Cliente
-            </Button>
+            </Button>}
           </CardContent>
         </Card>
       )}

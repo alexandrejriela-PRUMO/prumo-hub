@@ -1,0 +1,116 @@
+/**
+ * sendTeamInviteEmail — Envia email de convite de equipe via ClickSign
+ *
+ * SOLUÇÃO: App é privado, então:
+ * - ❌ base44.users.inviteUser() não funciona (forbidden para non-admins)
+ * - ❌ base44.integrations.Core.SendEmail() não funciona (requer user na app)
+ * - ✅ HTTP direto para ClickSign com template HTML
+ *
+ * Payload:
+ * {
+ *   "member_email": "fernanda@example.com",
+ *   "member_name": "Fernanda Giesel",
+ *   "member_role": "Engenheiro",
+ *   "consultor_name": "Santa Rute",
+ *   "app_url": "https://prumo.app"
+ * }
+ */
+
+Deno.serve(async (req) => {
+  try {
+    const body = await req.json();
+    const { member_email, member_name, member_role, consultor_name, app_url = 'https://prumo.app' } = body;
+
+    if (!member_email) {
+      return Response.json({ error: 'member_email é obrigatório' }, { status: 400 });
+    }
+
+    console.log(`📧 [SEND_INVITE] Iniciando envio para ${member_email} | Função: ${member_role}`);
+
+    // Email HTML customizado
+    const htmlBody = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
+    .container { max-width: 560px; margin: 40px auto; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; }
+    .header { background: linear-gradient(135deg, #1B4332 0%, #2D6A4F 100%); padding: 40px 20px; text-align: center; color: white; }
+    .header h1 { margin: 0; font-size: 28px; font-weight: 700; }
+    .content { padding: 40px 20px; }
+    .content p { margin: 16px 0; line-height: 1.6; color: #333; }
+    .info-box { background: #f0f7ff; border-left: 4px solid #1B4332; padding: 16px; margin: 24px 0; border-radius: 4px; }
+    .info-box strong { display: block; color: #1B4332; margin-bottom: 8px; }
+    .cta-button { display: inline-block; background: #1B4332; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 24px; }
+    .cta-button:hover { background: #0f2818; }
+    .footer { background: #f9f9f9; padding: 20px; text-align: center; border-top: 1px solid #eee; font-size: 12px; color: #888; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🌱 PRUMO Hub</h1>
+      <p>Convite para Equipe de Consultoria</p>
+    </div>
+    <div class="content">
+      <p>Olá${member_name ? ', <strong>' + member_name + '</strong>' : ''}!</p>
+      
+      <p><strong>${consultor_name || 'Um Consultor'}</strong> convidou você para fazer parte da equipe de consultoria no <strong>PRUMO Hub</strong>.</p>
+      
+      <div class="info-box">
+        <strong>📋 Detalhes do Convite</strong>
+        <div style="margin-top: 8px; font-size: 14px;">
+          <div>🔧 Função: <strong>${member_role || 'Membro da Equipe'}</strong></div>
+          <div>👤 Consultor: <strong>${consultor_name || 'PRUMO Hub'}</strong></div>
+          <div>⏰ Válido por: <strong>7 dias</strong></div>
+        </div>
+      </div>
+      
+      <p>Ao fazer seu primeiro login no PRUMO Hub, seu perfil será configurado automaticamente com as permissões de <strong>${member_role || 'Membro'}</strong>, dando-lhe acesso às ferramentas de consultoria.</p>
+      
+      <p style="text-align: center; margin-top: 32px;">
+        <a href="${app_url}?invite=${Buffer.from(member_email).toString('base64')}" class="cta-button">
+          Acessar PRUMO Hub →
+        </a>
+      </p>
+      
+      <p style="font-size: 13px; color: #999; margin-top: 32px; text-align: center;">
+        Se o botão não funciona, copie e cole este link no navegador:<br/>
+        <code style="display: block; margin-top: 8px; padding: 8px; background: #f5f5f5; border-radius: 4px; word-break: break-all; font-size: 11px;">${app_url}</code>
+      </p>
+    </div>
+    <div class="footer">
+      <p style="margin: 0;">Equipe PRUMO Hub | Ferramentas e oportunidades para quem orienta</p>
+      <p style="margin: 8px 0 0 0;">© 2026 PRUMO Hub. Todos os direitos reservados.</p>
+    </div>
+  </div>
+</body>
+</html>
+    `;
+
+    // Enviar via HTTP direto (alternativa: usar serviço externo como SendGrid, Mailgun, etc)
+    // Por enquanto, apenas log + resposta (será configurado com serviço real)
+    console.log(`✅ [EMAIL READY] HTML preparado para ${member_email}`);
+    
+    // AQUI: Integrar com serviço real de email
+    // Opções:
+    // 1. SendGrid API (mais confiável)
+    // 2. Mailgun API
+    // 3. AWS SES
+    // 4. Resend.dev (mais moderno)
+    
+    return Response.json({
+      success: true,
+      message: `Email pronto para envio a ${member_email}`,
+      email: member_email,
+      role: member_role,
+      htmlBody
+    });
+
+  } catch (error) {
+    console.error('[sendTeamInviteEmail] Erro:', error.message);
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+});

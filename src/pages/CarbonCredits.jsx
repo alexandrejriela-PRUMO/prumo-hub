@@ -545,3 +545,11 @@ function CarbonCreditsContent() {
     </div>
   );
 }
+
+export default function CarbonCreditsPage() {
+  return (
+    <AccessGuardTeam requiredModules={['advanced_modules']}>
+      <CarbonCreditsContent />
+    </AccessGuardTeam>
+  );
+}

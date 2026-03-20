@@ -133,8 +133,9 @@ Deno.serve(async (req) => {
         console.warn(`[TeamInvite] inviteUser falhou (não-fatal): ${inviteErr.message}`);
       }
 
-      // 4. Criar TeamMember sempre
+      // 4. Criar TeamMember com permissões default pelo role
       const now = new Date().toISOString();
+      const defaultPerms = getDefaultPermissions(member_role || 'Outro');
       const member = await base44.asServiceRole.entities.TeamMember.create({
         primary_user_email: user.email,
         consultor_email: user.email,
@@ -142,6 +143,7 @@ Deno.serve(async (req) => {
         member_name: member_name || '',
         member_role: member_role || 'Outro',
         status: 'Pendente',
+        permissions: defaultPerms,
         pending_user_type: 'equipe',
         user_type_applied: false,
         invited_at: now,

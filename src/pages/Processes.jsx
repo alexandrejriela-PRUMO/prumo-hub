@@ -589,7 +589,7 @@ export default function Processes() {
         </Dialog>
       </div>
 
-      {isConsultor && !consultorPropertyId ?
+      {isConsultorFamily && !consultorPropertyId ?
       <Card className="border-dashed border-2 border-amber-200">
           <CardContent className="py-16 text-center">
             <Scale className="w-16 h-16 mx-auto text-amber-300 mb-4" />

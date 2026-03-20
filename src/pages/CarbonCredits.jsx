@@ -37,8 +37,6 @@ function CarbonCreditsContent() {
   const [statusFilter, setStatusFilter] = useState('all');
 
   const queryClient = useQueryClient();
-  const { user, linkedConsultant } = useEffectiveUser();
-
   const { user, linkedConsultant, memberRole, permissions, isLoading: userLoading } = useEffectiveUser();
 
   const { data: properties = [] } = useQuery({

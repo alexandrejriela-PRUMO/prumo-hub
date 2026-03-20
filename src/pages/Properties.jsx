@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,9 +23,9 @@ import { toast } from 'sonner';
 import PropertyForm from '../components/properties/PropertyForm';
 import PropertyMap from '../components/properties/PropertyMap';
 import PropertyUsers from '../components/properties/PropertyUsers';
+import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 export default function Properties() {
-  const [user, setUser] = useState(null);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [mapDialogOpen, setMapDialogOpen] = useState(false);
   const [usersDialogOpen, setUsersDialogOpen] = useState(false);
@@ -33,34 +33,27 @@ export default function Properties() {
   const [selectedProperty, setSelectedProperty] = useState(null);
   
   const queryClient = useQueryClient();
+  const { effectiveEmail, isEquipe, loading: effectiveLoading } = useEffectiveUser();
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      } catch (e) {
-        console.log('User not logged in');
-      }
-    };
-    loadUser();
-  }, []);
-
-  const isConsultor = user?.user_type === 'consultor';
+  // consultor e equipe usam filtro por consultor_email (effectiveEmail já aponta para o consultor)
+  const isConsultorOrEquipe = true; // Properties sempre filtra por consultor_email quando disponível
+  const isConsultor = !isEquipe; // Equipe não pode gerenciar usuários da propriedade
 
   const { data: ownerProperties = [] } = useQuery({
-    queryKey: ['properties-owner', user?.email],
-    queryFn: () => base44.entities.Property.filter({ owner_email: user.email }),
-    enabled: !!user?.email && !isConsultor
+    queryKey: ['properties-owner', effectiveEmail],
+    queryFn: () => base44.entities.Property.filter({ owner_email: effectiveEmail }),
+    enabled: !!effectiveEmail && !isEquipe
   });
 
   const { data: consultorProperties = [] } = useQuery({
-    queryKey: ['properties-consultor', user?.email],
-    queryFn: () => base44.entities.Property.filter({ consultor_email: user.email }),
-    enabled: !!user?.email && isConsultor
+    queryKey: ['properties-consultor', effectiveEmail],
+    queryFn: () => base44.entities.Property.filter({ consultor_email: effectiveEmail }),
+    enabled: !!effectiveEmail
   });
 
-  const properties = (isConsultor ? consultorProperties : ownerProperties).filter(p => !p.is_client_only);
+  const properties = consultorProperties.length > 0
+    ? consultorProperties.filter(p => !p.is_client_only)
+    : ownerProperties.filter(p => !p.is_client_only);
   const isLoading = false;
 
   const createMutation = useMutation({

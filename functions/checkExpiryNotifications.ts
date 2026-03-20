@@ -270,19 +270,69 @@ Deno.serve(async (req) => {
 
     // ─── CRM TASKS ───────────────────────────────────────────────────────
     const crmList = await base44.asServiceRole.entities.ClientCRM.list();
+    const todayStr = today.toISOString().split('T')[0];
+
     for (const crm of crmList) {
       if (!crm.consultor_email) continue;
       const tasks = crm.tasks || [];
+      let crmChanged = false;
+      const updatedTasks = [];
+
       for (const task of tasks) {
-        if (task.done || !task.due_date) continue;
-        const days = getDays(task.due_date);
+        let t = { ...task };
+
+        // ── Atualiza status para 'overdue' automaticamente ────────────────
+        if (!t.done && t.status !== 'done' && t.due_date && t.due_date < todayStr && t.status !== 'overdue') {
+          t.status = 'overdue';
+          crmChanged = true;
+        }
+
+        updatedTasks.push(t);
+
+        if (t.done || t.status === 'done' || !t.due_date) continue;
+
+        // Destinatário: assigned_to_email ou responsible_email, fallback para consultor
+        const responsible = t.assigned_to_email || t.responsible_email || crm.consultor_email;
+        const consultorData = await getUserData(crm.consultor_email);
+
+        const days = getDays(t.due_date);
         if (days === null) continue;
+
         if (days <= 0) {
-          await createNotif(crm.consultor_email, 'Tarefa de CRM Atrasada',
-            `Tarefa "${task.title}" está atrasada.`, 'outro', 'error', '/ConsultorClients');
+          // Vencida — notifica responsável + equipe conforme plano
+          if (await shouldNotify(responsible, crm.consultor_email)) {
+            await createNotif(responsible, '⚠️ Tarefa de CRM Vencida',
+              `Tarefa "${t.title}" do cliente "${crm.client_name || 'N/A'}" está VENCIDA.`,
+              'task_overdue', 'error', '/ConsultorClients');
+          }
+          // Equipe do consultor (plano pro/enterprise)
+          const plan = (consultorData?.plan || '').toLowerCase();
+          if (['pro', 'enterprise'].includes(plan) && responsible !== crm.consultor_email) {
+            const team = await getTeamEmails(crm.consultor_email);
+            for (const memberEmail of team) {
+              if (memberEmail === responsible) continue;
+              await createNotif(memberEmail, '⚠️ Tarefa de CRM Vencida',
+                `Tarefa "${t.title}" do cliente "${crm.client_name || 'N/A'}" está VENCIDA (resp: ${responsible}).`,
+                'task_overdue', 'error', '/ConsultorClients');
+            }
+          }
         } else if ([1, 3].includes(days)) {
-          await createNotif(crm.consultor_email, `Tarefa de CRM em ${days} dia${days > 1 ? 's' : ''}`,
-            `Tarefa "${task.title}" vence em ${days} dia${days > 1 ? 's' : ''}.`, 'outro', 'warning', '/ConsultorClients');
+          // Vencendo em breve
+          if (await shouldNotify(responsible, crm.consultor_email)) {
+            await createNotif(responsible,
+              `Tarefa de CRM vence em ${days} dia${days > 1 ? 's' : ''}`,
+              `"${t.title}" do cliente "${crm.client_name || 'N/A'}" vence em ${days} dia${days > 1 ? 's' : ''}.`,
+              'task_due_soon', days === 1 ? 'warning' : 'info', '/ConsultorClients');
+          }
+        }
+      }
+
+      // Persiste tarefas com status 'overdue' atualizado
+      if (crmChanged) {
+        try {
+          await base44.asServiceRole.entities.ClientCRM.update(crm.id, { tasks: updatedTasks });
+        } catch (e) {
+          console.warn(`[Expiry] Erro ao atualizar status overdue do CRM ${crm.id}:`, e.message);
         }
       }
     }

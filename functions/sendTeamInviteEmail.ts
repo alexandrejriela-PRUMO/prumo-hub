@@ -1,10 +1,5 @@
 /**
- * sendTeamInviteEmail — Envia email de convite de equipe via ClickSign
- *
- * SOLUÇÃO: App é privado, então:
- * - ❌ base44.users.inviteUser() não funciona (forbidden para non-admins)
- * - ❌ base44.integrations.Core.SendEmail() não funciona (requer user na app)
- * - ✅ HTTP direto para ClickSign com template HTML
+ * sendTeamInviteEmail — Envia email de convite de equipe
  *
  * Payload:
  * {
@@ -71,7 +66,7 @@ Deno.serve(async (req) => {
       <p>Ao fazer seu primeiro login no PRUMO Hub, seu perfil será configurado automaticamente com as permissões de <strong>${member_role || 'Membro'}</strong>, dando-lhe acesso às ferramentas de consultoria.</p>
       
       <p style="text-align: center; margin-top: 32px;">
-        <a href="${app_url}?invite=${Buffer.from(member_email).toString('base64')}" class="cta-button">
+        <a href="${app_url}" class="cta-button">
           Acessar PRUMO Hub →
         </a>
       </p>

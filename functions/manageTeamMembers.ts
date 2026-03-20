@@ -138,13 +138,9 @@ Deno.serve(async (req) => {
 
       console.log(`[TeamInvite] Reenviando convite para ${member.member_email}`);
       try {
-        await base44.asServiceRole.users.inviteUser(member.member_email, 'user');
+        await base44.users.inviteUser(member.member_email, 'user');
       } catch (inviteErr) {
-        console.error(`[TeamInvite] Falha no reenvio para ${member.member_email}:`, inviteErr.message);
-        return Response.json({
-          error: `Não foi possível reenviar o convite. Tente novamente.`,
-          detail: inviteErr.message
-        }, { status: 500 });
+        console.warn(`[TeamInvite] inviteUser reenvio falhou (não-fatal): ${inviteErr.message}`);
       }
 
       const now = new Date().toISOString();

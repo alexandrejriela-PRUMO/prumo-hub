@@ -555,8 +555,7 @@ export default function Licenses() {
               </Button>
             </form>
           </DialogContent>
-        </Dialog>
-        ) : null}
+        </Dialog> : null}
       </div>
 
       {/* Licenses Grid */}

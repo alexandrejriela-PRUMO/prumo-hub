@@ -124,16 +124,16 @@ Deno.serve(async (req) => {
         return Response.json({ error: `Este usuário ${statusLabel}. Use "reenviar convite" se necessário.` }, { status: 400 });
       }
 
-      // 3. Tentar inviteUser (não-bloqueante — requer role admin no Base44)
-       console.log(`🔹 [CONVITE ENVIANDO] Email: ${member_email} | Função: ${member_role} | Consultor: ${user.email}`);
+      // 3. Tentar inviteUser (não-bloqueante)
+       console.log(`[INVITE] Enviando convite para: ${member_email} | Função: ${member_role}`);
        let inviteSuccess = false;
        try {
-         const inviteRes = await base44.users.inviteUser(member_email, 'user');
+         await base44.users.inviteUser(member_email, 'user');
          inviteSuccess = true;
-         console.log(`✅ [CONVITE OK] inviteUser retornou para ${member_email}:`, inviteRes);
+         console.log(`[INVITE] ✅ Convite Base44 enviado para ${member_email}`);
        } catch (inviteErr) {
-         console.error(`❌ [CONVITE FALHA] inviteUser errOU para ${member_email}: ${inviteErr.message}`);
-         // Continua mesmo assim — o email customizado será enviado
+         console.warn(`[INVITE] ⚠️  inviteUser falhou (não-fatal): ${inviteErr.message}`);
+         // Email customizado será enviado mesmo assim
        }
 
       // 4. Criar TeamMember com permissões default pelo role

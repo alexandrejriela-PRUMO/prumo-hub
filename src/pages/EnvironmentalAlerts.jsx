@@ -201,10 +201,10 @@ export default function EnvironmentalAlerts() {
   });
 
   useEffect(() => {
-    if (properties.length > 0 && !selectedPropertyId && !isConsultor) {
+    if (properties.length > 0 && !selectedPropertyId && !isConsultorFamily) {
       setSelectedPropertyId(properties[0].id);
     }
-  }, [properties, selectedPropertyId, isConsultor]);
+  }, [properties, selectedPropertyId, isConsultorFamily]);
 
   useEffect(() => {
     // Invalidate mapbiomas-alerts cache when selectedPropertyId changes

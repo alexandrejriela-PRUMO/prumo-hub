@@ -224,12 +224,16 @@ Deno.serve(async (req) => {
       );
       console.log(`   ✓ ${allowedTeamProperties.length} propriedades da equipe`);
 
-      // 4. Documentos acessíveis
+      // 4. Documentos acessíveis do consultor e equipe
       const allDocuments = await base44.asServiceRole.entities.Document.filter({});
       const allProperties = consultorProperties.concat(allowedTeamProperties);
       const propertyIds = allProperties.map(p => p.id);
       
-      const accessibleDocs = allDocuments.filter(d => 
+      const consultorDocs = allDocuments.filter(d => 
+        d.owner_email === targetEmail || teamMemberEmails.includes(d.owner_email)
+      );
+      
+      const accessibleDocs = consultorDocs.filter(d => 
         !d.property_id || propertyIds.includes(d.property_id)
       );
       console.log(`   ✓ ${accessibleDocs.length} documentos acessíveis`);

@@ -1,151 +1,265 @@
+/**
+ * manageTeamMembers — Gerencia convites e membros da equipe.
+ *
+ * FLUXO CORRETO:
+ *   1. Validar email
+ *   2. Checar duplicidade
+ *   3. inviteUser() — se falhar, NADA é criado
+ *   4. Criar TeamMember com status Pendente
+ *   5. Enviar email personalizado
+ *
+ * Actions: list | invite | resend_invite | activate | apply_user_type | remove
+ */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 
+// Valida formato de email
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+// Calcula data de expiração (7 dias)
+function expiresAt() {
+  const d = new Date();
+  d.setDate(d.getDate() + 7);
+  return d.toISOString();
+}
+
 Deno.serve(async (req) => {
-  const base44 = createClientFromRequest(req);
-  const user = await base44.auth.me();
+  try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const body = await req.json();
+    const { action } = body;
 
-  const body = await req.json();
-  const { action } = body;
-
-  // ─── LIST ────────────────────────────────────────────────────────────────
-  if (action === 'list') {
-    const members = await base44.asServiceRole.entities.TeamMember.filter({
-      primary_user_email: user.email
-    });
-    return Response.json({ members });
-  }
-
-  // ─── INVITE ──────────────────────────────────────────────────────────────
-  if (action === 'invite') {
-    const { member_email, member_name, member_role } = body;
-
-    if (!member_email) {
-      return Response.json({ error: 'member_email é obrigatório' }, { status: 400 });
-    }
-
-    // Idempotência: verificar se já existe
-    const existing = await base44.asServiceRole.entities.TeamMember.filter({
-      primary_user_email: user.email,
-      member_email,
-    });
-
-    if (existing.length > 0) {
-      return Response.json({ error: 'Este membro já foi convidado.' }, { status: 400 });
-    }
-
-    // Criar registro de TeamMember com pending_user_type para aplicação posterior
-    const member = await base44.asServiceRole.entities.TeamMember.create({
-      primary_user_email: user.email,
-      consultor_email: user.email,
-      member_email,
-      member_name: member_name || '',
-      member_role: member_role || 'Outro',
-      status: 'Pendente',
-      pending_user_type: 'equipe',
-      user_type_applied: false,
-      invited_at: new Date().toISOString(),
-    });
-
-    // Convidar usuário na plataforma
-    await base44.users.inviteUser(member_email, 'user');
-
-    // Email de boas-vindas personalizado PRUMO
-    try {
-      await base44.asServiceRole.integrations.Core.SendEmail({
-        from_name: 'PRUMO Hub',
-        to: member_email,
-        subject: `Você foi convidado para a equipe de ${user.full_name || user.email} no PRUMO Hub`,
-        body: `Olá${member_name ? ', ' + member_name : ''},\n\n${user.full_name || user.email} convidou você para fazer parte da equipe de consultoria no PRUMO Hub.\n\nSeu perfil: ${member_role || 'Membro da Equipe'}\n\nAo aceitar o convite e fazer seu primeiro login, seu perfil será configurado automaticamente com acesso às ferramentas de consultoria.\n\nAcesse: https://prumo.app\n\nAtenciosamente,\nEquipe PRUMO Hub`
+    // ─── LIST ────────────────────────────────────────────────────────────────
+    if (action === 'list') {
+      const members = await base44.asServiceRole.entities.TeamMember.filter({
+        primary_user_email: user.email
       });
-    } catch (emailErr) {
-      console.warn('[TeamInvite] Falha ao enviar email de boas-vindas:', emailErr.message);
+      return Response.json({ members });
     }
 
-    console.log(`[TeamInvite] Convite enviado para ${member_email} pelo consultor ${user.email}`);
-    return Response.json({ success: true, member });
-  }
+    // ─── INVITE ──────────────────────────────────────────────────────────────
+    if (action === 'invite') {
+      const { member_email, member_name, member_role } = body;
 
-  // ─── ACTIVATE (aplica user_type idempotentemente) ────────────────────────
-  if (action === 'activate') {
-    const { member_id } = body;
+      // 1. Validar email
+      if (!member_email || !isValidEmail(member_email)) {
+        return Response.json({ error: 'Email inválido ou não fornecido.' }, { status: 400 });
+      }
 
-    const members = await base44.asServiceRole.entities.TeamMember.filter({
-      primary_user_email: user.email,
-    });
-    const member = members.find(m => m.id === member_id);
-    if (!member) return Response.json({ error: 'Membro não encontrado' }, { status: 404 });
+      // 2. Checar duplicidade (qualquer status exceto Inativo)
+      const existing = await base44.asServiceRole.entities.TeamMember.filter({
+        primary_user_email: user.email,
+        member_email,
+      });
+      const activeConflict = existing.find(m => m.status !== 'Inativo');
+      if (activeConflict) {
+        const statusLabel = activeConflict.status === 'Ativo' ? 'já é membro ativo' : 'já possui convite pendente';
+        return Response.json({ error: `Este usuário ${statusLabel}. Use "reenviar convite" se necessário.` }, { status: 400 });
+      }
 
-    // Aplicar user_type se ainda não foi feito (idempotência)
-    if (!member.user_type_applied && member.pending_user_type) {
+      // 3. inviteUser PRIMEIRO — se falhar, não cria nada
+      console.log(`[TeamInvite] Enviando convite para ${member_email} pelo consultor ${user.email}`);
       try {
-        // Buscar o usuário pelo email para obter o ID
-        const users = await base44.asServiceRole.entities.User.filter({ email: member.member_email });
-        if (users.length > 0) {
-          await base44.asServiceRole.entities.User.update(users[0].id, {
-            user_type: member.pending_user_type
-          });
-          console.log(`[TeamActivate] user_type '${member.pending_user_type}' aplicado para ${member.member_email}`);
-        } else {
-          console.warn(`[TeamActivate] Usuário ${member.member_email} ainda não criou conta. user_type será aplicado no próximo login.`);
+        await base44.users.inviteUser(member_email, 'user');
+        console.log(`[TeamInvite] inviteUser bem-sucedido para ${member_email}`);
+      } catch (inviteErr) {
+        console.error(`[TeamInvite] Falha no inviteUser para ${member_email}:`, inviteErr.message);
+        return Response.json({
+          error: `Não foi possível enviar o convite para ${member_email}. Verifique o email e tente novamente.`,
+          detail: inviteErr.message
+        }, { status: 500 });
+      }
+
+      // 4. Criar TeamMember SÓ após inviteUser bem-sucedido
+      const now = new Date().toISOString();
+      const member = await base44.asServiceRole.entities.TeamMember.create({
+        primary_user_email: user.email,
+        consultor_email: user.email,
+        member_email,
+        member_name: member_name || '',
+        member_role: member_role || 'Outro',
+        status: 'Pendente',
+        pending_user_type: 'equipe',
+        user_type_applied: false,
+        invited_at: now,
+        expires_at: expiresAt(),
+      });
+
+      // 5. Email personalizado adicional (não-bloqueante)
+      try {
+        await base44.asServiceRole.integrations.Core.SendEmail({
+          from_name: 'PRUMO Hub',
+          to: member_email,
+          subject: `Você foi convidado para a equipe de ${user.full_name || user.email} no PRUMO Hub`,
+          body: `<p>Olá${member_name ? ', <strong>' + member_name + '</strong>' : ''},</p>
+<p><strong>${user.full_name || user.email}</strong> convidou você para fazer parte da equipe de consultoria no <strong>PRUMO Hub</strong>.</p>
+<p><strong>Função:</strong> ${member_role || 'Membro da Equipe'}</p>
+<p>Ao aceitar o convite e fazer seu primeiro login, seu perfil será configurado automaticamente com acesso completo às ferramentas de consultoria ambiental.</p>
+<p>⚠️ Este convite expira em <strong>7 dias</strong>.</p>
+<p><a href="https://prumo.app" style="background:#1B4332;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:8px;">Acessar PRUMO Hub</a></p>
+<br/>
+<p>Atenciosamente,<br/>Equipe PRUMO Hub</p>`
+        });
+        console.log(`[TeamInvite] Email personalizado enviado para ${member_email}`);
+      } catch (emailErr) {
+        console.warn('[TeamInvite] Falha ao enviar email personalizado (convite principal já foi):', emailErr.message);
+      }
+
+      return Response.json({ success: true, member });
+    }
+
+    // ─── RESEND_INVITE ───────────────────────────────────────────────────────
+    if (action === 'resend_invite') {
+      const { member_id } = body;
+
+      const members = await base44.asServiceRole.entities.TeamMember.filter({
+        primary_user_email: user.email,
+      });
+      const member = members.find(m => m.id === member_id);
+
+      if (!member) return Response.json({ error: 'Membro não encontrado.' }, { status: 404 });
+      if (member.status !== 'Pendente') {
+        return Response.json({ error: 'Só é possível reenviar convite para membros com status Pendente.' }, { status: 400 });
+      }
+
+      console.log(`[TeamInvite] Reenviando convite para ${member.member_email}`);
+      try {
+        await base44.users.inviteUser(member.member_email, 'user');
+      } catch (inviteErr) {
+        console.error(`[TeamInvite] Falha no reenvio para ${member.member_email}:`, inviteErr.message);
+        return Response.json({
+          error: `Não foi possível reenviar o convite. Tente novamente.`,
+          detail: inviteErr.message
+        }, { status: 500 });
+      }
+
+      const now = new Date().toISOString();
+      await base44.asServiceRole.entities.TeamMember.update(member_id, {
+        invited_at: now,
+        expires_at: expiresAt(),
+      });
+
+      // Email personalizado de reenvio
+      try {
+        await base44.asServiceRole.integrations.Core.SendEmail({
+          from_name: 'PRUMO Hub',
+          to: member.member_email,
+          subject: `Lembrete: Você foi convidado para a equipe de ${user.full_name || user.email} no PRUMO Hub`,
+          body: `<p>Olá${member.member_name ? ', <strong>' + member.member_name + '</strong>' : ''},</p>
+<p>Este é um lembrete do convite de <strong>${user.full_name || user.email}</strong> para a equipe no <strong>PRUMO Hub</strong>.</p>
+<p>⚠️ Novo prazo: <strong>7 dias</strong> a partir de hoje.</p>
+<p><a href="https://prumo.app" style="background:#1B4332;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:8px;">Acessar PRUMO Hub</a></p>
+<br/>
+<p>Atenciosamente,<br/>Equipe PRUMO Hub</p>`
+        });
+      } catch (emailErr) {
+        console.warn('[TeamInvite] Falha ao enviar email de reenvio:', emailErr.message);
+      }
+
+      console.log(`[TeamInvite] Convite reenviado para ${member.member_email}`);
+      return Response.json({ success: true });
+    }
+
+    // ─── ACTIVATE (manual pelo consultor) ────────────────────────────────────
+    if (action === 'activate') {
+      const { member_id } = body;
+
+      const members = await base44.asServiceRole.entities.TeamMember.filter({
+        primary_user_email: user.email,
+      });
+      const member = members.find(m => m.id === member_id);
+      if (!member) return Response.json({ error: 'Membro não encontrado.' }, { status: 404 });
+
+      if (!member.user_type_applied && member.pending_user_type) {
+        try {
+          const users = await base44.asServiceRole.entities.User.filter({ email: member.member_email });
+          if (users.length > 0) {
+            await base44.asServiceRole.entities.User.update(users[0].id, {
+              user_type: member.pending_user_type
+            });
+            console.log(`[TeamActivate] user_type '${member.pending_user_type}' aplicado para ${member.member_email}`);
+          } else {
+            console.warn(`[TeamActivate] Usuário ${member.member_email} ainda não criou conta. Será aplicado no primeiro login.`);
+          }
+        } catch (e) {
+          console.warn(`[TeamActivate] Não foi possível aplicar user_type: ${e.message}`);
         }
+      }
+
+      const now = new Date().toISOString();
+      await base44.asServiceRole.entities.TeamMember.update(member_id, {
+        status: 'Ativo',
+        user_type_applied: true,
+        activated_at: now,
+        accepted_at: now,
+      });
+
+      return Response.json({ success: true });
+    }
+
+    // ─── APPLY_USER_TYPE (chamado automaticamente no primeiro login do membro) ─
+    if (action === 'apply_user_type') {
+      const pendingMemberships = await base44.asServiceRole.entities.TeamMember.filter({
+        member_email: user.email,
+        user_type_applied: false
+      });
+
+      if (pendingMemberships.length === 0) {
+        return Response.json({ success: true, message: 'Nenhum perfil pendente.' });
+      }
+
+      const membership = pendingMemberships[0];
+
+      // Verificar expiração
+      if (membership.expires_at && new Date(membership.expires_at) < new Date()) {
+        console.warn(`[ApplyUserType] Convite expirado para ${user.email} (expirou em ${membership.expires_at})`);
+        return Response.json({
+          error: 'Este convite expirou. Solicite um novo convite ao consultor.',
+          expired: true
+        }, { status: 403 });
+      }
+
+      const userType = membership.pending_user_type || 'equipe';
+      const now = new Date().toISOString();
+
+      try {
+        await base44.auth.updateMe({ user_type: userType });
+        await base44.asServiceRole.entities.TeamMember.update(membership.id, {
+          user_type_applied: true,
+          status: 'Ativo',
+          activated_at: now,
+          accepted_at: now,
+        });
+        console.log(`[ApplyUserType] user_type '${userType}' aplicado com sucesso para ${user.email}`);
+        return Response.json({ success: true, user_type: userType });
       } catch (e) {
-        console.warn(`[TeamActivate] Não foi possível aplicar user_type: ${e.message}`);
+        console.error(`[ApplyUserType] Erro ao aplicar user_type para ${user.email}:`, e.message);
+        return Response.json({ error: e.message }, { status: 500 });
       }
     }
 
-    await base44.asServiceRole.entities.TeamMember.update(member_id, {
-      status: 'Ativo',
-      user_type_applied: true,
-      activated_at: new Date().toISOString()
-    });
-
-    return Response.json({ success: true });
-  }
-
-  // ─── REMOVE ──────────────────────────────────────────────────────────────
-  if (action === 'remove') {
-    const { member_id } = body;
-    const members = await base44.asServiceRole.entities.TeamMember.filter({
-      primary_user_email: user.email,
-    });
-    const member = members.find(m => m.id === member_id);
-    if (!member) return Response.json({ error: 'Membro não encontrado' }, { status: 404 });
-
-    await base44.asServiceRole.entities.TeamMember.delete(member_id);
-    return Response.json({ success: true });
-  }
-
-  // ─── APPLY_USER_TYPE (chamado no primeiro login do membro) ───────────────
-  // Pode ser chamado pelo próprio membro para garantir que seu perfil esteja correto
-  if (action === 'apply_user_type') {
-    const pendingMemberships = await base44.asServiceRole.entities.TeamMember.filter({
-      member_email: user.email,
-      user_type_applied: false
-    });
-
-    if (pendingMemberships.length === 0) {
-      return Response.json({ success: true, message: 'Nenhum perfil pendente' });
-    }
-
-    const membership = pendingMemberships[0];
-    const userType = membership.pending_user_type || 'equipe';
-
-    try {
-      await base44.auth.updateMe({ user_type: userType });
-      await base44.asServiceRole.entities.TeamMember.update(membership.id, {
-        user_type_applied: true,
-        status: 'Ativo',
-        activated_at: new Date().toISOString()
+    // ─── REMOVE ──────────────────────────────────────────────────────────────
+    if (action === 'remove') {
+      const { member_id } = body;
+      const members = await base44.asServiceRole.entities.TeamMember.filter({
+        primary_user_email: user.email,
       });
-      console.log(`[ApplyUserType] user_type '${userType}' aplicado para ${user.email}`);
-      return Response.json({ success: true, user_type: userType });
-    } catch (e) {
-      console.error(`[ApplyUserType] Erro:`, e.message);
-      return Response.json({ error: e.message }, { status: 500 });
-    }
-  }
+      const member = members.find(m => m.id === member_id);
+      if (!member) return Response.json({ error: 'Membro não encontrado.' }, { status: 404 });
 
-  return Response.json({ error: 'Ação inválida' }, { status: 400 });
+      await base44.asServiceRole.entities.TeamMember.delete(member_id);
+      console.log(`[TeamRemove] Membro ${member.member_email} removido por ${user.email}`);
+      return Response.json({ success: true });
+    }
+
+    return Response.json({ error: 'Ação inválida. Use: list | invite | resend_invite | activate | apply_user_type | remove' }, { status: 400 });
+
+  } catch (error) {
+    console.error('[manageTeamMembers] Erro inesperado:', error.message);
+    return Response.json({ error: error.message }, { status: 500 });
+  }
 });

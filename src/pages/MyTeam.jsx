@@ -178,43 +178,51 @@ export default function MyTeam() {
                     const statusCfg = STATUS_CONFIG[member.status] || STATUS_CONFIG['Inativo'];
                     const StatusIcon = statusCfg.icon;
                     return (
-                      <div key={member.id} className="flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-700 flex items-center justify-center text-white font-semibold text-sm">
-                            {(member.member_name || member.member_email).charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="font-semibold text-gray-900">{member.member_name || '—'}</p>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <Mail className="w-3 h-3 text-gray-400" />
-                              <p className="text-sm text-gray-500">{member.member_email}</p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                            <Briefcase className="w-3.5 h-3.5 text-gray-400" />
-                            {member.member_role}
-                          </div>
-                          <Badge className={`${statusCfg.color} flex items-center gap-1`}>
-                            <StatusIcon className="w-3 h-3" />
-                            {member.status}
-                          </Badge>
-                          {member.invited_at && (
-                            <span className="text-xs text-gray-400 hidden sm:block">
-                              {format(new Date(member.invited_at), 'dd/MM/yyyy', { locale: ptBR })}
-                            </span>
-                          )}
-                          {member.status === 'Pendente' && (
-                            <Button variant="outline" size="sm" className="text-green-700 border-green-200 hover:bg-green-50 text-xs" onClick={() => activateMutation.mutate(member.id)}>
-                              Ativar
-                            </Button>
-                          )}
-                          <Button variant="ghost" size="icon" className="text-red-400 hover:text-red-600 hover:bg-red-50" onClick={() => removeMutation.mutate(member.id)}>
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
+                      <div key={member.id} className="p-4 rounded-xl border border-gray-100 hover:shadow-md transition-all">
+                         <div className="flex items-start justify-between gap-4">
+                           {/* Avatar + Nome + Email + Função */}
+                           <div className="flex items-start gap-3 flex-1 min-w-0">
+                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-700 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                               {(member.member_name || member.member_email).charAt(0).toUpperCase()}
+                             </div>
+                             <div className="flex-1 min-w-0">
+                               <p className="font-semibold text-gray-900">{member.member_name || '—'}</p>
+                               <div className="flex items-center gap-1.5 mt-0.5">
+                                 <Mail className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                                 <p className="text-sm text-gray-500 truncate">{member.member_email}</p>
+                               </div>
+                               {/* Função + Status em linha visual */}
+                               <div className="flex items-center gap-2 mt-2">
+                                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 rounded-lg border border-blue-100">
+                                   <Briefcase className="w-3 h-3 text-blue-600 flex-shrink-0" />
+                                   <span className="text-xs font-medium text-blue-700">{member.member_role}</span>
+                                 </div>
+                                 <Badge className={`${statusCfg.color} flex items-center gap-1 text-xs`}>
+                                   <StatusIcon className="w-3 h-3" />
+                                   {member.status}
+                                 </Badge>
+                               </div>
+                             </div>
+                           </div>
+
+                           {/* Data + Ações */}
+                           <div className="flex items-center gap-2 flex-shrink-0">
+                             {member.invited_at && (
+                               <span className="text-xs text-gray-400 whitespace-nowrap hidden sm:block">
+                                 {format(new Date(member.invited_at), 'dd/MM/yyyy', { locale: ptBR })}
+                               </span>
+                             )}
+                             {member.status === 'Pendente' && (
+                               <Button variant="outline" size="sm" className="text-green-700 border-green-200 hover:bg-green-50 text-xs whitespace-nowrap" onClick={() => activateMutation.mutate(member.id)}>
+                                 Ativar
+                               </Button>
+                             )}
+                             <Button variant="ghost" size="icon" className="text-red-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0" onClick={() => removeMutation.mutate(member.id)}>
+                               <Trash2 className="w-4 h-4" />
+                             </Button>
+                           </div>
+                         </div>
+                       </div>
                     );
                   })}
                 </div>

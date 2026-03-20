@@ -83,7 +83,20 @@ Deno.serve(async (req) => {
       // VERIFICAÇÕES DE INTEGRIDADE
       // ───────────────────────────────────────────────────────────────
 
-      // CHECK 1: Documentos órfãos (vinculados a propriedade que não existe)
+      // CHECK 1: Propriedades duplicadas (mesmo ID)
+      const duplicatedProperties = properties.filter((p, i, a) => a.findIndex(x => x.id === p.id) !== i);
+      if (duplicatedProperties.length > 0) {
+        auditReport.issues.push({
+          severity: 'critical',
+          type: 'duplicate_properties_by_id',
+          count: duplicatedProperties.length,
+          detail: 'Propriedades com IDs duplicados na base de dados',
+          properties: duplicatedProperties.map(p => ({ id: p.id, name: p.property_name }))
+        });
+        console.error(`   ❌ ${duplicatedProperties.length} propriedades com IDs duplicados!`);
+      }
+
+      // CHECK 2: Documentos órfãos (vinculados a propriedade que não existe)
       const orphanDocs = documents.filter(d => {
         if (!d.property_id) return false; // documentos sem property_id são OK
         return !properties.some(p => p.id === d.property_id);
@@ -107,6 +120,21 @@ Deno.serve(async (req) => {
           }
           console.log(`   ✅ Reparado: ${orphanDocs.length} documentos órfãos limpos`);
         }
+      }
+
+      // CHECK 3: Documentos com owner_email inválido
+      const allUsers = await base44.asServiceRole.entities.User.filter({});
+      const validEmails = new Set(allUsers.map(u => u.email));
+      const invalidDocs = documents.filter(d => !validEmails.has(d.owner_email));
+      if (invalidDocs.length > 0) {
+        auditReport.issues.push({
+          severity: 'critical',
+          type: 'invalid_document_owner',
+          count: invalidDocs.length,
+          detail: 'Documentos com owner_email que não corresponde a nenhum usuário',
+          docs: invalidDocs.map(d => ({ id: d.id, owner_email: d.owner_email }))
+        });
+        console.error(`   ❌ ${invalidDocs.length} documentos com owner inválido!`);
       }
 
       // CHECK 2: Licenças órfãs

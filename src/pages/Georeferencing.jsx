@@ -67,8 +67,9 @@ export default function Georeferencing() {
     loadUser();
   }, []);
 
-  const { effectiveEmail, userType } = useEffectiveUser();
+  const { effectiveEmail, userType, memberRole } = useEffectiveUser();
   const isConsultor = userType === 'consultor' || userType === 'equipe';
+  const canCreateGeo = !isConsultor || memberRole !== 'Advogado';
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
     queryKey: ['properties', effectiveEmail, userType],
@@ -198,13 +199,14 @@ export default function Georeferencing() {
           <h1 className="text-3xl font-bold text-gray-900">Georreferenciamento</h1>
           <p className="text-gray-500 mt-1">{isConsultor ? 'Gestão completa do georreferenciamento dos clientes' : 'Georreferenciamento da sua propriedade'}</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-emerald-600 hover:bg-emerald-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Georreferenciamento
-            </Button>
-          </DialogTrigger>
+        {canCreateGeo && (
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+           <DialogTrigger asChild>
+             <Button className="bg-emerald-600 hover:bg-emerald-700">
+               <Plus className="w-4 h-4 mr-2" />
+               Novo Georreferenciamento
+             </Button>
+           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Novo Georreferenciamento</DialogTitle>
@@ -218,8 +220,9 @@ export default function Georeferencing() {
               isLoading={createMutation.isPending}
             />
           </DialogContent>
-        </Dialog>
-      </div>
+          </Dialog>
+          )}
+          </div>
 
       {/* Property Selector */}
       {properties.length > 1 && (
@@ -333,14 +336,16 @@ export default function Georeferencing() {
                     <Eye className="w-4 h-4 mr-2" />
                     Ver Detalhes
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-red-500 hover:text-red-700"
-                    onClick={() => deleteMutation.mutate(geo.id)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  {canCreateGeo && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-red-500 hover:text-red-700"
+                      onClick={() => deleteMutation.mutate(geo.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>

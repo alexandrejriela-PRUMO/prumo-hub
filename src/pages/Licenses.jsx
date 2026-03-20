@@ -367,7 +367,7 @@ export default function Licenses() {
           <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 bg-clip-text text-transparent">Licenças e Documentos Técnicos</h1>
           <p className="text-gray-500 mt-1 text-sm sm:text-base">Gerencie licenças, ARTs, laudos e documentos técnicos</p>
         </div>
-        {canCreate ? <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        {canCreate ? (<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-emerald-600 hover:bg-emerald-700">
               <Plus className="w-4 h-4 mr-2" />

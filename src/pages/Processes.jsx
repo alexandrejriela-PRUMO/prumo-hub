@@ -70,22 +70,22 @@ export default function Processes() {
     loadUser();
   }, []);
 
-  const isConsultor = user?.user_type === 'consultor';
+  const isConsultorFamily = userType === 'consultor' || userType === 'equipe';
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
-    queryKey: ['properties', user?.email],
-    queryFn: () => isConsultor ?
-    base44.entities.Property.filter({ consultor_email: user.email }) :
-    base44.entities.Property.filter({ owner_email: user.email }),
-    enabled: !!user?.email
+    queryKey: ['properties', effectiveEmail, userType],
+    queryFn: () => isConsultorFamily
+      ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
+      : base44.entities.Property.filter({ owner_email: effectiveEmail }),
+    enabled: !!effectiveEmail
   });
 
   const { data: processes, isLoading } = useQuery({
-    queryKey: ['processes', user?.email, consultorPropertyId],
-    queryFn: () => isConsultor ?
-    base44.entities.Process.filter({ property_id: consultorPropertyId }) :
-    base44.entities.Process.filter({ client_email: user.email }),
-    enabled: isConsultor ? !!consultorPropertyId : !!user?.email,
+    queryKey: ['processes', effectiveEmail, consultorPropertyId],
+    queryFn: () => isConsultorFamily
+      ? base44.entities.Process.filter({ property_id: consultorPropertyId })
+      : base44.entities.Process.filter({ client_email: effectiveEmail }),
+    enabled: isConsultorFamily ? !!consultorPropertyId : !!effectiveEmail,
     initialData: []
   });
 

@@ -68,9 +68,17 @@ export default function MyTeam() {
   });
 
   const activateMutation = useMutation({
-    mutationFn: (id) => base44.functions.invoke('manageTeamMembers', { action: 'activate', member_id: id }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['teamMembers'] }),
-  });
+     mutationFn: (id) => base44.functions.invoke('manageTeamMembers', { action: 'activate', member_id: id }),
+     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['teamMembers'] }),
+   });
+
+   const resendInviteMutation = useMutation({
+     mutationFn: (id) => base44.functions.invoke('manageTeamMembers', { action: 'resend_invite', member_id: id }),
+     onSuccess: () => {
+       queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
+       // Toast de sucesso
+     },
+   });
 
   const handleInvite = async () => {
     if (!inviteForm.member_email || !inviteForm.member_role) return;
@@ -213,9 +221,14 @@ export default function MyTeam() {
                                </span>
                              )}
                              {member.status === 'Pendente' && (
-                               <Button variant="outline" size="sm" className="text-green-700 border-green-200 hover:bg-green-50 text-xs whitespace-nowrap" onClick={() => activateMutation.mutate(member.id)}>
-                                 Ativar
-                               </Button>
+                               <>
+                                 <Button variant="outline" size="sm" className="text-blue-700 border-blue-200 hover:bg-blue-50 text-xs whitespace-nowrap" onClick={() => resendInviteMutation.mutate(member.id)}>
+                                   Reenviar
+                                 </Button>
+                                 <Button variant="outline" size="sm" className="text-green-700 border-green-200 hover:bg-green-50 text-xs whitespace-nowrap" onClick={() => activateMutation.mutate(member.id)}>
+                                   Ativar
+                                 </Button>
+                               </>
                              )}
                              <Button variant="ghost" size="icon" className="text-red-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0" onClick={() => removeMutation.mutate(member.id)}>
                                <Trash2 className="w-4 h-4" />

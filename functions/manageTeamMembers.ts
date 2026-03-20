@@ -193,10 +193,10 @@ Deno.serve(async (req) => {
 
       console.log(`[TeamInvite] Reenviando convite para ${member.member_email}`);
       try {
-        await base44.users.inviteUser(member.member_email, 'user');
-      } catch (inviteErr) {
-        console.warn(`[TeamInvite] inviteUser reenvio falhou (não-fatal): ${inviteErr.message}`);
-      }
+         await base44.asServiceRole.users.inviteUser(member.member_email, 'user');
+       } catch (inviteErr) {
+         console.warn(`[TeamInvite] inviteUser reenvio falhou (não-fatal): ${inviteErr.message}`);
+       }
 
       const now = new Date().toISOString();
       await base44.asServiceRole.entities.TeamMember.update(member_id, {

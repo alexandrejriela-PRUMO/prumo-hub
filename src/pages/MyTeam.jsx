@@ -360,6 +360,7 @@ export default function MyTeam() {
                   {ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                 </SelectContent>
               </Select>
+              {inviteForm.member_role && <RolePermissionsInline role={inviteForm.member_role} />}
             </div>
             {inviteError && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{inviteError}</p>}
           </div>

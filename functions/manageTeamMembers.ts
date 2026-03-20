@@ -125,17 +125,21 @@ Deno.serve(async (req) => {
       }
 
       // 3. Tentar inviteUser (não-bloqueante — requer role admin no Base44)
-      console.log(`[TeamInvite] Iniciando convite para ${member_email} pelo consultor ${user.email}`);
-      try {
-        await base44.users.inviteUser(member_email, 'user');
-        console.log(`[TeamInvite] inviteUser OK para ${member_email}`);
-      } catch (inviteErr) {
-        console.warn(`[TeamInvite] inviteUser falhou (não-fatal): ${inviteErr.message}`);
-      }
+       console.log(`🔹 [CONVITE ENVIANDO] Email: ${member_email} | Função: ${member_role} | Consultor: ${user.email}`);
+       let inviteSuccess = false;
+       try {
+         const inviteRes = await base44.users.inviteUser(member_email, 'user');
+         inviteSuccess = true;
+         console.log(`✅ [CONVITE OK] inviteUser retornou para ${member_email}:`, inviteRes);
+       } catch (inviteErr) {
+         console.error(`❌ [CONVITE FALHA] inviteUser errOU para ${member_email}: ${inviteErr.message}`);
+         // Continua mesmo assim — o email customizado será enviado
+       }
 
       // 4. Criar TeamMember com permissões default pelo role
       const now = new Date().toISOString();
       const defaultPerms = getDefaultPermissions(member_role || 'Outro');
+      console.log(`📝 [CRIANDO REGISTRO] TeamMember para ${member_email} com função: ${member_role}`);
       const member = await base44.asServiceRole.entities.TeamMember.create({
         primary_user_email: user.email,
         consultor_email: user.email,
@@ -149,7 +153,7 @@ Deno.serve(async (req) => {
         invited_at: now,
         expires_at: expiresAt(),
       });
-      console.log(`[TeamInvite] TeamMember criado id=${member.id} para ${member_email}`);
+      console.log(`✅ [REGISTRO CRIADO] TeamMember id=${member.id} | Email: ${member_email} | Função: ${member.member_role} | Status: Pendente`);
 
       // 5. Email personalizado — obrigatório, erro é retornado mas não desfaz o convite
       const emailSubject = `Você foi convidado para a equipe de ${user.full_name || user.email} no PRUMO Hub`;
@@ -178,12 +182,13 @@ Deno.serve(async (req) => {
           subject: emailSubject,
           body: emailBody
         });
-        console.log(`[TeamInvite] Email personalizado enviado OK para ${member_email}`);
+        console.log(`✉️  [EMAIL ENVIADO] Convite personalizado para ${member_email} | Função: ${member_role}`);
       } catch (emailErr) {
-        console.error(`[TeamInvite] FALHA ao enviar email para ${member_email}: ${emailErr.message}`);
+        console.error(`❌ [EMAIL FALHA] Erro ao enviar email para ${member_email}: ${emailErr.message}`);
         // Não desfaz o convite — usuário pode reenviar depois
       }
 
+      console.log(`🎉 [CONVITE COMPLETO] Email=${member_email} | Função=${member.member_role} | ID=${member.id} | Status=Pendente`);
       return Response.json({ success: true, member });
     }
 

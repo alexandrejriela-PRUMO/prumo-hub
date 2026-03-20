@@ -200,11 +200,11 @@ export default function ConsultorClients() {
           </DialogHeader>
           {selectedClient && (
             <Tabs defaultValue="perfil">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className={`grid w-full ${canViewFinancial ? 'grid-cols-4' : 'grid-cols-2'}`}>
                 <TabsTrigger value="perfil">Perfil</TabsTrigger>
                 <TabsTrigger value="crm">CRM</TabsTrigger>
-                <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
-                <TabsTrigger value="cobranças">Cobranças</TabsTrigger>
+                {canViewFinancial && <TabsTrigger value="financeiro">Financeiro</TabsTrigger>}
+                {canViewFinancial && <TabsTrigger value="cobranças">Cobranças</TabsTrigger>}
               </TabsList>
               <TabsContent value="perfil" className="mt-4">
                 <ClientProfilePanel client={enrichClient(selectedClient)} onUpdate={() => queryClient.invalidateQueries(['consultor-crm-clients'])} />
@@ -212,12 +212,16 @@ export default function ConsultorClients() {
               <TabsContent value="crm" className="mt-4">
                 <ClientCRMPanel property={enrichClient(selectedClient)} onClose={() => setSelectedClient(null)} />
               </TabsContent>
-              <TabsContent value="financeiro" className="mt-4">
-                <ClientFinancialSummary client={enrichClient(selectedClient)} />
-              </TabsContent>
-              <TabsContent value="cobranças" className="mt-4">
-                <ClientChargesPanel client={enrichClient(selectedClient)} />
-              </TabsContent>
+              {canViewFinancial && (
+                <TabsContent value="financeiro" className="mt-4">
+                  <ClientFinancialSummary client={enrichClient(selectedClient)} />
+                </TabsContent>
+              )}
+              {canViewFinancial && (
+                <TabsContent value="cobranças" className="mt-4">
+                  <ClientChargesPanel client={enrichClient(selectedClient)} />
+                </TabsContent>
+              )}
             </Tabs>
           )}
         </DialogContent>

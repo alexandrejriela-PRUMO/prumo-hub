@@ -216,7 +216,7 @@ export default function PRAD() {
           </Card>
         )}
 
-        {isConsultor && !selectedProperty && (
+        {isConsultorFamily && !selectedProperty && (
           <Card className="text-center py-12 border-dashed border-2 border-amber-200">
             <CardContent>
               <Sprout className="w-16 h-16 mx-auto text-amber-300 mb-4" />

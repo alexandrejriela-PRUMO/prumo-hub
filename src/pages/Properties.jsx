@@ -247,7 +247,7 @@ export default function Properties() {
           </DialogHeader>
           <PropertyForm
             property={editingProperty}
-            user={user}
+            user={{ email: effectiveEmail, user_type: isEquipe ? 'equipe' : 'consultor' }}
             onSubmit={(data) => {
               if (editingProperty) {
                 updateMutation.mutate({ id: editingProperty.id, data });

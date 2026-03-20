@@ -86,7 +86,25 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Email inválido ou não fornecido.' }, { status: 400 });
       }
 
-      // 2. Checar duplicidade GLOBAL — um membro não pode estar vinculado a dois consultores ativos ao mesmo tempo
+      // 2. Verificar plano do consultor — permite adição de equipe?
+      const consultorUsers = await base44.asServiceRole.entities.User.filter({ email: user.email });
+      const consultorPlan = consultorUsers[0]?.consultor_plan || 'start';
+      const planConfig = PLAN_CONFIG[consultorPlan] || PLAN_CONFIG.start;
+
+      if (planConfig.max_team_members === 0) {
+        return Response.json({ error: `Seu plano (${consultorPlan.toUpperCase()}) não permite adicionar membros de equipe. Faça upgrade para o plano PRO ou ENTERPRISE.` }, { status: 403 });
+      }
+
+      // Contar membros ativos já existentes
+      const activeMembers = await base44.asServiceRole.entities.TeamMember.filter({ primary_user_email: user.email, status: 'Ativo' });
+      const pendingMembers = await base44.asServiceRole.entities.TeamMember.filter({ primary_user_email: user.email, status: 'Pendente' });
+      const totalActiveOrPending = activeMembers.length + pendingMembers.length;
+
+      if (totalActiveOrPending >= planConfig.max_team_members) {
+        return Response.json({ error: `Limite de membros atingido para o plano ${consultorPlan.toUpperCase()} (máx: ${planConfig.max_team_members}). Faça upgrade para adicionar mais membros.` }, { status: 403 });
+      }
+
+      // 3. Checar duplicidade GLOBAL — um membro não pode estar vinculado a dois consultores ativos ao mesmo tempo
       const globalExisting = await base44.asServiceRole.entities.TeamMember.filter({
         member_email,
       });

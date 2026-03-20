@@ -124,11 +124,11 @@ Deno.serve(async (req) => {
         return Response.json({ error: `Este usuário ${statusLabel}. Use "reenviar convite" se necessário.` }, { status: 400 });
       }
 
-      // 3. Tentar inviteUser (não-bloqueante)
+      // 3. Tentar inviteUser com permissões de serviço (não-bloqueante)
        console.log(`[INVITE] Enviando convite para: ${member_email} | Função: ${member_role}`);
        let inviteSuccess = false;
        try {
-         await base44.users.inviteUser(member_email, 'user');
+         await base44.asServiceRole.users.inviteUser(member_email, 'user');
          inviteSuccess = true;
          console.log(`[INVITE] ✅ Convite Base44 enviado para ${member_email}`);
        } catch (inviteErr) {

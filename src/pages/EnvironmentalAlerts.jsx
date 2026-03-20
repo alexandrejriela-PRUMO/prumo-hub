@@ -41,6 +41,7 @@ import MapLegend from '../components/alerts/MapLegend';
 import AlertForm from '../components/alerts/AlertForm';
 import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
 import PullToRefresh from '../components/mobile/PullToRefresh';
+import { useEffectiveUser } from '../hooks/useEffectiveUser';
 import MobileSelect from '../components/mobile/MobileSelect';
 import MapBiomasAlerts from '../components/alerts/MapBiomasAlerts';
 

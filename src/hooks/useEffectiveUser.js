@@ -1,25 +1,43 @@
 /**
- * useEffectiveUser — Hook React para obter o usuário efetivo.
+ * useEffectiveUser — Hook React para obter o usuário efetivo + permissões + plano.
  *
- * Para usuários do tipo 'equipe': retorna o email do consultor para queries.
- * Para outros tipos: retorna o próprio usuário.
+ * Para usuários do tipo 'equipe': retorna o email do consultor para queries,
+ * as permissões do membro e o plano do consultor.
+ * Para outros tipos: retorna o próprio usuário com acesso total.
  *
  * Uso:
- *   const { effectiveEmail, consultorEmail, isEquipe, actualEmail, loading } = useEffectiveUser();
+ *   const { effectiveEmail, isEquipe, permissions, canAccess, planAllows } = useEffectiveUser();
  *
- * Em queries:
- *   base44.entities.Property.filter({ consultor_email: effectiveEmail })
+ * Verificar permissão de módulo:
+ *   canAccess('office', 'edit')     // true/false
+ *   planAllows('advanced_modules')  // true/false
  */
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 
-let _cache = null; // Cache em memória da sessão
+const FULL_ACCESS_PERMISSIONS = {
+  office:           { view: true, edit: true },
+  property_center:  { view: true, edit: true },
+  advanced_modules: { access: true },
+  reports:          { view: true },
+  ai_chat:          { access: true },
+  team_management:  { manage: true },
+  financial:        { view: true },
+};
+
+const PLAN_CONFIG = {
+  start:      { max_team_members: 0, advanced_modules: false, reports: false, client_consultor: false },
+  pro:        { max_team_members: 1, advanced_modules: true,  reports: true,  client_consultor: false },
+  enterprise: { max_team_members: 3, advanced_modules: true,  reports: true,  client_consultor: true  },
+};
+
+let _cache = null;
 
 export function useEffectiveUser() {
   const [state, setState] = useState({
-    effectiveEmail: null,   // Email para usar em queries (consultor se for equipe)
-    actualEmail: null,      // Email real do usuário logado
-    consultorEmail: null,   // Email do consultor vinculado (null se não for equipe)
+    effectiveEmail: null,
+    actualEmail: null,
+    consultorEmail: null,
     isEquipe: false,
     isPending: false,
     noBinding: false,
@@ -27,12 +45,13 @@ export function useEffectiveUser() {
     userType: null,
     memberRole: null,
     consultorName: null,
+    consultorPlan: 'start',
+    permissions: FULL_ACCESS_PERMISSIONS,
     loading: true,
     error: null,
   });
 
   useEffect(() => {
-    // Usa cache se disponível (evita chamadas repetidas por render)
     if (_cache) {
       setState({ ..._cache, loading: false });
       return;
@@ -46,17 +65,20 @@ export function useEffectiveUser() {
         const data = res.data;
 
         if (!cancelled) {
+          const isEquipe = data.is_equipe || false;
           const newState = {
             effectiveEmail: data.email,
             actualEmail: data.actual_email,
             consultorEmail: data.consultor_email,
-            isEquipe: data.is_equipe || false,
+            isEquipe,
             isPending: data.is_pending || false,
             noBinding: data.no_binding || false,
             fullName: data.full_name,
             userType: data.user_type,
             memberRole: data.member_role || null,
             consultorName: data.consultor_name || null,
+            consultorPlan: isEquipe ? (data.consultor_plan || 'start') : (data.consultor_plan || 'start'),
+            permissions: isEquipe ? (data.permissions || FULL_ACCESS_PERMISSIONS) : FULL_ACCESS_PERMISSIONS,
             loading: false,
             error: data.error || null,
           };
@@ -74,7 +96,30 @@ export function useEffectiveUser() {
     return () => { cancelled = true; };
   }, []);
 
-  return state;
+  /**
+   * Verifica permissão de módulo.
+   * canAccess('office', 'edit') → true/false
+   * Não-equipe: sempre true.
+   */
+  function canAccess(module, action) {
+    if (!state.isEquipe) return true;
+    const mod = state.permissions?.[module];
+    if (!mod) return false;
+    return mod[action] === true;
+  }
+
+  /**
+   * Verifica feature de plano.
+   * planAllows('advanced_modules') → true/false
+   */
+  function planAllows(feature) {
+    const plan = state.consultorPlan || 'start';
+    const config = PLAN_CONFIG[plan] || PLAN_CONFIG.start;
+    const val = config[feature];
+    return val === true || (typeof val === 'number' && val > 0);
+  }
+
+  return { ...state, canAccess, planAllows };
 }
 
 /**

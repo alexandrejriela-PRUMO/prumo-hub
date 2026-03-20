@@ -26,8 +26,10 @@ import PRADForm from '../components/prad/PRADForm';
 import PRADDetails from '../components/prad/PRADDetails';
 import PRADReportGenerator from '../components/prad/PRADReportGenerator';
 import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
+import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 export default function PRAD() {
+  const { effectiveEmail, userType } = useEffectiveUser();
   const [user, setUser] = useState(null);
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);

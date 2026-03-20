@@ -35,33 +35,37 @@ Deno.serve(async (req) => {
       }
     };
 
-    // ─── Verifica plano enterprise ──────────────────────────────────────
-    const planCache = {};
-    const isEnterprise = async (consultorEmail) => {
-      if (!consultorEmail) return false;
-      if (planCache[consultorEmail] !== undefined) return planCache[consultorEmail];
+    // ─── Regras de notificação por plano ────────────────────────────────
+    function canReceiveNotification(recipient, consultor) {
+      const plan = (consultor?.plan || '').toLowerCase();
+      if (plan === 'start') return recipient.user_type === 'consultor';
+      if (plan === 'pro') return ['consultor', 'equipe'].includes(recipient.user_type);
+      if (plan === 'enterprise') return ['consultor', 'equipe', 'client_consultor'].includes(recipient.user_type);
+      return false;
+    }
+
+    // ─── Cache de dados de usuário ──────────────────────────────────────
+    const userDataCache = {};
+    const getUserData = async (email) => {
+      if (!email) return null;
+      if (userDataCache[email]) return userDataCache[email];
       try {
-        const users = await base44.asServiceRole.entities.User.filter({ email: consultorEmail });
-        const result = users[0]?.plan === 'enterprise' || users[0]?.plan === 'Enterprise';
-        planCache[consultorEmail] = result;
-        return result;
-      } catch (e) { return false; }
+        const users = await base44.asServiceRole.entities.User.filter({ email });
+        userDataCache[email] = users[0] || { user_type: 'produtor' };
+        return userDataCache[email];
+      } catch (e) { return { user_type: 'produtor' }; }
     };
 
-    // ─── Verifica se destinatário é client_consultor e bloqueia sem Enterprise
-    const userTypeCache = {};
+    // ─── Verifica se deve notificar com base no plano ───────────────────
     const shouldNotify = async (email, consultorEmail) => {
       if (!email) return false;
-      if (!userTypeCache[email]) {
-        try {
-          const users = await base44.asServiceRole.entities.User.filter({ email });
-          userTypeCache[email] = users[0]?.user_type || 'produtor';
-        } catch (e) { userTypeCache[email] = 'produtor'; }
+      const recipient = await getUserData(email);
+      const consultor = await getUserData(consultorEmail);
+      const allowed = canReceiveNotification(recipient, consultor);
+      if (!allowed) {
+        console.log(`[Expiry] Bloqueado: ${email} (${recipient?.user_type}) — plano: ${consultor?.plan || 'nenhum'}`);
       }
-      if (userTypeCache[email] === 'client_consultor') {
-        return await isEnterprise(consultorEmail);
-      }
-      return true;
+      return allowed;
     };
 
     // ─── Criação de notificação com deduplicação ─────────────────────────

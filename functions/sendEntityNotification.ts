@@ -5,27 +5,44 @@
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 
-// ─── Verifica se consultor tem plano Enterprise para notificar client_consultor ─
-async function consultorHasEnterprisePlan(base44, consultorEmail) {
-  if (!consultorEmail) return false;
-  try {
-    const users = await base44.asServiceRole.entities.User.filter({ email: consultorEmail });
-    const consultor = users[0];
-    return consultor?.plan === 'enterprise' || consultor?.plan === 'Enterprise';
-  } catch (e) {
-    console.warn('[NotifPlan] Não foi possível verificar plano:', e.message);
-    return false; // Nega por segurança
+// ─── Regras de notificação por plano ─────────────────────────────────────────
+function canReceiveNotification(recipient, consultor) {
+  const plan = (consultor?.plan || '').toLowerCase();
+
+  if (plan === 'start') {
+    return recipient.user_type === 'consultor';
   }
+  if (plan === 'pro') {
+    return ['consultor', 'equipe'].includes(recipient.user_type);
+  }
+  if (plan === 'enterprise') {
+    return ['consultor', 'equipe', 'client_consultor'].includes(recipient.user_type);
+  }
+  return false;
 }
 
-// ─── Verifica se o destinatário é client_consultor ────────────────────────────
-async function getRecipientType(base44, email) {
+// ─── Busca dados do consultor (com cache) ─────────────────────────────────────
+const consultorCache = {};
+async function getConsultorData(base44, email) {
+  if (!email) return null;
+  if (consultorCache[email]) return consultorCache[email];
   try {
     const users = await base44.asServiceRole.entities.User.filter({ email });
-    return users[0]?.user_type || null;
-  } catch (e) {
-    return null;
-  }
+    consultorCache[email] = users[0] || null;
+    return consultorCache[email];
+  } catch (e) { return null; }
+}
+
+// ─── Busca dados do destinatário (com cache) ──────────────────────────────────
+const recipientCache = {};
+async function getRecipientData(base44, email) {
+  if (!email) return null;
+  if (recipientCache[email]) return recipientCache[email];
+  try {
+    const users = await base44.asServiceRole.entities.User.filter({ email });
+    recipientCache[email] = users[0] || { user_type: 'produtor' };
+    return recipientCache[email];
+  } catch (e) { return { user_type: 'produtor' }; }
 }
 
 // ─── Cache de preferências ────────────────────────────────────────────────────
@@ -119,13 +136,13 @@ async function sendEmails(base44, emailsToSend) {
 // ─── Filtra destinatários bloqueados por plano ────────────────────────────────
 async function filterByPlan(base44, emails, consultorEmail) {
   const result = [];
-  const isEnterprise = await consultorHasEnterprisePlan(base44, consultorEmail);
+  const consultor = await getConsultorData(base44, consultorEmail);
 
   for (const email of emails) {
     if (!email) continue;
-    const recipientType = await getRecipientType(base44, email);
-    if (recipientType === 'client_consultor' && !isEnterprise) {
-      console.log(`[NotifPlan] Bloqueado: ${email} é client_consultor mas consultor não tem plano Enterprise`);
+    const recipient = await getRecipientData(base44, email);
+    if (!canReceiveNotification(recipient, consultor)) {
+      console.log(`[NotifPlan] Bloqueado: ${email} (${recipient?.user_type}) — plano do consultor: ${consultor?.plan || 'nenhum'}`);
       continue;
     }
     result.push(email);

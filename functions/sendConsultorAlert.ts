@@ -39,21 +39,23 @@ Deno.serve(async (req) => {
     }
 
     // ─── VERIFICAÇÃO DE PLANO (CRÍTICO) ──────────────────────────────────
-    // Verifica se o destinatário é client_consultor
     const recipientUsers = await base44.asServiceRole.entities.User.filter({ email: viewer_email });
-    const recipientType = recipientUsers[0]?.user_type;
+    const recipient = recipientUsers[0] || { user_type: 'produtor' };
 
-    if (recipientType === 'client_consultor') {
-      const consultorPlan = user.plan || recipientUsers[0]?.consultor_plan;
-      const isEnterprise = consultorPlan === 'enterprise' || consultorPlan === 'Enterprise';
+    function canReceiveNotification(recipient, consultor) {
+      const plan = (consultor?.plan || '').toLowerCase();
+      if (plan === 'start') return recipient.user_type === 'consultor';
+      if (plan === 'pro') return ['consultor', 'equipe'].includes(recipient.user_type);
+      if (plan === 'enterprise') return ['consultor', 'equipe', 'client_consultor'].includes(recipient.user_type);
+      return false;
+    }
 
-      if (!isEnterprise) {
-        console.log(`[ConsultorAlert] BLOQUEADO: consultor ${user.email} sem plano Enterprise tentou notificar client_consultor ${viewer_email}`);
-        return Response.json({
-          error: 'Notificações para clientes visualizadores requerem o plano Enterprise.',
-          blocked_by: 'plan_restriction'
-        }, { status: 403 });
-      }
+    if (!canReceiveNotification(recipient, user)) {
+      console.log(`[ConsultorAlert] BLOQUEADO: ${viewer_email} (${recipient.user_type}) — plano do consultor: ${user.plan || 'nenhum'}`);
+      return Response.json({
+        error: `Seu plano (${user.plan || 'sem plano'}) não permite notificar este tipo de destinatário.`,
+        blocked_by: 'plan_restriction'
+      }, { status: 403 });
     }
 
     // Cria notificação in-app

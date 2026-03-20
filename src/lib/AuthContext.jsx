@@ -18,6 +18,8 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const checkAppState = async () => {
+    const isDev = window.location.hostname.includes("base44.com");
+
     try {
       setIsLoadingPublicSettings(true);
       setAuthError(null);
@@ -48,6 +50,13 @@ export const AuthProvider = ({ children }) => {
       } catch (appError) {
         console.error('App state check failed:', appError);
         
+        // In Base44 preview environment, bypass 403 and attempt auth directly
+        if (isDev && appError.status === 403) {
+          setIsLoadingPublicSettings(false);
+          await checkUserAuth();
+          return;
+        }
+
         // Handle app-level errors
         if (appError.status === 403 && appError.data?.extra_data?.reason) {
           const reason = appError.data.extra_data.reason;

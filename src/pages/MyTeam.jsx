@@ -223,6 +223,23 @@ export default function MyTeam() {
           </Card>
         </TabsContent>
 
+        {/* ---- FUNÇÕES ---- */}
+        <TabsContent value="roles" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base text-emerald-900">Guia de Funções da Equipe</CardTitle>
+              <p className="text-sm text-gray-500">Cada função define os módulos que o membro pode acessar. Ao convidar, escolha a função adequada para a responsabilidade do colaborador.</p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {['Engenheiro', 'Advogado', 'Administrador', 'Estagiário', 'Outro'].map(role => (
+                  <RoleCard key={role} role={role} />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* ---- AUDITORIA ---- */}
         <TabsContent value="audit" className="space-y-4">
           {/* Filters */}

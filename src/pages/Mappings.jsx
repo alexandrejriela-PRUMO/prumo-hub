@@ -251,7 +251,7 @@ export default function Mappings() {
               Gerencie mapeamentos multiespectrais, obstáculos, relevo, frutíferas e pastagens
             </p>
           </div>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          {canEdit && <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button
                 onClick={() => setCurrentMapping(null)}
@@ -422,7 +422,7 @@ export default function Mappings() {
                 </div>
               </form>
             </DialogContent>
-          </Dialog>
+          </Dialog>}
         </div>
 
         {/* Property Selector */}
@@ -545,13 +545,13 @@ export default function Mappings() {
                         className="flex-1"
                         onClick={() => {
                           setCurrentMapping(mapping);
-                          setDialogOpen(true);
+                          if (canEdit) setDialogOpen(true);
                         }}
                       >
                         <Eye className="w-4 h-4 mr-1" />
                         Ver
                       </Button>
-                      <label className="flex-1">
+                      {canEdit && <label className="flex-1">
                         <Button
                           size="sm"
                           variant="outline"
@@ -572,8 +572,8 @@ export default function Mappings() {
                           onChange={(e) => handleFileUpload(e, mapping)}
                           disabled={uploadingFile}
                         />
-                      </label>
-                      <Button
+                      </label>}
+                      {canEdit && <Button
                         size="sm"
                         variant="destructive"
                         onClick={() => {
@@ -583,7 +583,7 @@ export default function Mappings() {
                         }}
                       >
                         <Trash2 className="w-4 h-4" />
-                      </Button>
+                      </Button>}
                     </div>
                   </div>
                 </CardContent>

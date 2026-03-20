@@ -232,7 +232,7 @@ export default function Processes() {
                 <span className="hidden sm:inline">Histórico</span>
                 <span className="sm:hidden">Hist.</span>
               </Button>
-              <Button
+              {canCreateProcess && <Button
                 variant="outline"
                 size="sm"
                 onClick={() => handleEdit(process)}
@@ -240,8 +240,8 @@ export default function Processes() {
                 
                 <span className="hidden sm:inline">Editar</span>
                 <span className="sm:hidden">Ed.</span>
-              </Button>
-              <Button
+              </Button>}
+              {canCreateProcess && <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
@@ -252,7 +252,7 @@ export default function Processes() {
                 className="flex-1 sm:flex-none border-red-200 text-red-600 hover:bg-red-50">
                 
                 <Trash2 className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
-              </Button>
+              </Button>}
             </div>
           </div>
         </CardHeader>
@@ -568,7 +568,7 @@ export default function Processes() {
             Acompanhamento de processos administrativos, civis e criminais
           </p>
         </div>
-        <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        {canCreateProcess && <Dialog open={showDialog} onOpenChange={setShowDialog}>
           <DialogTrigger asChild>
             <Button
               className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto whitespace-nowrap"
@@ -587,7 +587,7 @@ export default function Processes() {
             </DialogHeader>
             {ProcessForm()}
           </DialogContent>
-        </Dialog>
+        </Dialog>}
       </div>
 
       {isConsultorFamily && !consultorPropertyId ?

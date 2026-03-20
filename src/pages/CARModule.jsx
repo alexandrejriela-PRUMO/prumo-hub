@@ -159,7 +159,7 @@ export default function CARModule() {
           </h1>
           <p className="text-gray-500 mt-1">Cadastro Ambiental Rural e Regularização Ambiental</p>
         </div>
-        {effectivePropertyId && (
+        {effectivePropertyId && canEdit && (
           <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => { setEditingCarId(null); setEditOpen(true); }}>
             <Plus className="w-4 h-4 mr-2" />Adicionar CAR
           </Button>
@@ -186,9 +186,9 @@ export default function CARModule() {
             <FileText className="w-16 h-16 mx-auto text-emerald-300 mb-4" />
             <h3 className="text-lg font-semibold text-gray-900">Nenhum CAR cadastrado</h3>
             <p className="text-gray-500 mt-2 mb-6">Cadastre os CARs desta propriedade</p>
-            <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => { setEditingCarId(null); setEditOpen(true); }}>
+            {canEdit && <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => { setEditingCarId(null); setEditOpen(true); }}>
               <Plus className="w-4 h-4 mr-2" />Cadastrar Primeiro CAR
-            </Button>
+            </Button>}
           </CardContent>
         </Card>
       )}
@@ -219,9 +219,9 @@ export default function CARModule() {
                         </div>
                         <div className="flex items-center gap-2">
                           <CARStatusBadge status={carRecord.car_status} large />
-                          <Button variant="outline" size="sm" onClick={() => { setEditingCarId(carRecord.id); setEditOpen(true); }}>
+                          {canEdit && <Button variant="outline" size="sm" onClick={() => { setEditingCarId(carRecord.id); setEditOpen(true); }}>
                             <Edit className="w-4 h-4" />
-                          </Button>
+                            </Button>}
                         </div>
                       </div>
                     </CardHeader>

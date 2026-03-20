@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import NewClientForm from '../components/consultor/NewClientForm';
+import { useEffectiveUser } from '../hooks/useEffectiveUser';
 import ClientCRMPanel from '../components/consultor/ClientCRMPanel';
 import ClientFinancialSummary from '../components/consultor/ClientFinancialSummary';
 import ClientChargesPanel from '../components/consultor/ClientChargesPanel';
@@ -245,10 +246,10 @@ export default function CRMBoard() {
             {crmList.length} cliente{crmList.length !== 1 ? 's' : ''} · Arraste para mover entre etapas
           </p>
         </div>
-        <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowNewClientForm(true)}>
+        {canCreateLead && <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowNewClientForm(true)}>
           <Plus className="w-4 h-4 mr-2" />
           Novo Lead
-        </Button>
+        </Button>}
       </div>
 
       {/* Board */}

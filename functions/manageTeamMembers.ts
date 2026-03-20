@@ -61,20 +61,16 @@ Deno.serve(async (req) => {
         return Response.json({ error: `Este usuário ${statusLabel}. Use "reenviar convite" se necessário.` }, { status: 400 });
       }
 
-      // 3. inviteUser PRIMEIRO — se falhar, não cria nada
+      // 3. Tentar inviteUser (não-bloqueante — requer role admin no Base44)
       console.log(`[TeamInvite] Iniciando convite para ${member_email} pelo consultor ${user.email}`);
       try {
-        await base44.asServiceRole.users.inviteUser(member_email, 'user');
+        await base44.users.inviteUser(member_email, 'user');
         console.log(`[TeamInvite] inviteUser OK para ${member_email}`);
       } catch (inviteErr) {
-        console.error(`[TeamInvite] FALHA inviteUser para ${member_email}: ${inviteErr.message}`);
-        return Response.json({
-          error: `Não foi possível enviar o convite para ${member_email}. Verifique o email e tente novamente.`,
-          detail: inviteErr.message
-        }, { status: 500 });
+        console.warn(`[TeamInvite] inviteUser falhou (não-fatal): ${inviteErr.message}`);
       }
 
-      // 4. Criar TeamMember SÓ após inviteUser bem-sucedido
+      // 4. Criar TeamMember sempre
       const now = new Date().toISOString();
       const member = await base44.asServiceRole.entities.TeamMember.create({
         primary_user_email: user.email,

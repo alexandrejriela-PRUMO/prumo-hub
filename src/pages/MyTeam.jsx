@@ -75,14 +75,19 @@ export default function MyTeam() {
     if (!inviteForm.member_email || !inviteForm.member_role) return;
     setIsInviting(true);
     setInviteError('');
-    const res = await base44.functions.invoke('manageTeamMembers', { action: 'invite', ...inviteForm });
-    setIsInviting(false);
-    if (res.data?.error) {
-      setInviteError(res.data.error);
-    } else {
-      queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
-      setShowInviteDialog(false);
-      setInviteForm({ member_email: '', member_name: '', member_role: '' });
+    try {
+      const res = await base44.functions.invoke('manageTeamMembers', { action: 'invite', ...inviteForm });
+      if (res.data?.error) {
+        setInviteError(res.data.error);
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
+        setShowInviteDialog(false);
+        setInviteForm({ member_email: '', member_name: '', member_role: '' });
+      }
+    } catch (err) {
+      setInviteError(err?.message || 'Erro ao enviar convite. Tente novamente.');
+    } finally {
+      setIsInviting(false);
     }
   };
 

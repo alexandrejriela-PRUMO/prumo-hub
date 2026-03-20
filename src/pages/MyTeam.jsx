@@ -152,6 +152,9 @@ export default function MyTeam() {
           <TabsTrigger value="team" className="flex-1 flex items-center gap-2">
             <Users className="w-4 h-4" /> Membros da Equipe
           </TabsTrigger>
+          <TabsTrigger value="roles" className="flex-1 flex items-center gap-2">
+            <BookOpen className="w-4 h-4" /> Funções e Acessos
+          </TabsTrigger>
           <TabsTrigger value="audit" className="flex-1 flex items-center gap-2">
             <ClipboardList className="w-4 h-4" /> Logs de Auditoria
           </TabsTrigger>

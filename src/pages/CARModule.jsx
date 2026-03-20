@@ -52,6 +52,8 @@ export default function CARModule() {
   }, []);
 
   const isConsultor = user?.user_type === 'consultor' || user?.user_type === 'equipe';
+  const memberRole = user?.member_role;
+  const canEdit = user?.user_type !== 'equipe' || memberRole === 'Administrador' || memberRole === 'Engenheiro';
 
   const { data: properties = [], isLoading: propsLoading } = useQuery({
     queryKey: ['properties', user?.email, user?.user_type],

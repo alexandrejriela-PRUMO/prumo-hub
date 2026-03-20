@@ -37,7 +37,8 @@ import ConsultorPropertySelector from '../components/consultor/ConsultorProperty
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 export default function Processes() {
-  const { effectiveEmail, userType, loading: effectiveLoading } = useEffectiveUser();
+  const { effectiveEmail, userType, isEquipe, memberRole, loading: effectiveLoading } = useEffectiveUser();
+  const canCreateProcess = !isEquipe || memberRole === 'Administrador' || memberRole === 'Advogado';
   const [user, setUser] = useState(null);
   const [consultorPropertyId, setConsultorPropertyId] = useState(null);
   const [showDialog, setShowDialog] = useState(false);

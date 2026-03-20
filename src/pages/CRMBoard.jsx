@@ -139,6 +139,8 @@ export default function CRMBoard() {
   const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [selectedCRM, setSelectedCRM] = useState(null);
   const queryClient = useQueryClient();
+  const { isEquipe, memberRole } = useEffectiveUser();
+  const canCreateLead = !isEquipe || memberRole === 'Administrador';
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});

@@ -43,8 +43,9 @@ export default function Mappings() {
     loadUser();
   }, []);
 
-  const { effectiveEmail, userType } = useEffectiveUser();
+  const { effectiveEmail, userType, isEquipe, memberRole } = useEffectiveUser();
   const isConsultor = userType === 'consultor' || userType === 'equipe';
+  const canEdit = !isEquipe || memberRole === 'Administrador' || memberRole === 'Engenheiro';
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
     queryKey: ['properties', effectiveEmail, userType],

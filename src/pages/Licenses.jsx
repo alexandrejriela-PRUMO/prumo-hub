@@ -104,7 +104,8 @@ const licenseTypes = [
 ];
 
 export default function Licenses() {
-  const { effectiveEmail, isEquipe, loading: effectiveLoading } = useEffectiveUser();
+  const { effectiveEmail, isEquipe, memberRole, loading: effectiveLoading } = useEffectiveUser();
+  const canCreate = !isEquipe || memberRole === 'Administrador' || memberRole === 'Engenheiro';
   const [user, setUser] = useState(null);
   const [consultorPropertyId, setConsultorPropertyId] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);

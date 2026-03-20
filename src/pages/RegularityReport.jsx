@@ -467,7 +467,7 @@ export default function RegularityReport() {
       </div>
 
       {/* Seletor de Propriedade */}
-      {(properties.length > 1 || isConsultor) && (
+      {(properties.length > 1 || isConsultorFamily) && (
         <Card>
           <CardContent className="pt-4 pb-4">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">

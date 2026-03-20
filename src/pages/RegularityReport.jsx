@@ -66,7 +66,7 @@ export default function RegularityReport() {
   const { data: documents = [] } = useQuery({
     queryKey: ['documents', user?.email, propertyIds.join(',')],
     queryFn: async () => {
-      if (isConsultor && propertyIds.length > 0) {
+      if (isConsultorFamily && propertyIds.length > 0) {
         const results = await Promise.all(
           propertyIds.map(pid => Promise.all([
             base44.entities.Document.filter({ property_id: pid }),
@@ -77,12 +77,12 @@ export default function RegularityReport() {
       }
       const propIds = properties.map(p => p.id);
       const [docs, ...unifiedResults] = await Promise.all([
-        base44.entities.Document.filter({ owner_email: user.email }),
+        base44.entities.Document.filter({ owner_email: effectiveEmail }),
         ...propIds.map(pid => base44.entities.UnifiedDocument.filter({ entity_id: pid }))
       ]);
       return [...docs, ...unifiedResults.flat()];
     },
-    enabled: !!user?.email && (isConsultor ? properties.length > 0 : true)
+    enabled: !!effectiveEmail && (isConsultorFamily ? properties.length > 0 : true)
   });
 
   const { data: georeferencing = [] } = useQuery({

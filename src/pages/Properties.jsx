@@ -33,7 +33,8 @@ export default function Properties() {
   const [selectedProperty, setSelectedProperty] = useState(null);
   
   const queryClient = useQueryClient();
-  const { effectiveEmail, isEquipe, loading: effectiveLoading } = useEffectiveUser();
+  const { effectiveEmail, isEquipe, memberRole, loading: effectiveLoading } = useEffectiveUser();
+  const canCreate = !isEquipe || memberRole === 'Administrador';
   const [user, setUser] = useState(null);
 
   useEffect(() => {

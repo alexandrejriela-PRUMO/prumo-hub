@@ -23,7 +23,8 @@ export default function ConsultorClients() {
   const [selectedClient, setSelectedClient] = useState(null);
   const [clientToDelete, setClientToDelete] = useState(null);
   const queryClient = useQueryClient();
-  const { effectiveEmail, isEquipe, actualEmail } = useEffectiveUser();
+  const { effectiveEmail, isEquipe, actualEmail, memberRole } = useEffectiveUser();
+  const canCreate = !isEquipe || memberRole === 'Administrador';
 
   // Busca apenas clientes Ativos do CRM (usando effectiveEmail = consultor)
   const { data: crmClients = [], isLoading } = useQuery({

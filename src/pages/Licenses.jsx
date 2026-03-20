@@ -556,7 +556,7 @@ export default function Licenses() {
             </form>
           </DialogContent>
         </Dialog>
-      </div>}
+      </div> : null}
 
       {/* Licenses Grid */}
       {isConsultor && !consultorPropertyId ? (

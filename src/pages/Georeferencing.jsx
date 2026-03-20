@@ -66,14 +66,15 @@ export default function Georeferencing() {
     loadUser();
   }, []);
 
-  const isConsultor = user?.user_type === 'consultor' || user?.user_type === 'equipe';
+  const { effectiveEmail, userType } = useEffectiveUser();
+  const isConsultor = userType === 'consultor' || userType === 'equipe';
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
-    queryKey: ['properties', user?.email],
+    queryKey: ['properties', effectiveEmail, userType],
     queryFn: () => isConsultor
-      ? base44.entities.Property.filter({ consultor_email: user.email })
-      : base44.entities.Property.filter({ owner_email: user.email }),
-    enabled: !!user?.email,
+      ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
+      : base44.entities.Property.filter({ owner_email: effectiveEmail }),
+    enabled: !!effectiveEmail,
     initialData: [],
   });
 

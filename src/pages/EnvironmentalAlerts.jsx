@@ -362,8 +362,8 @@ export default function EnvironmentalAlerts() {
         Voltar
       </Link>
 
-      {/* Consultor Selector */}
-      {isConsultor && (
+      {/* Consultor/Equipe Selector */}
+      {isConsultorFamily && (
         <ConsultorPropertySelector
           properties={properties}
           selectedPropertyId={selectedPropertyId}

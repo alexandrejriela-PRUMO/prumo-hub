@@ -155,39 +155,22 @@ Deno.serve(async (req) => {
       });
       console.log(`✅ [REGISTRO CRIADO] TeamMember id=${member.id} | Email: ${member_email} | Função: ${member.member_role} | Status: Pendente`);
 
-      // 5. Email personalizado VIA CLICKSIGN — não-bloqueante
-      const emailSubject = `Você foi convidado para a equipe de ${user.full_name || user.email} no PRUMO Hub`;
-      const emailBody = `<div style="font-family:sans-serif;max-width:560px;margin:0 auto">
-      <h2 style="color:#1B4332">Convite para equipe PRUMO Hub</h2>
-      <p>Olá${member_name ? ', <strong>' + member_name + '</strong>' : ''},</p>
-      <p><strong>${user.full_name || user.email}</strong> convidou você para fazer parte da equipe de consultoria no <strong>PRUMO Hub</strong>.</p>
-      <table style="width:100%;background:#f5f5f5;border-radius:8px;padding:16px;margin:16px 0">
-      <tr><td><strong>Função:</strong></td><td>${member_role || 'Membro da Equipe'}</td></tr>
-      <tr><td><strong>Consultor:</strong></td><td>${user.full_name || user.email}</td></tr>
-      <tr><td><strong>Expira em:</strong></td><td>7 dias</td></tr>
-      </table>
-      <p>Ao fazer seu primeiro login, seu perfil será configurado automaticamente com acesso às ferramentas de consultoria.</p>
-      <p style="margin-top:24px">
-      <a href="https://prumo.app" style="background:#1B4332;color:white;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block">
-      Acessar PRUMO Hub →
-      </a>
-      </p>
-      <p style="color:#888;font-size:12px;margin-top:32px">Equipe PRUMO Hub | prumo.app</p>
-      </div>`;
-
+      // 5. Chamar função de envio de email (separada)
       try {
-        // Tentar ClickSign (integração nativa)
-        const clicksignKey = Deno.env.get('CLICKSIGN_API_KEY');
-        if (clicksignKey) {
-          // Usar endpoint de envio via ClickSign (requer setup de template)
-          console.log(`📧 [EMAIL CLICKSIGN] Enviando para ${member_email} via ClickSign...`);
-          // Placeholder — será implementado com template
+        const emailRes = await base44.asServiceRole.functions.invoke('sendTeamInviteEmail', {
+          member_email,
+          member_name: member_name || '',
+          member_role: member_role || 'Membro da Equipe',
+          consultor_name: user.full_name || user.email,
+          app_url: 'https://prumo.app'
+        });
+        if (emailRes.data?.success) {
+          console.log(`✅ [EMAIL ENVIADO] Convite enviado para ${member_email} | Função: ${member_role}`);
         } else {
-          console.warn(`⚠️  [EMAIL SKIP] Nenhum gateway de email configurado (não-fatal)`);
+          console.warn(`⚠️  [EMAIL SKIP] Não foi possível enviar (será enviado via reenvio)`);
         }
       } catch (emailErr) {
-        console.error(`❌ [EMAIL FALHA] Erro ao enviar email para ${member_email}: ${emailErr.message}`);
-        // Não desfaz o convite — usuário pode acessar via link direto
+        console.warn(`⚠️  [EMAIL SKIP] Erro ao enviar convite (não-fatal): ${emailErr.message}`);
       }
 
       console.log(`🎉 [CONVITE COMPLETO] Email=${member_email} | Função=${member.member_role} | ID=${member.id} | Status=Pendente`);

@@ -488,8 +488,8 @@ export default function Processes() {
         Voltar
       </Link>
 
-      {/* Consultor Selector */}
-      {isConsultor &&
+      {/* Consultor/Equipe Selector */}
+      {isConsultorFamily &&
       <ConsultorPropertySelector
         properties={properties}
         selectedPropertyId={consultorPropertyId}

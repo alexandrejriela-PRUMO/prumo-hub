@@ -24,30 +24,25 @@ import {
 import { Button } from '@/components/ui/button';
 import moment from 'moment';
 
+import { useEffectiveUser } from '../hooks/useEffectiveUser';
+
 export default function RegularityReport() {
+  const { effectiveEmail, userType, loading: effectiveLoading } = useEffectiveUser();
   const [user, setUser] = useState(null);
   const [selectedPropertyId, setSelectedPropertyId] = useState(null);
 
   useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      } catch (e) {
-        console.log('User not logged in');
-      }
-    };
-    loadUser();
+    base44.auth.me().then(setUser).catch(() => {});
   }, []);
 
-  const isConsultor = user?.user_type === 'consultor';
+  const isConsultorFamily = userType === 'consultor' || userType === 'equipe';
 
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties', user?.email],
-    queryFn: () => isConsultor
-      ? base44.entities.Property.filter({ consultor_email: user.email })
-      : base44.entities.Property.filter({ owner_email: user.email }),
-    enabled: !!user?.email
+    queryKey: ['properties', effectiveEmail, userType],
+    queryFn: () => isConsultorFamily
+      ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
+      : base44.entities.Property.filter({ owner_email: effectiveEmail }),
+    enabled: !!effectiveEmail
   });
 
   const propertyIdsForLicenses = properties.map(p => p.id);

@@ -18,7 +18,9 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const checkAppState = async () => {
-    const isDev = window.location.hostname.includes("base44.com");
+    const isDev = 
+      window.location.hostname.includes("base44.com") ||
+      window.location.hostname.includes("localhost");
 
     try {
       setIsLoadingPublicSettings(true);

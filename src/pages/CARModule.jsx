@@ -18,6 +18,7 @@ import CARStatusBadge from '@/components/car/CARStatusBadge';
 import CARAlerts from '@/components/car/CARAlerts';
 import CARForm from '@/components/car/CARForm';
 import CARMapLayers from '@/components/car/CARMapLayers';
+import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 function fmtDate(d) {
   if (!d) return '—';

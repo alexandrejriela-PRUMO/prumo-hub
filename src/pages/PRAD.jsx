@@ -29,7 +29,7 @@ import ConsultorPropertySelector from '../components/consultor/ConsultorProperty
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 export default function PRAD() {
-  const { effectiveEmail, userType } = useEffectiveUser();
+  const { effectiveEmail, userType, memberRole } = useEffectiveUser();
   const [user, setUser] = useState(null);
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -47,6 +47,7 @@ export default function PRAD() {
   }, []);
 
   const isConsultorFamily = userType === 'consultor' || userType === 'equipe';
+  const canCreatePRAD = !isConsultorFamily || memberRole !== 'Advogado';
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
     queryKey: ['properties', effectiveEmail, userType],
@@ -149,16 +150,17 @@ export default function PRAD() {
               Gerencie os PRADs da propriedade - da identificação ao monitoramento
             </p>
           </div>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button
-                onClick={() => setCurrentPRAD(null)}
-                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 w-full sm:w-auto"
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                Novo PRAD
-              </Button>
-            </DialogTrigger>
+          {canCreatePRAD && (
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+             <DialogTrigger asChild>
+               <Button
+                 onClick={() => setCurrentPRAD(null)}
+                 className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 w-full sm:w-auto"
+               >
+                 <Plus className="w-5 h-5 mr-2" />
+                 Novo PRAD
+               </Button>
+             </DialogTrigger>
             <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Novo Projeto de Recuperação de Área Degradada</DialogTitle>
@@ -169,9 +171,10 @@ export default function PRAD() {
                 userEmail={user?.email}
                 onClose={() => setDialogOpen(false)}
               />
-            </DialogContent>
-          </Dialog>
-        </div>
+              </DialogContent>
+              </Dialog>
+              )}
+              </div>
 
         {/* Info Card */}
         <Card className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
@@ -311,17 +314,19 @@ export default function PRAD() {
                         <Eye className="w-4 h-4 mr-1" />
                         Ver Detalhes
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => {
-                          if (confirm('Excluir este PRAD?')) {
-                            deleteMutation.mutate(prad.id);
-                          }
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      {canCreatePRAD && (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => {
+                            if (confirm('Excluir este PRAD?')) {
+                              deleteMutation.mutate(prad.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardContent>

@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
     const response = await base44.asServiceRole.functions.invoke('sendEntityNotification', body);
 
     console.log(`[Hub→Notif] Delegado: ${body.event.entity_name}.${body.event.type}`);
-    return Response.json(response);
+    return Response.json(response.data ?? { ok: true });
 
   } catch (error) {
     console.error('[Hub] Erro:', error.message);

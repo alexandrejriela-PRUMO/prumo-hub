@@ -33,7 +33,7 @@ export default function Properties() {
   const [selectedProperty, setSelectedProperty] = useState(null);
   
   const queryClient = useQueryClient();
-  const { effectiveEmail, isEquipe, memberRole, loading: effectiveLoading } = useEffectiveUser();
+  const { effectiveEmail, isEquipe, isConsultor: isConsultorType, isProdutor, memberRole, loading: effectiveLoading, user: effectiveUser } = useEffectiveUser();
   const canCreate = !isEquipe || memberRole === 'Administrador';
   const [user, setUser] = useState(null);
 
@@ -41,25 +41,23 @@ export default function Properties() {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
 
-  // consultor e equipe usam filtro por consultor_email (effectiveEmail já aponta para o consultor)
-  const isConsultorOrEquipe = true; // Properties sempre filtra por consultor_email quando disponível
-  const isConsultor = !isEquipe; // Equipe não pode gerenciar usuários da propriedade
+  const isConsultor = isConsultorType || isEquipe; // consultor ou equipe gerencia pelo consultor_email
 
   const { data: ownerProperties = [] } = useQuery({
     queryKey: ['properties-owner', effectiveEmail],
     queryFn: () => base44.entities.Property.filter({ owner_email: effectiveEmail }),
-    enabled: !!effectiveEmail && !isEquipe
+    enabled: !!effectiveEmail && isProdutor
   });
 
   const { data: consultorProperties = [] } = useQuery({
     queryKey: ['properties-consultor', effectiveEmail],
     queryFn: () => base44.entities.Property.filter({ consultor_email: effectiveEmail }),
-    enabled: !!effectiveEmail
+    enabled: !!effectiveEmail && (isConsultorType || isEquipe)
   });
 
-  const properties = consultorProperties.length > 0
-    ? consultorProperties.filter(p => !p.is_client_only)
-    : ownerProperties.filter(p => !p.is_client_only);
+  const properties = isProdutor
+    ? ownerProperties.filter(p => !p.is_client_only)
+    : consultorProperties.filter(p => !p.is_client_only);
   const isLoading = effectiveLoading;
 
   const createMutation = useMutation({

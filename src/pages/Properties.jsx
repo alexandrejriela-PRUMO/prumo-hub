@@ -35,7 +35,7 @@ export default function Properties() {
   const queryClient = useQueryClient();
   const { effectiveEmail, isEquipe, isConsultor: isConsultorType, isProdutor, memberRole, loading: effectiveLoading, user: effectiveUser } = useEffectiveUser();
   const canCreate = !isEquipe || memberRole === 'Administrador';
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(effectiveUser || null);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});

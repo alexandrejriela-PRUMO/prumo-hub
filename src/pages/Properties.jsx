@@ -63,8 +63,9 @@ export default function Properties() {
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Property.create({
       ...data,
-      // Equipe cria propriedades vinculadas ao consultor
-      consultor_email: effectiveEmail,
+      owner_email: data.owner_email || effectiveEmail,
+      // Consultor/equipe vincula ao consultor; produtor não tem consultor_email próprio
+      ...(isConsultorType || isEquipe ? { consultor_email: effectiveEmail } : {}),
     }),
     onSuccess: () => {
       queryClient.invalidateQueries(['properties-owner']);

@@ -91,5 +91,20 @@ export function useEffectiveUser() {
     load();
   }, []);
 
-  return state;
+  const { user, linkedConsultant, memberRole, permissions, isLoading, error } = state;
+  const isEquipe = user?.user_type === 'equipe';
+  const isConsultor = user?.user_type === 'consultor';
+  const isProdutor = user?.user_type === 'produtor' || (!isEquipe && !isConsultor && !!user);
+
+  // effectiveEmail: para consultor/equipe é o email do consultor responsável; para produtor é o próprio email
+  const effectiveEmail = isEquipe || isConsultor ? linkedConsultant : user?.email;
+
+  return {
+    ...state,
+    isEquipe,
+    isConsultor,
+    isProdutor,
+    effectiveEmail,
+    loading: isLoading, // alias para compatibilidade
+  };
 }

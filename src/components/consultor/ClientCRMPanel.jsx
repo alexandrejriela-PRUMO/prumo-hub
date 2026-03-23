@@ -566,13 +566,13 @@ export default function ClientCRMPanel({ property, onClose }) {
           )}
 
           <div className="space-y-2">
-            {(crm?.tasks || []).length === 0 ? (
+            {(activeCRM?.tasks || []).length === 0 ? (
               <div className="text-center py-10">
                 <CheckSquare className="w-10 h-10 mx-auto text-gray-200 mb-2" />
                 <p className="text-sm text-gray-400">Nenhuma tarefa cadastrada</p>
               </div>
             ) : (
-              (crm?.tasks || []).map(task => {
+              (activeCRM?.tasks || []).map(task => {
                 const isOverdue = task.due_date && !task.done && new Date(task.due_date) < new Date();
                 const priorityBadge = {
                   'Alta': 'bg-red-100 text-red-700',

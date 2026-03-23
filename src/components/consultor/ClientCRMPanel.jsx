@@ -215,9 +215,9 @@ export default function ClientCRMPanel({ property, onClose }) {
     if (!newTask.title) { toast.error('Informe o título da tarefa.'); return; }
     let tasks;
     if (editingTask) {
-      tasks = (crm?.tasks || []).map(t => t.id === editingTask.id ? { ...t, ...newTask } : t);
+      tasks = (activeCRM?.tasks || []).map(t => t.id === editingTask.id ? { ...t, ...newTask } : t);
     } else {
-      tasks = [...(crm?.tasks || []), { id: Date.now().toString(), done: false, ...newTask }];
+      tasks = [...(activeCRM?.tasks || []), { id: Date.now().toString(), done: false, ...newTask }];
     }
     upsertCRM.mutate({ tasks });
     if (!editingTask && newTask.responsible_email) {

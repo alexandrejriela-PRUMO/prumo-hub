@@ -71,7 +71,6 @@ const CONSULTOR_PLANS = [
       'Autoatendimento + Webinars periódicos',
       'Fidelidade de 12 meses',
     ],
-    highlight: true,
   },
   {
     id: 'enterprise',
@@ -87,6 +86,7 @@ const CONSULTOR_PLANS = [
     clientAccess: 'Visualizar e baixar documentos',
     training: 'Autoatendimento + Webinars + Treinamentos personalizados',
     commitment: 'Fidelidade de 12 meses',
+    highlight: true,
     features: [
       'Até 3 usuários (consultor + equipe)',
       'Até 200 propriedades/clientes',

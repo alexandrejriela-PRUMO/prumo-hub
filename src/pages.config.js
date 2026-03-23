@@ -158,6 +158,7 @@ export const PAGES = {
     "RuralCredit": RuralCredit,
     "Support": Support,
     "TaxIncentives": TaxIncentives,
+    "AcceptInvite": AcceptInvite,
 }
 
 export const pagesConfig = {

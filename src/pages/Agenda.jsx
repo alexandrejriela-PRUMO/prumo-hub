@@ -13,9 +13,10 @@ import AgendaCalendarView from '../components/agenda/AgendaCalendarView';
 import AgendaSidePanel from '../components/agenda/AgendaSidePanel';
 import AgendaEventModal from '../components/agenda/AgendaEventModal';
 import AgendaEventDetail from '../components/agenda/AgendaEventDetail';
+import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 export default function Agenda() {
-  const [user, setUser] = React.useState(null);
+  const { user, effectiveEmail, isLoading: effectiveLoading } = useEffectiveUser();
   const [selectedDate, setSelectedDate] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
@@ -26,33 +27,29 @@ export default function Agenda() {
 
   const qc = useQueryClient();
 
-  React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
-
   // Load data
   const { data: agendaEvents = [] } = useQuery({
-    queryKey: ['agendaEvents', user?.email],
-    queryFn: () => base44.entities.AgendaEvent.filter({ consultor_email: user.email }, '-start_datetime', 200),
-    enabled: !!user?.email,
+    queryKey: ['agendaEvents', effectiveEmail],
+    queryFn: () => base44.entities.AgendaEvent.filter({ consultor_email: effectiveEmail }, '-start_datetime', 200),
+    enabled: !!effectiveEmail && !effectiveLoading,
   });
 
   const { data: properties = [] } = useQuery({
-    queryKey: ['agendaProperties', user?.email],
-    queryFn: () => base44.entities.Property.filter({ consultor_email: user.email }, 'property_name', 100),
-    enabled: !!user?.email,
+    queryKey: ['agendaProperties', effectiveEmail],
+    queryFn: () => base44.entities.Property.filter({ consultor_email: effectiveEmail }, 'property_name', 100),
+    enabled: !!effectiveEmail && !effectiveLoading,
   });
 
   const { data: crmRecords = [] } = useQuery({
-    queryKey: ['agendaCRM', user?.email],
-    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: user.email }, '-updated_date', 100),
-    enabled: !!user?.email,
+    queryKey: ['agendaCRM', effectiveEmail],
+    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: effectiveEmail }, '-updated_date', 100),
+    enabled: !!effectiveEmail && !effectiveLoading,
   });
 
   const { data: teamMembers = [] } = useQuery({
-    queryKey: ['agendaTeam', user?.email],
-    queryFn: () => base44.entities.TeamMember.filter({ consultor_email: user.email }, 'name', 50),
-    enabled: !!user?.email,
+    queryKey: ['agendaTeam', effectiveEmail],
+    queryFn: () => base44.entities.TeamMember.filter({ consultor_email: effectiveEmail }, 'member_name', 50),
+    enabled: !!effectiveEmail && !effectiveLoading,
   });
 
   // Extract CRM events (tasks + interactions with next_action_date)

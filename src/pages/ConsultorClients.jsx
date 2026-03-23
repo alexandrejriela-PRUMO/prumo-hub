@@ -136,9 +136,10 @@ export default function ConsultorClients() {
                   </button>
                 </div>
 
-                <div className="mb-3">
+                <div className="mb-3 space-y-1">
                   <Badge className="bg-emerald-100 text-emerald-800">Ativo</Badge>
                   {crm.city && <span className="text-xs text-gray-500 ml-2">{crm.city}{crm.state ? `/${crm.state}` : ''}</span>}
+                  <p className="text-xs text-gray-400 font-mono break-all">{crm.consultor_email}</p>
                 </div>
 
                 {(crm.services?.length > 0) && (

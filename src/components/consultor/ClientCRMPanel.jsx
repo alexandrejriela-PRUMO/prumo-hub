@@ -77,6 +77,15 @@ export default function ClientCRMPanel({ property, onClose }) {
     enabled: !!crmConsultorEmail,
   });
 
+  // Nome do consultor: se o usuário atual É o consultor, usa full_name dele; 
+  // se é equipe, o consultor é outra pessoa — buscamos pelo primary_user_email nos membros ou usamos o email
+  const consultorName = useMemo(() => {
+    if (!isEquipe) return currentUser?.full_name || crmConsultorEmail;
+    // Para membros da equipe, o nome do consultor não está em currentUser
+    // Tenta pegar do effectiveData (que pode ter full_name do contexto)
+    return effectiveData?.consultor_name || effectiveData?.full_name || crmConsultorEmail;
+  }, [isEquipe, currentUser, crmConsultorEmail, effectiveData]);
+
   // Lista de pessoas disponíveis para atribuição: consultor + membros da equipe
   const assignableMembers = useMemo(() => {
     const list = [];
@@ -84,7 +93,7 @@ export default function ClientCRMPanel({ property, onClose }) {
     if (crmConsultorEmail) {
       list.push({
         member_email: crmConsultorEmail,
-        member_name: currentUser?.full_name || crmConsultorEmail,
+        member_name: consultorName,
         member_role: 'Consultor',
       });
     }
@@ -95,7 +104,7 @@ export default function ClientCRMPanel({ property, onClose }) {
       }
     });
     return list;
-  }, [teamMembers, crmConsultorEmail, currentUser]);
+  }, [teamMembers, crmConsultorEmail, consultorName]);
 
   const notifyAssignment = async (responsible_email, responsible_name, type, title) => {
     if (!responsible_email) return;

@@ -106,8 +106,8 @@ Deno.serve(async (req) => {
       }
 
       // Contar membros ativos já existentes
-      const activeMembers = await base44.asServiceRole.entities.TeamMember.filter({ primary_user_email: user.email, status: 'Ativo' });
-      const pendingMembers = await base44.asServiceRole.entities.TeamMember.filter({ primary_user_email: user.email, status: 'Pendente' });
+      const activeMembers = await base44.asServiceRole.entities.TeamMember.filter({ primary_user_email: targetConsultorEmail, status: 'Ativo' });
+      const pendingMembers = await base44.asServiceRole.entities.TeamMember.filter({ primary_user_email: targetConsultorEmail, status: 'Pendente' });
       const totalActiveOrPending = activeMembers.length + pendingMembers.length;
 
       if (totalActiveOrPending >= planConfig.max_team_members) {

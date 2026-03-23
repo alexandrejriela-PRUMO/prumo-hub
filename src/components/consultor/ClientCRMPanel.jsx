@@ -445,13 +445,13 @@ export default function ClientCRMPanel({ property, onClose }) {
           )}
 
           <div className="space-y-2">
-            {(crm?.interactions || []).length === 0 ? (
+            {(activeCRM?.interactions || []).length === 0 ? (
               <div className="text-center py-10">
                 <MessageCircle className="w-10 h-10 mx-auto text-gray-200 mb-2" />
                 <p className="text-sm text-gray-400">Nenhuma interação registrada</p>
               </div>
             ) : (
-              [...(crm?.interactions || [])].reverse().map(interaction => {
+              [...(activeCRM?.interactions || [])].reverse().map(interaction => {
                 const Icon = INTERACTION_ICONS[interaction.type] || Clock;
                 return (
                   <div key={interaction.id} className="flex items-start gap-3 p-3 rounded-xl border border-gray-100 bg-white hover:border-emerald-100 hover:bg-emerald-50/20 transition-colors">

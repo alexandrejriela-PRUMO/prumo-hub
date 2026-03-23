@@ -111,6 +111,10 @@ export default function MyTeam() {
 
   const handleInvite = async () => {
     if (!inviteForm.member_email || !inviteForm.member_role) return;
+    if (isAdmin && !inviteForm.primary_user_email) {
+      setInviteError('Informe o email do consultor responsável.');
+      return;
+    }
     setIsInviting(true);
     setInviteError('');
     try {

@@ -34,7 +34,9 @@ Deno.serve(async (req) => {
         });
       }
 
-      const inviteLink = `https://prumo.app/AcceptInvite?token=${inviteToken}`;
+      const origin = req.headers.get('origin') || req.headers.get('referer')?.replace(/\/$/, '') || 'https://prumo.app';
+      const baseUrl = origin.startsWith('http') ? origin : `https://${origin}`;
+      const inviteLink = `${baseUrl}/AcceptInvite?token=${inviteToken}`;
       return Response.json({ success: true, invite_link: inviteLink, token: inviteToken });
     }
 

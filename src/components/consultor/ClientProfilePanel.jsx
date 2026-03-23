@@ -145,30 +145,38 @@ export default function ClientProfilePanel({ client, onUpdate }) {
   });
 
   const createProperty = useMutation({
-    mutationFn: () => base44.entities.Property.create({
-      owner_email: client.client_email,
-      property_name: newPropertyForm.property_name,
-      property_type: newPropertyForm.property_type,
-      location: newPropertyForm.location,
-      city: newPropertyForm.city,
-      state: newPropertyForm.state,
-      main_activity: newPropertyForm.main_activity,
-      activities: newPropertyForm.activities,
-      total_hectares: newPropertyForm.property_type === 'rural' ? (parseFloat(newPropertyForm.total_hectares) || 0) : undefined,
-      app_hectares: newPropertyForm.property_type === 'rural' ? (parseFloat(newPropertyForm.app_hectares) || 0) : undefined,
-      legal_reserve_hectares: newPropertyForm.property_type === 'rural' ? (parseFloat(newPropertyForm.legal_reserve_hectares) || 0) : undefined,
-      total_area_m2: newPropertyForm.property_type === 'urbano' ? (parseFloat(newPropertyForm.total_area_m2) || 0) : undefined,
-      built_area_m2: newPropertyForm.property_type === 'urbano' ? (parseFloat(newPropertyForm.built_area_m2) || 0) : undefined,
-      consultor_email: client.consultor_email,
-      client_name: clientName,
-    }),
+    mutationFn: async () => {
+      const newProp = await base44.entities.Property.create({
+        owner_email: client.client_email,
+        property_name: newPropertyForm.property_name,
+        property_type: newPropertyForm.property_type,
+        location: newPropertyForm.location,
+        city: newPropertyForm.city,
+        state: newPropertyForm.state,
+        main_activity: newPropertyForm.main_activity,
+        activities: newPropertyForm.activities,
+        total_hectares: newPropertyForm.property_type === 'rural' ? (parseFloat(newPropertyForm.total_hectares) || 0) : undefined,
+        app_hectares: newPropertyForm.property_type === 'rural' ? (parseFloat(newPropertyForm.app_hectares) || 0) : undefined,
+        legal_reserve_hectares: newPropertyForm.property_type === 'rural' ? (parseFloat(newPropertyForm.legal_reserve_hectares) || 0) : undefined,
+        total_area_m2: newPropertyForm.property_type === 'urbano' ? (parseFloat(newPropertyForm.total_area_m2) || 0) : undefined,
+        built_area_m2: newPropertyForm.property_type === 'urbano' ? (parseFloat(newPropertyForm.built_area_m2) || 0) : undefined,
+        consultor_email: client.consultor_email,
+        client_name: clientName,
+      });
+      // Sincroniza vinculação no ClientCRM
+      if (client.id) {
+        await base44.entities.ClientCRM.update(client.id, { property_id: newProp.id });
+      }
+      return newProp;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['consultor-properties'] });
+      queryClient.invalidateQueries({ queryKey: ['consultor-crm-clients'] });
       toast.success('Propriedade adicionada!');
       setAddingProperty(false);
       setNewPropertyForm({ property_name:'',property_type:'rural',location:'',city:'',state:'',total_hectares:'',app_hectares:'',legal_reserve_hectares:'',total_area_m2:'',built_area_m2:'',main_activity:'',activities:'' });
     },
-    onError: () => toast.error('Erro ao criar propriedade.')
+    onError: (err) => toast.error('Erro ao criar propriedade: ' + (err.message || ''))
   });
 
   const openEditProperty = (prop) => {

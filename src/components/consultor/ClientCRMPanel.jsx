@@ -121,11 +121,27 @@ export default function ClientCRMPanel({ property, onClose }) {
   const { data: crm, isLoading } = useQuery({
     queryKey: ['client-crm', crmPropertyId],
     queryFn: async () => {
+      if (!crmPropertyId) return null;
       const results = await base44.entities.ClientCRM.filter({ property_id: crmPropertyId });
       return results[0] || null;
     },
     enabled: !!crmPropertyId,
   });
+
+  // Se não encontrou CRM por property_id, tenta por client_email
+  const { data: crmByEmail } = useQuery({
+    queryKey: ['client-crm-email', property?.client_email || property?.owner_email],
+    queryFn: async () => {
+      const email = property?.client_email || property?.owner_email;
+      if (!email) return null;
+      const results = await base44.entities.ClientCRM.filter({ client_email: email });
+      return results[0] || null;
+    },
+    enabled: !crm && !!property?.client_email,
+  });
+
+  // Usa crm encontrado ou fallback
+  const activeCRM = crm || crmByEmail;
 
   const upsertCRM = useMutation({
     mutationFn: (data) => {

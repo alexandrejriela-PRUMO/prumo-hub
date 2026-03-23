@@ -25,16 +25,17 @@ import { createPageUrl } from '@/utils';
 import { useNavigate } from 'react-router-dom';
 import ConsultorOverview from '../components/dashboard/ConsultorOverview';
 import PullToRefresh from '../components/mobile/PullToRefresh';
+import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 export default function Home() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user, effectiveEmail, isEquipe, isConsultor: isConsultorHook, isLoading: effectiveLoading } = useEffectiveUser();
 
   const handleRefresh = async () => {
     await queryClient.invalidateQueries();
   };
 
-  const [user, setUser] = useState(null);
   const [selectedPropertyId, setSelectedPropertyId] = useState(null);
   const [ruteChatOpen, setRuteChatOpen] = useState(false);
   const [filters, setFilters] = useState({
@@ -48,34 +49,22 @@ export default function Home() {
   const urlParams = new URLSearchParams(window.location.search);
   const propertyIdFromUrl = urlParams.get('property_id');
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      } catch (e) {
-        console.log('User not logged in');
-      }
-    };
-    loadUser();
-  }, []);
-
   const { data: properties = [], isLoading: loadingProperties } = useQuery({
-    queryKey: ['properties', user?.email, user?.user_type],
+    queryKey: ['properties', effectiveEmail, isEquipe, isConsultorHook],
     queryFn: () => {
-      if (user?.user_type === 'consultor') {
-        return base44.entities.Property.filter({ consultor_email: user.email });
+      if (isConsultorHook || isEquipe) {
+        return base44.entities.Property.filter({ consultor_email: effectiveEmail });
       }
-      return base44.entities.Property.filter({ owner_email: user.email });
+      return base44.entities.Property.filter({ owner_email: effectiveEmail });
     },
-    enabled: !!user?.email,
+    enabled: !!effectiveEmail && !effectiveLoading,
     initialData: []
   });
 
   const { data: licenses = [], isLoading: loadingLicenses } = useQuery({
-    queryKey: ['licenses', user?.email],
-    queryFn: () => base44.entities.License.filter({ owner_email: user.email }),
-    enabled: !!user?.email,
+    queryKey: ['licenses', effectiveEmail],
+    queryFn: () => base44.entities.License.filter({ owner_email: effectiveEmail }),
+    enabled: !!effectiveEmail && !effectiveLoading,
     initialData: []
   });
 
@@ -87,16 +76,16 @@ export default function Home() {
   });
 
   const { data: documents = [], isLoading: loadingDocuments } = useQuery({
-    queryKey: ['documents', user?.email],
-    queryFn: () => base44.entities.Document.filter({ owner_email: user.email }),
-    enabled: !!user?.email,
+    queryKey: ['documents', effectiveEmail],
+    queryFn: () => base44.entities.Document.filter({ owner_email: effectiveEmail }),
+    enabled: !!effectiveEmail && !effectiveLoading,
     initialData: []
   });
 
   const { data: processes = [], isLoading: loadingProcesses } = useQuery({
-    queryKey: ['processes', user?.email],
-    queryFn: () => base44.entities.Process.filter({ client_email: user.email }),
-    enabled: !!user?.email,
+    queryKey: ['processes', effectiveEmail],
+    queryFn: () => base44.entities.Process.filter({ client_email: effectiveEmail }),
+    enabled: !!effectiveEmail && !effectiveLoading,
     initialData: []
   });
 

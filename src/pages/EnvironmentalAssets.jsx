@@ -240,7 +240,7 @@ export default function EnvironmentalAssets() {
     });
   };
 
-  if (!user) return <div className="p-4 text-center">Carregando...</div>;
+  if (loadingUser) return <div className="p-4 text-center">Carregando...</div>;
 
   return (
     <div className="w-full space-y-6 p-6">
@@ -483,12 +483,12 @@ export default function EnvironmentalAssets() {
           )}
 
           <div className="grid gap-3">
-            {transactions.filter(t => t.seller_email === user.email).length === 0 ? (
+            {transactions.filter(t => t.seller_email === effectiveEmail).length === 0 ? (
               <Card className="border-dashed border-2">
                 <CardContent className="py-12 text-center text-gray-500">Nenhuma oferta de venda</CardContent>
               </Card>
             ) : (
-              transactions.filter(t => t.seller_email === user.email).map(tx => (
+              transactions.filter(t => t.seller_email === effectiveEmail).map(tx => (
                 <Card key={tx.id} className="hover:shadow-lg transition-all border-emerald-100">
                   <CardContent className="p-4">
                     <div className="space-y-3">
@@ -610,12 +610,12 @@ export default function EnvironmentalAssets() {
           )}
 
           <div className="grid gap-3">
-            {transactions.filter(t => t.buyer_email === user.email).length === 0 ? (
+            {transactions.filter(t => t.buyer_email === effectiveEmail).length === 0 ? (
               <Card className="border-dashed border-2">
                 <CardContent className="py-12 text-center text-gray-500">Nenhuma requisição de compra</CardContent>
               </Card>
             ) : (
-              transactions.filter(t => t.buyer_email === user.email).map(tx => (
+              transactions.filter(t => t.buyer_email === effectiveEmail).map(tx => (
                 <Card key={tx.id} className="hover:shadow-lg transition-all border-emerald-100">
                   <CardContent className="p-4">
                     <div className="space-y-3">

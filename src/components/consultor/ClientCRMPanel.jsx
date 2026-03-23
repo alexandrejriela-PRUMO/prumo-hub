@@ -725,13 +725,13 @@ export default function ClientCRMPanel({ property, onClose }) {
           })()}
 
           <div className="space-y-2">
-            {(crm?.services || []).length === 0 ? (
+            {(activeCRM?.services || []).length === 0 ? (
               <div className="text-center py-10">
                 <Briefcase className="w-10 h-10 mx-auto text-gray-200 mb-2" />
                 <p className="text-sm text-gray-400">Nenhum serviço cadastrado</p>
               </div>
             ) : (
-              (crm?.services || []).map((service, i) => {
+              (activeCRM?.services || []).map((service, i) => {
                 const statusColor = {
                   'Em Proposta': 'bg-blue-100 text-blue-700',
                   'Contratado': 'bg-purple-100 text-purple-700',

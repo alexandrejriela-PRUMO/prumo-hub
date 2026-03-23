@@ -137,7 +137,7 @@ Deno.serve(async (req) => {
       // 3. Tentar inviteUser (não-bloqueante) — já envia email de convite pela plataforma Base44
        console.log(`[INVITE] Enviando convite para: ${member_email} | Função: ${member_role}`);
        try {
-         await base44.asServiceRole.users.inviteUser(member_email, 'user');
+         await base44.asServiceRole.inviteUser(member_email, 'user');
          console.log(`[INVITE] ✅ Convite Base44 enviado para ${member_email}`);
        } catch (inviteErr) {
          console.warn(`[INVITE] ⚠️  inviteUser falhou (não-fatal): ${inviteErr.message}`);

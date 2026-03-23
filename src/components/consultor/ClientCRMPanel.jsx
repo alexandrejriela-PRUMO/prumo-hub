@@ -53,13 +53,19 @@ export default function ClientCRMPanel({ property, onClose }) {
   // Usa a primeira propriedade real para associar o CRM
   const firstRealProperty = property?.properties?.find(p => !p.is_client_only) || property?.properties?.[0];
   const crmPropertyId = firstRealProperty?.id || property?.id;
-  const crmConsultorEmail = firstRealProperty?.consultor_email || property?.consultor_email;
+  // Usa consultor_email da propriedade ou fallback para o effectiveEmail (cobre caso de membro da equipe)
+  const crmConsultorEmail = firstRealProperty?.consultor_email || property?.consultor_email || hookEffectiveEmail;
   const crmOwnerEmail = firstRealProperty?.owner_email || property?.owner_email;
 
-  // Membros da equipe do consultor
+  // Membros da equipe do consultor — busca tanto por primary_user_email quanto por consultor_email
   const { data: teamMembers = [] } = useQuery({
     queryKey: ['team-members', crmConsultorEmail],
-    queryFn: () => base44.entities.TeamMember.filter({ primary_user_email: crmConsultorEmail, status: 'Ativo' }),
+    queryFn: async () => {
+      const byPrimary = await base44.entities.TeamMember.filter({ primary_user_email: crmConsultorEmail, status: 'Ativo' });
+      if (byPrimary.length > 0) return byPrimary;
+      // fallback: busca por consultor_email (campo alias)
+      return base44.entities.TeamMember.filter({ consultor_email: crmConsultorEmail, status: 'Ativo' });
+    },
     enabled: !!crmConsultorEmail,
   });
 

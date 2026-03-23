@@ -154,25 +154,6 @@ Deno.serve(async (req) => {
       });
       console.log(`✅ [REGISTRO CRIADO] TeamMember id=${member.id} | Email: ${member_email} | Função: ${member.member_role} | Status: Pendente`);
 
-      // 5. Chamar função de envio de email com link de convite
-      const inviteLink = `https://prumo.app/AcceptInvite?token=${inviteToken}`;
-      try {
-        const emailRes = await base44.asServiceRole.functions.invoke('sendTeamInviteEmail', {
-          member_email,
-          member_name: member_name || '',
-          member_role: member_role || 'Membro da Equipe',
-          consultor_name: user.full_name || user.email,
-          app_url: inviteLink
-        });
-        if (emailRes.data?.success) {
-          console.log(`✅ [EMAIL ENVIADO] Convite enviado para ${member_email} | Função: ${member_role}`);
-        } else {
-          console.warn(`⚠️  [EMAIL SKIP] Não foi possível enviar (será enviado via reenvio)`);
-        }
-      } catch (emailErr) {
-        console.warn(`⚠️  [EMAIL SKIP] Erro ao enviar convite (não-fatal): ${emailErr.message}`);
-      }
-
       console.log(`🎉 [CONVITE COMPLETO] Email=${member_email} | Função=${member.member_role} | ID=${member.id} | Status=Pendente`);
       return Response.json({ success: true, member });
     }

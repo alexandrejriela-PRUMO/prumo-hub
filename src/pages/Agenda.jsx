@@ -48,7 +48,19 @@ export default function Agenda() {
 
   const { data: teamMembers = [] } = useQuery({
     queryKey: ['agendaTeam', effectiveEmail],
-    queryFn: () => base44.entities.TeamMember.filter({ consultor_email: effectiveEmail }, 'member_name', 50),
+    queryFn: async () => {
+      const [byPrimary, byConsultor] = await Promise.all([
+        base44.entities.TeamMember.filter({ primary_user_email: effectiveEmail, status: 'Ativo' }),
+        base44.entities.TeamMember.filter({ consultor_email: effectiveEmail, status: 'Ativo' }),
+      ]);
+      const all = [...byPrimary, ...byConsultor];
+      const seen = new Set();
+      return all.filter(m => {
+        if (seen.has(m.member_email)) return false;
+        seen.add(m.member_email);
+        return true;
+      });
+    },
     enabled: !!effectiveEmail && !effectiveLoading,
   });
 

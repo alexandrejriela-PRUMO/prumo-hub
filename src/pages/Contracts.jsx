@@ -87,13 +87,13 @@ export default function Contracts() {
   });
 
   const { data: contracts = [], isLoading } = useQuery({
-    queryKey: ['contracts', user?.email, selectedPropertyId],
+    queryKey: ['contracts', effectiveEmail, selectedPropertyId],
     queryFn: () => isConsultor
       ? selectedPropertyId
-        ? base44.entities.ClientContract.filter({ consultor_email: user.email, property_id: selectedPropertyId })
-        : base44.entities.ClientContract.filter({ consultor_email: user.email })
-      : base44.entities.ClientContract.filter({ client_email: user.email }),
-    enabled: !!user?.email,
+        ? base44.entities.ClientContract.filter({ consultor_email: effectiveEmail, property_id: selectedPropertyId })
+        : base44.entities.ClientContract.filter({ consultor_email: effectiveEmail })
+      : base44.entities.ClientContract.filter({ client_email: effectiveEmail }),
+    enabled: !!effectiveEmail && !effectiveLoading,
     initialData: [],
   });
 

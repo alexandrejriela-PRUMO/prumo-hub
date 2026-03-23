@@ -95,7 +95,7 @@ export default function ClientCRMPanel({ property, onClose }) {
       }
     });
     return list;
-  }, [teamMembers, crmConsultorEmail, authUser]);
+  }, [teamMembers, crmConsultorEmail, currentUser]);
 
   const notifyAssignment = async (responsible_email, responsible_name, type, title) => {
     if (!responsible_email) return;

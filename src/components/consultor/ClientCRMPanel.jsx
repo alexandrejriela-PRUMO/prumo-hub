@@ -357,7 +357,7 @@ export default function ClientCRMPanel({ property, onClose }) {
             </div>
           </div>
         </div>
-        <Select value={crm?.status || 'Ativo'} onValueChange={updateStatus}>
+        <Select value={activeCRM?.status || 'Ativo'} onValueChange={updateStatus}>
           <SelectTrigger className="w-full sm:w-40 h-9 text-sm">
             <SelectValue />
           </SelectTrigger>

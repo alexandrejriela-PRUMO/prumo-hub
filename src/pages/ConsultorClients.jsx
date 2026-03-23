@@ -27,10 +27,10 @@ export default function ConsultorClients() {
   const canCreate = !isEquipe || memberRole === 'Administrador';
   const canViewFinancial = !isEquipe || memberRole === 'Administrador';
 
-  // Busca apenas clientes Ativos do CRM (usando effectiveEmail = consultor)
+  // Busca todos os clientes do consultor, independente do status
   const { data: crmClients = [], isLoading } = useQuery({
     queryKey: ['consultor-crm-clients', effectiveEmail],
-    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: effectiveEmail, status: 'Ativo' }),
+    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: effectiveEmail }),
     enabled: !!effectiveEmail,
   });
 

@@ -121,13 +121,35 @@ export default function AgendaEventModal({ event, initialDate, user, properties,
     setLoading(false);
   };
 
-  const allAssignees = [
-    { email: user?.email, name: user?.full_name || 'Eu (você)' },
-    ...(teamMembers || []).filter(m => (m.email || m.member_email) !== user?.email).map(m => ({
-      email: m.email || m.member_email,
-      name: m.full_name || m.name || m.email || m.member_email
-    }))
-  ];
+  // Monta lista de responsáveis: consultor (dono) + todos os membros da equipe
+  // O consultor vem do primary_user_email do primeiro membro, ou do user.email se não houver membros
+  const consultorEmail = teamMembers?.[0]?.primary_user_email || teamMembers?.[0]?.consultor_email || user?.email;
+  const allAssigneeEmails = new Set();
+  const allAssignees = [];
+
+  // Sempre inclui o consultor principal
+  if (consultorEmail) {
+    allAssigneeEmails.add(consultorEmail);
+    allAssignees.push({
+      email: consultorEmail,
+      name: consultorEmail === user?.email ? (user?.full_name || 'Eu (você)') : consultorEmail,
+    });
+  }
+
+  // Inclui o usuário atual caso seja membro da equipe (diferente do consultor)
+  if (user?.email && !allAssigneeEmails.has(user.email)) {
+    allAssigneeEmails.add(user.email);
+    allAssignees.push({ email: user.email, name: user.full_name || 'Eu (você)' });
+  }
+
+  // Inclui todos os membros ativos
+  (teamMembers || []).forEach(m => {
+    const email = m.member_email;
+    if (email && !allAssigneeEmails.has(email)) {
+      allAssigneeEmails.add(email);
+      allAssignees.push({ email, name: m.member_name || email });
+    }
+  });
 
   return (
     <Dialog open onOpenChange={onClose}>

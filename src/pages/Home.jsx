@@ -110,7 +110,7 @@ export default function Home() {
     initialData: []
   });
 
-  const isLoading = loadingProperties || loadingLicenses || loadingInvoices || loadingDocuments || loadingProcesses || loadingAlerts;
+  const isLoading = effectiveLoading || loadingProperties || loadingLicenses || loadingInvoices || loadingDocuments || loadingProcesses || loadingAlerts;
 
   // Auto-select first property when properties load
   useEffect(() => {
@@ -129,7 +129,7 @@ export default function Home() {
   }, [properties, propertyIdFromUrl, selectedPropertyId]);
 
   const selectedProperty = properties.find((p) => p.id === selectedPropertyId) || properties[0];
-  const isConsultor = user?.user_type === 'consultor';
+  const isConsultor = isConsultorHook || isEquipe;
   const isDashboardView = !!propertyIdFromUrl; // Se tem property_id na URL, é o dashboard detalhado
   
   // Apply filters

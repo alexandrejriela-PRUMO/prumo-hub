@@ -169,11 +169,11 @@ export default function ClientCRMPanel({ property, onClose }) {
     if (!newInteraction.title) { toast.error('Informe o título da interação.'); return; }
     let interactions;
     if (editingInteraction) {
-      interactions = (crm?.interactions || []).map(i =>
+      interactions = (activeCRM?.interactions || []).map(i =>
         i.id === editingInteraction.id ? { ...i, ...newInteraction } : i
       );
     } else {
-      interactions = [...(crm?.interactions || []), {
+      interactions = [...(activeCRM?.interactions || []), {
         id: Date.now().toString(), date: new Date().toISOString(),
         ...newInteraction, created_by: crmConsultorEmail,
       }];

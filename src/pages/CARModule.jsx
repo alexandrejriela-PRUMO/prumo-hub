@@ -43,25 +43,20 @@ const recoveryColors = {
 };
 
 export default function CARModule() {
-  const [user, setUser] = useState(null);
   const [consultorPropertyId, setConsultorPropertyId] = useState(null);
   const [editOpen, setEditOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
-
-  const isConsultor = user?.user_type === 'consultor' || user?.user_type === 'equipe';
-  const { isEquipe, memberRole } = useEffectiveUser();
+  const { effectiveEmail, userType, isEquipe, memberRole, user } = useEffectiveUser();
+  const isConsultor = userType === 'consultor' || userType === 'equipe';
   const canEdit = !isEquipe || memberRole === 'Administrador' || memberRole === 'Engenheiro';
 
   const { data: properties = [], isLoading: propsLoading } = useQuery({
-    queryKey: ['properties', user?.email, user?.user_type],
+    queryKey: ['properties', effectiveEmail, userType],
     queryFn: () => isConsultor
-      ? base44.entities.Property.filter({ consultor_email: user.email })
-      : base44.entities.Property.filter({ owner_email: user.email }),
-    enabled: !!user?.email,
+      ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
+      : base44.entities.Property.filter({ owner_email: effectiveEmail }),
+    enabled: !!effectiveEmail,
     initialData: [],
   });
 

@@ -11,33 +11,22 @@ import WeatherForecast from '../components/climate/WeatherForecast';
 import ClimateAlerts from '../components/climate/ClimateAlerts';
 import ClimateHistory from '../components/history/ClimateHistory';
 import ClimateHistoryExport from '../components/climate/ClimateHistoryExport';
+import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 export default function ClimateMonitoring() {
-  const [user, setUser] = useState(null);
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      } catch (e) {
-        console.log('User not logged in');
-      }
-    };
-    loadUser();
-  }, []);
-
-  const isConsultor = user?.user_type === 'consultor' || user?.user_type === 'equipe';
+  const { effectiveEmail, userType, isLoading: loadingUser } = useEffectiveUser();
+  const isConsultor = userType === 'consultor' || userType === 'equipe';
 
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties', user?.email],
+    queryKey: ['properties', effectiveEmail, userType],
     queryFn: () => isConsultor
-      ? base44.entities.Property.filter({ consultor_email: user.email })
-      : base44.entities.Property.filter({ owner_email: user.email }),
-    enabled: !!user?.email
+      ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
+      : base44.entities.Property.filter({ owner_email: effectiveEmail }),
+    enabled: !!effectiveEmail
   });
 
   useEffect(() => {
@@ -177,7 +166,7 @@ export default function ClimateMonitoring() {
     }
   });
 
-  if (!user) {
+  if (loadingUser) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center gap-3">

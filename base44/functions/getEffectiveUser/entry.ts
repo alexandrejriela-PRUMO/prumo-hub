@@ -1,12 +1,9 @@
 /**
  * getEffectiveUser — Retorna o email efetivo para queries de dados.
  *
- * Se o usuário for do tipo 'equipe', retorna o email do consultor vinculado.
- * Se não houver vínculo ativo, retorna erro.
- * Se for consultor/produtor, retorna o próprio usuário.
- *
- * Uso no frontend: base44.functions.invoke('getEffectiveUser', {})
- * Uso no backend: base44.functions.invoke('getEffectiveUser', {})
+ * Busca o TeamMember pelo email do usuário (independente do user_type).
+ * Se encontrar vínculo ativo, retorna o email do consultor e as permissões.
+ * Se for consultor/produtor sem vínculo de equipe, retorna o próprio usuário.
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 
@@ -16,8 +13,8 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // Se não for equipe, retorna o próprio usuário
-    if (user.user_type !== 'equipe') {
+    // Se for consultor ou admin, retorna o próprio usuário imediatamente
+    if (user.user_type === 'consultor' || user.role === 'admin') {
       return Response.json({
         email: user.email,
         actual_email: user.email,
@@ -28,79 +25,74 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Busca vínculo ativo com consultor
+    // Para qualquer tipo de usuário (incluindo 'equipe', 'user', null, etc.),
+    // buscar se existe um TeamMember ativo vinculado a este email
     const memberships = await base44.asServiceRole.entities.TeamMember.filter({
       member_email: user.email,
       status: 'Ativo',
     });
 
-    if (memberships.length === 0) {
-      // Pode estar pendente — tentar pendente também
-      const pending = await base44.asServiceRole.entities.TeamMember.filter({
-        member_email: user.email,
-        status: 'Pendente',
-      });
+    if (memberships.length > 0) {
+      const membership = memberships[0];
+      const consultorEmail = membership.primary_user_email;
 
-      if (pending.length === 0) {
-        return Response.json({
-          error: 'Nenhum vínculo ativo encontrado. Solicite ao consultor que ative seu acesso.',
-          no_binding: true,
-        }, { status: 403 });
+      // Busca dados do consultor (nome + plano)
+      let consultorName = consultorEmail;
+      let consultorPlan = 'start';
+      try {
+        const consultorUsers = await base44.asServiceRole.entities.User.filter({ email: consultorEmail });
+        if (consultorUsers.length > 0) {
+          consultorName = consultorUsers[0].full_name || consultorEmail;
+          consultorPlan = consultorUsers[0].consultor_plan || 'start';
+        }
+      } catch (e) {
+        console.warn('[getEffectiveUser] Não foi possível buscar dados do consultor:', e.message);
       }
 
-      // Está pendente — retorna o próprio email mas avisa
+      const VIEWER_PERMS = {
+        office:           { view: true,  edit: false },
+        property_center:  { view: true,  edit: false },
+        advanced_modules: { access: false },
+        reports:          { view: false },
+        ai_chat:          { access: true },
+        team_management:  { manage: false },
+        financial:        { view: false },
+      };
+      const permissions = membership.permissions || VIEWER_PERMS;
+
+      // Garantir que o user_type seja 'equipe' caso ainda não esteja
+      if (user.user_type !== 'equipe') {
+        try {
+          await base44.auth.updateMe({ user_type: 'equipe' });
+          console.log(`[getEffectiveUser] user_type atualizado para 'equipe' para ${user.email}`);
+        } catch (e) {
+          console.warn('[getEffectiveUser] Não foi possível atualizar user_type:', e.message);
+        }
+      }
+
       return Response.json({
-        email: user.email,
-        actual_email: user.email,
-        full_name: user.full_name,
-        user_type: user.user_type,
-        consultor_email: pending[0].primary_user_email,
+        email: consultorEmail,           // email para usar em queries (como se fosse o consultor)
+        actual_email: user.email,        // email real do membro da equipe
+        full_name: user.full_name,       // nome do membro
+        user_type: 'equipe',
+        consultor_email: consultorEmail,
+        consultor_name: consultorName,
+        consultor_plan: consultorPlan,
+        member_role: membership.member_role,
+        permissions,
         is_equipe: true,
-        is_pending: true,
-        warning: 'Seu acesso está pendente de ativação pelo consultor.',
+        is_pending: false,
       });
     }
 
-    const membership = memberships[0];
-    const consultorEmail = membership.primary_user_email;
-
-    // Busca dados do consultor (nome + plano)
-    let consultorName = consultorEmail;
-    let consultorPlan = 'start';
-    try {
-      const consultorUsers = await base44.asServiceRole.entities.User.filter({ email: consultorEmail });
-      if (consultorUsers.length > 0) {
-        consultorName = consultorUsers[0].full_name || consultorEmail;
-        consultorPlan = consultorUsers[0].consultor_plan || 'start';
-      }
-    } catch (e) {
-      console.warn('[getEffectiveUser] Não foi possível buscar dados do consultor:', e.message);
-    }
-
-    // Permissões efetivas do membro (usa default se não tiver)
-    const VIEWER_PERMS = {
-      office:           { view: true,  edit: false },
-      property_center:  { view: true,  edit: false },
-      advanced_modules: { access: false },
-      reports:          { view: false },
-      ai_chat:          { access: true },
-      team_management:  { manage: false },
-      financial:        { view: false },
-    };
-    const permissions = membership.permissions || VIEWER_PERMS;
-
+    // Sem vínculo ativo — retorna o próprio usuário
     return Response.json({
-      email: consultorEmail,           // email para usar em queries (como se fosse o consultor)
-      actual_email: user.email,        // email real do membro da equipe
-      full_name: user.full_name,       // nome do membro
-      user_type: user.user_type,       // 'equipe'
-      consultor_email: consultorEmail, // alias explícito
-      consultor_name: consultorName,
-      consultor_plan: consultorPlan,
-      member_role: membership.member_role,
-      permissions,
-      is_equipe: true,
-      is_pending: false,
+      email: user.email,
+      actual_email: user.email,
+      full_name: user.full_name,
+      user_type: user.user_type,
+      consultor_email: null,
+      is_equipe: false,
     });
 
   } catch (error) {

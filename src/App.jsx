@@ -20,6 +20,7 @@ const FinancialDashboard = React.lazy(() => import('./pages/FinancialDashboard')
 const RuralCredit = React.lazy(() => import('./pages/RuralCredit'));
 const HarvestLoss = React.lazy(() => import('./pages/HarvestLoss'));
 const CRA = React.lazy(() => import('./pages/CRA'));
+const AcceptInvite = React.lazy(() => import('./pages/AcceptInvite'));
 
 const CampMode = React.lazy(() => import('./pages/CampMode'));
 const PropertyCentral = React.lazy(() => import('./pages/PropertyCentral'));

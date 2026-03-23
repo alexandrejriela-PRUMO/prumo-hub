@@ -110,6 +110,27 @@ export default function MyTeam() {
      }
    });
 
+  const handleCopyInviteLink = async (memberId) => {
+    setLoadingLinkId(memberId);
+    try {
+      const res = await base44.functions.invoke('generateInviteLink', {
+        action: 'generate',
+        member_id: memberId,
+      });
+      const link = res.data?.invite_link;
+      if (link) {
+        await navigator.clipboard.writeText(link);
+        toast.success('🔗 Link de convite copiado! Compartilhe com o membro.');
+      } else {
+        toast.error('Erro ao gerar link.');
+      }
+    } catch (err) {
+      toast.error('Erro ao gerar link de convite.');
+    } finally {
+      setLoadingLinkId(null);
+    }
+  };
+
   const handleInvite = async () => {
     if (!inviteForm.member_email || !inviteForm.member_role) return;
     setIsInviting(true);

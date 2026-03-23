@@ -287,7 +287,7 @@ export default function ClientCRMPanel({ property, onClose }) {
   };
 
   const deleteService = (index) => {
-    const services = (crm?.services || []).filter((_, i) => i !== index);
+    const services = (activeCRM?.services || []).filter((_, i) => i !== index);
     upsertCRM.mutate({ services });
     toast.success('Serviço removido.');
   };
@@ -295,14 +295,14 @@ export default function ClientCRMPanel({ property, onClose }) {
   const updateStatus = (status) => upsertCRM.mutate({ status });
 
   const saveInteractionThread = (interactionId, thread) => {
-    const interactions = (crm?.interactions || []).map(i =>
+    const interactions = (activeCRM?.interactions || []).map(i =>
       i.id === interactionId ? { ...i, thread } : i
     );
     return upsertCRM.mutateAsync({ interactions });
   };
 
   const saveTaskThread = (taskId, thread) => {
-    const tasks = (crm?.tasks || []).map(t =>
+    const tasks = (activeCRM?.tasks || []).map(t =>
       t.id === taskId ? { ...t, thread } : t
     );
     return upsertCRM.mutateAsync({ tasks });

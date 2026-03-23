@@ -54,8 +54,12 @@ export default function ConsultorClients() {
   // Enriquece o client com propriedades vinculadas para o perfil
   const enrichClient = (crm) => {
     const clientProps = properties.filter(p => {
+      // Vinculação primária por property_id
       if (crm.property_id && p.id === crm.property_id) return true;
+      // Vinculação secundária por email do cliente
       if (crm.client_email && p.owner_email === crm.client_email) return true;
+      // Vinculação terciária por nome do cliente na propriedade
+      if (crm.client_name && p.client_name === crm.client_name) return true;
       return false;
     });
     return { ...crm, properties: clientProps };

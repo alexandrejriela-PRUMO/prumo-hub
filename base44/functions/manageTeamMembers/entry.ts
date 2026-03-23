@@ -174,7 +174,7 @@ Deno.serve(async (req) => {
 
       console.log(`[TeamInvite] Reenviando convite para ${member.member_email}`);
       try {
-        await base44.users.inviteUser(member.member_email, 'user');
+        await base44.asServiceRole.users.inviteUser(member.member_email, 'user');
         console.log(`[TeamInvite] ✅ Convite reenviado para ${member.member_email}`);
       } catch (inviteErr) {
         console.warn(`[TeamInvite] inviteUser falhou (não-fatal): ${inviteErr.message}`);

@@ -52,23 +52,44 @@ export function useEffectiveUser() {
           return;
         }
 
-        // Se for equipe, buscar TeamMember
+        // Se for equipe, usar consultor_email salvo no próprio perfil do usuário
         if (user.user_type === 'equipe') {
-          const members = await base44.asServiceRole.entities.TeamMember.filter({
-            member_email: user.email,
-            status: 'Ativo'
-          });
-          
-          if (members.length === 0) {
-            throw new Error('Nenhuma filiação de equipe ativa encontrada. Você pode não ter aceitado o convite ainda.');
+          const consultorEmail = user.consultor_email || user.team_member_of;
+
+          if (!consultorEmail) {
+            throw new Error('Nenhum consultor vinculado encontrado no seu perfil.');
           }
-          
-          const member = members[0];
-          setState(s => ({ ...s, 
+
+          // Buscar permissões do TeamMember (o próprio usuário pode ler seus registros)
+          let permissions = {
+            office: { view: true, edit: true },
+            property_center: { view: true, edit: true },
+            advanced_modules: { access: true },
+            reports: { view: true },
+            ai_chat: { access: true },
+            team_management: { manage: false },
+            financial: { view: true }
+          };
+          let memberRole = user.team_member_role || 'Outro';
+
+          try {
+            const members = await base44.entities.TeamMember.filter({
+              member_email: user.email,
+              status: 'Ativo'
+            });
+            if (members.length > 0) {
+              permissions = members[0].permissions || permissions;
+              memberRole = members[0].member_role || memberRole;
+            }
+          } catch (e) {
+            console.warn('[useEffectiveUser] Não foi possível buscar TeamMember, usando permissões padrão:', e.message);
+          }
+
+          setState(s => ({ ...s,
             user,
-            linkedConsultant: member.primary_user_email,
-            memberRole: member.member_role,
-            permissions: member.permissions || {},
+            linkedConsultant: consultorEmail,
+            memberRole,
+            permissions,
             isLoading: false
           }));
           return;

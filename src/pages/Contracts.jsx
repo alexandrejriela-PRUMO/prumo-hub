@@ -52,7 +52,7 @@ const EMPTY_FORM = {
 };
 
 export default function Contracts() {
-  const [user, setUser] = useState(null);
+  const { user, effectiveEmail, isEquipe, isConsultor: isConsultorHook, isLoading: effectiveLoading } = useEffectiveUser();
   const [selectedPropertyId, setSelectedPropertyId] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingContract, setEditingContract] = useState(null);

@@ -77,14 +77,11 @@ export default function ClientCRMPanel({ property, onClose }) {
     enabled: !!crmConsultorEmail,
   });
 
-  // Nome do consultor: se o usuário atual É o consultor, usa full_name dele; 
-  // se é equipe, o consultor é outra pessoa — buscamos pelo primary_user_email nos membros ou usamos o email
+  // Nome do consultor: se é equipe usa o nome vindo do backend; caso contrário usa o próprio usuário
   const consultorName = useMemo(() => {
-    if (!isEquipe) return currentUser?.full_name || crmConsultorEmail;
-    // Para membros da equipe, o nome do consultor não está em currentUser
-    // Tenta pegar do effectiveData (que pode ter full_name do contexto)
-    return effectiveData?.consultor_name || effectiveData?.full_name || crmConsultorEmail;
-  }, [isEquipe, currentUser, crmConsultorEmail, effectiveData]);
+    if (isEquipe && hookConsultorName) return hookConsultorName;
+    return currentUser?.full_name || crmConsultorEmail;
+  }, [isEquipe, hookConsultorName, currentUser, crmConsultorEmail]);
 
   // Lista de pessoas disponíveis para atribuição: consultor + membros da equipe
   const assignableMembers = useMemo(() => {

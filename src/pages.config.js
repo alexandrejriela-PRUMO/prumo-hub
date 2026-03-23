@@ -100,6 +100,7 @@ import Requests from './pages/Requests';
 import RuralCredit from './pages/RuralCredit';
 import Support from './pages/Support';
 import TaxIncentives from './pages/TaxIncentives';
+import AcceptInvite from './pages/AcceptInvite';
 import __Layout from './Layout.jsx';
 
 

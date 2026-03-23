@@ -57,17 +57,45 @@ export default function ClientCRMPanel({ property, onClose }) {
   const crmConsultorEmail = firstRealProperty?.consultor_email || property?.consultor_email || hookEffectiveEmail;
   const crmOwnerEmail = firstRealProperty?.owner_email || property?.owner_email;
 
-  // Membros da equipe do consultor — busca tanto por primary_user_email quanto por consultor_email
+  // Membros da equipe do consultor — busca por primary_user_email E por consultor_email (campo alias), une os resultados
   const { data: teamMembers = [] } = useQuery({
     queryKey: ['team-members', crmConsultorEmail],
     queryFn: async () => {
-      const byPrimary = await base44.entities.TeamMember.filter({ primary_user_email: crmConsultorEmail, status: 'Ativo' });
-      if (byPrimary.length > 0) return byPrimary;
-      // fallback: busca por consultor_email (campo alias)
-      return base44.entities.TeamMember.filter({ consultor_email: crmConsultorEmail, status: 'Ativo' });
+      const [byPrimary, byConsultor] = await Promise.all([
+        base44.entities.TeamMember.filter({ primary_user_email: crmConsultorEmail, status: 'Ativo' }),
+        base44.entities.TeamMember.filter({ consultor_email: crmConsultorEmail, status: 'Ativo' }),
+      ]);
+      // Une e deduplica pelo member_email
+      const all = [...byPrimary, ...byConsultor];
+      const seen = new Set();
+      return all.filter(m => {
+        if (seen.has(m.member_email)) return false;
+        seen.add(m.member_email);
+        return true;
+      });
     },
     enabled: !!crmConsultorEmail,
   });
+
+  // Lista de pessoas disponíveis para atribuição: consultor + membros da equipe
+  const assignableMembers = React.useMemo(() => {
+    const list = [];
+    // Adiciona o próprio consultor como opção
+    if (crmConsultorEmail) {
+      list.push({
+        member_email: crmConsultorEmail,
+        member_name: authUser?.full_name || crmConsultorEmail,
+        member_role: 'Consultor',
+      });
+    }
+    // Adiciona membros da equipe (evita duplicar o consultor)
+    teamMembers.forEach(m => {
+      if (m.member_email !== crmConsultorEmail) {
+        list.push(m);
+      }
+    });
+    return list;
+  }, [teamMembers, crmConsultorEmail, authUser]);
 
   const notifyAssignment = async (responsible_email, responsible_name, type, title) => {
     if (!responsible_email) return;

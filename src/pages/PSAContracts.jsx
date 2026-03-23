@@ -62,10 +62,10 @@ export default function PSAContractsPage() {
   const propertyIds = new Set(properties.map(p => p.id));
 
   const { data: allContracts = [], isLoading } = useQuery({
-    queryKey: ['psaContracts', effectiveEmail],
+    queryKey: ['psaContracts', effectiveEmail, Array.from(propertyIds).join(',')],
     queryFn: () => base44.entities.PSAContract.list('-created_date', 1000),
-    enabled: !!effectiveEmail,
-    select: (data) => data.filter(c => propertyIds.size === 0 || propertyIds.has(c.property_id)),
+    enabled: !!effectiveEmail && properties.length > 0,
+    select: (data) => data.filter(c => propertyIds.has(c.property_id)),
   });
 
   const createMutation = useMutation({

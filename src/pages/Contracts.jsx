@@ -63,18 +63,14 @@ export default function Contracts() {
   const [uploading, setUploading] = useState(false);
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
-
-  const isConsultor = user?.user_type === 'consultor' || user?.user_type === 'equipe';
+  const isConsultor = isConsultorHook || isEquipe;
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
-    queryKey: ['properties', user?.email],
+    queryKey: ['properties', effectiveEmail, isConsultor],
     queryFn: () => isConsultor
-      ? base44.entities.Property.filter({ consultor_email: user.email })
-      : base44.entities.Property.filter({ owner_email: user.email }),
-    enabled: !!user?.email,
+      ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
+      : base44.entities.Property.filter({ owner_email: effectiveEmail }),
+    enabled: !!effectiveEmail && !effectiveLoading,
   });
 
   // For CRM data to auto-fill client info

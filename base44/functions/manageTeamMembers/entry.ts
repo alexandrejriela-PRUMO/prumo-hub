@@ -202,19 +202,23 @@ Deno.serve(async (req) => {
        }
 
       const now = new Date().toISOString();
+      // Garante que tem token — gera um novo se não tiver
+      const resendToken = member.invite_token || crypto.randomUUID();
       await base44.asServiceRole.entities.TeamMember.update(member_id, {
         invited_at: now,
         expires_at: expiresAt(),
+        invite_token: resendToken,
       });
 
-      // Email personalizado de reenvio
+      // Email personalizado de reenvio com link
+      const resendInviteLink = `https://prumo.app/AcceptInvite?token=${resendToken}`;
       try {
         const emailRes = await base44.asServiceRole.functions.invoke('sendTeamInviteEmail', {
           member_email: member.member_email,
           member_name: member.member_name || '',
           member_role: member.member_role || 'Membro da Equipe',
           consultor_name: user.full_name || user.email,
-          app_url: 'https://prumo.app'
+          app_url: resendInviteLink
         });
         if (emailRes.data?.success) {
           console.log(`✅ [REENVIO ENVIADO] Convite reenviado para ${member.member_email}`);

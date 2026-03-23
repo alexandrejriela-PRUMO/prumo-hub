@@ -35,6 +35,7 @@ const INTERACTION_ICONS = {
 
 export default function ClientCRMPanel({ property, onClose }) {
   const queryClient = useQueryClient();
+  const { user: authUser, effectiveEmail: hookEffectiveEmail } = useEffectiveUser();
   const [currentUser, setCurrentUser] = React.useState(null);
   React.useEffect(() => { base44.auth.me().then(setCurrentUser).catch(() => {}); }, []);
   const [showInteractionForm, setShowInteractionForm] = useState(false);

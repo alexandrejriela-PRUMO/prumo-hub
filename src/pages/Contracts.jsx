@@ -161,7 +161,7 @@ export default function Contracts() {
     e.preventDefault();
     const data = {
       ...formData,
-      consultor_email: user?.email,
+      consultor_email: effectiveEmail,
       total_value: formData.total_value ? parseFloat(formData.total_value) : undefined,
     };
     if (editingContract) {

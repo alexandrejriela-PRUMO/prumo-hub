@@ -75,7 +75,7 @@ export default function Contracts() {
 
   // For CRM data to auto-fill client info
   const { data: crmList = [] } = useQuery({
-    queryKey: ['crm-all', user?.email],
+    queryKey: ['crm-all', effectiveEmail],
     queryFn: async () => {
       if (!properties.length) return [];
       const results = await Promise.all(

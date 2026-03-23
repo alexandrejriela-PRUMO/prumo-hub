@@ -149,8 +149,8 @@ Deno.serve(async (req) => {
       const inviteToken = crypto.randomUUID();
       console.log(`📝 [CRIANDO REGISTRO] TeamMember para ${member_email} com função: ${member_role}`);
       const member = await base44.asServiceRole.entities.TeamMember.create({
-        primary_user_email: user.email,
-        consultor_email: user.email,
+        primary_user_email: targetConsultorEmail,
+        consultor_email: targetConsultorEmail,
         member_email,
         member_name: member_name || '',
         member_role: member_role || 'Outro',

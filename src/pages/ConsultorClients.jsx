@@ -115,7 +115,7 @@ export default function ConsultorClients() {
             Meus Clientes
           </h1>
           <p className="text-gray-500 mt-1">
-            {isEquipe ? `Visualizando clientes do consultor vinculado. ` : ''}Você tem {crmClients.length} cliente(s) ativo(s).
+            {isEquipe ? `Visualizando clientes do consultor vinculado. ` : ''}Você tem {allClients.length} cliente(s) ativo(s).
           </p>
         </div>
         {canCreate && <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowNewClientForm(true)}>

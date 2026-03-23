@@ -90,6 +90,7 @@ export function useEffectiveUser() {
     user,
     effectiveEmail,
     linkedConsultant,
+    consultorName,
     memberRole,
     permissions,
     userType,

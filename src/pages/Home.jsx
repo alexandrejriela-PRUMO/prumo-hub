@@ -210,8 +210,8 @@ export default function Home() {
     }
   }, [user]);
 
-  // Se é consultor E está na view de overview (sem property_id), mostra painel de consultoria
-  if (isConsultor && !isDashboardView) {
+  // Se é consultor/equipe E está na view de overview (sem property_id), mostra painel de consultoria
+  if ((isConsultorHook || isEquipe) && !isDashboardView) {
     return <ConsultorOverview user={user} properties={properties} isLoading={isLoading} />;
   }
 

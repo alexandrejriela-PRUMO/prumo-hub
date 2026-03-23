@@ -36,10 +36,26 @@ export default function PropertyLinkManager({ client, properties, onRefresh }) {
       await base44.entities.Property.update(propertyId, {
         owner_email: client.client_email,
         client_name: client.client_name,
+        consultor_email: client.consultor_email,
       });
-      // Atualiza CRM com referência à propriedade
+      // Se CRM existe, atualiza; se não, cria novo
       if (client.id) {
-        await base44.entities.ClientCRM.update(client.id, { property_id: propertyId });
+        await base44.entities.ClientCRM.update(client.id, { 
+          property_id: propertyId,
+          client_name: client.client_name,
+          client_email: client.client_email,
+          consultor_email: client.consultor_email,
+        });
+      } else {
+        // Cria novo CRM se não existir
+        await base44.entities.ClientCRM.create({
+          property_id: propertyId,
+          consultor_email: client.consultor_email,
+          client_email: client.client_email,
+          client_name: client.client_name,
+          client_phone: client.client_phone || '',
+          status: 'Ativo',
+        });
       }
     },
     onSuccess: () => {

@@ -52,44 +52,20 @@ export function useEffectiveUser() {
           return;
         }
 
-        // Se for equipe, usar consultor_email salvo no próprio perfil do usuário
+        // Se for equipe, usar a backend function getEffectiveUser (que tem acesso asServiceRole)
         if (user.user_type === 'equipe') {
-          const consultorEmail = user.consultor_email || user.team_member_of;
+          const res = await base44.functions.invoke('getEffectiveUser', {});
+          const data = res.data;
 
-          if (!consultorEmail) {
-            throw new Error('Nenhum consultor vinculado encontrado no seu perfil.');
-          }
-
-          // Buscar permissões do TeamMember (o próprio usuário pode ler seus registros)
-          let permissions = {
-            office: { view: true, edit: true },
-            property_center: { view: true, edit: true },
-            advanced_modules: { access: true },
-            reports: { view: true },
-            ai_chat: { access: true },
-            team_management: { manage: false },
-            financial: { view: true }
-          };
-          let memberRole = user.team_member_role || 'Outro';
-
-          try {
-            const members = await base44.entities.TeamMember.filter({
-              member_email: user.email,
-              status: 'Ativo'
-            });
-            if (members.length > 0) {
-              permissions = members[0].permissions || permissions;
-              memberRole = members[0].member_role || memberRole;
-            }
-          } catch (e) {
-            console.warn('[useEffectiveUser] Não foi possível buscar TeamMember, usando permissões padrão:', e.message);
+          if (data.error) {
+            throw new Error(data.error);
           }
 
           setState(s => ({ ...s,
             user,
-            linkedConsultant: consultorEmail,
-            memberRole,
-            permissions,
+            linkedConsultant: data.consultor_email,
+            memberRole: data.member_role || 'Outro',
+            permissions: data.permissions || {},
             isLoading: false
           }));
           return;

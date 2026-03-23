@@ -69,6 +69,12 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { action } = body;
 
+    // ─── Ações restritas a admin ─────────────────────────────────────────────
+    const restrictedActions = ['invite', 'resend_invite', 'activate', 'remove', 'update_permissions'];
+    if (restrictedActions.includes(action) && user.role !== 'admin') {
+      return Response.json({ error: 'Apenas administradores do aplicativo podem gerenciar convites e membros da equipe.' }, { status: 403 });
+    }
+
     // ─── LIST ────────────────────────────────────────────────────────────────
     if (action === 'list') {
       const members = await base44.asServiceRole.entities.TeamMember.filter({

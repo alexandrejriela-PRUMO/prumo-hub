@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { User, Building2, Mail, Phone, MapPin, FileText, Calendar, Hash, Info, Pencil, Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import PropertyLinkManager from './PropertyLinkManager';
 
 const ESTADOS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 const ATIVIDADES_RURAIS = ['Agricultura','Pecuária','Silvicultura','Aquicultura','Extrativismo','Agroindústria','Turismo Rural','Outro'];

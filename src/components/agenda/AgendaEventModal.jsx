@@ -66,14 +66,9 @@ export default function AgendaEventModal({ event, initialDate, user, properties,
   };
 
   const handleAssigneeChange = (email) => {
-    if (email === user?.email) {
-      set('assigned_to_email', user.email);
-      set('assigned_to_name', user.full_name || '');
-    } else {
-      const member = teamMembers.find(m => m.email === email || m.member_email === email);
-      set('assigned_to_email', email);
-      set('assigned_to_name', member?.full_name || member?.name || email);
-    }
+    const found = allAssignees.find(a => a.email === email);
+    set('assigned_to_email', email);
+    set('assigned_to_name', found?.name || email);
   };
 
   const toGCalEvent = (f) => ({

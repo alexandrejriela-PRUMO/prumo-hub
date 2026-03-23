@@ -84,7 +84,7 @@ export default function ClientCRMPanel({ property, onClose }) {
     if (crmConsultorEmail) {
       list.push({
         member_email: crmConsultorEmail,
-        member_name: authUser?.full_name || crmConsultorEmail,
+        member_name: currentUser?.full_name || crmConsultorEmail,
         member_role: 'Consultor',
       });
     }

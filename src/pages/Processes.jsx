@@ -138,7 +138,7 @@ export default function Processes() {
     e.preventDefault();
     const data = {
       ...formData,
-      client_email: user.email,
+      client_email: effectiveEmail,
       fine_value: formData.fine_value !== '' ? parseFloat(formData.fine_value) : undefined
     };
 

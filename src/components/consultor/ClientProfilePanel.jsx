@@ -273,40 +273,19 @@ export default function ClientProfilePanel({ client, onUpdate }) {
         </Card>
       )}
 
-      {/* Propriedades */}
-      <Card>
-        <CardContent className="pt-4">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider">
-              Propriedades e Empreendimentos ({visibleProperties.length})
-            </p>
-            <Button size="sm" variant="outline" onClick={() => setAddingProperty(true)} className="gap-1 text-xs">
-              <Plus className="w-3 h-3" /> Adicionar
-            </Button>
-          </div>
-          <div className="space-y-2">
-            {visibleProperties.map(prop => (
-              <div key={prop.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="text-sm font-medium text-gray-800">{prop.property_name}</p>
-                  <p className="text-xs text-gray-500">{prop.city}{prop.state ? `/${prop.state}` : ''}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge className={prop.property_type === 'urbano' ? 'bg-purple-100 text-purple-700' : 'bg-emerald-100 text-emerald-700'}>
-                    {prop.property_type === 'urbano' ? 'Urbano' : 'Rural'}
-                  </Badge>
-                  <Button size="sm" variant="ghost" onClick={() => openEditProperty(prop)} className="h-7 w-7 p-0">
-                    <Pencil className="w-3 h-3" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-            {visibleProperties.length === 0 && (
-              <p className="text-xs text-gray-400 text-center py-3">Nenhuma propriedade vinculada</p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Propriedades com PropertyLinkManager */}
+      <PropertyLinkManager 
+        client={client} 
+        properties={client.properties || []} 
+        onRefresh={onUpdate}
+      />
+
+      {/* Botão para criar nova propriedade */}
+      <div className="flex justify-center">
+        <Button size="sm" variant="outline" onClick={() => setAddingProperty(true)} className="gap-1">
+          <Plus className="w-3 h-3" /> Nova Propriedade / Empreendimento
+        </Button>
+      </div>
 
       {/* Modal: Editar Dados Pessoais */}
       <Dialog open={editingPersonal} onOpenChange={setEditingPersonal}>

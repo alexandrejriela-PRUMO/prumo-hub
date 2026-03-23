@@ -118,7 +118,9 @@ export default function MyTeam() {
     setIsInviting(true);
     setInviteError('');
     try {
-      const res = await base44.functions.invoke('manageTeamMembers', { action: 'invite', ...inviteForm });
+      const payload = { action: 'invite', ...inviteForm };
+      if (!isAdmin) delete payload.primary_user_email; // não-admin não pode sobrescrever
+      const res = await base44.functions.invoke('manageTeamMembers', payload);
       if (res.data?.error) {
         setInviteError(res.data.error);
         toast.error(res.data.error);

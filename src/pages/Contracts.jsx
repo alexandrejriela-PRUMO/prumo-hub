@@ -22,6 +22,7 @@ import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
 import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
 import ClicksignContractButton from '../components/contracts/ClicksignContractButton';
+import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 const STATUS_CONFIG = {
   'Proposta':     { color: 'bg-blue-100 text-blue-700 border-blue-200',   icon: Clock },

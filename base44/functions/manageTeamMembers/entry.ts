@@ -86,6 +86,10 @@ Deno.serve(async (req) => {
     // ─── INVITE ──────────────────────────────────────────────────────────────
     if (action === 'invite') {
       const { member_email, member_name, member_role } = body;
+      // Admin pode especificar o consultor; caso contrário, usa o próprio usuário
+      const targetConsultorEmail = (user.role === 'admin' && body.primary_user_email)
+        ? body.primary_user_email
+        : user.email;
 
       // 1. Validar email
       if (!member_email || !isValidEmail(member_email)) {

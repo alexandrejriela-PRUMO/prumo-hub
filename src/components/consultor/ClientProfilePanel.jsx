@@ -130,6 +130,8 @@ export default function ClientProfilePanel({ client, onUpdate }) {
       state: propertyForm.state,
       main_activity: propertyForm.main_activity,
       activities: propertyForm.activities,
+      owner_email: client.client_email,
+      client_name: clientName,
       total_hectares: propertyForm.property_type === 'rural' ? (parseFloat(propertyForm.total_hectares) || 0) : undefined,
       app_hectares: propertyForm.property_type === 'rural' ? (parseFloat(propertyForm.app_hectares) || 0) : undefined,
       legal_reserve_hectares: propertyForm.property_type === 'rural' ? (parseFloat(propertyForm.legal_reserve_hectares) || 0) : undefined,
@@ -138,10 +140,11 @@ export default function ClientProfilePanel({ client, onUpdate }) {
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['consultor-properties'] });
+      queryClient.invalidateQueries({ queryKey: ['consultor-crm-clients'] });
       toast.success('Propriedade atualizada!');
       setEditingProperty(null);
     },
-    onError: () => toast.error('Erro ao atualizar propriedade.')
+    onError: (err) => toast.error('Erro ao atualizar propriedade: ' + (err.message || ''))
   });
 
   const createProperty = useMutation({

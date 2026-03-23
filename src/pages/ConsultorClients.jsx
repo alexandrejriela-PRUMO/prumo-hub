@@ -41,6 +41,46 @@ export default function ConsultorClients() {
     enabled: !!effectiveEmail,
   });
 
+  // Busca clientes que podem estar vinculados apenas via propriedade (sem CRM direto)
+  const { data: propertyBasedClients = [] } = useQuery({
+    queryKey: ['property-based-clients', effectiveEmail],
+    queryFn: async () => {
+      const props = await base44.entities.Property.filter({ consultor_email: effectiveEmail });
+      // Agrupa por client_name/owner_email para encontrar clientes únicos
+      const clients = new Map();
+      props.forEach(p => {
+        if (p.client_name && p.owner_email) {
+          const key = `${p.owner_email}`;
+          if (!clients.has(key)) {
+            clients.set(key, {
+              property_id: p.id,
+              consultor_email: effectiveEmail,
+              client_email: p.owner_email,
+              client_name: p.client_name,
+              status: 'Ativo',
+            });
+          }
+        }
+      });
+      return Array.from(clients.values());
+    },
+    enabled: !!effectiveEmail,
+  });
+
+  // Mescla clientes do CRM com clientes vinculados via propriedade
+  const allClients = React.useMemo(() => {
+    const crmMap = new Map(crmClients.map(c => [c.client_email, c]));
+    const combined = [...crmClients];
+    
+    propertyBasedClients.forEach(pClient => {
+      if (!crmMap.has(pClient.client_email)) {
+        combined.push(pClient);
+      }
+    });
+    
+    return combined;
+  }, [crmClients, propertyBasedClients]);
+
   const deleteClientMutation = useMutation({
     mutationFn: (crm) => base44.entities.ClientCRM.delete(crm.id),
     onSuccess: () => {

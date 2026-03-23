@@ -455,7 +455,7 @@ export default function ClientCRMPanel({ property, onClose }) {
                       <CRMThread
                         item={interaction}
                         itemType="interaction"
-                        teamMembers={teamMembers}
+                        teamMembers={assignableMembers}
                         currentUser={currentUser}
                         onSaveThread={(thread) => saveInteractionThread(interaction.id, thread)}
                       />

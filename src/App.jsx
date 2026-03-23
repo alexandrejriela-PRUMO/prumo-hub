@@ -108,6 +108,7 @@ const AuthenticatedApp = () => {
       <Route path="/CampMode" element={<LayoutWrapper currentPageName="CampMode"><Suspense fallback={<LoadingSpinner />}><CampMode /></Suspense></LayoutWrapper>} />
       <Route path="/PropertyCentral" element={<LayoutWrapper currentPageName="PropertyCentral"><Suspense fallback={<LoadingSpinner />}><PropertyCentral /></Suspense></LayoutWrapper>} />
       <Route path="/EnvironmentalAssets" element={<LayoutWrapper currentPageName="EnvironmentalAssets"><Suspense fallback={<LoadingSpinner />}><EnvironmentalAssets /></Suspense></LayoutWrapper>} />
+      <Route path="/AcceptInvite" element={<Suspense fallback={<LoadingSpinner />}><AcceptInvite /></Suspense>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
     </>

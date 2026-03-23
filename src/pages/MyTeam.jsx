@@ -46,6 +46,7 @@ export default function MyTeam() {
   const [logSearch, setLogSearch] = useState('');
   const [logFilterEntity, setLogFilterEntity] = useState('all');
   const [logFilterAction, setLogFilterAction] = useState('all');
+  const [loadingLinkId, setLoadingLinkId] = useState(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {

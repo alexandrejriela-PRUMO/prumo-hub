@@ -52,10 +52,10 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
     }
   }, [isConsultor, user?.email]);
 
-  // Sync clientNameSearch with formData.client_name
+  // Sync clientNameSearch com formData ao inicializar ou editar
   useEffect(() => {
     setClientNameSearch(formData.client_name || '');
-  }, []);
+  }, [property?.id]); // Rerun quando mudar de propriedade
 
   const filteredSuggestions = clientNameSearch.length >= 1
     ? existingClients.filter(c =>

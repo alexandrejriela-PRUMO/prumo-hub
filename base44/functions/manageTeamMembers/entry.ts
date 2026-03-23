@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
       }
 
       // 2. Verificar plano do consultor — permite adição de equipe?
-      const consultorUsers = await base44.asServiceRole.entities.User.filter({ email: user.email });
+      const consultorUsers = await base44.asServiceRole.entities.User.filter({ email: targetConsultorEmail });
       const consultorPlan = consultorUsers[0]?.consultor_plan || 'start';
       const planConfig = PLAN_CONFIG[consultorPlan] || PLAN_CONFIG.start;
 

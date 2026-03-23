@@ -99,7 +99,7 @@ export default function CARModule() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['car', effectivePropertyId]);
-      queryClient.invalidateQueries(['properties', user?.email, user?.user_type]);
+      queryClient.invalidateQueries(['properties', effectiveEmail, userType]);
       setEditOpen(false);
       setEditingCarId(null);
       toast.success('CAR salvo com sucesso!');
@@ -112,14 +112,14 @@ export default function CARModule() {
       : base44.entities.CARManagement.create({
           ...data,
           property_id: effectivePropertyId,
-          owner_email: selectedProperty?.owner_email || user.email,
-          consultor_email: isConsultor ? user.email : undefined,
+          owner_email: selectedProperty?.owner_email || effectiveEmail,
+          consultor_email: isConsultor ? effectiveEmail : undefined,
           car_status: 'Pendente de análise',
         }),
     onSuccess: () => queryClient.invalidateQueries(['car', effectivePropertyId]),
   });
 
-  if (!user) return <div className="flex items-center justify-center h-64"><Skeleton className="w-48 h-8" /></div>;
+  if (!effectiveEmail) return <div className="flex items-center justify-center h-64"><Skeleton className="w-48 h-8" /></div>;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">

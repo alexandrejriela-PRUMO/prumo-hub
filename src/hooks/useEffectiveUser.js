@@ -81,6 +81,7 @@ export function useEffectiveUser() {
   // effectiveEmail: para equipe é o email do consultor; para consultor/produtor é o próprio email
   const effectiveEmail = effectiveData?.email || user?.email;
   const linkedConsultant = effectiveData?.consultor_email || null;
+  const consultorName = effectiveData?.consultor_name || null;
   const memberRole = effectiveData?.member_role || null;
   const permissions = effectiveData?.permissions || {};
   const userType = effectiveData?.user_type || user?.user_type;

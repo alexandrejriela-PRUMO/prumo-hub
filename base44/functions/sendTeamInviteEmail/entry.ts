@@ -1,19 +1,9 @@
-/**
- * sendTeamInviteEmail — Envia email de convite de equipe
- *
- * Payload:
- * {
- *   "member_email": "fernanda@example.com",
- *   "member_name": "Fernanda Giesel",
- *   "member_role": "Engenheiro",
- *   "consultor_name": "Santa Rute",
- *   "app_url": "https://prumo.app"
- * }
- */
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 
 Deno.serve(async (req) => {
   try {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : await req.json();
+    const base44 = createClientFromRequest(req);
+    const body = await req.json();
     const { member_email, member_name, member_role, consultor_name, app_url = 'https://prumo.app' } = body;
 
     if (!member_email) {
@@ -22,7 +12,6 @@ Deno.serve(async (req) => {
 
     console.log(`📧 [SEND_INVITE] Iniciando envio para ${member_email} | Função: ${member_role}`);
 
-    // Email HTML customizado
     const htmlBody = `
 <!DOCTYPE html>
 <html>
@@ -39,7 +28,6 @@ Deno.serve(async (req) => {
     .info-box { background: #f0f7ff; border-left: 4px solid #1B4332; padding: 16px; margin: 24px 0; border-radius: 4px; }
     .info-box strong { display: block; color: #1B4332; margin-bottom: 8px; }
     .cta-button { display: inline-block; background: #1B4332; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 24px; }
-    .cta-button:hover { background: #0f2818; }
     .footer { background: #f9f9f9; padding: 20px; text-align: center; border-top: 1px solid #eee; font-size: 12px; color: #888; }
   </style>
 </head>
@@ -85,9 +73,16 @@ Deno.serve(async (req) => {
 </html>
     `;
 
-    console.log(`✅ [EMAIL READY] HTML preparado para ${member_email} | Função: ${member_role}`);
-    
-    // Retornar sucesso — email será enviado via serviço externo integrado
+    // Enviar o email via integração Base44
+    await base44.asServiceRole.integrations.Core.SendEmail({
+      to: member_email,
+      subject: `Você foi convidado para a equipe PRUMO Hub por ${consultor_name || 'um Consultor'}`,
+      body: htmlBody,
+      from_name: 'PRUMO Hub'
+    });
+
+    console.log(`✅ [SEND_INVITE] Email enviado com sucesso para ${member_email}`);
+
     return Response.json({
       success: true,
       message: `Convite enviado para ${member_email}`,

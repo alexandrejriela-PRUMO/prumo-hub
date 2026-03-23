@@ -350,13 +350,18 @@ export default function SubscriptionStatus() {
                 </thead>
                 <tbody className="divide-y">
                   {[
-                    ['Usuários', '1', 'Até 2', 'Ilimitado'],
-                    ['Propriedades', 'Até 5', 'Até 10', 'Ilimitado'],
+                    ['Usuários', '1', 'Até 2', 'Até 3'],
+                    ['Propriedades/Clientes', 'Até 5', 'Até 10', 'Até 200'],
+                    ['CRM Prumo', '—', '—', '✅'],
+                    ['Agenda', '—', '—', '✅'],
+                    ['ERP Financeiro', '—', '—', '✅'],
+                    ['Alerta MapBiomas', '—', '—', '✅'],
+                    ['Monitoramento DOE-RS/FEPAM', '—', '—', '✅'],
                     ['Notificação Consultor', '✅', '✅', '✅'],
                     ['Notificação Equipe', '—', '✅', '✅'],
                     ['Notificação Cliente', '—', '—', '✅'],
-                    ['Relatórios de Gestão', '—', '—', '✅'],
                     ['Portal do Cliente', '—', '—', '✅'],
+                    ['Relatórios de Gestão', '—', '—', '✅'],
                     ['Webinars Periódicos', '—', '✅', '✅'],
                     ['Treinamentos Personalizados', '—', '—', '✅'],
                   ].map(([feature, start, pro, enterprise]) => (

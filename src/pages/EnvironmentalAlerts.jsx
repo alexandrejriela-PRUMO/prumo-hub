@@ -348,7 +348,7 @@ export default function EnvironmentalAlerts() {
 
   const handleRefresh = async () => {
     await queryClient.invalidateQueries(['environmental-alerts']);
-    await queryClient.invalidateQueries(['properties', user?.email]);
+    await queryClient.invalidateQueries(['properties', effectiveEmail, userType]);
   };
 
   return (

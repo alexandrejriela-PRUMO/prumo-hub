@@ -136,27 +136,22 @@ function ClientCard({ crm, property, index, onClick }) {
 
 
 export default function CRMBoard() {
-  const [user, setUser] = useState(null);
   const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [selectedCRM, setSelectedCRM] = useState(null);
   const queryClient = useQueryClient();
-  const { isEquipe, memberRole } = useEffectiveUser();
+  const { user, effectiveEmail, isEquipe, memberRole, isLoading: effectiveLoading } = useEffectiveUser();
   const canCreateLead = !isEquipe || memberRole === 'Administrador';
 
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
-
   const { data: properties = [] } = useQuery({
-    queryKey: ['crm-board-properties', user?.email],
-    queryFn: () => base44.entities.Property.filter({ consultor_email: user.email }),
-    enabled: !!user?.email,
+    queryKey: ['crm-board-properties', effectiveEmail],
+    queryFn: () => base44.entities.Property.filter({ consultor_email: effectiveEmail }),
+    enabled: !!effectiveEmail && !effectiveLoading,
   });
 
   const { data: crmList = [], isLoading } = useQuery({
-    queryKey: ['crm-board-list', user?.email],
-    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: user.email }),
-    enabled: !!user?.email,
+    queryKey: ['crm-board-list', effectiveEmail],
+    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: effectiveEmail }),
+    enabled: !!effectiveEmail && !effectiveLoading,
   });
 
   const deleteCRMMutation = useMutation({

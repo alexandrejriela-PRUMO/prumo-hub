@@ -192,7 +192,7 @@ export default function ClientCRMPanel({ property, onClose }) {
   };
 
   const deleteInteraction = (id) => {
-    const interactions = (crm?.interactions || []).filter(i => i.id !== id);
+    const interactions = (activeCRM?.interactions || []).filter(i => i.id !== id);
     upsertCRM.mutate({ interactions });
     toast.success('Interação removida.');
   };

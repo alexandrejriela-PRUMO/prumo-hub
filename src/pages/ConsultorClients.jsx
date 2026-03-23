@@ -130,25 +130,25 @@ export default function ConsultorClients() {
         </div>
       )}
 
-      {!isLoading && crmClients.length === 0 && (
-        <Card className="border-dashed border-2 border-emerald-200">
-          <CardContent className="py-16 text-center">
-            <Users className="w-16 h-16 mx-auto text-emerald-300 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900">Nenhum cliente ativo</h3>
-            <p className="text-gray-500 mt-2 max-w-md mx-auto">
-              Cadastre seu primeiro cliente ou converta um lead no CRM.
-            </p>
-            {canCreate && <Button className="mt-4 bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowNewClientForm(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Cadastrar Cliente
-            </Button>}
-          </CardContent>
-        </Card>
-      )}
+      {!isLoading && allClients.length === 0 && (
+         <Card className="border-dashed border-2 border-emerald-200">
+           <CardContent className="py-16 text-center">
+             <Users className="w-16 h-16 mx-auto text-emerald-300 mb-4" />
+             <h3 className="text-lg font-semibold text-gray-900">Nenhum cliente ativo</h3>
+             <p className="text-gray-500 mt-2 max-w-md mx-auto">
+               Cadastre seu primeiro cliente ou converta um lead no CRM.
+             </p>
+             {canCreate && <Button className="mt-4 bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowNewClientForm(true)}>
+               <Plus className="w-4 h-4 mr-2" />
+               Cadastrar Cliente
+             </Button>}
+           </CardContent>
+         </Card>
+       )}
 
-      {!isLoading && crmClients.length > 0 && (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {crmClients.map(crm => (
+       {!isLoading && allClients.length > 0 && (
+         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+           {allClients.map(crm => (
             <Card key={crm.id} className="hover:shadow-lg transition-shadow flex flex-col">
               <CardContent className="p-5 flex-1 flex flex-col">
                 <div className="flex items-start gap-3 mb-4">

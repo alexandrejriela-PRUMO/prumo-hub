@@ -79,8 +79,8 @@ export default function EnvironmentalAssets() {
 
       const payload = {
         property_id: data.property_id,
-        owner_email: user.email,
-        consultor_email: user.email,
+        owner_email: effectiveEmail,
+        consultor_email: effectiveEmail,
         car_number: data.car_number || 'SEM_CAR',
         biome: data.biome,
         state: data.state || '',

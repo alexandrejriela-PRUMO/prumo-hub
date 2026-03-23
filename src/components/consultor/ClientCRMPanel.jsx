@@ -78,7 +78,7 @@ export default function ClientCRMPanel({ property, onClose }) {
   });
 
   // Lista de pessoas disponíveis para atribuição: consultor + membros da equipe
-  const assignableMembers = React.useMemo(() => {
+  const assignableMembers = useMemo(() => {
     const list = [];
     // Adiciona o próprio consultor como opção
     if (crmConsultorEmail) {

@@ -701,8 +701,8 @@ export default function ClientCRMPanel({ property, onClose }) {
           )}
 
           {/* Resumo financeiro */}
-          {(crm?.services || []).length > 0 && (() => {
-            const services = crm.services || [];
+          {(activeCRM?.services || []).length > 0 && (() => {
+            const services = activeCRM.services || [];
             const total = services.reduce((s, svc) => s + (parseFloat(svc.value) || 0), 0);
             const received = services.filter(s => s.received).reduce((s, svc) => s + (parseFloat(svc.value) || 0), 0);
             const pending = total - received;

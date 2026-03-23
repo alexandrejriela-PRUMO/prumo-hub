@@ -174,36 +174,19 @@ Deno.serve(async (req) => {
 
       console.log(`[TeamInvite] Reenviando convite para ${member.member_email}`);
       try {
-         await base44.asServiceRole.users.inviteUser(member.member_email, 'user');
-       } catch (inviteErr) {
-         console.warn(`[TeamInvite] inviteUser reenvio falhou (não-fatal): ${inviteErr.message}`);
-       }
+        await base44.users.inviteUser(member.member_email, 'user');
+        console.log(`[TeamInvite] ✅ Convite reenviado para ${member.member_email}`);
+      } catch (inviteErr) {
+        console.warn(`[TeamInvite] inviteUser falhou (não-fatal): ${inviteErr.message}`);
+      }
 
       const now = new Date().toISOString();
-      // Garante que tem token — gera um novo se não tiver
       const resendToken = member.invite_token || crypto.randomUUID();
       await base44.asServiceRole.entities.TeamMember.update(member_id, {
         invited_at: now,
         expires_at: expiresAt(),
         invite_token: resendToken,
       });
-
-      // Email personalizado de reenvio com link
-      const resendInviteLink = `https://prumo.app/AcceptInvite?token=${resendToken}`;
-      try {
-        const emailRes = await base44.asServiceRole.functions.invoke('sendTeamInviteEmail', {
-          member_email: member.member_email,
-          member_name: member.member_name || '',
-          member_role: member.member_role || 'Membro da Equipe',
-          consultor_name: user.full_name || user.email,
-          app_url: resendInviteLink
-        });
-        if (emailRes.data?.success) {
-          console.log(`✅ [REENVIO ENVIADO] Convite reenviado para ${member.member_email}`);
-        }
-      } catch (emailErr) {
-        console.warn(`[TeamInvite] Falha ao reenviar: ${emailErr.message}`);
-      }
 
       console.log(`[TeamInvite] Convite reenviado para ${member.member_email}`);
       return Response.json({ success: true });

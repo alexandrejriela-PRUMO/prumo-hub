@@ -390,18 +390,18 @@ export default function ClientCRMPanel({ property, onClose }) {
                     }}>
                       <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione o responsável (opcional)" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value={null}>— Sem responsável —</SelectItem>
-                        {assignableMembers.map(m => (
-                          <SelectItem key={m.member_email} value={m.member_email}>
-                            {m.member_name || m.member_email} · {m.member_role}
-                          </SelectItem>
-                        ))}
+                      <SelectItem value={null}>— Sem responsável —</SelectItem>
+                      {assignableMembers.map(m => (
+                        <SelectItem key={m.member_email} value={m.member_email}>
+                          {m.member_name || m.member_email} · {m.member_role}
+                        </SelectItem>
+                      ))}
                       </SelectContent>
-                    </Select>
-                  </div>
-                )}
-                <div className="flex justify-end gap-2 pt-1">
-                  <Button size="sm" variant="outline" onClick={() => { setShowInteractionForm(false); setEditingInteraction(null); }}>Cancelar</Button>
+                      </Select>
+                      </div>
+                      )}
+                      <div className="flex justify-end gap-2 pt-1">
+                      <Button size="sm" variant="outline" onClick={() => { setShowInteractionForm(false); setEditingInteraction(null); }}>Cancelar</Button>
                   <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={addInteraction}>Salvar</Button>
                 </div>
               </CardContent>

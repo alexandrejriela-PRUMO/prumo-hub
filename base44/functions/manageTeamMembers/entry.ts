@@ -139,6 +139,7 @@ Deno.serve(async (req) => {
       // 4. Criar TeamMember com permissões default pelo role
       const now = new Date().toISOString();
       const defaultPerms = getDefaultPermissions(member_role || 'Outro');
+      const inviteToken = crypto.randomUUID();
       console.log(`📝 [CRIANDO REGISTRO] TeamMember para ${member_email} com função: ${member_role}`);
       const member = await base44.asServiceRole.entities.TeamMember.create({
         primary_user_email: user.email,
@@ -152,6 +153,7 @@ Deno.serve(async (req) => {
         user_type_applied: false,
         invited_at: now,
         expires_at: expiresAt(),
+        invite_token: inviteToken,
       });
       console.log(`✅ [REGISTRO CRIADO] TeamMember id=${member.id} | Email: ${member_email} | Função: ${member.member_role} | Status: Pendente`);
 

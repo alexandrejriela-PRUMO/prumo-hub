@@ -291,6 +291,18 @@ export default function MyTeam() {
                              )}
                              {member.status === 'Pendente' && (
                                <>
+                                 <Button
+                                   variant="outline" size="sm"
+                                   className="text-purple-700 border-purple-200 hover:bg-purple-50 text-xs whitespace-nowrap"
+                                   onClick={() => handleCopyInviteLink(member.id)}
+                                   disabled={loadingLinkId === member.id}
+                                   title="Copiar link de convite"
+                                 >
+                                   {loadingLinkId === member.id
+                                     ? <RefreshCw className="w-3 h-3 animate-spin" />
+                                     : <><Link2 className="w-3 h-3 mr-1" />Copiar Link</>
+                                   }
+                                 </Button>
                                  <Button variant="outline" size="sm" className="text-blue-700 border-blue-200 hover:bg-blue-50 text-xs whitespace-nowrap" onClick={() => resendInviteMutation.mutate(member.id)}>
                                    Reenviar
                                  </Button>

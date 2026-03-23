@@ -219,7 +219,7 @@ function ConsultorPlanCard({ plan, billing, onSubscribe, loading }) {
           </div>
           {billing === 'annual' && (
             <p className={`text-xs ${c.text} font-medium mt-0.5`}>
-              R$ {plan.annualPrice.toLocaleString('pt-BR')}/ano — 3 meses grátis
+              R$ {plan.annualPrice.toLocaleString('pt-BR')}/ano — 2 meses grátis + Fidelidade 12 meses
             </p>
           )}
         </div>
@@ -312,11 +312,11 @@ export default function SubscriptionStatus() {
           Mensal
         </button>
         <button
-          onClick={() => setBilling('annual')}
-          className={`px-5 py-2 rounded-r-full border text-sm font-medium transition-all ${billing === 'annual' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
-        >
-          Anual 🎉 <span className="text-xs">(3 meses grátis)</span>
-        </button>
+           onClick={() => setBilling('annual')}
+           className={`px-5 py-2 rounded-r-full border text-sm font-medium transition-all ${billing === 'annual' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+         >
+           Anual 🎉 <span className="text-xs">(2 meses grátis)</span>
+         </button>
       </div>
 
       {/* Produtor */}

@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Leaf, Plus, Edit2, Trash2, Save, X, TrendingUp, TrendingDown, Upload, FileText } from 'lucide-react';
 import { toast } from 'sonner';
+import { useEffectiveUser } from '@/hooks/useEffectiveUser';
 
 const BIOMAS = ['Amazônia', 'Cerrado', 'Mata Atlântica', 'Caatinga', 'Pantanal', 'Pampas'];
 
@@ -23,7 +24,6 @@ const LEGAL_RESERVE_PERCENTAGES = {
 };
 
 export default function EnvironmentalAssets() {
-  const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('origem');
   const [editingCRA, setEditingCRA] = useState(null);
   const [craFormData, setCRAFormData] = useState({});
@@ -33,38 +33,31 @@ export default function EnvironmentalAssets() {
   const [buyFormData, setBuyFormData] = useState({});
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      } catch (e) {
-        console.error('Usuário não autenticado');
-      }
-    };
-    loadUser();
-  }, []);
+  const { effectiveEmail, userType, isLoading: loadingUser } = useEffectiveUser();
+  const isConsultorFamily = userType === 'consultor' || userType === 'equipe';
 
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties', user?.email],
-    queryFn: () => base44.entities.Property.filter({ owner_email: user?.email }),
-    enabled: !!user?.email
+    queryKey: ['properties', effectiveEmail, userType],
+    queryFn: () => isConsultorFamily
+      ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
+      : base44.entities.Property.filter({ owner_email: effectiveEmail }),
+    enabled: !!effectiveEmail
   });
 
   const { data: craOrigins = [], refetch: refetchCRA } = useQuery({
-    queryKey: ['cra-origins', user?.email],
-    queryFn: () => base44.entities.CRAOrigin.filter({ owner_email: user?.email }),
-    enabled: !!user?.email
+    queryKey: ['cra-origins', effectiveEmail],
+    queryFn: () => base44.entities.CRAOrigin.filter({ owner_email: effectiveEmail }),
+    enabled: !!effectiveEmail
   });
 
   const { data: transactions = [], refetch: refetchTransactions } = useQuery({
-    queryKey: ['cra-transactions', user?.email],
+    queryKey: ['cra-transactions', effectiveEmail],
     queryFn: async () => {
-      const sells = await base44.entities.CRATransaction.filter({ seller_email: user?.email });
-      const buys = await base44.entities.CRATransaction.filter({ buyer_email: user?.email });
+      const sells = await base44.entities.CRATransaction.filter({ seller_email: effectiveEmail });
+      const buys = await base44.entities.CRATransaction.filter({ buyer_email: effectiveEmail });
       return [...sells, ...buys];
     },
-    enabled: !!user?.email
+    enabled: !!effectiveEmail
   });
 
   // ===== ORIGEM CRA =====

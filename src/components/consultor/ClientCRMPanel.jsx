@@ -129,11 +129,9 @@ export default function ClientCRMPanel({ property, onClose }) {
 
   const upsertCRM = useMutation({
     mutationFn: (data) => {
-      if (!crm?.id) {
-        toast.error('Crie este cliente no CRM antes de adicionar interações.');
-        return Promise.reject(new Error('ClientCRM não existe'));
-      }
-      return base44.entities.ClientCRM.update(crm.id, data);
+      if (crm?.id) return base44.entities.ClientCRM.update(crm.id, data);
+      // Cria novo ClientCRM sem status padrão para não aparecer no CRM Board
+      return base44.entities.ClientCRM.create({ property_id: crmPropertyId, consultor_email: crmConsultorEmail, client_email: crmOwnerEmail, ...data });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['client-crm', crmPropertyId] }),
   });

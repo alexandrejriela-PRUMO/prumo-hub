@@ -79,8 +79,8 @@ export default function CARModule() {
         : await base44.entities.CARManagement.create({
             ...data,
             property_id: effectivePropertyId,
-            owner_email: selectedProperty?.owner_email || user.email,
-            consultor_email: isConsultor ? user.email : undefined,
+            owner_email: selectedProperty?.owner_email || effectiveEmail,
+            consultor_email: isConsultor ? effectiveEmail : undefined,
           });
       
       // Atualizar Property com o CAR cadastrado

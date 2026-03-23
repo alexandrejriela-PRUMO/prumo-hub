@@ -125,7 +125,7 @@ export default function EnvironmentalAssets() {
 
       const payload = {
         origin_id: data.origin_id,
-        seller_email: user.email,
+        seller_email: effectiveEmail,
         seller_property_id: origin.property_id,
         buyer_email: data.buyer_email || 'pendente@exemplo.com',
         buyer_property_id: data.buyer_property_id || '',
@@ -167,7 +167,7 @@ export default function EnvironmentalAssets() {
       if (areaToBuy <= 0) throw new Error('Área deve ser maior que zero');
 
       const payload = {
-        buyer_email: user.email,
+        buyer_email: effectiveEmail,
         buyer_property_id: data.property_id,
         buyer_car: data.buyer_car || '',
         seller_email: data.seller_email || 'pendente@exemplo.com',

@@ -311,7 +311,7 @@ export default function CRMBoard() {
       <NewClientForm
         isOpen={showNewClientForm}
         onClose={() => setShowNewClientForm(false)}
-        consultorEmail={user?.email}
+        consultorEmail={effectiveEmail}
         onSuccess={() => {
           setShowNewClientForm(false);
           queryClient.invalidateQueries(['crm-board-list']);

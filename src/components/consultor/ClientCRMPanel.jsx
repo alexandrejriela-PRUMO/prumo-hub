@@ -238,12 +238,12 @@ export default function ClientCRMPanel({ property, onClose }) {
   };
 
   const toggleTask = (taskId) => {
-    const tasks = (crm?.tasks || []).map(t => t.id === taskId ? { ...t, done: !t.done } : t);
+    const tasks = (activeCRM?.tasks || []).map(t => t.id === taskId ? { ...t, done: !t.done } : t);
     upsertCRM.mutate({ tasks });
   };
 
   const deleteTask = (taskId) => {
-    const tasks = (crm?.tasks || []).filter(t => t.id !== taskId);
+    const tasks = (activeCRM?.tasks || []).filter(t => t.id !== taskId);
     upsertCRM.mutate({ tasks });
   };
 

@@ -36,19 +36,33 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
 
   useEffect(() => {
     if (isConsultor && user?.email) {
-      base44.entities.Property.filter({ consultor_email: user.email })
-        .then(props => {
+      // Buscar clientes do CRM (ClientCRM) ao invés de propriedades
+      base44.entities.ClientCRM.filter({ consultor_email: user.email })
+        .then(clients => {
           const map = new Map();
-          props.forEach(p => {
-            const email = p.client_email || p.owner_email;
-            const name = p.client_name;
-            if (email && name && !map.has(email)) {
-              map.set(email, { email, name });
+          clients.forEach(c => {
+            if (c.client_email && c.client_name && !map.has(c.client_email)) {
+              map.set(c.client_email, { email: c.client_email, name: c.client_name });
             }
           });
           setExistingClients(Array.from(map.values()));
         })
-        .catch(() => {});
+        .catch(() => {
+          // Fallback: buscar de propriedades se ClientCRM falhar
+          base44.entities.Property.filter({ consultor_email: user.email })
+            .then(props => {
+              const map = new Map();
+              props.forEach(p => {
+                const email = p.client_email || p.owner_email;
+                const name = p.client_name;
+                if (email && name && !map.has(email)) {
+                  map.set(email, { email, name });
+                }
+              });
+              setExistingClients(Array.from(map.values()));
+            })
+            .catch(() => {});
+        });
     }
   }, [isConsultor, user?.email]);
 
@@ -188,6 +202,16 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Validação: se é consultor, verifica se cliente está cadastrado
+    if (isConsultor && !property) {
+      const clientExists = existingClients.some(c => c.email === formData.client_email);
+      if (!clientExists) {
+        alert('❌ Cliente não encontrado no CRM.\n\nVocê deve cadastrar o cliente no CRM antes de criar uma propriedade para ele.\n\nVá para "Meus Clientes" e adicione o cliente.');
+        return;
+      }
+    }
+    
     const submitData = {
       ...formData,
       owner_email: property?.owner_email || (isConsultor ? (formData.client_email || user?.email) : user?.email),
@@ -755,9 +779,10 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
                 }}
                 onFocus={() => setShowSuggestions(true)}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                placeholder="Digite para buscar cliente..."
+                placeholder="Digite para buscar cliente cadastrado no CRM..."
                 required={!property}
                 autoComplete="off"
+                className={formData.client_email && existingClients.find(c => c.email === formData.client_email) ? 'border-emerald-500 bg-emerald-50/30' : formData.client_name && !existingClients.find(c => c.email === formData.client_email) ? 'border-red-300 bg-red-50/20' : ''}
               />
               {showSuggestions && filteredSuggestions.length > 0 && (
                 <div className="absolute z-50 w-full mt-1 bg-white border border-emerald-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
@@ -773,6 +798,9 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
                     </button>
                   ))}
                 </div>
+              )}
+              {!formData.client_email && filteredSuggestions.length === 0 && clientNameSearch && (
+                <p className="text-xs text-red-600">⚠️ Nenhum cliente encontrado. Cadastre primeiro no CRM.</p>
               )}
             </div>
             {/* Email - preenchido automaticamente ou digitável */}

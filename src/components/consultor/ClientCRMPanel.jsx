@@ -1,30 +1,31 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffectiveUser } from '../../hooks/useEffectiveUser';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Phone, Mail, MessageCircle, Users, Calendar, CheckSquare, Square,
-  Plus, Briefcase, Clock, ChevronDown, ChevronRight, Trash2, Edit3, Share2, Loader, UserCheck
+  Plus, Briefcase, Clock, Trash2, Edit3, Share2, Loader, UserCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import CRMThread from './CRMThread';
 
-const STATUS_COLORS = {
-  'Prospect': 'bg-purple-100 text-purple-700 border-purple-200',
-  'Ativo': 'bg-green-100 text-green-700 border-green-200',
-  'Em Negociação': 'bg-amber-100 text-amber-700 border-amber-200',
-  'Inativo': 'bg-gray-100 text-gray-600 border-gray-200',
-  'Encerrado': 'bg-red-100 text-red-700 border-red-200',
+const STATUS_OPTIONS = ['NovoProspect', 'Prospect', 'Ativo', 'Em Negociação', 'Inativo', 'Encerrado'];
+const STATUS_LABELS = {
+  'NovoProspect': 'Prospect',
+  'Prospect': 'Atividades em Andamento',
+  'Ativo': 'Cliente',
+  'Em Negociação': 'Em Negociação',
+  'Inativo': 'Inativo',
+  'Encerrado': 'Encerrado',
 };
 
 const INTERACTION_TYPES = ['Ligação', 'Reunião', 'E-mail', 'WhatsApp', 'Visita', 'Proposta', 'Contrato', 'Outro'];
@@ -33,11 +34,16 @@ const INTERACTION_ICONS = {
   'Visita': Users, 'Proposta': Briefcase, 'Contrato': Briefcase, 'Outro': Clock,
 };
 
+// ─── ClientCRMPanel ───────────────────────────────────────────────────────────
+// Recebe `property` que é o próprio objeto ClientCRM (com .id já definido).
+// Nunca cria novos registros — apenas atualiza o registro existente via seu ID.
 export default function ClientCRMPanel({ property, onClose }) {
   const queryClient = useQueryClient();
-  const { user: authUser, effectiveEmail: hookEffectiveEmail, isEquipe, consultorName: hookConsultorName } = useEffectiveUser();
+  const { effectiveEmail: hookEffectiveEmail, isEquipe, consultorName: hookConsultorName } = useEffectiveUser();
   const [currentUser, setCurrentUser] = React.useState(null);
-  React.useEffect(() => { base44.auth.me().then(setCurrentUser).catch(() => {}); }, []);
+  useEffect(() => { base44.auth.me().then(setCurrentUser).catch(() => {}); }, []);
+
+  // ── Estado dos formulários ───────────────────────────────────────────────
   const [showInteractionForm, setShowInteractionForm] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [showServiceForm, setShowServiceForm] = useState(false);
@@ -49,15 +55,37 @@ export default function ClientCRMPanel({ property, onClose }) {
   const [newTask, setNewTask] = useState({ title: '', due_date: '', priority: 'Média', responsible_email: '', responsible_name: '' });
   const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', received: false });
 
-  // Se vier do ConsultorClients, property é um objeto "client" com .properties[]
-  // Usa a primeira propriedade real para associar o CRM
-  const firstRealProperty = property?.properties?.find(p => !p.is_client_only) || property?.properties?.[0];
-  const crmPropertyId = firstRealProperty?.id || property?.id;
-  // Usa consultor_email da propriedade ou fallback para o effectiveEmail (cobre caso de membro da equipe)
-  const crmConsultorEmail = firstRealProperty?.consultor_email || property?.consultor_email || hookEffectiveEmail;
-  const crmOwnerEmail = firstRealProperty?.owner_email || property?.owner_email;
+  // ── ID do ClientCRM — é a chave única para todas as operações ────────────
+  // property.id É o id do registro ClientCRM (passado pelo CRMBoard ou ConsultorClients)
+  const crmId = property?.id;
+  const crmConsultorEmail = property?.consultor_email || hookEffectiveEmail;
 
-  // Membros da equipe do consultor — busca por primary_user_email E por consultor_email (campo alias), une os resultados
+  // ── Busca o registro CRM pelo ID direto ──────────────────────────────────
+  const { data: activeCRM, isLoading } = useQuery({
+    queryKey: ['client-crm', crmId],
+    queryFn: async () => {
+      const results = await base44.entities.ClientCRM.filter({ id: crmId });
+      return results[0] || null;
+    },
+    enabled: !!crmId,
+    staleTime: 0,
+  });
+
+  // ── Mutation de atualização — NUNCA cria, só atualiza ───────────────────
+  const updateCRM = useMutation({
+    mutationFn: (data) => {
+      if (!crmId) throw new Error('CRM não identificado.');
+      return base44.entities.ClientCRM.update(crmId, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['client-crm', crmId] });
+      queryClient.invalidateQueries({ queryKey: ['crm-board-list'] });
+      queryClient.invalidateQueries({ queryKey: ['consultor-crm-clients'] });
+    },
+    onError: (e) => toast.error('Erro ao salvar: ' + e.message),
+  });
+
+  // ── Membros da equipe para atribuição ────────────────────────────────────
   const { data: teamMembers = [] } = useQuery({
     queryKey: ['team-members', crmConsultorEmail],
     queryFn: async () => {
@@ -65,181 +93,88 @@ export default function ClientCRMPanel({ property, onClose }) {
         base44.entities.TeamMember.filter({ primary_user_email: crmConsultorEmail, status: 'Ativo' }),
         base44.entities.TeamMember.filter({ consultor_email: crmConsultorEmail, status: 'Ativo' }),
       ]);
-      // Une e deduplica pelo member_email
       const all = [...byPrimary, ...byConsultor];
       const seen = new Set();
-      return all.filter(m => {
-        if (seen.has(m.member_email)) return false;
-        seen.add(m.member_email);
-        return true;
-      });
+      return all.filter(m => { if (seen.has(m.member_email)) return false; seen.add(m.member_email); return true; });
     },
     enabled: !!crmConsultorEmail,
   });
 
-  // Nome do consultor: se é equipe usa o nome vindo do backend; caso contrário usa o próprio usuário
   const consultorName = useMemo(() => {
     if (isEquipe && hookConsultorName) return hookConsultorName;
     return currentUser?.full_name || crmConsultorEmail;
   }, [isEquipe, hookConsultorName, currentUser, crmConsultorEmail]);
 
-  // Lista de pessoas disponíveis para atribuição: consultor + membros da equipe
   const assignableMembers = useMemo(() => {
-    const list = [];
-    // Adiciona o próprio consultor como opção
-    if (crmConsultorEmail) {
-      list.push({
-        member_email: crmConsultorEmail,
-        member_name: consultorName,
-        member_role: 'Consultor',
-      });
-    }
-    // Adiciona membros da equipe (evita duplicar o consultor)
-    teamMembers.forEach(m => {
-      if (m.member_email !== crmConsultorEmail) {
-        list.push(m);
-      }
-    });
+    const list = crmConsultorEmail ? [{ member_email: crmConsultorEmail, member_name: consultorName, member_role: 'Consultor' }] : [];
+    teamMembers.forEach(m => { if (m.member_email !== crmConsultorEmail) list.push(m); });
     return list;
   }, [teamMembers, crmConsultorEmail, consultorName]);
 
+  // ── Notificação de responsável ───────────────────────────────────────────
   const notifyAssignment = async (responsible_email, responsible_name, type, title) => {
     if (!responsible_email) return;
     try {
       await base44.functions.invoke('notifyCRMAssignment', {
         responsible_email,
         assigner_name: currentUser?.full_name || crmConsultorEmail,
-        type,
-        title,
-        client_name: property?.client_name || property?.property_name,
-        property_id: crmPropertyId,
+        type, title,
+        client_name: property?.client_name,
+        property_id: crmId,
       });
     } catch (e) {
-      console.warn('Erro ao notificar responsável:', e.message);
+      console.warn('Erro ao notificar:', e.message);
     }
   };
 
-  const clientEmail = property?.client_email || property?.owner_email;
-
-  // Busca unificada: tenta pelo property_id E pelo par consultor+client_email ao mesmo tempo
-  const { data: activeCRM, isLoading } = useQuery({
-    queryKey: ['client-crm-unified', crmPropertyId, crmConsultorEmail, clientEmail],
-    queryFn: async () => {
-      const queries = [];
-      if (crmPropertyId) {
-        queries.push(base44.entities.ClientCRM.filter({ property_id: crmPropertyId }));
-      }
-      if (crmConsultorEmail && clientEmail) {
-        queries.push(base44.entities.ClientCRM.filter({ consultor_email: crmConsultorEmail, client_email: clientEmail }));
-      }
-      const results = await Promise.all(queries);
-      // Retorna o primeiro encontrado (prioriza property_id)
-      for (const list of results) {
-        if (list[0]) return list[0];
-      }
-      return null;
-    },
-    enabled: !!(crmPropertyId || (crmConsultorEmail && clientEmail)),
-  });
-
-  const upsertCRM = useMutation({
-    mutationFn: async (data) => {
-      // Se ainda está carregando, aguarda — nunca cria enquanto não sabe se existe
-      if (isLoading) throw new Error('Aguarde o carregamento dos dados.');
-
-      // Re-busca fresca para evitar race conditions
-      let existingId = activeCRM?.id;
-      if (!existingId && crmPropertyId) {
-        const fresh = await base44.entities.ClientCRM.filter({ property_id: crmPropertyId });
-        existingId = fresh[0]?.id;
-      }
-      if (!existingId && crmConsultorEmail && clientEmail) {
-        const fresh = await base44.entities.ClientCRM.filter({ consultor_email: crmConsultorEmail, client_email: clientEmail });
-        existingId = fresh[0]?.id;
-      }
-      if (existingId) {
-        return base44.entities.ClientCRM.update(existingId, data);
-      }
-      // Só cria se realmente não existe nenhum CRM
-      return base44.entities.ClientCRM.create({
-        property_id: crmPropertyId || property?.id,
-        consultor_email: crmConsultorEmail,
-        client_email: clientEmail,
-        client_name: property?.client_name || property?.property_name,
-        ...data,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['client-crm-unified', crmPropertyId, crmConsultorEmail, clientEmail] });
-      queryClient.invalidateQueries({ queryKey: ['crm-board-list'] });
-    },
-    onError: (e) => toast.error(e.message === 'Aguarde o carregamento dos dados.' ? e.message : 'Erro ao salvar.'),
-  });
-
+  // ── Interações ───────────────────────────────────────────────────────────
   const addInteraction = () => {
     if (!newInteraction.title) { toast.error('Informe o título da interação.'); return; }
-    let interactions;
-    if (editingInteraction) {
-      interactions = (activeCRM?.interactions || []).map(i =>
-        i.id === editingInteraction.id ? { ...i, ...newInteraction } : i
-      );
-    } else {
-      interactions = [...(activeCRM?.interactions || []), {
-        id: Date.now().toString(), date: new Date().toISOString(),
-        ...newInteraction, created_by: crmConsultorEmail,
-      }];
-    }
-    upsertCRM.mutate({ interactions });
-    // Notifica responsável apenas em criação ou se trocou de responsável
-    if (!editingInteraction && newInteraction.responsible_email) {
-      notifyAssignment(newInteraction.responsible_email, newInteraction.responsible_name, 'interaction', newInteraction.title);
-    } else if (editingInteraction && newInteraction.responsible_email && newInteraction.responsible_email !== editingInteraction.responsible_email) {
-      notifyAssignment(newInteraction.responsible_email, newInteraction.responsible_name, 'interaction', newInteraction.title);
-    }
+    const interactions = editingInteraction
+      ? (activeCRM?.interactions || []).map(i => i.id === editingInteraction.id ? { ...i, ...newInteraction } : i)
+      : [...(activeCRM?.interactions || []), { id: Date.now().toString(), date: new Date().toISOString(), ...newInteraction, created_by: crmConsultorEmail }];
+    updateCRM.mutate({ interactions });
+    if (!editingInteraction && newInteraction.responsible_email) notifyAssignment(newInteraction.responsible_email, newInteraction.responsible_name, 'interaction', newInteraction.title);
     setNewInteraction({ type: 'Ligação', title: '', description: '', next_action: '', next_action_date: '', responsible_email: '', responsible_name: '' });
-    setShowInteractionForm(false);
-    setEditingInteraction(null);
+    setShowInteractionForm(false); setEditingInteraction(null);
     toast.success(editingInteraction ? 'Interação atualizada!' : 'Interação registrada!');
   };
 
   const deleteInteraction = (id) => {
-    const interactions = (activeCRM?.interactions || []).filter(i => i.id !== id);
-    upsertCRM.mutate({ interactions });
+    updateCRM.mutate({ interactions: (activeCRM?.interactions || []).filter(i => i.id !== id) });
     toast.success('Interação removida.');
   };
 
   const startEditInteraction = (interaction) => {
     setEditingInteraction(interaction);
-    setNewInteraction({
-      type: interaction.type,
-      title: interaction.title,
-      description: interaction.description || '',
-      next_action: interaction.next_action || '',
-      next_action_date: interaction.next_action_date || '',
-      responsible_email: interaction.responsible_email || '',
-      responsible_name: interaction.responsible_name || '',
-    });
+    setNewInteraction({ type: interaction.type, title: interaction.title, description: interaction.description || '', next_action: interaction.next_action || '', next_action_date: interaction.next_action_date || '', responsible_email: interaction.responsible_email || '', responsible_name: interaction.responsible_name || '' });
     setShowInteractionForm(true);
   };
 
+  const saveInteractionThread = (interactionId, thread) => {
+    const interactions = (activeCRM?.interactions || []).map(i => i.id === interactionId ? { ...i, thread } : i);
+    return updateCRM.mutateAsync({ interactions });
+  };
+
+  // ── Tarefas ──────────────────────────────────────────────────────────────
   const addTask = () => {
     if (!newTask.title) { toast.error('Informe o título da tarefa.'); return; }
-    let tasks;
-    if (editingTask) {
-      tasks = (activeCRM?.tasks || []).map(t => t.id === editingTask.id ? { ...t, ...newTask } : t);
-    } else {
-      tasks = [...(activeCRM?.tasks || []), { id: Date.now().toString(), done: false, ...newTask }];
-    }
-    upsertCRM.mutate({ tasks });
-    if (!editingTask && newTask.responsible_email) {
-      notifyAssignment(newTask.responsible_email, newTask.responsible_name, 'task', newTask.title);
-    } else if (editingTask && newTask.responsible_email && newTask.responsible_email !== editingTask.responsible_email) {
-      notifyAssignment(newTask.responsible_email, newTask.responsible_name, 'task', newTask.title);
-    }
+    const tasks = editingTask
+      ? (activeCRM?.tasks || []).map(t => t.id === editingTask.id ? { ...t, ...newTask } : t)
+      : [...(activeCRM?.tasks || []), { id: Date.now().toString(), done: false, ...newTask }];
+    updateCRM.mutate({ tasks });
+    if (!editingTask && newTask.responsible_email) notifyAssignment(newTask.responsible_email, newTask.responsible_name, 'task', newTask.title);
     setNewTask({ title: '', due_date: '', priority: 'Média', responsible_email: '', responsible_name: '' });
-    setShowTaskForm(false);
-    setEditingTask(null);
+    setShowTaskForm(false); setEditingTask(null);
     toast.success(editingTask ? 'Tarefa atualizada!' : 'Tarefa adicionada!');
+  };
+
+  const deleteTask = (id) => {
+    updateCRM.mutate({ tasks: (activeCRM?.tasks || []).filter(t => t.id !== id) });
+  };
+
+  const toggleTask = (id) => {
+    updateCRM.mutate({ tasks: (activeCRM?.tasks || []).map(t => t.id === id ? { ...t, done: !t.done } : t) });
   };
 
   const startEditTask = (task) => {
@@ -248,89 +183,49 @@ export default function ClientCRMPanel({ property, onClose }) {
     setShowTaskForm(true);
   };
 
-  const toggleTask = (taskId) => {
-    const tasks = (activeCRM?.tasks || []).map(t => t.id === taskId ? { ...t, done: !t.done } : t);
-    upsertCRM.mutate({ tasks });
+  const saveTaskThread = (taskId, thread) => {
+    const tasks = (activeCRM?.tasks || []).map(t => t.id === taskId ? { ...t, thread } : t);
+    return updateCRM.mutateAsync({ tasks });
   };
 
-  const deleteTask = (taskId) => {
-    const tasks = (activeCRM?.tasks || []).filter(t => t.id !== taskId);
-    upsertCRM.mutate({ tasks });
-  };
-
+  // ── Serviços ─────────────────────────────────────────────────────────────
   const addService = () => {
     if (!newService.name) { toast.error('Informe o nome do serviço.'); return; }
     const serviceValue = parseFloat(newService.value) || 0;
     let services;
     if (editingServiceIndex !== null) {
-      const prevService = activeCRM?.services?.[editingServiceIndex];
-      const wasReceived = prevService?.received || false;
-      const nowReceived = newService.received;
-      // Se passou a ser recebido agora, registra received_at
-      const received_at = nowReceived && !wasReceived
-        ? new Date().toISOString()
-        : (nowReceived ? (prevService?.received_at || new Date().toISOString()) : null);
-      services = (activeCRM?.services || []).map((s, i) =>
-        i === editingServiceIndex
-          ? { ...s, ...newService, value: serviceValue, received_at }
-          : s
-      );
+      const prev = activeCRM?.services?.[editingServiceIndex];
+      const received_at = newService.received && !prev?.received ? new Date().toISOString() : (newService.received ? prev?.received_at || new Date().toISOString() : null);
+      services = (activeCRM?.services || []).map((s, i) => i === editingServiceIndex ? { ...s, ...newService, value: serviceValue, received_at } : s);
     } else {
-      const received_at = newService.received ? new Date().toISOString() : null;
-      services = [...(activeCRM?.services || []), { ...newService, value: serviceValue, received_at }];
+      services = [...(activeCRM?.services || []), { ...newService, value: serviceValue, received_at: newService.received ? new Date().toISOString() : null }];
     }
-    upsertCRM.mutate({ services });
+    updateCRM.mutate({ services });
     setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', received: false });
-    setShowServiceForm(false);
-    setEditingServiceIndex(null);
+    setShowServiceForm(false); setEditingServiceIndex(null);
     toast.success(editingServiceIndex !== null ? 'Serviço atualizado!' : 'Serviço adicionado!');
+  };
+
+  const deleteService = (index) => {
+    updateCRM.mutate({ services: (activeCRM?.services || []).filter((_, i) => i !== index) });
+    toast.success('Serviço removido.');
   };
 
   const startEditService = (service, index) => {
     setEditingServiceIndex(index);
-    setNewService({
-      name: service.name, status: service.status, value: service.value?.toString() || '',
-      notes: service.notes || '', payment_type: service.payment_type || 'avista',
-      payment_method: service.payment_method || 'Pix', installments: service.installments || '',
-      start_date: service.start_date || '', received: service.received || false,
-    });
+    setNewService({ name: service.name, status: service.status, value: service.value?.toString() || '', notes: service.notes || '', payment_type: service.payment_type || 'avista', payment_method: service.payment_method || 'Pix', installments: service.installments || '', start_date: service.start_date || '', received: service.received || false });
     setShowServiceForm(true);
   };
 
-  const deleteService = (index) => {
-    const services = (activeCRM?.services || []).filter((_, i) => i !== index);
-    upsertCRM.mutate({ services });
-    toast.success('Serviço removido.');
-  };
-
-  const updateStatus = (status) => upsertCRM.mutate({ status });
-
-  const saveInteractionThread = (interactionId, thread) => {
-    const interactions = (activeCRM?.interactions || []).map(i =>
-      i.id === interactionId ? { ...i, thread } : i
-    );
-    return upsertCRM.mutateAsync({ interactions });
-  };
-
-  const saveTaskThread = (taskId, thread) => {
-    const tasks = (activeCRM?.tasks || []).map(t =>
-      t.id === taskId ? { ...t, thread } : t
-    );
-    return upsertCRM.mutateAsync({ tasks });
-  };
-
+  // ── Sincronização Google Calendar ────────────────────────────────────────
   const syncToGoogleCalendar = async (interaction) => {
     setSyncingInteractionId(interaction.id);
     try {
       const response = await base44.functions.invoke('syncToGoogleCalendar', {
-        interaction,
-        clientName: property?.client_name || property?.property_name,
-        propertyName: property?.property_name,
+        interaction, clientName: property?.client_name, propertyName: property?.property_name,
       });
       toast.success('Evento sincronizado com Google Calendar!');
-      if (response.data?.eventLink) {
-        window.open(response.data.eventLink, '_blank');
-      }
+      if (response.data?.eventLink) window.open(response.data.eventLink, '_blank');
     } catch (error) {
       toast.error('Erro ao sincronizar: ' + (error.message || 'Tente novamente'));
     } finally {
@@ -338,43 +233,43 @@ export default function ClientCRMPanel({ property, onClose }) {
     }
   };
 
-  const clientData = (() => {
-    try { return JSON.parse(property?.authorized_users || '{}'); } catch { return {}; }
-  })();
+  if (isLoading) {
+    return <div className="flex items-center justify-center py-12"><div className="w-6 h-6 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" /></div>;
+  }
 
   return (
     <div className="space-y-4">
-      {/* Cabeçalho do cliente */}
+      {/* Cabeçalho */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-gray-100">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
             <span className="text-emerald-700 font-bold text-base">
-              {(property?.client_name || property?.property_name || '?').charAt(0).toUpperCase()}
+              {(property?.client_name || '?').charAt(0).toUpperCase()}
             </span>
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900 leading-tight">{property?.client_name || property?.property_name}</h2>
+            <h2 className="text-lg font-bold text-gray-900 leading-tight">{property?.client_name}</h2>
             <div className="flex flex-wrap items-center gap-3 mt-0.5">
-              {property?.owner_email && (
-                <a href={`mailto:${property.owner_email}`} className="flex items-center gap-1 text-xs text-gray-500 hover:text-emerald-600 transition-colors">
-                  <Mail className="w-3 h-3" />{property.owner_email}
+              {property?.client_email && (
+                <a href={`mailto:${property.client_email}`} className="flex items-center gap-1 text-xs text-gray-500 hover:text-emerald-600 transition-colors">
+                  <Mail className="w-3 h-3" />{property.client_email}
                 </a>
               )}
-              {clientData.phone && (
-                <a href={`https://wa.me/${clientData.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-gray-500 hover:text-emerald-600 transition-colors">
-                  <Phone className="w-3 h-3" />{clientData.phone}
+              {property?.client_phone && (
+                <a href={`https://wa.me/${property.client_phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-gray-500 hover:text-emerald-600 transition-colors">
+                  <Phone className="w-3 h-3" />{property.client_phone}
                 </a>
               )}
             </div>
           </div>
         </div>
-        <Select value={activeCRM?.status || 'Ativo'} onValueChange={updateStatus}>
-          <SelectTrigger className="w-full sm:w-40 h-9 text-sm">
+        <Select value={activeCRM?.status || property?.status || 'NovoProspect'} onValueChange={(s) => updateCRM.mutate({ status: s })}>
+          <SelectTrigger className="w-full sm:w-52 h-9 text-sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {Object.keys(STATUS_COLORS).map(s => (
-              <SelectItem key={s} value={s}>{s}</SelectItem>
+            {STATUS_OPTIONS.map(s => (
+              <SelectItem key={s} value={s}>{STATUS_LABELS[s] || s}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -387,13 +282,9 @@ export default function ClientCRMPanel({ property, onClose }) {
           <TabsTrigger value="services" className="text-xs sm:text-sm">Serviços</TabsTrigger>
         </TabsList>
 
-        {/* Interações */}
+        {/* ── Interações ── */}
         <TabsContent value="interactions" className="space-y-3 mt-4">
-          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto" onClick={() => {
-            setEditingInteraction(null);
-            setNewInteraction({ type: 'Ligação', title: '', description: '', next_action: '', next_action_date: '' });
-            setShowInteractionForm(true);
-          }}>
+          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto" onClick={() => { setEditingInteraction(null); setNewInteraction({ type: 'Ligação', title: '', description: '', next_action: '', next_action_date: '', responsible_email: '', responsible_name: '' }); setShowInteractionForm(true); }}>
             <Plus className="w-3 h-3 mr-1" /> Nova Interação
           </Button>
 
@@ -431,25 +322,18 @@ export default function ClientCRMPanel({ property, onClose }) {
                 {assignableMembers.length > 0 && (
                   <div>
                     <Label className="text-xs text-gray-600 mb-1 block flex items-center gap-1"><UserCheck className="w-3 h-3" /> Responsável</Label>
-                    <Select value={newInteraction.responsible_email || ''} onValueChange={v => {
-                      const member = assignableMembers.find(m => m.member_email === v);
-                      setNewInteraction(p => ({ ...p, responsible_email: v || '', responsible_name: member?.member_name || v }));
-                    }}>
+                    <Select value={newInteraction.responsible_email || ''} onValueChange={v => { const m = assignableMembers.find(m => m.member_email === v); setNewInteraction(p => ({ ...p, responsible_email: v || '', responsible_name: m?.member_name || v })); }}>
                       <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione o responsável (opcional)" /></SelectTrigger>
                       <SelectContent>
-                      <SelectItem value={null}>— Sem responsável —</SelectItem>
-                      {assignableMembers.map(m => (
-                        <SelectItem key={m.member_email} value={m.member_email}>
-                          {m.member_name || m.member_email} · {m.member_role}
-                        </SelectItem>
-                      ))}
+                        <SelectItem value={null}>— Sem responsável —</SelectItem>
+                        {assignableMembers.map(m => <SelectItem key={m.member_email} value={m.member_email}>{m.member_name || m.member_email} · {m.member_role}</SelectItem>)}
                       </SelectContent>
-                      </Select>
-                      </div>
-                      )}
-                      <div className="flex justify-end gap-2 pt-1">
-                      <Button size="sm" variant="outline" onClick={() => { setShowInteractionForm(false); setEditingInteraction(null); }}>Cancelar</Button>
-                  <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={addInteraction}>Salvar</Button>
+                    </Select>
+                  </div>
+                )}
+                <div className="flex justify-end gap-2 pt-1">
+                  <Button size="sm" variant="outline" onClick={() => { setShowInteractionForm(false); setEditingInteraction(null); }}>Cancelar</Button>
+                  <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={addInteraction} disabled={updateCRM.isPending}>Salvar</Button>
                 </div>
               </CardContent>
             </Card>
@@ -457,10 +341,7 @@ export default function ClientCRMPanel({ property, onClose }) {
 
           <div className="space-y-2">
             {(activeCRM?.interactions || []).length === 0 ? (
-              <div className="text-center py-10">
-                <MessageCircle className="w-10 h-10 mx-auto text-gray-200 mb-2" />
-                <p className="text-sm text-gray-400">Nenhuma interação registrada</p>
-              </div>
+              <div className="text-center py-10"><MessageCircle className="w-10 h-10 mx-auto text-gray-200 mb-2" /><p className="text-sm text-gray-400">Nenhuma interação registrada</p></div>
             ) : (
               [...(activeCRM?.interactions || [])].reverse().map(interaction => {
                 const Icon = INTERACTION_ICONS[interaction.type] || Clock;
@@ -474,40 +355,18 @@ export default function ClientCRMPanel({ property, onClose }) {
                         <span className="font-semibold text-sm text-gray-900 leading-snug">{interaction.title}</span>
                         <div className="flex items-center gap-1 flex-shrink-0">
                           <Badge variant="outline" className="text-xs px-1.5 py-0">{interaction.type}</Badge>
-                          <button onClick={() => startEditInteraction(interaction)} className="p-1 hover:bg-blue-50 rounded text-blue-400 hover:text-blue-600" title="Editar">
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-                          <button onClick={() => syncToGoogleCalendar(interaction)} disabled={syncingInteractionId === interaction.id} className="p-1 hover:bg-emerald-50 rounded text-emerald-500 disabled:opacity-40" title="Sincronizar Google Calendar">
+                          <button onClick={() => startEditInteraction(interaction)} className="p-1 hover:bg-blue-50 rounded text-blue-400 hover:text-blue-600"><Edit3 className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => syncToGoogleCalendar(interaction)} disabled={syncingInteractionId === interaction.id} className="p-1 hover:bg-emerald-50 rounded text-emerald-500 disabled:opacity-40">
                             {syncingInteractionId === interaction.id ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <Share2 className="w-3.5 h-3.5" />}
                           </button>
-                          <button onClick={() => deleteInteraction(interaction.id)} className="p-1 hover:bg-red-50 rounded text-gray-300 hover:text-red-400" title="Excluir">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          <button onClick={() => deleteInteraction(interaction.id)} className="p-1 hover:bg-red-50 rounded text-gray-300 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
                       </div>
                       {interaction.description && <p className="text-xs text-gray-500 mt-1 leading-relaxed">{interaction.description}</p>}
-                      {interaction.next_action && (
-                        <p className="text-xs text-amber-600 mt-1.5 bg-amber-50 px-2 py-1 rounded-md inline-block">
-                          → {interaction.next_action}{interaction.next_action_date && ` · ${interaction.next_action_date}`}
-                        </p>
-                      )}
-                      {interaction.responsible_name && (
-                        <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
-                          <UserCheck className="w-3 h-3" /> {interaction.responsible_name}
-                        </p>
-                      )}
-                      <p className="text-xs text-gray-400 mt-1.5">
-                        {interaction.date ? format(new Date(interaction.date), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : ''}
-                      </p>
-                      <CRMThread
-                        item={interaction}
-                        itemType="interaction"
-                        teamMembers={assignableMembers}
-                        currentUser={currentUser}
-                        onSaveThread={(thread) => saveInteractionThread(interaction.id, thread)}
-                        propertyId={crmPropertyId}
-                        clientName={property?.client_name || property?.property_name}
-                      />
+                      {interaction.next_action && <p className="text-xs text-amber-600 mt-1.5 bg-amber-50 px-2 py-1 rounded-md inline-block">→ {interaction.next_action}{interaction.next_action_date && ` · ${interaction.next_action_date}`}</p>}
+                      {interaction.responsible_name && <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1"><UserCheck className="w-3 h-3" /> {interaction.responsible_name}</p>}
+                      <p className="text-xs text-gray-400 mt-1.5">{interaction.date ? format(new Date(interaction.date), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : ''}</p>
+                      <CRMThread item={interaction} itemType="interaction" teamMembers={assignableMembers} currentUser={currentUser} onSaveThread={(thread) => saveInteractionThread(interaction.id, thread)} propertyId={crmId} clientName={property?.client_name} />
                     </div>
                   </div>
                 );
@@ -516,13 +375,9 @@ export default function ClientCRMPanel({ property, onClose }) {
           </div>
         </TabsContent>
 
-        {/* Tarefas */}
+        {/* ── Tarefas ── */}
         <TabsContent value="tasks" className="space-y-3 mt-4">
-          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto" onClick={() => {
-            setEditingTask(null);
-            setNewTask({ title: '', due_date: '', priority: 'Média' });
-            setShowTaskForm(true);
-          }}>
+          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto" onClick={() => { setEditingTask(null); setNewTask({ title: '', due_date: '', priority: 'Média', responsible_email: '', responsible_name: '' }); setShowTaskForm(true); }}>
             <Plus className="w-3 h-3 mr-1" /> Nova Tarefa
           </Button>
 
@@ -553,18 +408,11 @@ export default function ClientCRMPanel({ property, onClose }) {
                   {assignableMembers.length > 0 && (
                     <div className="sm:col-span-2">
                       <Label className="text-xs text-gray-600 mb-1 block flex items-center gap-1"><UserCheck className="w-3 h-3" /> Responsável</Label>
-                      <Select value={newTask.responsible_email || ''} onValueChange={v => {
-                        const member = assignableMembers.find(m => m.member_email === v);
-                        setNewTask(p => ({ ...p, responsible_email: v || '', responsible_name: member?.member_name || v }));
-                      }}>
+                      <Select value={newTask.responsible_email || ''} onValueChange={v => { const m = assignableMembers.find(m => m.member_email === v); setNewTask(p => ({ ...p, responsible_email: v || '', responsible_name: m?.member_name || v })); }}>
                         <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione o responsável (opcional)" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value={null}>— Sem responsável —</SelectItem>
-                          {assignableMembers.map(m => (
-                            <SelectItem key={m.member_email} value={m.member_email}>
-                              {m.member_name || m.member_email} · {m.member_role}
-                            </SelectItem>
-                          ))}
+                          {assignableMembers.map(m => <SelectItem key={m.member_email} value={m.member_email}>{m.member_name || m.member_email} · {m.member_role}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
@@ -572,7 +420,7 @@ export default function ClientCRMPanel({ property, onClose }) {
                 </div>
                 <div className="flex justify-end gap-2 pt-1">
                   <Button size="sm" variant="outline" onClick={() => { setShowTaskForm(false); setEditingTask(null); }}>Cancelar</Button>
-                  <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={addTask}>Salvar</Button>
+                  <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={addTask} disabled={updateCRM.isPending}>Salvar</Button>
                 </div>
               </CardContent>
             </Card>
@@ -580,55 +428,26 @@ export default function ClientCRMPanel({ property, onClose }) {
 
           <div className="space-y-2">
             {(activeCRM?.tasks || []).length === 0 ? (
-              <div className="text-center py-10">
-                <CheckSquare className="w-10 h-10 mx-auto text-gray-200 mb-2" />
-                <p className="text-sm text-gray-400">Nenhuma tarefa cadastrada</p>
-              </div>
+              <div className="text-center py-10"><CheckSquare className="w-10 h-10 mx-auto text-gray-200 mb-2" /><p className="text-sm text-gray-400">Nenhuma tarefa cadastrada</p></div>
             ) : (
               (activeCRM?.tasks || []).map(task => {
                 const isOverdue = task.due_date && !task.done && new Date(task.due_date) < new Date();
-                const priorityBadge = {
-                  'Alta': 'bg-red-100 text-red-700',
-                  'Média': 'bg-amber-100 text-amber-700',
-                  'Baixa': 'bg-gray-100 text-gray-600',
-                }[task.priority] || 'bg-gray-100 text-gray-600';
+                const priorityBadge = { 'Alta': 'bg-red-100 text-red-700', 'Média': 'bg-amber-100 text-amber-700', 'Baixa': 'bg-gray-100 text-gray-600' }[task.priority] || 'bg-gray-100 text-gray-600';
                 return (
                   <div key={task.id} className={`flex items-start gap-3 p-3 rounded-xl border transition-colors ${task.done ? 'bg-gray-50 border-gray-100 opacity-70' : 'bg-white border-gray-200 hover:border-emerald-100'}`}>
                     <button onClick={() => toggleTask(task.id)} className="mt-0.5 flex-shrink-0">
-                      {task.done
-                        ? <CheckSquare className="w-5 h-5 text-emerald-500" />
-                        : <Square className="w-5 h-5 text-gray-300 hover:text-emerald-400 transition-colors" />}
+                      {task.done ? <CheckSquare className="w-5 h-5 text-emerald-500" /> : <Square className="w-5 h-5 text-gray-300 hover:text-emerald-400 transition-colors" />}
                     </button>
                     <div className="flex-1 min-w-0">
                       <p className={`text-sm font-medium leading-snug ${task.done ? 'line-through text-gray-400' : 'text-gray-800'}`}>{task.title}</p>
-                      {task.due_date && (
-                        <p className={`text-xs mt-1 ${isOverdue ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
-                          {isOverdue ? '⚠ Atrasado · ' : '📅 '}{task.due_date}
-                        </p>
-                      )}
-                      {task.responsible_name && (
-                        <p className="text-xs text-emerald-600 mt-0.5 flex items-center gap-1">
-                          <UserCheck className="w-3 h-3" /> {task.responsible_name}
-                        </p>
-                      )}
-                      <CRMThread
-                        item={task}
-                        itemType="task"
-                        teamMembers={assignableMembers}
-                        currentUser={currentUser}
-                        onSaveThread={(thread) => saveTaskThread(task.id, thread)}
-                        propertyId={crmPropertyId}
-                        clientName={property?.client_name || property?.property_name}
-                      />
+                      {task.due_date && <p className={`text-xs mt-1 ${isOverdue ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>{isOverdue ? '⚠ Atrasado · ' : '📅 '}{task.due_date}</p>}
+                      {task.responsible_name && <p className="text-xs text-emerald-600 mt-0.5 flex items-center gap-1"><UserCheck className="w-3 h-3" /> {task.responsible_name}</p>}
+                      <CRMThread item={task} itemType="task" teamMembers={assignableMembers} currentUser={currentUser} onSaveThread={(thread) => saveTaskThread(task.id, thread)} propertyId={crmId} clientName={property?.client_name} />
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <span className={`text-xs font-medium px-1.5 py-0.5 rounded-md ${priorityBadge}`}>{task.priority}</span>
-                      <button onClick={() => startEditTask(task)} className="p-1 hover:bg-blue-50 rounded text-gray-300 hover:text-blue-500 transition-colors">
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => deleteTask(task.id)} className="p-1 hover:bg-red-50 rounded text-gray-300 hover:text-red-400 transition-colors">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <button onClick={() => startEditTask(task)} className="p-1 hover:bg-blue-50 rounded text-gray-300 hover:text-blue-500 transition-colors"><Edit3 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => deleteTask(task.id)} className="p-1 hover:bg-red-50 rounded text-gray-300 hover:text-red-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
                   </div>
                 );
@@ -637,13 +456,9 @@ export default function ClientCRMPanel({ property, onClose }) {
           </div>
         </TabsContent>
 
-        {/* Serviços */}
+        {/* ── Serviços ── */}
         <TabsContent value="services" className="space-y-3 mt-4">
-          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto" onClick={() => {
-            setEditingServiceIndex(null);
-            setNewService({ name: '', status: 'Em Proposta', value: '', notes: '' });
-            setShowServiceForm(true);
-          }}>
+          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto" onClick={() => { setEditingServiceIndex(null); setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', received: false }); setShowServiceForm(true); }}>
             <Plus className="w-3 h-3 mr-1" /> Novo Serviço
           </Button>
 
@@ -660,9 +475,7 @@ export default function ClientCRMPanel({ property, onClose }) {
                     <Label className="text-xs text-gray-600 mb-1 block">Status</Label>
                     <Select value={newService.status} onValueChange={v => setNewService(p => ({ ...p, status: v }))}>
                       <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {['Em Proposta','Contratado','Em Andamento','Concluído','Cancelado'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                      </SelectContent>
+                      <SelectContent>{['Em Proposta','Contratado','Em Andamento','Concluído','Cancelado'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   <div>
@@ -687,9 +500,7 @@ export default function ClientCRMPanel({ property, onClose }) {
                     <Label className="text-xs text-gray-600 mb-1 block">Forma de Pagamento</Label>
                     <Select value={newService.payment_method} onValueChange={v => setNewService(p => ({ ...p, payment_method: v }))}>
                       <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {['Pix','Transferência','Boleto','Cartão de Crédito','Cartão de Débito','Dinheiro','Cheque','Outro'].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                      </SelectContent>
+                      <SelectContent>{['Pix','Transferência','Boleto','Cartão de Crédito','Cartão de Débito','Dinheiro','Cheque','Outro'].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   {newService.payment_type === 'parcelado' && (
@@ -709,13 +520,12 @@ export default function ClientCRMPanel({ property, onClose }) {
                 </div>
                 <div className="flex justify-end gap-2 pt-1">
                   <Button size="sm" variant="outline" onClick={() => { setShowServiceForm(false); setEditingServiceIndex(null); }}>Cancelar</Button>
-                  <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={addService}>Salvar</Button>
+                  <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={addService} disabled={updateCRM.isPending}>Salvar</Button>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Resumo financeiro */}
           {(activeCRM?.services || []).length > 0 && (() => {
             const services = activeCRM.services || [];
             const total = services.reduce((s, svc) => s + (parseFloat(svc.value) || 0), 0);
@@ -723,69 +533,34 @@ export default function ClientCRMPanel({ property, onClose }) {
             const pending = total - received;
             return (
               <div className="grid grid-cols-3 gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100 mb-2">
-                <div className="text-center">
-                  <p className="text-xs text-gray-500">Total Contratado</p>
-                  <p className="text-sm font-bold text-gray-800">R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-gray-500">Recebido</p>
-                  <p className="text-sm font-bold text-emerald-700">R$ {received.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-gray-500">A Receber</p>
-                  <p className={`text-sm font-bold ${pending > 0 ? 'text-amber-700' : 'text-gray-500'}`}>R$ {pending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                </div>
+                <div className="text-center"><p className="text-xs text-gray-500">Total Contratado</p><p className="text-sm font-bold text-gray-800">R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+                <div className="text-center"><p className="text-xs text-gray-500">Recebido</p><p className="text-sm font-bold text-emerald-700">R$ {received.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+                <div className="text-center"><p className="text-xs text-gray-500">A Receber</p><p className={`text-sm font-bold ${pending > 0 ? 'text-amber-700' : 'text-gray-500'}`}>R$ {pending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
               </div>
             );
           })()}
 
           <div className="space-y-2">
             {(activeCRM?.services || []).length === 0 ? (
-              <div className="text-center py-10">
-                <Briefcase className="w-10 h-10 mx-auto text-gray-200 mb-2" />
-                <p className="text-sm text-gray-400">Nenhum serviço cadastrado</p>
-              </div>
+              <div className="text-center py-10"><Briefcase className="w-10 h-10 mx-auto text-gray-200 mb-2" /><p className="text-sm text-gray-400">Nenhum serviço cadastrado</p></div>
             ) : (
               (activeCRM?.services || []).map((service, i) => {
-                const statusColor = {
-                  'Em Proposta': 'bg-blue-100 text-blue-700',
-                  'Contratado': 'bg-purple-100 text-purple-700',
-                  'Em Andamento': 'bg-amber-100 text-amber-700',
-                  'Concluído': 'bg-green-100 text-green-700',
-                  'Cancelado': 'bg-red-100 text-red-700',
-                }[service.status] || 'bg-gray-100 text-gray-700';
+                const statusColor = { 'Em Proposta': 'bg-blue-100 text-blue-700', 'Contratado': 'bg-purple-100 text-purple-700', 'Em Andamento': 'bg-amber-100 text-amber-700', 'Concluído': 'bg-green-100 text-green-700', 'Cancelado': 'bg-red-100 text-red-700' }[service.status] || 'bg-gray-100 text-gray-700';
                 return (
                   <div key={i} className="flex items-start justify-between gap-3 p-3 rounded-xl border border-gray-100 bg-white hover:border-emerald-100 transition-colors">
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm text-gray-900 leading-snug">{service.name}</p>
                       {service.notes && <p className="text-xs text-gray-500 mt-0.5">{service.notes}</p>}
                       <div className="flex flex-wrap items-center gap-2 mt-1">
-                        {parseFloat(service.value) > 0 && (
-                          <p className="text-sm font-bold text-emerald-700">
-                            R$ {parseFloat(service.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            {service.payment_type === 'parcelado' && service.installments && (
-                              <span className="text-xs font-normal text-gray-500"> · {service.installments}x</span>
-                            )}
-                          </p>
-                        )}
+                        {parseFloat(service.value) > 0 && <p className="text-sm font-bold text-emerald-700">R$ {parseFloat(service.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}{service.payment_type === 'parcelado' && service.installments && <span className="text-xs font-normal text-gray-500"> · {service.installments}x</span>}</p>}
                         {service.payment_method && <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded-md">{service.payment_method}</span>}
-                        {service.payment_type === 'avista' && <span className="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-md">À Vista</span>}
-                        {service.received
-                          ? <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded-md font-medium">
-                              ✓ Recebido{service.received_at ? ` em ${format(new Date(service.received_at), 'dd/MM/yy')}` : ''}
-                            </span>
-                          : <span className="text-xs px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded-md">Aguardando</span>
-                        }
+                        {service.received ? <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded-md font-medium">✓ Recebido{service.received_at ? ` em ${format(new Date(service.received_at), 'dd/MM/yy')}` : ''}</span> : <span className="text-xs px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded-md">Aguardando</span>}
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusColor}`}>{service.status}</span>
-                      <button onClick={() => startEditService(service, i)} className="p-1 hover:bg-blue-50 rounded text-gray-300 hover:text-blue-500 transition-colors">
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => deleteService(i)} className="p-1 hover:bg-red-50 rounded text-gray-300 hover:text-red-400 transition-colors">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <button onClick={() => startEditService(service, i)} className="p-1 hover:bg-blue-50 rounded text-gray-300 hover:text-blue-500 transition-colors"><Edit3 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => deleteService(i)} className="p-1 hover:bg-red-50 rounded text-gray-300 hover:text-red-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
                   </div>
                 );

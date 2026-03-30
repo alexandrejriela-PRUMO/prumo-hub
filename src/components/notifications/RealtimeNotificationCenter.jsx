@@ -78,9 +78,13 @@ export default function RealtimeNotificationCenter({ user, isOpen, onClose }) {
     try {
       if (!notif.read) await markAsRead(notif.id);
       if (notif.link) {
-        const pageName = notif.link.replace(/^\//, '');
-        if (pageName) {
-          navigate(createPageUrl(pageName));
+        const raw = notif.link.replace(/^\//, '');
+        if (raw) {
+          // Suporta links com query params: "CRMBoard?property_id=xxx"
+          const [pageName, queryString] = raw.split('?');
+          const baseUrl = createPageUrl(pageName);
+          const finalUrl = queryString ? `${baseUrl}?${queryString}` : baseUrl;
+          navigate(finalUrl);
           onClose();
         }
       }

@@ -14,7 +14,7 @@ function renderMessage(text) {
   );
 }
 
-export default function CRMThread({ item, itemType, teamMembers = [], currentUser, onSaveThread }) {
+export default function CRMThread({ item, itemType, teamMembers = [], currentUser, onSaveThread, propertyId, clientName }) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [showMentions, setShowMentions] = useState(false);
@@ -82,8 +82,9 @@ export default function CRMThread({ item, itemType, teamMembers = [], currentUse
           responsible_email: email,
           assigner_name: currentUser?.full_name || currentUser?.email,
           type: 'mention',
-          title: `Menção em ${itemType === 'interaction' ? 'interação' : 'tarefa'}: ${item?.title}`,
-          client_name: '',
+          title: item?.title || 'comentário',
+          client_name: clientName || '',
+          property_id: propertyId || '',
         }).catch(() => {});
       });
     }

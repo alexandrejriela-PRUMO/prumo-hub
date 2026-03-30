@@ -1,26 +1,45 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { responsible_email, assigner_name, type, title, client_name } = await req.json();
+    const { responsible_email, assigner_name, type, title, client_name, property_id } = await req.json();
 
     if (!responsible_email || !title) {
       return Response.json({ error: 'responsible_email e title são obrigatórios' }, { status: 400 });
     }
 
-    const typeLabel = type === 'task' ? 'Tarefa' : 'Interação';
-    const notifTitle = `PRUMO · ${typeLabel} delegada a você`;
-    const message = `${assigner_name || 'O consultor'} delegou uma ${typeLabel.toLowerCase()} para você no CRM do cliente "${client_name}".\n\nTítulo: ${title}`;
+    let typeLabel, notifTitle, message, eventType;
+
+    if (type === 'task') {
+      typeLabel = 'Tarefa';
+      notifTitle = `PRUMO · Tarefa delegada a você`;
+      message = `${assigner_name || 'O consultor'} delegou a tarefa "${title}" para você no CRM do cliente "${client_name}".`;
+      eventType = 'atualizacao_cliente_crm';
+    } else if (type === 'mention') {
+      typeLabel = 'Menção';
+      notifTitle = `PRUMO · Você foi mencionado no CRM`;
+      message = `${assigner_name || 'Alguém'} mencionou você em um comentário sobre "${title}" no CRM do cliente "${client_name}".`;
+      eventType = 'novo_cliente_crm';
+    } else {
+      typeLabel = 'Interação';
+      notifTitle = `PRUMO · Interação delegada a você`;
+      message = `${assigner_name || 'O consultor'} delegou a interação "${title}" para você no CRM do cliente "${client_name}".`;
+      eventType = 'novo_cliente_crm';
+    }
+
+    // Link direto para o CRMBoard com o property_id, se disponível
+    const link = property_id ? `CRMBoard?property_id=${property_id}` : 'CRMBoard';
 
     // Notificação in-app
     await base44.asServiceRole.entities.InAppNotification.create({
       user_email: responsible_email,
       title: notifTitle,
       message,
-      event_type: type === 'task' ? 'atualizacao_cliente_crm' : 'novo_cliente_crm',
+      event_type: eventType,
       severity: 'info',
       read: false,
+      link,
     });
 
     // Email

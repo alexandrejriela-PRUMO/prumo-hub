@@ -108,10 +108,11 @@ export default function ClientCRMPanel({ property, onClose }) {
     try {
       await base44.functions.invoke('notifyCRMAssignment', {
         responsible_email,
-        assigner_name: crmConsultorEmail,
+        assigner_name: currentUser?.full_name || crmConsultorEmail,
         type,
         title,
         client_name: property?.client_name || property?.property_name,
+        property_id: crmPropertyId,
       });
     } catch (e) {
       console.warn('Erro ao notificar responsável:', e.message);
@@ -494,6 +495,8 @@ export default function ClientCRMPanel({ property, onClose }) {
                         teamMembers={assignableMembers}
                         currentUser={currentUser}
                         onSaveThread={(thread) => saveInteractionThread(interaction.id, thread)}
+                        propertyId={crmPropertyId}
+                        clientName={property?.client_name || property?.property_name}
                       />
                     </div>
                   </div>
@@ -604,6 +607,8 @@ export default function ClientCRMPanel({ property, onClose }) {
                         teamMembers={assignableMembers}
                         currentUser={currentUser}
                         onSaveThread={(thread) => saveTaskThread(task.id, thread)}
+                        propertyId={crmPropertyId}
+                        clientName={property?.client_name || property?.property_name}
                       />
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">

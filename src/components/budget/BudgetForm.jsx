@@ -118,30 +118,42 @@ export default function BudgetForm({ onSubmit, initialData = null }) {
         <CardContent className="space-y-4">
           <div className="space-y-3 border rounded-lg p-4 bg-slate-50">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Input
-                placeholder="Nome do serviço"
-                value={currentService.name}
-                onChange={(e) => setCurrentService({...currentService, name: e.target.value})}
-              />
-              <Input
-                placeholder="Descrição (opcional)"
-                value={currentService.description}
-                onChange={(e) => setCurrentService({...currentService, description: e.target.value})}
-              />
-              <Input
-                type="number"
-                placeholder="Horas"
-                step="0.5"
-                value={currentService.hours}
-                onChange={(e) => setCurrentService({...currentService, hours: parseFloat(e.target.value) || 0})}
-              />
-              <Input
-                type="number"
-                placeholder="Valor hora (R$)"
-                step="0.01"
-                value={currentService.hourly_rate}
-                onChange={(e) => setCurrentService({...currentService, hourly_rate: parseFloat(e.target.value) || 0})}
-              />
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Nome do Serviço</label>
+                <Input
+                  placeholder="Ex: CAR, Consultoria, Georreferenciamento"
+                  value={currentService.name}
+                  onChange={(e) => setCurrentService({...currentService, name: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Descrição (opcional)</label>
+                <Input
+                  placeholder="Detalhes adicionais do serviço"
+                  value={currentService.description}
+                  onChange={(e) => setCurrentService({...currentService, description: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Quantidade de Horas</label>
+                <Input
+                  type="number"
+                  placeholder="Ex: 10, 20.5"
+                  step="0.5"
+                  value={currentService.hours}
+                  onChange={(e) => setCurrentService({...currentService, hours: parseFloat(e.target.value) || 0})}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Valor por Hora (R$)</label>
+                <Input
+                  type="number"
+                  placeholder="Ex: 150.00"
+                  step="0.01"
+                  value={currentService.hourly_rate}
+                  onChange={(e) => setCurrentService({...currentService, hourly_rate: parseFloat(e.target.value) || 0})}
+                />
+              </div>
             </div>
             <Button type="button" onClick={addService} className="w-full" variant="outline">
               <Plus className="w-4 h-4 mr-2" /> Adicionar Serviço
@@ -180,22 +192,26 @@ export default function BudgetForm({ onSubmit, initialData = null }) {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium mb-1">Deslocamento (R$)</label>
+              <label className="block text-sm font-medium mb-1">Valor do Deslocamento (R$)</label>
               <Input
                 type="number"
+                placeholder="Ex: 100.00 ou 150.50"
                 step="0.01"
                 value={formData.travel_cost}
                 onChange={(e) => setFormData({...formData, travel_cost: parseFloat(e.target.value) || 0})}
               />
+              <p className="text-xs text-gray-500 mt-1">Custos de transporte e locomoção</p>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Combustível (R$)</label>
+              <label className="block text-sm font-medium mb-1">Custo de Combustível (R$)</label>
               <Input
                 type="number"
+                placeholder="Ex: 50.00 ou 75.30"
                 step="0.01"
                 value={formData.fuel_cost}
                 onChange={(e) => setFormData({...formData, fuel_cost: parseFloat(e.target.value) || 0})}
               />
+              <p className="text-xs text-gray-500 mt-1">Gasolina, diesel ou outros combustíveis</p>
             </div>
           </div>
 
@@ -203,21 +219,25 @@ export default function BudgetForm({ onSubmit, initialData = null }) {
           <div className="border-t pt-4">
             <label className="block text-sm font-medium mb-2">Outras Taxas</label>
             <div className="space-y-3 border rounded-lg p-4 bg-slate-50">
-              <div className="flex gap-3">
+              <div className="space-y-2 mb-3">
+                <label className="block text-xs font-medium text-gray-600">Descrição da Taxa</label>
                 <Input
-                  placeholder="Descrição da taxa"
+                  placeholder="Ex: Taxa administrativa, Pesquisa documental, Análise técnica"
                   value={currentFee.name}
                   onChange={(e) => setCurrentFee({...currentFee, name: e.target.value})}
-                  className="flex-1"
                 />
-                <Input
-                  type="number"
-                  placeholder="Valor (R$)"
-                  step="0.01"
-                  value={currentFee.amount}
-                  onChange={(e) => setCurrentFee({...currentFee, amount: parseFloat(e.target.value) || 0})}
-                  className="w-32"
-                />
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Valor da Taxa (R$)</label>
+                  <Input
+                    type="number"
+                    placeholder="Ex: 200.00"
+                    step="0.01"
+                    value={currentFee.amount}
+                    onChange={(e) => setCurrentFee({...currentFee, amount: parseFloat(e.target.value) || 0})}
+                  />
+                </div>
                 <Button type="button" onClick={addFee} variant="outline">
                   <Plus className="w-4 h-4" />
                 </Button>
@@ -256,18 +276,22 @@ export default function BudgetForm({ onSubmit, initialData = null }) {
             <label className="block text-sm font-medium mb-1">Desconto (%)</label>
             <Input
               type="number"
+              placeholder="Ex: 10 para 10% de desconto"
               step="0.01"
               value={formData.discount_percentage}
               onChange={(e) => setFormData({...formData, discount_percentage: parseFloat(e.target.value) || 0})}
             />
+            <p className="text-xs text-gray-500 mt-1">Percentual de desconto sobre o total</p>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Validade (dias)</label>
             <Input
               type="number"
+              placeholder="Ex: 30"
               value={formData.validity_days}
               onChange={(e) => setFormData({...formData, validity_days: parseInt(e.target.value) || 30})}
             />
+            <p className="text-xs text-gray-500 mt-1">Quantos dias o orçamento é válido</p>
           </div>
         </CardContent>
       </Card>

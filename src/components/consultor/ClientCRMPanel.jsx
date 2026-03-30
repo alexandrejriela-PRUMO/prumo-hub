@@ -129,39 +129,50 @@ export default function ClientCRMPanel({ property, onClose }) {
     enabled: !!crmPropertyId,
   });
 
-  // Se não encontrou CRM por property_id, tenta por client_email
+  // Se não encontrou CRM por property_id, tenta por consultor_email + client_email
+  const clientEmail = property?.client_email || property?.owner_email;
   const { data: crmByEmail } = useQuery({
-    queryKey: ['client-crm-email', property?.client_email || property?.owner_email],
+    queryKey: ['client-crm-email', crmConsultorEmail, clientEmail],
     queryFn: async () => {
-      const email = property?.client_email || property?.owner_email;
-      if (!email) return null;
-      const results = await base44.entities.ClientCRM.filter({ client_email: email });
+      if (!clientEmail || !crmConsultorEmail) return null;
+      const results = await base44.entities.ClientCRM.filter({ consultor_email: crmConsultorEmail, client_email: clientEmail });
       return results[0] || null;
     },
-    enabled: !crm && !!property?.client_email,
+    enabled: !crm && !!clientEmail && !!crmConsultorEmail,
   });
 
   // Usa crm encontrado ou fallback
   const activeCRM = crm || crmByEmail;
 
   const upsertCRM = useMutation({
-    mutationFn: (data) => {
-      const targetCRM = activeCRM;
-      if (!targetCRM?.id) {
-        // Se não encontrou CRM, cria um novo
-        return base44.entities.ClientCRM.create({
-          property_id: crmPropertyId || property?.id,
-          consultor_email: crmConsultorEmail,
-          client_email: property?.client_email || property?.owner_email,
-          client_name: property?.client_name || property?.property_name,
-          ...data,
-        });
+    mutationFn: async (data) => {
+      // Sempre re-busca o CRM mais atualizado antes de decidir criar ou atualizar
+      // para evitar duplicação quando múltiplos membros da equipe acessam simultaneamente
+      let existingId = activeCRM?.id;
+      if (!existingId && crmPropertyId) {
+        const fresh = await base44.entities.ClientCRM.filter({ property_id: crmPropertyId });
+        existingId = fresh[0]?.id;
       }
-      return base44.entities.ClientCRM.update(targetCRM.id, data);
+      if (!existingId && crmConsultorEmail && clientEmail) {
+        const fresh = await base44.entities.ClientCRM.filter({ consultor_email: crmConsultorEmail, client_email: clientEmail });
+        existingId = fresh[0]?.id;
+      }
+      if (existingId) {
+        return base44.entities.ClientCRM.update(existingId, data);
+      }
+      // Só cria se realmente não existe nenhum CRM para este cliente
+      return base44.entities.ClientCRM.create({
+        property_id: crmPropertyId || property?.id,
+        consultor_email: crmConsultorEmail,
+        client_email: clientEmail,
+        client_name: property?.client_name || property?.property_name,
+        ...data,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['client-crm', crmPropertyId] });
-      queryClient.invalidateQueries({ queryKey: ['client-crm-email', property?.client_email || property?.owner_email] });
+      queryClient.invalidateQueries({ queryKey: ['client-crm-email', crmConsultorEmail, clientEmail] });
+      queryClient.invalidateQueries({ queryKey: ['crm-board-list'] });
     },
     onError: () => toast.error('Erro ao salvar.'),
   });

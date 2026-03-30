@@ -29,6 +29,19 @@ const statusConfig = {
 
 export default function Invoices() {
   const [user, setUser] = useState(null);
+  const [loadingPortal, setLoadingPortal] = useState(false);
+
+  const handleManageSubscription = async () => {
+    setLoadingPortal(true);
+    try {
+      const response = await base44.functions.invoke('createStripePortal', {});
+      window.open(response.data.url, '_blank');
+    } catch (error) {
+      console.error('Erro ao abrir o portal do Stripe:', error);
+    } finally {
+      setLoadingPortal(false);
+    }
+  };
 
   useEffect(() => {
     const loadUser = async () => {
@@ -127,9 +140,19 @@ export default function Invoices() {
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Assinatura e Boletos</h1>
-        <p className="text-gray-500 mt-1">Gerencie sua assinatura, planos e pagamentos</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Assinatura e Boletos</h1>
+          <p className="text-gray-500 mt-1">Gerencie sua assinatura, planos e pagamentos</p>
+        </div>
+        <Button
+          onClick={handleManageSubscription}
+          disabled={loadingPortal}
+          className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white shrink-0"
+        >
+          <CreditCard className="w-4 h-4" />
+          {loadingPortal ? 'Carregando...' : 'Gerenciar no Stripe'}
+        </Button>
       </div>
 
       {/* Subscription Status */}

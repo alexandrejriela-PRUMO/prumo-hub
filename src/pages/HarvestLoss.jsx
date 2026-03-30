@@ -83,11 +83,27 @@ export default function HarvestLossPage() {
   });
 
   const { data: records = [], isLoading } = useQuery({
-    queryKey: ['harvest-loss', user?.email, selectedPropertyId],
+    queryKey: ['harvest-loss', user?.email, selectedPropertyId, isConsultor],
     queryFn: async () => {
-      const filter = isConsultor ? { consultor_email: user.email } : { client_email: user.email };
-      if (selectedPropertyId) filter.property_id = selectedPropertyId;
-      return base44.entities.HarvestLoss.filter(filter, '-data_evento', 200);
+      if (isConsultor) {
+        const filter = { consultor_email: user.email };
+        if (selectedPropertyId) filter.property_id = selectedPropertyId;
+        return base44.entities.HarvestLoss.filter(filter, '-data_evento', 200);
+      } else {
+        const [byConsultor, byClient] = await Promise.all([
+          base44.entities.HarvestLoss.filter(
+            selectedPropertyId ? { consultor_email: user.email, property_id: selectedPropertyId } : { consultor_email: user.email },
+            '-data_evento', 200
+          ),
+          base44.entities.HarvestLoss.filter(
+            selectedPropertyId ? { client_email: user.email, property_id: selectedPropertyId } : { client_email: user.email },
+            '-data_evento', 200
+          ),
+        ]);
+        const all = [...byConsultor, ...byClient];
+        const seen = new Set();
+        return all.filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
+      }
     },
     enabled: !!user?.email,
   });
@@ -221,7 +237,7 @@ export default function HarvestLossPage() {
       property_id: form.property_id || clientProp?.id || '',
       notas: form.notas || '',
       consultor_email: user?.email,
-      client_email: clientProp?.owner_email || user?.email,
+      client_email: isConsultor ? (clientProp?.owner_email || '') : user?.email,
       client_name: clientProp?.client_name || clientProp?.property_name || 'Sem especificar',
       evidencias: Array.isArray(form.evidencias) ? form.evidencias : [],
       documentos: Array.isArray(form.documentos) ? form.documentos : []

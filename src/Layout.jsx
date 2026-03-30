@@ -70,10 +70,11 @@ const consultorNavItems = [
       { name: 'Agenda', page: 'Agenda', icon: CalendarDays },
       { name: 'CRM Prumo', page: 'CRMBoard', icon: ClipboardList },
       { name: 'Meus Clientes', page: 'ConsultorClients', icon: Users },
-       { name: 'Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
-       { name: 'Gerador de Contratos', page: 'ContractGenerator', icon: FileText },
-       { name: 'Gerador de Orçamentos', page: 'BudgetGenerator', icon: ReceiptText },
-       { name: 'Minha Equipe', page: 'MyTeam', icon: Users },
+      { name: 'Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
+      { name: 'Gerador de Contratos', page: 'ContractGenerator', icon: FileText },
+      { name: 'Gerador de Orçamentos', page: 'BudgetGenerator', icon: ReceiptText },
+      { name: 'Modelos de Checklist', page: 'ChecklistTemplates', icon: ClipboardList },
+      { name: 'Minha Equipe', page: 'MyTeam', icon: Users },
     ]
   },
   {

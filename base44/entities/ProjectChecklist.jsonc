@@ -1,0 +1,212 @@
+{
+  "name": "ProjectChecklist",
+  "type": "object",
+  "properties": {
+    "entity_type": {
+      "type": "string",
+      "enum": [
+        "License",
+        "Project"
+      ],
+      "description": "Tipo de entidade vinculada"
+    },
+    "entity_id": {
+      "type": "string",
+      "description": "ID da entidade (License ou Project)"
+    },
+    "consultor_email": {
+      "type": "string",
+      "description": "Email do consultor respons\u00e1vel"
+    },
+    "checklist_title": {
+      "type": "string",
+      "description": "T\u00edtulo do checklist"
+    },
+    "description": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o geral do projeto"
+    },
+    "template_id": {
+      "type": "string",
+      "description": "ID do template usado (opcional)"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "order": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Pendente",
+              "Em Progresso",
+              "Conclu\u00eddo",
+              "Atrasado",
+              "Bloqueado"
+            ],
+            "default": "Pendente"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "Baixa",
+              "M\u00e9dia",
+              "Alta"
+            ],
+            "default": "M\u00e9dia"
+          },
+          "responsible_email": {
+            "type": "string"
+          },
+          "responsible_name": {
+            "type": "string"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "completion_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "PDF",
+                    "Relat\u00f3rio",
+                    "Documento",
+                    "Imagem",
+                    "Shapefile",
+                    "Outro"
+                  ]
+                },
+                "uploaded_by": {
+                  "type": "string"
+                },
+                "uploaded_date": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "size_bytes": {
+                  "type": "number"
+                }
+              }
+            },
+            "default": []
+          },
+          "activity_history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "created",
+                    "status_changed",
+                    "assigned",
+                    "note_added",
+                    "file_uploaded",
+                    "edited"
+                  ]
+                },
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "user_email": {
+                  "type": "string"
+                },
+                "user_name": {
+                  "type": "string"
+                },
+                "details": {
+                  "type": "string"
+                }
+              }
+            },
+            "default": []
+          }
+        }
+      },
+      "default": []
+    },
+    "overall_progress": {
+      "type": "number",
+      "default": 0,
+      "description": "Percentual de progresso (0-100)"
+    },
+    "completed_tasks": {
+      "type": "number",
+      "default": 0
+    },
+    "pending_tasks": {
+      "type": "number",
+      "default": 0
+    },
+    "delayed_tasks": {
+      "type": "number",
+      "default": 0
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Em Progresso",
+        "Conclu\u00eddo",
+        "Atrasado",
+        "Bloqueado"
+      ],
+      "default": "Em Progresso"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_updated": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "entity_type",
+    "entity_id",
+    "consultor_email",
+    "checklist_title"
+  ]
+}

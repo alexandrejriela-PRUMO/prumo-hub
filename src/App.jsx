@@ -28,6 +28,8 @@ const ImportUsersStripe = React.lazy(() => import('./pages/ImportUsersStripe'));
 const CampMode = React.lazy(() => import('./pages/CampMode'));
 const PropertyCentral = React.lazy(() => import('./pages/PropertyCentral'));
 const EnvironmentalAssets = React.lazy(() => import('./pages/EnvironmentalAssets'));
+const ChecklistTemplates = React.lazy(() => import('./pages/ChecklistTemplates'));
+const LicenseChecklist = React.lazy(() => import('./pages/LicenseChecklist'));
 const BudgetGenerator = React.lazy(() => import('./pages/BudgetGenerator'));
 const ContractGenerator = React.lazy(() => import('./pages/ContractGenerator'));
 import OfflineIndicator from '@/components/offline/OfflineIndicator';
@@ -113,6 +115,8 @@ const AuthenticatedApp = () => {
       <Route path="/CampMode" element={<LayoutWrapper currentPageName="CampMode"><Suspense fallback={<LoadingSpinner />}><CampMode /></Suspense></LayoutWrapper>} />
       <Route path="/PropertyCentral" element={<LayoutWrapper currentPageName="PropertyCentral"><Suspense fallback={<LoadingSpinner />}><PropertyCentral /></Suspense></LayoutWrapper>} />
       <Route path="/EnvironmentalAssets" element={<LayoutWrapper currentPageName="EnvironmentalAssets"><Suspense fallback={<LoadingSpinner />}><EnvironmentalAssets /></Suspense></LayoutWrapper>} />
+      <Route path="/ChecklistTemplates" element={<LayoutWrapper currentPageName="ChecklistTemplates"><Suspense fallback={<LoadingSpinner />}><ChecklistTemplates /></Suspense></LayoutWrapper>} />
+      <Route path="/LicenseChecklist" element={<LayoutWrapper currentPageName="LicenseChecklist"><Suspense fallback={<LoadingSpinner />}><LicenseChecklist /></Suspense></LayoutWrapper>} />
       <Route path="/AcceptInvite" element={<Suspense fallback={<LoadingSpinner />}><AcceptInvite /></Suspense>} />
       <Route path="/NotificationAudit" element={<LayoutWrapper currentPageName="NotificationAudit"><Suspense fallback={<LoadingSpinner />}><NotificationAudit /></Suspense></LayoutWrapper>} />
       <Route path="/NFeManagement" element={<LayoutWrapper currentPageName="NFeManagement"><Suspense fallback={<LoadingSpinner />}><NFeManagement /></Suspense></LayoutWrapper>} />

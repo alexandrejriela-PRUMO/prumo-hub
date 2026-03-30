@@ -218,7 +218,7 @@ Deno.serve(async (req) => {
        : null;
 
       if (!property) {
-        console.log('❌ Propriedade não encontrada para CAR:', matchingCarCode);
+        console.log('❌ Propriedade não encontrada para CARs:', apiCars.join(', '));
         continue;
       }
 

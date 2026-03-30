@@ -1,6 +1,11 @@
 /**
  * checkExpiryNotifications — Verifica vencimentos e notifica responsáveis + equipe.
  * SMS: ignorado silenciosamente (canal não implementado).
+ *
+ * CORREÇÕES v2:
+ * - canReceiveNotification: produtor agora é sempre permitido
+ * - notifyWithTeam: verifica plano para membros da equipe corretamente
+ * - Cache movido para dentro do handler (sem dados sujos entre invocações)
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 
@@ -10,6 +15,24 @@ Deno.serve(async (req) => {
     const today = new Date();
     let totalSent = 0;
 
+    // Cache local por execução
+    const teamCache = {};
+    const userDataCache = {};
+    const propConsultorCache = {};
+
+    // ─── Regras de notificação por plano ────────────────────────────────
+    // Produtor, consultor e equipe: sempre recebem.
+    // client_consultor: apenas no plano Enterprise.
+    function canReceiveNotification(recipient, consultor) {
+      const type = recipient?.user_type || 'produtor';
+      if (['produtor', 'consultor', 'equipe'].includes(type)) return true;
+      if (type === 'client_consultor') {
+        const plan = (consultor?.plan || '').toLowerCase();
+        return plan === 'enterprise';
+      }
+      return true;
+    }
+
     // ─── Helper: dias restantes ──────────────────────────────────────────
     const getDays = (dateStr) => {
       if (!dateStr) return null;
@@ -17,7 +40,6 @@ Deno.serve(async (req) => {
     };
 
     // ─── Cache de emails da equipe por consultor ─────────────────────────
-    const teamCache = {};
     const getTeamEmails = async (consultorEmail) => {
       if (!consultorEmail) return [];
       if (teamCache[consultorEmail]) return teamCache[consultorEmail];
@@ -35,17 +57,7 @@ Deno.serve(async (req) => {
       }
     };
 
-    // ─── Regras de notificação por plano ────────────────────────────────
-    function canReceiveNotification(recipient, consultor) {
-      const plan = (consultor?.plan || '').toLowerCase();
-      if (plan === 'start') return recipient.user_type === 'consultor';
-      if (plan === 'pro') return ['consultor', 'equipe'].includes(recipient.user_type);
-      if (plan === 'enterprise') return ['consultor', 'equipe', 'client_consultor'].includes(recipient.user_type);
-      return false;
-    }
-
     // ─── Cache de dados de usuário ──────────────────────────────────────
-    const userDataCache = {};
     const getUserData = async (email) => {
       if (!email) return null;
       if (userDataCache[email]) return userDataCache[email];
@@ -104,23 +116,31 @@ Deno.serve(async (req) => {
       }
     };
 
-    // ─── Notifica owner + equipe do consultor ────────────────────────────
+    // ─── Notifica owner + consultor + equipe do consultor ────────────────
     const notifyWithTeam = async (ownerEmail, consultorEmail, title, message, eventType, severity, link) => {
-      if (await shouldNotify(ownerEmail, consultorEmail)) {
+      // Owner (produtor): sempre notifica se houver email
+      if (ownerEmail) {
         await createNotif(ownerEmail, title, message, eventType, severity, link);
       }
+
       if (consultorEmail && consultorEmail !== ownerEmail) {
+        // Consultor: sempre notifica
         await createNotif(consultorEmail, title, message, eventType, severity, link);
-        // Equipe do consultor
-        const teamEmails = await getTeamEmails(consultorEmail);
-        for (const memberEmail of teamEmails) {
-          await createNotif(memberEmail, title, message, eventType, severity, link);
+
+        // Equipe do consultor: verifica plano
+        const consultorData = await getUserData(consultorEmail);
+        const plan = (consultorData?.plan || '').toLowerCase();
+        if (['pro', 'enterprise'].includes(plan)) {
+          const teamEmails = await getTeamEmails(consultorEmail);
+          for (const memberEmail of teamEmails) {
+            if (memberEmail === ownerEmail || memberEmail === consultorEmail) continue;
+            await createNotif(memberEmail, title, message, eventType, severity, link);
+          }
         }
       }
     };
 
     // ─── Busca consultor da propriedade ─────────────────────────────────
-    const propConsultorCache = {};
     const getConsultor = async (propertyId) => {
       if (!propertyId) return null;
       if (propConsultorCache[propertyId] !== undefined) return propConsultorCache[propertyId];
@@ -171,7 +191,7 @@ Deno.serve(async (req) => {
         } else if ([1, 7].includes(days)) {
           await notifyWithTeam(proc.client_email, consultorEmail,
             `Prazo de Processo em ${days} dia${days > 1 ? 's' : ''}`,
-            `Processo ${proc.process_number}: prazo de etapa em ${days} dia${days > 1 ? 's' : ''}.`,
+            `Processo ${proc.process_number}: prazo em ${days} dia${days > 1 ? 's' : ''}.`,
             'atualizacao_processo', 'warning', '/Processes');
         }
       }
@@ -277,11 +297,12 @@ Deno.serve(async (req) => {
       const tasks = crm.tasks || [];
       let crmChanged = false;
       const updatedTasks = [];
+      const consultorData = await getUserData(crm.consultor_email);
 
       for (const task of tasks) {
         let t = { ...task };
 
-        // ── Atualiza status para 'overdue' automaticamente ────────────────
+        // Atualiza status para 'overdue' automaticamente
         if (!t.done && t.status !== 'done' && t.due_date && t.due_date < todayStr && t.status !== 'overdue') {
           t.status = 'overdue';
           crmChanged = true;
@@ -291,15 +312,11 @@ Deno.serve(async (req) => {
 
         if (t.done || t.status === 'done' || !t.due_date) continue;
 
-        // Destinatário: assigned_to_email ou responsible_email, fallback para consultor
         const responsible = t.assigned_to_email || t.responsible_email || crm.consultor_email;
-        const consultorData = await getUserData(crm.consultor_email);
-
         const days = getDays(t.due_date);
         if (days === null) continue;
 
         if (days <= 0) {
-          // Vencida — notifica responsável + equipe conforme plano
           if (await shouldNotify(responsible, crm.consultor_email)) {
             await createNotif(responsible, '⚠️ Tarefa de CRM Vencida',
               `Tarefa "${t.title}" do cliente "${crm.client_name || 'N/A'}" está VENCIDA.`,
@@ -317,7 +334,6 @@ Deno.serve(async (req) => {
             }
           }
         } else if ([1, 3].includes(days)) {
-          // Vencendo em breve
           if (await shouldNotify(responsible, crm.consultor_email)) {
             await createNotif(responsible,
               `Tarefa de CRM vence em ${days} dia${days > 1 ? 's' : ''}`,
@@ -327,7 +343,6 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Persiste tarefas com status 'overdue' atualizado
       if (crmChanged) {
         try {
           await base44.asServiceRole.entities.ClientCRM.update(crm.id, { tasks: updatedTasks });

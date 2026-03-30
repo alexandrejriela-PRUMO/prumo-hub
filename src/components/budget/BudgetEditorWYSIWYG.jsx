@@ -278,7 +278,7 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, onSave, onSend })
         </div>
       </div>
 
-      {/* CSS para Quill */}
+      {/* CSS para Quill e Preview */}
       <style>{`
         .ql-toolbar.ql-snow {
           border-left: none !important;
@@ -292,6 +292,12 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, onSave, onSend })
           font-family: Arial, sans-serif;
           line-height: 1.6;
         }
+        /* Alinhamento - Quill classes */
+        .ql-align-center { text-align: center !important; }
+        .ql-align-right { text-align: right !important; }
+        .ql-align-justify { text-align: justify !important; }
+        /* Garantir que styles inline também funcionem na preview */
+        [style*="text-align"] { text-align: inherit; }
       `}</style>
     </div>
   );

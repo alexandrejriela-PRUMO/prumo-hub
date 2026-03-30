@@ -3,7 +3,7 @@ import ReactQuill from 'react-quill';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Download, Save, Mail, Upload, Copy, Trash2, ZoomIn, ZoomOut } from 'lucide-react';
+import { Download, Save, Mail, Copy, ZoomIn, ZoomOut } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { toast } from 'sonner';
@@ -34,8 +34,7 @@ export default function ContractEditorWYSIWYG({
   const [templateName, setTemplateName] = useState('');
   const [showTemplateForm, setShowTemplateForm] = useState(false);
   const [zoom, setZoom] = useState(100);
-  const [logoUrl, setLogoUrl] = useState('');
-  const fileInputRef = useRef(null);
+
 
   useEffect(() => {
     if (!documentHtml && selectedTemplate) {
@@ -120,30 +119,7 @@ export default function ContractEditorWYSIWYG({
     setDocumentHtml(html);
   };
 
-  const importDocx = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    
-    try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const arrayBuffer = e.target?.result;
-        const { convertDocx } = await import('mammoth');
-        const result = await convertDocx({ arrayBuffer });
-        
-        const convertedHtml = `
-          <div style="font-family: 'Calibri', 'Arial', sans-serif; line-height: 1.8; color: #333;">
-            ${result.value}
-          </div>
-        `;
-        setDocumentHtml(convertedHtml);
-        toast.success('Documento DOCX importado com sucesso!');
-      };
-      reader.readAsArrayBuffer(file);
-    } catch (error) {
-      toast.error('Erro ao importar DOCX: ' + error.message);
-    }
-  };
+
 
   const exportPDF = async () => {
     try {
@@ -250,21 +226,7 @@ export default function ContractEditorWYSIWYG({
           <CardTitle className="text-lg">Ferramentas</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => fileInputRef.current?.click()}
-            className="gap-2"
-          >
-            <Upload className="w-4 h-4" /> Importar DOCX
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".docx"
-            onChange={importDocx}
-            className="hidden"
-          />
+
           <Button
             size="sm"
             variant="outline"

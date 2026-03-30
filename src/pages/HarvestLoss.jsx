@@ -85,25 +85,14 @@ export default function HarvestLossPage() {
   const { data: records = [], isLoading } = useQuery({
     queryKey: ['harvest-loss', user?.email, selectedPropertyId, isConsultor],
     queryFn: async () => {
-      if (isConsultor) {
-        const filter = { consultor_email: user.email };
-        if (selectedPropertyId) filter.property_id = selectedPropertyId;
-        return base44.entities.HarvestLoss.filter(filter, '-data_evento', 200);
-      } else {
-        const [byConsultor, byClient] = await Promise.all([
-          base44.entities.HarvestLoss.filter(
-            selectedPropertyId ? { consultor_email: user.email, property_id: selectedPropertyId } : { consultor_email: user.email },
-            '-data_evento', 200
-          ),
-          base44.entities.HarvestLoss.filter(
-            selectedPropertyId ? { client_email: user.email, property_id: selectedPropertyId } : { client_email: user.email },
-            '-data_evento', 200
-          ),
-        ]);
-        const all = [...byConsultor, ...byClient];
-        const seen = new Set();
-        return all.filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
-      }
+      const propFilter = selectedPropertyId ? { property_id: selectedPropertyId } : {};
+      const [byConsultor, byClient] = await Promise.all([
+        base44.entities.HarvestLoss.filter({ consultor_email: user.email, ...propFilter }, '-data_evento', 200),
+        base44.entities.HarvestLoss.filter({ client_email: user.email, ...propFilter }, '-data_evento', 200),
+      ]);
+      const all = [...byConsultor, ...byClient];
+      const seen = new Set();
+      return all.filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
     },
     enabled: !!user?.email,
   });
@@ -265,7 +254,7 @@ export default function HarvestLossPage() {
         </Button>
       </div>
 
-      {isConsultor && (
+      {properties.length > 0 && (
         <ConsultorPropertySelector
           properties={properties}
           selectedPropertyId={selectedPropertyId}

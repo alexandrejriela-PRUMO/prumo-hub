@@ -74,26 +74,16 @@ export default function RuralCreditPage() {
   const { data: credits = [], isLoading } = useQuery({
     queryKey: ['rural-credits', user?.email, selectedPropertyId, isConsultor],
     queryFn: async () => {
-      if (isConsultor) {
-        const filter = { consultor_email: user.email };
-        if (selectedPropertyId) filter.property_id = selectedPropertyId;
-        return base44.entities.RuralCredit.filter(filter, '-created_date', 200);
-      } else {
-        // Produtor: busca por consultor_email OU client_email para garantir que todos apareçam
-        const [byConsultor, byClient] = await Promise.all([
-          base44.entities.RuralCredit.filter(
-            selectedPropertyId ? { consultor_email: user.email, property_id: selectedPropertyId } : { consultor_email: user.email },
-            '-created_date', 200
-          ),
-          base44.entities.RuralCredit.filter(
-            selectedPropertyId ? { client_email: user.email, property_id: selectedPropertyId } : { client_email: user.email },
-            '-created_date', 200
-          ),
-        ]);
-        const all = [...byConsultor, ...byClient];
-        const seen = new Set();
-        return all.filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
-      }
+      // Busca por consultor_email (funciona tanto para consultor quanto para produtor que criou direto)
+      // E também por client_email para cobrir todos os casos
+      const propFilter = selectedPropertyId ? { property_id: selectedPropertyId } : {};
+      const [byConsultor, byClient] = await Promise.all([
+        base44.entities.RuralCredit.filter({ consultor_email: user.email, ...propFilter }, '-created_date', 200),
+        base44.entities.RuralCredit.filter({ client_email: user.email, ...propFilter }, '-created_date', 200),
+      ]);
+      const all = [...byConsultor, ...byClient];
+      const seen = new Set();
+      return all.filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
     },
     enabled: !!user?.email,
   });
@@ -242,7 +232,7 @@ export default function RuralCreditPage() {
         </Button>
       </div>
 
-      {isConsultor && (
+      {properties.length > 0 && (
         <ConsultorPropertySelector
           properties={properties}
           selectedPropertyId={selectedPropertyId}

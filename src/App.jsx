@@ -22,6 +22,7 @@ const HarvestLoss = React.lazy(() => import('./pages/HarvestLoss'));
 const CRA = React.lazy(() => import('./pages/CRA'));
 const AcceptInvite = React.lazy(() => import('./pages/AcceptInvite'));
 const NotificationAudit = React.lazy(() => import('./pages/NotificationAudit'));
+const NFeManagement = React.lazy(() => import('./pages/NFeManagement'));
 
 const CampMode = React.lazy(() => import('./pages/CampMode'));
 const PropertyCentral = React.lazy(() => import('./pages/PropertyCentral'));
@@ -111,6 +112,7 @@ const AuthenticatedApp = () => {
       <Route path="/EnvironmentalAssets" element={<LayoutWrapper currentPageName="EnvironmentalAssets"><Suspense fallback={<LoadingSpinner />}><EnvironmentalAssets /></Suspense></LayoutWrapper>} />
       <Route path="/AcceptInvite" element={<Suspense fallback={<LoadingSpinner />}><AcceptInvite /></Suspense>} />
       <Route path="/NotificationAudit" element={<LayoutWrapper currentPageName="NotificationAudit"><Suspense fallback={<LoadingSpinner />}><NotificationAudit /></Suspense></LayoutWrapper>} />
+      <Route path="/NFeManagement" element={<LayoutWrapper currentPageName="NFeManagement"><Suspense fallback={<LoadingSpinner />}><NFeManagement /></Suspense></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
     </>

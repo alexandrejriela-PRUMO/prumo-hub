@@ -82,6 +82,7 @@ const consultorNavItems = [
       { name: 'Painel Financeiro', page: 'FinancialDashboard', icon: BarChart3 },
       { name: 'Transações Consolidadas', page: 'FinancialTransactions', icon: ReceiptText },
       { name: 'Config. de Pagamento', page: 'PaymentSettings', icon: CreditCard },
+      { name: 'Notas Fiscais (NF-e)', page: 'NFeManagement', icon: ReceiptText },
     ]
   },
 ];

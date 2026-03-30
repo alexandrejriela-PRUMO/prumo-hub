@@ -26,33 +26,32 @@ export default function BudgetEditorAdvanced({ budgetData, templates = [], onSav
   React.useEffect(() => {
     const style = document.createElement('style');
     style.textContent = `
-      .quill-editor .ql-container {
-        font-size: 14px;
-        height: 100%;
-      }
-      .quill-editor .ql-editor {
-        min-height: 100%;
-        padding: 15px;
-        font-family: 'Segoe UI', Arial, sans-serif;
-        line-height: 1.6;
-      }
-      .quill-editor .ql-editor.ql-blank::before {
-        font-style: italic;
-        color: #999;
-      }
-      .quill-editor .ql-toolbar {
-        border-top: none;
-        border-left: none;
-        border-right: none;
-        border-bottom: 1px solid #ddd;
-      }
-      .quill-editor {
+      .quill-editor-wrapper {
         display: flex;
         flex-direction: column;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        overflow: hidden;
       }
-      .quill-editor .ql-container {
-        flex-grow: 1;
-        border: none;
+      .quill-editor-wrapper .ql-toolbar.ql-snow {
+        border: none !important;
+        border-bottom: 1px solid #e5e7eb !important;
+        padding: 8px !important;
+        background: #fafafa;
+      }
+      .quill-editor-wrapper .ql-container.ql-snow {
+        border: none !important;
+        font-size: 14px;
+      }
+      .quill-editor-wrapper .ql-editor {
+        min-height: 350px !important;
+        padding: 15px !important;
+        font-family: 'Segoe UI', Arial, sans-serif !important;
+        line-height: 1.6 !important;
+      }
+      .quill-editor-wrapper .ql-editor.ql-blank::before {
+        font-style: italic;
+        color: #999;
       }
     `;
     document.head.appendChild(style);
@@ -192,32 +191,52 @@ export default function BudgetEditorAdvanced({ budgetData, templates = [], onSav
   };
 
   return (
-    <div className="space-y-6 pb-24">
-      {/* Logo Upload */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Logo da Empresa</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header com configurações */}
+      <div className="bg-white border-b border-gray-200 p-4 sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div>
-            <p className="text-sm text-gray-600 mb-3">Adicione a logo da sua empresa ao orçamento</p>
-            <div className="flex gap-3">
+            <h1 className="text-2xl font-bold text-gray-900">Editor de Orçamento</h1>
+            <p className="text-sm text-gray-500 mt-1">Customize seu documento com editor profissional</p>
+          </div>
+          <Button
+            onClick={resetDocument}
+            variant="outline"
+            className="gap-2"
+            title="Restaurar documento padrão"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Restaurar Padrão
+          </Button>
+        </div>
+      </div>
+
+      {/* Conteúdo Principal */}
+      <div className="max-w-7xl mx-auto p-4">
+        {/* Painel de configuração rápida */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* Logo Upload */}
+          <div className="bg-white rounded-lg p-4 border border-gray-200">
+            <h3 className="font-semibold text-sm mb-3 text-gray-900">Logo da Empresa</h3>
+            <div className="flex gap-2 mb-3">
               <Button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={loadingLogo}
                 variant="outline"
-                className="gap-2"
+                size="sm"
+                className="gap-2 flex-1"
               >
                 <ImageIcon className="w-4 h-4" />
-                {loadingLogo ? 'Enviando...' : 'Importar Logo'}
+                {loadingLogo ? 'Enviando...' : 'Importar'}
               </Button>
               {logoUrl && (
                 <Button
                   onClick={() => setLogoUrl('')}
                   variant="ghost"
-                  className="text-red-600"
+                  size="sm"
+                  className="text-red-600 px-2"
                 >
-                  Remover
+                  ✕
                 </Button>
               )}
               <input
@@ -229,105 +248,89 @@ export default function BudgetEditorAdvanced({ budgetData, templates = [], onSav
               />
             </div>
             {logoUrl && (
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                <p className="text-xs text-gray-600 mb-2">Prévia da logo:</p>
-                <img src={logoUrl} alt="Logo" style={{ maxWidth: '150px', maxHeight: '80px', objectFit: 'contain' }} />
+              <div className="p-2 bg-gray-50 rounded border border-gray-200">
+                <img src={logoUrl} alt="Logo" style={{ maxWidth: '100%', maxHeight: '60px', objectFit: 'contain' }} />
               </div>
             )}
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Modelos */}
-      {templates.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Modelos de Documento</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <select
-              value={selectedTemplate}
-              onChange={(e) => setSelectedTemplate(e.target.value)}
-              className="w-full border rounded-lg p-2 text-sm"
-            >
-              <option value="">Documento em branco</option>
-              {templates.map(t => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </select>
-          </CardContent>
-        </Card>
-      )}
+          {/* Modelos */}
+          {templates.length > 0 && (
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <h3 className="font-semibold text-sm mb-3 text-gray-900">Modelos de Documento</h3>
+              <select
+                value={selectedTemplate}
+                onChange={(e) => setSelectedTemplate(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg p-2 text-sm"
+              >
+                <option value="">Documento em branco</option>
+                {templates.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
 
-      {/* Editor Avançado */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center justify-between">
-            <span>Editor de Documento</span>
-            <Button
-              onClick={resetDocument}
-              variant="ghost"
-              size="sm"
-              className="gap-2"
-              title="Restaurar documento padrão"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Restaurar
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="border rounded-lg bg-white p-4 mb-6">
-            <div style={{ height: '450px', overflow: 'hidden', borderRadius: '8px' }} className="quill-editor">
-              <ReactQuill
-                value={documentHtml}
-                onChange={setDocumentHtml}
-                modules={modules}
-                theme="snow"
+        {/* Editor e Prévia lado a lado */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-32">
+          {/* Editor */}
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden flex flex-col">
+            <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+              <h3 className="font-semibold text-sm text-gray-900">Editor</h3>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <div className="quill-editor-wrapper h-full">
+                <ReactQuill
+                  value={documentHtml}
+                  onChange={setDocumentHtml}
+                  modules={modules}
+                  theme="snow"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Prévia */}
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden flex flex-col">
+            <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+              <h3 className="font-semibold text-sm text-gray-900">Prévia do Documento</h3>
+            </div>
+            <div className="flex-1 overflow-auto">
+              <div
+                id="budget-preview"
+                className="p-6 bg-white"
+                dangerouslySetInnerHTML={{ __html: documentHtml }}
               />
             </div>
           </div>
-          <p className="text-xs text-gray-500">
-            Use todas as ferramentas acima para personalizar completamente o seu orçamento como um editor de texto profissional.
-          </p>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Prévia */}
-      <Card className="mb-20">
-        <CardHeader>
-          <CardTitle className="text-lg">Prévia do Documento</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div
-            id="budget-preview"
-            className="border rounded-lg bg-white shadow-sm p-6 max-h-[600px] overflow-auto"
-            dangerouslySetInnerHTML={{ __html: documentHtml }}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Ações */}
-      <div className="flex gap-3 justify-end fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg">
-        <Button
-          onClick={exportPDF}
-          variant="outline"
-          className="gap-2"
-        >
-          <Download className="w-4 h-4" /> Download PDF
-        </Button>
-        <Button
-          onClick={() => onSave({ documentHtml, logoUrl, selectedTemplate })}
-          className="gap-2"
-        >
-          Salvar Orçamento
-        </Button>
-        <Button
-          onClick={() => onSend({ documentHtml, logoUrl, selectedTemplate })}
-          className="bg-emerald-600 hover:bg-emerald-700 gap-2"
-        >
-          <Mail className="w-4 h-4" /> Enviar por Email
-        </Button>
+        {/* Ações - Rodapé fixo */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg">
+          <div className="max-w-7xl mx-auto flex gap-3 justify-end">
+            <Button
+              onClick={exportPDF}
+              variant="outline"
+              className="gap-2"
+            >
+              <Download className="w-4 h-4" /> Download PDF
+            </Button>
+            <Button
+              onClick={() => onSave({ documentHtml, logoUrl, selectedTemplate })}
+              variant="outline"
+              className="gap-2"
+            >
+              Salvar Orçamento
+            </Button>
+            <Button
+              onClick={() => onSend({ documentHtml, logoUrl, selectedTemplate })}
+              className="bg-emerald-600 hover:bg-emerald-700 gap-2"
+            >
+              <Mail className="w-4 h-4" /> Enviar por Email
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );

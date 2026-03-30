@@ -92,7 +92,9 @@ export default function Contracts() {
       ? selectedPropertyId
         ? base44.entities.ClientContract.filter({ consultor_email: effectiveEmail, property_id: selectedPropertyId })
         : base44.entities.ClientContract.filter({ consultor_email: effectiveEmail })
-      : base44.entities.ClientContract.filter({ client_email: effectiveEmail }),
+      : selectedPropertyId
+        ? base44.entities.ClientContract.filter({ client_email: effectiveEmail, property_id: selectedPropertyId })
+        : base44.entities.ClientContract.filter({ client_email: effectiveEmail }),
     enabled: !!effectiveEmail && !effectiveLoading,
     initialData: [],
   });
@@ -131,9 +133,9 @@ export default function Contracts() {
     setFormData({
       ...EMPTY_FORM,
       property_id: pid,
-      client_email: prop?.owner_email || crm?.client_email || '',
-      client_name: prop?.client_name || prop?.owner_names || '',
-      consultor_email: user?.email || '',
+      client_email: isConsultor ? (prop?.owner_email || crm?.client_email || '') : (user?.email || ''),
+      client_name: isConsultor ? (prop?.client_name || prop?.owner_names || '') : (user?.full_name || ''),
+      consultor_email: isConsultor ? (user?.email || '') : '',
     });
     setDialogOpen(true);
   };
@@ -152,8 +154,8 @@ export default function Contracts() {
     setFormData(prev => ({
       ...prev,
       property_id: pid,
-      client_email: prop?.owner_email || '',
-      client_name: prop?.client_name || prop?.owner_names || '',
+      client_email: isConsultor ? (prop?.owner_email || '') : (user?.email || ''),
+      client_name: isConsultor ? (prop?.client_name || prop?.owner_names || '') : (user?.full_name || ''),
     }));
   };
 
@@ -161,7 +163,10 @@ export default function Contracts() {
     e.preventDefault();
     const data = {
       ...formData,
-      consultor_email: effectiveEmail,
+      // Para produtor, consultor_email fica em branco ou mantém o existente
+      // Para consultor/equipe, usa effectiveEmail
+      consultor_email: isConsultor ? effectiveEmail : (formData.consultor_email || effectiveEmail),
+      client_email: isConsultor ? formData.client_email : effectiveEmail,
       total_value: formData.total_value ? parseFloat(formData.total_value) : undefined,
     };
     if (editingContract) {
@@ -242,8 +247,8 @@ export default function Contracts() {
         Voltar
       </Link>
 
-      {/* Consultor Selector */}
-      {isConsultor && (
+      {/* Property Selector */}
+      {properties.length > 1 && (
         <ConsultorPropertySelector
           properties={properties}
           selectedPropertyId={selectedPropertyId}
@@ -401,13 +406,16 @@ export default function Contracts() {
               <TabsContent value="basic" className="space-y-3 mt-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
-                    <Label className="text-xs">Cliente (Propriedade) *</Label>
+                    <Label className="text-xs">{isConsultor ? 'Cliente (Propriedade) *' : 'Propriedade *'}</Label>
                     <Select value={formData.property_id} onValueChange={handlePropertyChange}>
-                      <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
+                      <SelectTrigger className="mt-1"><SelectValue placeholder={isConsultor ? "Selecione o cliente" : "Selecione a propriedade"} /></SelectTrigger>
                       <SelectContent>
                         {properties.map(p => (
                           <SelectItem key={p.id} value={p.id}>
-                            {p.client_name || p.owner_names || p.property_name} — {p.property_name}
+                            {isConsultor
+                              ? `${p.client_name || p.owner_names || p.property_name} — ${p.property_name}`
+                              : p.property_name
+                            }
                           </SelectItem>
                         ))}
                       </SelectContent>

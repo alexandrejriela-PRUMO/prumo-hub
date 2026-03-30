@@ -36,21 +36,26 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
 
   useEffect(() => {
     if (isConsultor && user?.email) {
-      // Buscar clientes do CRM (ClientCRM) ao invés de propriedades
+      // Buscar clientes do CRM (ClientCRM)
       base44.entities.ClientCRM.filter({ consultor_email: user.email })
         .then(clients => {
+          console.log('[PropertyForm] ClientCRM encontrados:', clients.length);
           const map = new Map();
           clients.forEach(c => {
             if (c.client_email && c.client_name && !map.has(c.client_email)) {
               map.set(c.client_email, { email: c.client_email, name: c.client_name });
             }
           });
-          setExistingClients(Array.from(map.values()));
+          const result = Array.from(map.values());
+          console.log('[PropertyForm] Clientes para autocomplete:', result);
+          setExistingClients(result);
         })
-        .catch(() => {
+        .catch(err => {
+          console.error('[PropertyForm] Erro ao buscar ClientCRM:', err);
           // Fallback: buscar de propriedades se ClientCRM falhar
           base44.entities.Property.filter({ consultor_email: user.email })
             .then(props => {
+              console.log('[PropertyForm] Fallback - Propriedades encontradas:', props.length);
               const map = new Map();
               props.forEach(p => {
                 const email = p.client_email || p.owner_email;
@@ -59,9 +64,11 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
                   map.set(email, { email, name });
                 }
               });
-              setExistingClients(Array.from(map.values()));
+              const result = Array.from(map.values());
+              console.log('[PropertyForm] Clientes do fallback:', result);
+              setExistingClients(result);
             })
-            .catch(() => {});
+            .catch(err2 => console.error('[PropertyForm] Erro fallback:', err2));
         });
     }
   }, [isConsultor, user?.email]);

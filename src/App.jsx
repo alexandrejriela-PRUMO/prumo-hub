@@ -30,6 +30,8 @@ const PropertyCentral = React.lazy(() => import('./pages/PropertyCentral'));
 const EnvironmentalAssets = React.lazy(() => import('./pages/EnvironmentalAssets'));
 const BudgetGenerator = React.lazy(() => import('./pages/BudgetGenerator'));
 const ContractGenerator = React.lazy(() => import('./pages/ContractGenerator'));
+const BudgetHistory = React.lazy(() => import('./pages/BudgetHistory'));
+const MyContracts = React.lazy(() => import('./pages/MyContracts'));
 import OfflineIndicator from '@/components/offline/OfflineIndicator';
 import { useOfflineSync } from '@/components/offline/OfflineSyncHook';
 import { initializeOfflineDB } from '@/components/offline/OfflineStorageManager';
@@ -118,7 +120,9 @@ const AuthenticatedApp = () => {
       <Route path="/NFeManagement" element={<LayoutWrapper currentPageName="NFeManagement"><Suspense fallback={<LoadingSpinner />}><NFeManagement /></Suspense></LayoutWrapper>} />
       <Route path="/ImportUsersStripe" element={<LayoutWrapper currentPageName="ImportUsersStripe"><Suspense fallback={<LoadingSpinner />}><ImportUsersStripe /></Suspense></LayoutWrapper>} />
       <Route path="/BudgetGenerator" element={<LayoutWrapper currentPageName="BudgetGenerator"><Suspense fallback={<LoadingSpinner />}><BudgetGenerator /></Suspense></LayoutWrapper>} />
+      <Route path="/BudgetHistory" element={<LayoutWrapper currentPageName="BudgetHistory"><Suspense fallback={<LoadingSpinner />}><BudgetHistory /></Suspense></LayoutWrapper>} />
       <Route path="/ContractGenerator" element={<LayoutWrapper currentPageName="ContractGenerator"><Suspense fallback={<LoadingSpinner />}><ContractGenerator /></Suspense></LayoutWrapper>} />
+      <Route path="/MyContracts" element={<LayoutWrapper currentPageName="MyContracts"><Suspense fallback={<LoadingSpinner />}><MyContracts /></Suspense></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
     </>

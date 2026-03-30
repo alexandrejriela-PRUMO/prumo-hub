@@ -73,7 +73,9 @@ const consultorNavItems = [
       { name: 'Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
       { name: 'Meus Contratos', page: 'Contracts', icon: ScrollText },
       { name: 'Gerar Novo Contrato', page: 'ContractGenerator', icon: FileText },
+      { name: 'Meus Contratos', page: 'MyContracts', icon: ScrollText },
       { name: 'Gerador de Orçamentos', page: 'BudgetGenerator', icon: ReceiptText },
+      { name: 'Histórico de Orçamentos', page: 'BudgetHistory', icon: ReceiptText },
       { name: 'Minha Equipe', page: 'MyTeam', icon: Users },
     ]
   },
@@ -142,6 +144,7 @@ const equipeNavItems = [
       { name: 'Meus Contratos', page: 'Contracts', icon: ScrollText },
       { name: 'Gerar Novo Contrato', page: 'ContractGenerator', icon: FileText },
       { name: 'Gerador de Orçamentos', page: 'BudgetGenerator', icon: ReceiptText },
+      { name: 'Histórico de Orçamentos', page: 'BudgetHistory', icon: ReceiptText },
     ]
   },
   {

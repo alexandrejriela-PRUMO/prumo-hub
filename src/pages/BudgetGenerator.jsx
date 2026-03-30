@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import BudgetForm from '@/components/budget/BudgetForm';
-import BudgetEditorPro from '@/components/budget/BudgetEditorPro';
+import BudgetEditorWYSIWYG from '@/components/budget/BudgetEditorWYSIWYG';
 import { ChevronLeft } from 'lucide-react';
 
 export default function BudgetGenerator() {
@@ -137,7 +137,7 @@ export default function BudgetGenerator() {
         )}
 
         {step === 'editor' && budgetData && (
-          <BudgetEditorPro
+          <BudgetEditorWYSIWYG
             budgetData={budgetData}
             onSave={handleSaveDocument}
             onSend={handleSendDocument}

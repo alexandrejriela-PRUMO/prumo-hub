@@ -72,11 +72,28 @@ export default function RuralCreditPage() {
   });
 
   const { data: credits = [], isLoading } = useQuery({
-    queryKey: ['rural-credits', user?.email, selectedPropertyId],
+    queryKey: ['rural-credits', user?.email, selectedPropertyId, isConsultor],
     queryFn: async () => {
-      const filter = isConsultor ? { consultor_email: user.email } : { client_email: user.email };
-      if (selectedPropertyId) filter.property_id = selectedPropertyId;
-      return base44.entities.RuralCredit.filter(filter, '-created_date', 200);
+      if (isConsultor) {
+        const filter = { consultor_email: user.email };
+        if (selectedPropertyId) filter.property_id = selectedPropertyId;
+        return base44.entities.RuralCredit.filter(filter, '-created_date', 200);
+      } else {
+        // Produtor: busca por consultor_email OU client_email para garantir que todos apareçam
+        const [byConsultor, byClient] = await Promise.all([
+          base44.entities.RuralCredit.filter(
+            selectedPropertyId ? { consultor_email: user.email, property_id: selectedPropertyId } : { consultor_email: user.email },
+            '-created_date', 200
+          ),
+          base44.entities.RuralCredit.filter(
+            selectedPropertyId ? { client_email: user.email, property_id: selectedPropertyId } : { client_email: user.email },
+            '-created_date', 200
+          ),
+        ]);
+        const all = [...byConsultor, ...byClient];
+        const seen = new Set();
+        return all.filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
+      }
     },
     enabled: !!user?.email,
   });
@@ -197,7 +214,7 @@ export default function RuralCreditPage() {
       notas: form.notas || '',
       property_id: form.property_id || clientProp?.id || '',
       consultor_email: user?.email,
-      client_email: clientProp?.owner_email || user?.email,
+      client_email: isConsultor ? (clientProp?.owner_email || '') : user?.email,
       client_name: clientProp?.client_name || clientProp?.property_name || 'Sem especificar',
       documentos: Array.isArray(form.documentos) ? form.documentos : []
     };

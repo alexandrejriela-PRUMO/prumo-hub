@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import ContractForm from '@/components/contract/ContractForm';
-import ContractEditor from '@/components/contract/ContractEditor';
+import ContractEditorWYSIWYG from '@/components/contract/ContractEditorWYSIWYG';
 import { ChevronLeft } from 'lucide-react';
 
 export default function ContractGenerator() {
   const [step, setStep] = useState('form');
   const [contractData, setContractData] = useState(null);
   const [user, setUser] = useState(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const loadUser = async () => {
@@ -59,6 +60,22 @@ export default function ContractGenerator() {
     },
     onError: (error) => {
       toast.error('Erro ao enviar para assinatura: ' + error.message);
+    }
+  });
+
+  const saveTemplateMutation = useMutation({
+    mutationFn: (templateData) => 
+      base44.entities.ContractTemplate.create({
+        consultor_email: user?.email,
+        contract_type: contractData?.contract_type,
+        ...templateData
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contractTemplates'] });
+      toast.success('Modelo salvo com sucesso!');
+    },
+    onError: (error) => {
+      toast.error('Erro ao salvar modelo: ' + error.message);
     }
   });
 
@@ -123,20 +140,21 @@ export default function ContractGenerator() {
         )}
 
         {step === 'editor' && contractData && (
-          <ContractEditor
+          <ContractEditorWYSIWYG
             contractData={contractData}
             templates={templates}
             onSave={handleSaveDocument}
             onSendToSign={handleSendToSign}
+            onSaveTemplate={(data) => saveTemplateMutation.mutate(data)}
           />
         )}
 
-        {(saveContractMutation.isPending || sendToSignMutation.isPending) && (
+        {(saveContractMutation.isPending || sendToSignMutation.isPending || saveTemplateMutation.isPending) && (
           <div className="fixed inset-0 bg-black/20 flex items-center justify-center">
             <Card className="p-6">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-                <p>{sendToSignMutation.isPending ? 'Enviando para assinatura...' : 'Salvando contrato...'}</p>
+                <p>{sendToSignMutation.isPending ? 'Enviando para assinatura...' : saveTemplateMutation.isPending ? 'Salvando modelo...' : 'Salvando contrato...'}</p>
               </div>
             </Card>
           </div>

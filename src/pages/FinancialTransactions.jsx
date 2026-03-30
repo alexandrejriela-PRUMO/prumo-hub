@@ -112,6 +112,7 @@ export default function FinancialTransactions() {
         const isParcelado = svc.payment_type === 'parcelado';
         const numParcelas = isParcelado ? parseInt(svc.installments) || 1 : 1;
         const valuePerParcela = totalValue / numParcelas;
+        const accountLabel = svc.account_name || 'Serviços CRM';
         
         // Se parcelado, criar uma transação por parcela
         if (isParcelado && numParcelas > 1) {
@@ -129,7 +130,7 @@ export default function FinancialTransactions() {
               competencia: svc.start_date?.substring(0, 7),
               status: svc.received ? 'Pago' : (svc.status === 'Concluído' || svc.status === 'Contratado' ? 'Pendente' : 'Cancelado'),
               payment_method: svc.payment_method,
-              accountLabel: 'Serviços CRM',
+              accountLabel: accountLabel,
               editable: false,
             });
           }
@@ -147,7 +148,7 @@ export default function FinancialTransactions() {
             competencia: svc.start_date?.substring(0, 7),
             status: svc.received ? 'Pago' : (svc.status === 'Concluído' || svc.status === 'Contratado' ? 'Pendente' : 'Cancelado'),
             payment_method: svc.payment_method,
-            accountLabel: 'Serviços CRM',
+            accountLabel: accountLabel,
             editable: false,
           });
         }

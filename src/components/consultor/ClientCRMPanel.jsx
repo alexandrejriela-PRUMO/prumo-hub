@@ -53,7 +53,7 @@ export default function ClientCRMPanel({ property, onClose }) {
   const [editingServiceIndex, setEditingServiceIndex] = useState(null);
   const [newInteraction, setNewInteraction] = useState({ type: 'Ligação', title: '', description: '', next_action: '', next_action_date: '', responsible_email: '', responsible_name: '' });
   const [newTask, setNewTask] = useState({ title: '', due_date: '', priority: 'Média', responsible_email: '', responsible_name: '' });
-  const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', received: false });
+  const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', received: false, account_id: '', account_name: '' });
 
   // ── ID do ClientCRM — é a chave única para todas as operações ────────────
   // property.id É o id do registro ClientCRM (passado pelo CRMBoard ou ConsultorClients)
@@ -83,6 +83,13 @@ export default function ClientCRMPanel({ property, onClose }) {
       queryClient.invalidateQueries({ queryKey: ['consultor-crm-clients'] });
     },
     onError: (e) => toast.error('Erro ao salvar: ' + e.message),
+  });
+
+  // ── Contas financeiras ──────────────────────────────────────────────────
+  const { data: accounts = [] } = useQuery({
+    queryKey: ['fin-accounts-crm', crmConsultorEmail],
+    queryFn: () => base44.entities.FinancialAccount.filter({ consultor_email: crmConsultorEmail }),
+    enabled: !!crmConsultorEmail,
   });
 
   // ── Membros da equipe para atribuição ────────────────────────────────────
@@ -201,7 +208,7 @@ export default function ClientCRMPanel({ property, onClose }) {
       services = [...(activeCRM?.services || []), { ...newService, value: serviceValue, received_at: newService.received ? new Date().toISOString() : null }];
     }
     updateCRM.mutate({ services });
-    setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', received: false });
+    setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', received: false, account_id: '', account_name: '' });
     setShowServiceForm(false); setEditingServiceIndex(null);
     toast.success(editingServiceIndex !== null ? 'Serviço atualizado!' : 'Serviço adicionado!');
   };
@@ -213,7 +220,7 @@ export default function ClientCRMPanel({ property, onClose }) {
 
   const startEditService = (service, index) => {
     setEditingServiceIndex(index);
-    setNewService({ name: service.name, status: service.status, value: service.value?.toString() || '', notes: service.notes || '', payment_type: service.payment_type || 'avista', payment_method: service.payment_method || 'Pix', installments: service.installments || '', start_date: service.start_date || '', received: service.received || false });
+    setNewService({ name: service.name, status: service.status, value: service.value?.toString() || '', notes: service.notes || '', payment_type: service.payment_type || 'avista', payment_method: service.payment_method || 'Pix', installments: service.installments || '', start_date: service.start_date || '', received: service.received || false, account_id: service.account_id || '', account_name: service.account_name || '' });
     setShowServiceForm(true);
   };
 
@@ -512,6 +519,16 @@ export default function ClientCRMPanel({ property, onClose }) {
                   <div className="sm:col-span-2 flex items-center gap-2 mt-1">
                     <input type="checkbox" id="svc-received" checked={newService.received} onChange={e => setNewService(p => ({ ...p, received: e.target.checked }))} className="w-4 h-4 accent-emerald-600" />
                     <label htmlFor="svc-received" className="text-sm text-gray-700 cursor-pointer">Valor já recebido</label>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600 mb-1 block">Conta Financeira</Label>
+                    <Select value={newService.account_id || ''} onValueChange={v => { const acc = accounts.find(a => a.id === v); setNewService(p => ({ ...p, account_id: v || '', account_name: acc?.name || '' })); }}>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={null}>Sem conta (Padrão)</SelectItem>
+                        {accounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="sm:col-span-2">
                     <Label className="text-xs text-gray-600 mb-1 block">Observações</Label>

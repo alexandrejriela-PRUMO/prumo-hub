@@ -1,0 +1,323 @@
+{
+  "name": "ClientCRM",
+  "type": "object",
+  "properties": {
+    "property_id": {
+      "type": "string",
+      "description": "ID da propriedade/registro do cliente (opcional)"
+    },
+    "consultor_email": {
+      "type": "string",
+      "description": "Email do consultor respons\u00e1vel"
+    },
+    "client_email": {
+      "type": "string",
+      "description": "Email do cliente"
+    },
+    "client_name": {
+      "type": "string",
+      "description": "Nome do cliente ou lead"
+    },
+    "client_phone": {
+      "type": "string",
+      "description": "Telefone / WhatsApp do cliente"
+    },
+    "client_type": {
+      "type": "string",
+      "enum": [
+        "pf",
+        "pj"
+      ],
+      "default": "pf",
+      "description": "Pessoa f\u00edsica ou jur\u00eddica"
+    },
+    "cpf": {
+      "type": "string"
+    },
+    "rg": {
+      "type": "string"
+    },
+    "birth_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "cnpj": {
+      "type": "string"
+    },
+    "state_registration": {
+      "type": "string"
+    },
+    "address": {
+      "type": "string"
+    },
+    "city": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "zip_code": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Prospect",
+        "NovoProspect",
+        "Ativo",
+        "Em Negocia\u00e7\u00e3o",
+        "Inativo",
+        "Encerrado"
+      ],
+      "default": "NovoProspect",
+      "description": "Status do relacionamento"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags/categorias do cliente",
+      "default": []
+    },
+    "notes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es gerais sobre o cliente"
+    },
+    "interactions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "Liga\u00e7\u00e3o",
+              "Reuni\u00e3o",
+              "E-mail",
+              "WhatsApp",
+              "Visita",
+              "Proposta",
+              "Contrato",
+              "Outro"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "next_action": {
+            "type": "string"
+          },
+          "next_action_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "responsible_email": {
+            "type": "string"
+          },
+          "responsible_name": {
+            "type": "string"
+          },
+          "thread": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "author_email": {
+                  "type": "string"
+                },
+                "author_name": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "mentions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Lista de emails mencionados com @"
+                }
+              }
+            },
+            "default": []
+          }
+        }
+      },
+      "description": "Hist\u00f3rico de intera\u00e7\u00f5es",
+      "default": []
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "done": {
+            "type": "boolean",
+            "default": false
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "in_progress",
+              "done",
+              "overdue"
+            ],
+            "default": "pending",
+            "description": "Status detalhado da tarefa"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "Baixa",
+              "M\u00e9dia",
+              "Alta"
+            ],
+            "default": "M\u00e9dia"
+          },
+          "responsible_email": {
+            "type": "string"
+          },
+          "responsible_name": {
+            "type": "string"
+          },
+          "assigned_to_email": {
+            "type": "string",
+            "description": "Email de quem deve executar a tarefa"
+          },
+          "assigned_by_email": {
+            "type": "string",
+            "description": "Email de quem delegou a tarefa"
+          },
+          "assigned_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Quando foi delegada"
+          },
+          "thread": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "author_email": {
+                  "type": "string"
+                },
+                "author_name": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "mentions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "default": []
+          }
+        }
+      },
+      "description": "Tarefas e follow-ups",
+      "default": []
+    },
+    "services": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Em Proposta",
+              "Contratado",
+              "Em Andamento",
+              "Conclu\u00eddo",
+              "Cancelado"
+            ],
+            "default": "Em Proposta"
+          },
+          "value": {
+            "type": "number"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "payment_type": {
+            "type": "string"
+          },
+          "payment_method": {
+            "type": "string"
+          },
+          "installments": {
+            "type": "string"
+          },
+          "received": {
+            "type": "boolean",
+            "default": false
+          },
+          "received_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "description": "Servi\u00e7os contratados ou em proposta",
+      "default": []
+    }
+  },
+  "required": [
+    "consultor_email"
+  ]
+}

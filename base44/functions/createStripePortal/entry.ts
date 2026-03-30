@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 import Stripe from 'npm:stripe@17.5.0';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
@@ -12,27 +12,22 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Buscar o customer do Stripe pelo email
-    const customers = await stripe.customers.list({
-      email: user.email,
-      limit: 1,
-    });
+    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
 
     if (customers.data.length === 0) {
-      return Response.json({ error: 'No subscription found' }, { status: 404 });
+      return Response.json({ error: 'Nenhuma assinatura encontrada para este e-mail.' }, { status: 404 });
     }
 
-    const customer = customers.data[0];
+    const origin = req.headers.get('origin') || 'https://app.prumo.com.br';
 
-    // Criar sessão do portal
     const session = await stripe.billingPortal.sessions.create({
-      customer: customer.id,
-      return_url: `${req.headers.get('origin')}/Invoices`,
+      customer: customers.data[0].id,
+      return_url: `${origin}/Invoices`,
     });
 
     return Response.json({ url: session.url });
   } catch (error) {
-    console.error('Stripe portal error:', error);
+    console.error('[Portal] Error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });

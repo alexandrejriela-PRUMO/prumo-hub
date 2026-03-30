@@ -77,7 +77,6 @@ import Expenses from './pages/Expenses';
 import FinancialDashboard from './pages/FinancialDashboard';
 import FinancialTransactions from './pages/FinancialTransactions';
 import Georeferencing from './pages/Georeferencing';
-import GoogleCalendarCallback from './pages/GoogleCalendarCallback';
 import GreenLoans from './pages/GreenLoans';
 import HarvestLoss from './pages/HarvestLoss';
 import Home from './pages/Home';
@@ -135,7 +134,6 @@ export const PAGES = {
     "FinancialDashboard": FinancialDashboard,
     "FinancialTransactions": FinancialTransactions,
     "Georeferencing": Georeferencing,
-    "GoogleCalendarCallback": GoogleCalendarCallback,
     "GreenLoans": GreenLoans,
     "HarvestLoss": HarvestLoss,
     "Home": Home,

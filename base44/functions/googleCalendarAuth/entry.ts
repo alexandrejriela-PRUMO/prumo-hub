@@ -9,17 +9,34 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Gera o link de autorização do Google Calendar
+    // Usa o shared connector autorizado para Google Calendar
     const connection = await base44.asServiceRole.connectors.getConnection('googlecalendar');
-    
-    // Retorna informações para o frontend gerar o link de autorização
+    const accessToken = connection.accessToken;
+
+    // Valida o token fetching eventos do calendário do usuário
+    const response = await fetch(
+      'https://www.googleapis.com/calendar/v3/calendars/primary',
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to validate Google Calendar access');
+    }
+
+    const calendarData = await response.json();
+
     return Response.json({
       success: true,
       user_email: user.email,
-      message: 'Use o link no Google Calendar para autorizar',
+      calendar: calendarData.summary,
+      message: 'Google Calendar authorized successfully',
     });
   } catch (error) {
-    console.error('Erro ao gerar auth:', error);
+    console.error('Erro ao autorizar:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });

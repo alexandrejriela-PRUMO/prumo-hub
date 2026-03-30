@@ -37,23 +37,26 @@ function CarbonCreditsContent() {
   const [statusFilter, setStatusFilter] = useState('all');
 
   const queryClient = useQueryClient();
-  const { user, linkedConsultant, memberRole, permissions, isLoading: userLoading } = useEffectiveUser();
+  const { user, effectiveEmail, linkedConsultant, memberRole, permissions, isConsultor, isProdutor, isLoading: userLoading } = useEffectiveUser();
 
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties', linkedConsultant],
-    queryFn: () => base44.entities.Property.filter({ 
-      consultor_email: linkedConsultant 
-    }),
-    enabled: !!linkedConsultant
+    queryKey: ['properties', effectiveEmail, isProdutor],
+    queryFn: () => isProdutor
+      ? base44.entities.Property.filter({ owner_email: effectiveEmail })
+      : base44.entities.Property.filter({ consultor_email: effectiveEmail }),
+    enabled: !!effectiveEmail && !userLoading,
   });
 
   const { data: allCredits = [], isLoading } = useQuery({
-    queryKey: ['carbonCredits', linkedConsultant],
-    // ✅ SEGURANÇA: Filtra SEMPRE por consultor_email
-    queryFn: () => base44.entities.CarbonCredit.filter({
-      consultor_email: linkedConsultant
-    }),
-    enabled: !!linkedConsultant,
+    queryKey: ['carbonCredits', effectiveEmail, isProdutor, properties.map(p => p.id).join(',')],
+    queryFn: async () => {
+      if (!properties.length) return [];
+      const results = await Promise.all(
+        properties.map(p => base44.entities.CarbonCredit.filter({ property_id: p.id }))
+      );
+      return results.flat();
+    },
+    enabled: !!effectiveEmail && !userLoading && (!isProdutor || properties.length >= 0),
   });
 
   const createMutation = useMutation({
@@ -533,9 +536,5 @@ function CarbonCreditsContent() {
 }
 
 export default function CarbonCreditsPage() {
-  return (
-    <AccessGuardTeam requiredModules={['advanced_modules']}>
-      <CarbonCreditsContent />
-    </AccessGuardTeam>
-  );
+  return <CarbonCreditsContent />;
 }

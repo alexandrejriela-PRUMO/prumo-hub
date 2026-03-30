@@ -71,7 +71,7 @@ import DocumentsManager from './pages/DocumentsManager';
 import ESGAgro from './pages/ESGAgro';
 import EbookReader from './pages/EbookReader';
 import EnvironmentalAlerts from './pages/EnvironmentalAlerts';
-import EnvironmentalAssets from './pages/EnvironmentalAssets';
+import EnvironmentalAssets from './pages/EnvironmentalAssets.jsx';
 import EnvironmentalEasements from './pages/EnvironmentalEasements';
 import Expenses from './pages/Expenses';
 import FinancialDashboard from './pages/FinancialDashboard';

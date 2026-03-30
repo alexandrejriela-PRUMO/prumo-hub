@@ -17,28 +17,31 @@ const STATUS_COLOR = {
 
 export default function ClientFinancialSummary({ client }) {
   const queryClient = useQueryClient();
-  const firstRealProperty = client?.properties?.find(p => !p.is_client_only) || client?.properties?.[0];
-  const propertyId = firstRealProperty?.id || client?.id;
-  const crmConsultorEmail = firstRealProperty?.consultor_email;
-  const crmOwnerEmail = firstRealProperty?.owner_email;
+  // O `client` passado é o ClientCRM diretamente (do ConsultorClients ou CRMBoard)
+  const crmId = client?.id;
+  const crmConsultorEmail = client?.consultor_email;
+  const crmOwnerEmail = client?.owner_email;
 
   const { data: crm, isLoading } = useQuery({
-    queryKey: ['client-crm-financial', propertyId],
+    queryKey: ['client-crm-financial', crmId],
     queryFn: async () => {
-      const results = await base44.entities.ClientCRM.filter({ property_id: propertyId });
+      if (!crmId) return null;
+      const results = await base44.entities.ClientCRM.filter({ id: crmId });
       return results[0] || null;
     },
-    enabled: !!propertyId,
+    enabled: !!crmId,
   });
 
   const upsertCRM = useMutation({
     mutationFn: (data) => {
-      if (crm?.id) return base44.entities.ClientCRM.update(crm.id, data);
-      return base44.entities.ClientCRM.create({ property_id: propertyId, consultor_email: crmConsultorEmail, client_email: crmOwnerEmail, ...data });
+      if (crmId) return base44.entities.ClientCRM.update(crmId, data);
+      return Promise.reject(new Error('ClientCRM não identificado'));
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['client-crm-financial', propertyId] });
-      queryClient.invalidateQueries({ queryKey: ['client-crm', propertyId] });
+      queryClient.invalidateQueries({ queryKey: ['client-crm-financial', crmId] });
+      queryClient.invalidateQueries({ queryKey: ['client-crm', crmId] });
+      queryClient.invalidateQueries({ queryKey: ['consultor-crm-clients'] });
+      queryClient.invalidateQueries({ queryKey: ['crm-board-list'] });
     },
   });
 

@@ -55,6 +55,11 @@ export default function FinancialTransactions() {
     queryFn: () => base44.entities.Expense.filter({ consultor_email: user.email }, '-date', 500),
     enabled: !!user?.email,
   });
+  const { data: crmClients = [] } = useQuery({
+    queryKey: ['fin-crm-clients', user?.email],
+    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: user.email }),
+    enabled: !!user?.email,
+  });
   const { data: properties = [] } = useQuery({
     queryKey: ['fin-properties', user?.email],
     queryFn: () => base44.entities.Property.filter({ consultor_email: user.email }),
@@ -82,6 +87,8 @@ export default function FinancialTransactions() {
 
   const allTransactions = useMemo(() => {
     const txns = [];
+    
+    // Transações de Stripe
     charges.forEach(c => {
       const prop = propertyMap[c.property_id];
       txns.push({
@@ -97,6 +104,29 @@ export default function FinancialTransactions() {
         editable: false,
       });
     });
+    
+    // Serviços do CRM
+    crmClients.forEach(crm => {
+      (crm.services || []).forEach(svc => {
+        txns.push({
+          id: `service-${crm.id}-${svc.name}`,
+          type: 'receita',
+          source: svc.status === 'Contratado' || svc.status === 'Em Andamento' ? 'Serviço CRM' : 'Serviço (Proposta)',
+          sourceIcon: 'crm-service',
+          description: svc.name || 'Serviço sem nome',
+          client: crm.client_name || crm.client_email?.split('@')[0] || '—',
+          amount: parseFloat(svc.value) || 0,
+          date: svc.start_date,
+          competencia: svc.start_date?.substring(0, 7),
+          status: svc.received ? 'Pago' : (svc.status === 'Concluído' || svc.status === 'Contratado' ? 'Pendente' : 'Cancelado'),
+          payment_method: svc.payment_method,
+          accountLabel: 'Serviços CRM',
+          editable: false,
+        });
+      });
+    });
+    
+    // Transações manuais
     manualEntries.forEach(e => {
       const acc = e.account_id ? accountMap[e.account_id] : null;
       txns.push({
@@ -111,8 +141,9 @@ export default function FinancialTransactions() {
         editable: true, raw: e,
       });
     });
+    
     return txns;
-  }, [charges, manualEntries, propertyMap, accountMap]);
+  }, [charges, crmClients, manualEntries, propertyMap, accountMap]);
 
   const clients  = useMemo(()=>{ const s=new Set(); allTransactions.forEach(t=>{if(t.client)s.add(t.client);}); return Array.from(s).sort(); },[allTransactions]);
   const accountOptions = useMemo(() => {

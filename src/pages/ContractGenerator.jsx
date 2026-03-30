@@ -9,9 +9,10 @@ import ContractEditorWYSIWYG from '@/components/contract/ContractEditorWYSIWYG';
 import { ChevronLeft } from 'lucide-react';
 
 export default function ContractGenerator() {
-  const [step, setStep] = useState('form');
+  const [step, setStep] = useState('form'); // form, editor, history
   const [contractData, setContractData] = useState(null);
   const [user, setUser] = useState(null);
+  const [selectedContract, setSelectedContract] = useState(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -29,6 +30,12 @@ export default function ContractGenerator() {
   const { data: templates = [] } = useQuery({
     queryKey: ['contractTemplates', user?.email],
     queryFn: () => base44.entities.ContractTemplate.filter({ consultor_email: user?.email }),
+    enabled: !!user?.email
+  });
+
+  const { data: contracts = [] } = useQuery({
+    queryKey: ['contracts', user?.email],
+    queryFn: () => base44.entities.ClientContract.filter({ consultor_email: user?.email }, '-created_date', 100),
     enabled: !!user?.email
   });
 
@@ -79,6 +86,18 @@ export default function ContractGenerator() {
     }
   });
 
+  const deleteContractMutation = useMutation({
+    mutationFn: (contractId) => base44.entities.ClientContract.delete(contractId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      toast.success('Contrato deletado');
+      setSelectedContract(null);
+    },
+    onError: (error) => {
+      toast.error('Erro ao deletar: ' + error.message);
+    }
+  });
+
   const handleFormSubmit = async (data) => {
     setContractData({
       ...data,
@@ -114,7 +133,7 @@ export default function ContractGenerator() {
       <div className="max-w-5xl mx-auto px-4">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
-            {step === 'editor' && (
+            {(step === 'editor' || step === 'history') && (
               <Button
                 onClick={() => setStep('form')}
                 variant="outline"
@@ -125,14 +144,29 @@ export default function ContractGenerator() {
               </Button>
             )}
           </div>
-          <h1 className="text-3xl font-bold text-emerald-900 mb-2">
-            {step === 'form' ? 'Gerador de Contratos' : 'Editar Contrato'}
-          </h1>
-          <p className="text-gray-600">
-            {step === 'form'
-              ? 'Crie um novo contrato e envie para assinatura digital'
-              : 'Customize o contrato e envie para assinatura'}
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-emerald-900 mb-2">
+                {step === 'form' ? 'Gerador de Contratos' : step === 'editor' ? 'Editar Contrato' : 'Meus Contratos'}
+              </h1>
+              <p className="text-gray-600">
+                {step === 'form'
+                  ? 'Crie um novo contrato e envie para assinatura digital'
+                  : step === 'editor'
+                  ? 'Customize o contrato e envie para assinatura'
+                  : 'Visualize, edite e gerencie seus contratos'}
+              </p>
+            </div>
+            {step === 'form' && (
+              <Button
+                onClick={() => setStep('history')}
+                variant="outline"
+                className="gap-2"
+              >
+                Ver Histórico ({contracts.length})
+              </Button>
+            )}
+          </div>
         </div>
 
         {step === 'form' && (
@@ -147,6 +181,42 @@ export default function ContractGenerator() {
             onSendToSign={handleSendToSign}
             onSaveTemplate={(data) => saveTemplateMutation.mutate(data)}
           />
+        )}
+
+        {step === 'history' && (
+          <div className="space-y-4">
+            {contracts.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-600">Nenhum contrato criado ainda</p>
+              </div>
+            ) : (
+              contracts.map(contract => (
+                <div key={contract.id} className="border rounded-lg p-4 hover:bg-emerald-50/50 cursor-pointer" onClick={() => setSelectedContract(contract)}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h3 className="font-bold">{contract.contract_number}</h3>
+                      <p className="text-sm text-gray-600">{contract.object}</p>
+                      <div className="grid grid-cols-3 gap-4 text-sm mt-2">
+                        <div><span className="text-gray-500">Cliente:</span> {contract.client_name}</div>
+                        <div><span className="text-gray-500">Valor:</span> R$ {contract.total_value?.toFixed(2)}</div>
+                        <div><span className={`px-2 py-1 rounded text-xs font-medium ${contract.status === 'Assinado' ? 'bg-green-100 text-green-800' : contract.status === 'Em Assinatura' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>{contract.status}</span></div>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteContractMutation.mutate(contract.id);
+                      }}
+                    >
+                      Deletar
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         )}
 
         {(saveContractMutation.isPending || sendToSignMutation.isPending || saveTemplateMutation.isPending) && (

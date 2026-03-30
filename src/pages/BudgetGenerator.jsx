@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -9,9 +9,11 @@ import BudgetEditorWYSIWYG from '@/components/budget/BudgetEditorWYSIWYG';
 import { ChevronLeft } from 'lucide-react';
 
 export default function BudgetGenerator() {
-  const [step, setStep] = useState('form'); // form, editor
+  const [step, setStep] = useState('form'); // form, editor, history
   const [budgetData, setBudgetData] = useState(null);
   const [user, setUser] = useState(null);
+  const [selectedBudget, setSelectedBudget] = useState(null);
+  const queryClient = useQueryClient();
 
   React.useEffect(() => {
     const loadUser = async () => {
@@ -28,6 +30,12 @@ export default function BudgetGenerator() {
   const { data: templates = [] } = useQuery({
     queryKey: ['budgetTemplates', user?.email],
     queryFn: () => base44.entities.BudgetTemplate.filter({ consultor_email: user?.email }),
+    enabled: !!user?.email
+  });
+
+  const { data: budgets = [] } = useQuery({
+    queryKey: ['budgets', user?.email],
+    queryFn: () => base44.entities.Budget.filter({ consultor_email: user?.email }, '-created_date', 100),
     enabled: !!user?.email
   });
 
@@ -64,11 +72,24 @@ export default function BudgetGenerator() {
       return budget;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
       toast.success('Orçamento enviado por email com sucesso!');
-      setTimeout(() => window.location.reload(), 2000);
+      setTimeout(() => setStep('history'), 2000);
     },
     onError: (error) => {
       toast.error('Erro ao enviar orçamento: ' + error.message);
+    }
+  });
+
+  const deleteBudgetMutation = useMutation({
+    mutationFn: (budgetId) => base44.entities.Budget.delete(budgetId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      toast.success('Orçamento deletado');
+      setSelectedBudget(null);
+    },
+    onError: (error) => {
+      toast.error('Erro ao deletar: ' + error.message);
     }
   });
 
@@ -110,7 +131,7 @@ export default function BudgetGenerator() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
-            {step === 'editor' && (
+            {(step === 'editor' || step === 'history') && (
               <Button
                 onClick={() => setStep('form')}
                 variant="outline"
@@ -121,14 +142,29 @@ export default function BudgetGenerator() {
               </Button>
             )}
           </div>
-          <h1 className="text-3xl font-bold text-emerald-900 mb-2">
-            {step === 'form' ? 'Gerador de Orçamentos' : 'Editar Documento'}
-          </h1>
-          <p className="text-gray-600">
-            {step === 'form'
-              ? 'Crie um novo orçamento com detalhes de serviços e custos'
-              : 'Customize o documento e envie para o cliente'}
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-emerald-900 mb-2">
+                {step === 'form' ? 'Gerador de Orçamentos' : step === 'editor' ? 'Editar Documento' : 'Histórico de Orçamentos'}
+              </h1>
+              <p className="text-gray-600">
+                {step === 'form'
+                  ? 'Crie um novo orçamento com detalhes de serviços e custos'
+                  : step === 'editor'
+                  ? 'Customize o documento e envie para o cliente'
+                  : 'Visualize, edite e acompanhe seus orçamentos'}
+              </p>
+            </div>
+            {step === 'form' && (
+              <Button
+                onClick={() => setStep('history')}
+                variant="outline"
+                className="gap-2"
+              >
+                Ver Histórico ({budgets.length})
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Conteúdo */}
@@ -142,6 +178,42 @@ export default function BudgetGenerator() {
             onSave={handleSaveDocument}
             onSend={handleSendDocument}
           />
+        )}
+
+        {step === 'history' && (
+          <div className="space-y-4">
+            {budgets.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-600">Nenhum orçamento criado ainda</p>
+              </div>
+            ) : (
+              budgets.map(budget => (
+                <div key={budget.id} className="border rounded-lg p-4 hover:bg-emerald-50/50 cursor-pointer" onClick={() => setSelectedBudget(budget)}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h3 className="font-bold">{budget.budget_number} - {budget.client_name}</h3>
+                      <p className="text-sm text-gray-600">{budget.title}</p>
+                      <div className="grid grid-cols-3 gap-4 text-sm mt-2">
+                        <div><span className="text-gray-500">Email:</span> {budget.client_email}</div>
+                        <div><span className="text-gray-500">Valor:</span> R$ {budget.total_amount?.toFixed(2)}</div>
+                        <div><span className={`px-2 py-1 rounded text-xs font-medium ${budget.status === 'Aceito' ? 'bg-green-100 text-green-800' : budget.status === 'Enviado' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>{budget.status}</span></div>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteBudgetMutation.mutate(budget.id);
+                      }}
+                    >
+                      Deletar
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         )}
 
         {saveBudgetMutation.isPending && (

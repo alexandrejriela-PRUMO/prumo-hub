@@ -22,6 +22,42 @@ const modules = {
 };
 
 export default function BudgetEditorAdvanced({ budgetData, templates = [], onSave, onSend }) {
+  // Injetar CSS para corrigir o Quill
+  React.useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      .quill-editor .ql-container {
+        font-size: 14px;
+        height: 100%;
+      }
+      .quill-editor .ql-editor {
+        min-height: 100%;
+        padding: 15px;
+        font-family: 'Segoe UI', Arial, sans-serif;
+        line-height: 1.6;
+      }
+      .quill-editor .ql-editor.ql-blank::before {
+        font-style: italic;
+        color: #999;
+      }
+      .quill-editor .ql-toolbar {
+        border-top: none;
+        border-left: none;
+        border-right: none;
+        border-bottom: 1px solid #ddd;
+      }
+      .quill-editor {
+        display: flex;
+        flex-direction: column;
+      }
+      .quill-editor .ql-container {
+        flex-grow: 1;
+        border: none;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
   const [documentHtml, setDocumentHtml] = useState(budgetData?.document_html || '');
   const [logoUrl, setLogoUrl] = useState(budgetData?.logo_url || '');
   const [selectedTemplate, setSelectedTemplate] = useState(budgetData?.template_id || '');
@@ -156,7 +192,7 @@ export default function BudgetEditorAdvanced({ budgetData, templates = [], onSav
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24">
       {/* Logo Upload */}
       <Card>
         <CardHeader>
@@ -241,35 +277,38 @@ export default function BudgetEditorAdvanced({ budgetData, templates = [], onSav
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ReactQuill
-            value={documentHtml}
-            onChange={setDocumentHtml}
-            modules={modules}
-            theme="snow"
-            style={{ height: '500px', marginBottom: '40px' }}
-          />
-          <p className="text-xs text-gray-500 mt-2">
+          <div className="border rounded-lg bg-white p-4 mb-6">
+            <div style={{ height: '450px', overflow: 'hidden', borderRadius: '8px' }} className="quill-editor">
+              <ReactQuill
+                value={documentHtml}
+                onChange={setDocumentHtml}
+                modules={modules}
+                theme="snow"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-gray-500">
             Use todas as ferramentas acima para personalizar completamente o seu orçamento como um editor de texto profissional.
           </p>
         </CardContent>
       </Card>
 
       {/* Prévia */}
-      <Card>
+      <Card className="mb-20">
         <CardHeader>
           <CardTitle className="text-lg">Prévia do Documento</CardTitle>
         </CardHeader>
         <CardContent>
           <div
             id="budget-preview"
-            className="border rounded-lg bg-white shadow-sm max-h-96 overflow-auto"
+            className="border rounded-lg bg-white shadow-sm p-6 max-h-[600px] overflow-auto"
             dangerouslySetInnerHTML={{ __html: documentHtml }}
           />
         </CardContent>
       </Card>
 
       {/* Ações */}
-      <div className="flex gap-3 justify-end sticky bottom-4 bg-white p-4 rounded-lg shadow-lg border">
+      <div className="flex gap-3 justify-end fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg">
         <Button
           onClick={exportPDF}
           variant="outline"

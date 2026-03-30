@@ -87,15 +87,24 @@ export default function Contracts() {
   });
 
   const { data: contracts = [], isLoading } = useQuery({
-    queryKey: ['contracts', effectiveEmail, selectedPropertyId],
-    queryFn: () => isConsultor
-      ? selectedPropertyId
-        ? base44.entities.ClientContract.filter({ consultor_email: effectiveEmail, property_id: selectedPropertyId })
-        : base44.entities.ClientContract.filter({ consultor_email: effectiveEmail })
-      : selectedPropertyId
-        ? base44.entities.ClientContract.filter({ client_email: effectiveEmail, property_id: selectedPropertyId })
-        : base44.entities.ClientContract.filter({ client_email: effectiveEmail }),
-    enabled: !!effectiveEmail && !effectiveLoading,
+    queryKey: ['contracts', effectiveEmail, selectedPropertyId, properties.map(p => p.id).join(',')],
+    queryFn: async () => {
+      if (isConsultor) {
+        return selectedPropertyId
+          ? base44.entities.ClientContract.filter({ consultor_email: effectiveEmail, property_id: selectedPropertyId })
+          : base44.entities.ClientContract.filter({ consultor_email: effectiveEmail });
+      }
+      // Para produtor: busca por property_id de cada propriedade dele
+      if (!properties.length) return [];
+      if (selectedPropertyId) {
+        return base44.entities.ClientContract.filter({ property_id: selectedPropertyId });
+      }
+      const results = await Promise.all(
+        properties.map(p => base44.entities.ClientContract.filter({ property_id: p.id }))
+      );
+      return results.flat();
+    },
+    enabled: !!effectiveEmail && !effectiveLoading && (isConsultor || properties.length > 0),
     initialData: [],
   });
 
@@ -248,7 +257,7 @@ export default function Contracts() {
       </Link>
 
       {/* Property Selector */}
-      {properties.length > 1 && (
+      {properties.length > 0 && (
         <ConsultorPropertySelector
           properties={properties}
           selectedPropertyId={selectedPropertyId}

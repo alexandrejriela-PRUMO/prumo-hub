@@ -138,20 +138,20 @@ export default function BudgetForm({ onSubmit, initialData = null }) {
                 <label className="block text-xs font-medium text-gray-600 mb-1">Quantidade de Horas</label>
                 <Input
                   type="number"
-                  placeholder="Ex: 10, 20.5"
-                  step="0.5"
-                  value={currentService.hours}
-                  onChange={(e) => setCurrentService({...currentService, hours: parseFloat(e.target.value) || 0})}
+                  placeholder="10 ou 20.5"
+                  step="any"
+                  value={currentService.hours || ''}
+                  onChange={(e) => setCurrentService({...currentService, hours: e.target.value === '' ? 0 : parseFloat(e.target.value)})}
                 />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Valor por Hora (R$)</label>
                 <Input
                   type="number"
-                  placeholder="Ex: 150.00"
-                  step="0.01"
-                  value={currentService.hourly_rate}
-                  onChange={(e) => setCurrentService({...currentService, hourly_rate: parseFloat(e.target.value) || 0})}
+                  placeholder="150 ou 150.50"
+                  step="any"
+                  value={currentService.hourly_rate || ''}
+                  onChange={(e) => setCurrentService({...currentService, hourly_rate: e.target.value === '' ? 0 : parseFloat(e.target.value)})}
                 />
               </div>
             </div>
@@ -195,10 +195,10 @@ export default function BudgetForm({ onSubmit, initialData = null }) {
               <label className="block text-sm font-medium mb-1">Valor do Deslocamento (R$)</label>
               <Input
                 type="number"
-                placeholder="Ex: 100.00 ou 150.50"
-                step="0.01"
-                value={formData.travel_cost}
-                onChange={(e) => setFormData({...formData, travel_cost: parseFloat(e.target.value) || 0})}
+                placeholder="100 ou 150.50"
+                step="any"
+                value={formData.travel_cost || ''}
+                onChange={(e) => setFormData({...formData, travel_cost: e.target.value === '' ? 0 : parseFloat(e.target.value)})}
               />
               <p className="text-xs text-gray-500 mt-1">Custos de transporte e locomoção</p>
             </div>
@@ -206,10 +206,10 @@ export default function BudgetForm({ onSubmit, initialData = null }) {
               <label className="block text-sm font-medium mb-1">Custo de Combustível (R$)</label>
               <Input
                 type="number"
-                placeholder="Ex: 50.00 ou 75.30"
-                step="0.01"
-                value={formData.fuel_cost}
-                onChange={(e) => setFormData({...formData, fuel_cost: parseFloat(e.target.value) || 0})}
+                placeholder="50 ou 75.30"
+                step="any"
+                value={formData.fuel_cost || ''}
+                onChange={(e) => setFormData({...formData, fuel_cost: e.target.value === '' ? 0 : parseFloat(e.target.value)})}
               />
               <p className="text-xs text-gray-500 mt-1">Gasolina, diesel ou outros combustíveis</p>
             </div>
@@ -232,10 +232,10 @@ export default function BudgetForm({ onSubmit, initialData = null }) {
                   <label className="block text-xs font-medium text-gray-600 mb-1">Valor da Taxa (R$)</label>
                   <Input
                     type="number"
-                    placeholder="Ex: 200.00"
-                    step="0.01"
-                    value={currentFee.amount}
-                    onChange={(e) => setCurrentFee({...currentFee, amount: parseFloat(e.target.value) || 0})}
+                    placeholder="200 ou 200.50"
+                    step="any"
+                    value={currentFee.amount || ''}
+                    onChange={(e) => setCurrentFee({...currentFee, amount: e.target.value === '' ? 0 : parseFloat(e.target.value)})}
                   />
                 </div>
                 <Button type="button" onClick={addFee} variant="outline">
@@ -276,10 +276,10 @@ export default function BudgetForm({ onSubmit, initialData = null }) {
             <label className="block text-sm font-medium mb-1">Desconto (%)</label>
             <Input
               type="number"
-              placeholder="Ex: 10 para 10% de desconto"
-              step="0.01"
-              value={formData.discount_percentage}
-              onChange={(e) => setFormData({...formData, discount_percentage: parseFloat(e.target.value) || 0})}
+              placeholder="10 ou 15.5"
+              step="any"
+              value={formData.discount_percentage || ''}
+              onChange={(e) => setFormData({...formData, discount_percentage: e.target.value === '' ? 0 : parseFloat(e.target.value)})}
             />
             <p className="text-xs text-gray-500 mt-1">Percentual de desconto sobre o total</p>
           </div>
@@ -287,9 +287,9 @@ export default function BudgetForm({ onSubmit, initialData = null }) {
             <label className="block text-sm font-medium mb-1">Validade (dias)</label>
             <Input
               type="number"
-              placeholder="Ex: 30"
-              value={formData.validity_days}
-              onChange={(e) => setFormData({...formData, validity_days: parseInt(e.target.value) || 30})}
+              placeholder="30"
+              value={formData.validity_days || ''}
+              onChange={(e) => setFormData({...formData, validity_days: e.target.value === '' ? 30 : parseInt(e.target.value)})}
             />
             <p className="text-xs text-gray-500 mt-1">Quantos dias o orçamento é válido</p>
           </div>

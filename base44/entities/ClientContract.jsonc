@@ -1,0 +1,248 @@
+{
+  "name": "ClientContract",
+  "type": "object",
+  "properties": {
+    "consultor_email": {
+      "type": "string",
+      "description": "Email do consultor (contratado)"
+    },
+    "property_id": {
+      "type": "string",
+      "description": "ID da propriedade/cliente"
+    },
+    "client_email": {
+      "type": "string",
+      "description": "Email do cliente (contratante)"
+    },
+    "client_name": {
+      "type": "string",
+      "description": "Nome do cliente contratante"
+    },
+    "contract_number": {
+      "type": "string",
+      "description": "N\u00famero/identifica\u00e7\u00e3o do contrato"
+    },
+    "contract_type": {
+      "type": "string",
+      "enum": [
+        "Presta\u00e7\u00e3o de Servi\u00e7os Ambientais",
+        "Assessoria Ambiental",
+        "Licenciamento Ambiental",
+        "PRAD - Recupera\u00e7\u00e3o de \u00c1rea Degradada",
+        "Georreferenciamento",
+        "Mapeamento de Agricultura de Precis\u00e3o",
+        "CAR / Regulariza\u00e7\u00e3o Fundi\u00e1ria",
+        "Consultoria T\u00e9cnica Rural",
+        "Consultoria Agron\u00f4mica",
+        "Assist\u00eancia T\u00e9cnica e Extens\u00e3o Rural (ATER)",
+        "Contrato de Arrendamento Rural",
+        "Contrato de Parceria Agr\u00edcola",
+        "Contrato de Parceria Pecu\u00e1ria",
+        "Contrato de Comodato Rural",
+        "Contrato de Compra e Venda de Im\u00f3vel Rural",
+        "Contrato de Compra e Venda de Soja",
+        "Contrato de Compra e Venda de Milho",
+        "Contrato de Compra e Venda de Arroz",
+        "Contrato de Compra e Venda de Trigo",
+        "Contrato de Compra e Venda de Canola",
+        "Contrato de Compra e Venda de Boi / Pecu\u00e1ria",
+        "Contrato de Compra e Venda de Algod\u00e3o",
+        "Contrato de Compra de Sementes",
+        "Contrato de Compra de Insumos / Defensivos",
+        "Contrato de Compra de M\u00e1quinas e Equipamentos",
+        "CPR - C\u00e9dula de Produto Rural",
+        "Contrato de Presta\u00e7\u00e3o de Servi\u00e7os de Terraplanagem",
+        "Contrato de Presta\u00e7\u00e3o de Servi\u00e7os de Irriga\u00e7\u00e3o",
+        "Contrato de Presta\u00e7\u00e3o de Servi\u00e7os de Colheita",
+        "Contrato de Presta\u00e7\u00e3o de Servi\u00e7os de Pulveriza\u00e7\u00e3o",
+        "Contrato de Presta\u00e7\u00e3o de Servi\u00e7os de Transporte de Gr\u00e3os",
+        "Contrato de Terceiriza\u00e7\u00e3o de Servi\u00e7os Rurais",
+        "Contrato de Trabalho Rural (CLT)",
+        "Contrato de Trabalho Rural (Tempor\u00e1rio)",
+        "Contrato de Honor\u00e1rios Advocat\u00edcios",
+        "Contrato de Honor\u00e1rios Cont\u00e1beis",
+        "Contrato de Gest\u00e3o Financeira",
+        "Contrato de Seguro Rural",
+        "Contrato de Seguro de M\u00e1quinas",
+        "Contrato de Armazenagem de Gr\u00e3os",
+        "Contrato de Rastreabilidade / Certifica\u00e7\u00e3o",
+        "Outro"
+      ],
+      "description": "Tipo de contrato"
+    },
+    "object": {
+      "type": "string",
+      "description": "Objeto/finalidade do contrato"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de in\u00edcio"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de t\u00e9rmino/expira\u00e7\u00e3o"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Proposta",
+        "Ativo",
+        "Em Assinatura",
+        "Em Renova\u00e7\u00e3o",
+        "Encerrado",
+        "Cancelado"
+      ],
+      "default": "Proposta",
+      "description": "Status do contrato"
+    },
+    "total_value": {
+      "type": "number",
+      "description": "Valor total do contrato (R$)"
+    },
+    "payment_terms": {
+      "type": "string",
+      "description": "Condi\u00e7\u00f5es de pagamento"
+    },
+    "alert_days_before_expiry": {
+      "type": "number",
+      "default": 30,
+      "description": "Dias de anteced\u00eancia para alertar sobre vencimento"
+    },
+    "parties": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "document": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          }
+        }
+      },
+      "default": []
+    },
+    "services_linked": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "value": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "default": []
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "Contrato Assinado",
+              "Proposta",
+              "Aditivo",
+              "Comprovante",
+              "Outro"
+            ]
+          },
+          "upload_date": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "default": []
+    },
+    "notes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es gerais"
+    },
+    "document_html": {
+      "type": "string",
+      "description": "Conte\u00fado HTML do contrato gerado"
+    },
+    "clicksign_key": {
+      "type": "string",
+      "description": "Chave do documento na Clicksign para assinatura digital"
+    },
+    "signature_status": {
+      "type": "string",
+      "enum": [
+        "N\u00e3o iniciado",
+        "Pendente",
+        "Assinado",
+        "Recusado"
+      ],
+      "default": "N\u00e3o iniciado",
+      "description": "Status da assinatura digital"
+    },
+    "signers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "clicksign_signer_key": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Pendente",
+              "Assinado",
+              "Recusado"
+            ]
+          },
+          "signed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "default": []
+    },
+    "signed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data de assinatura digital completa"
+    }
+  },
+  "required": [
+    "consultor_email",
+    "property_id",
+    "contract_type",
+    "object",
+    "start_date",
+    "status"
+  ]
+}

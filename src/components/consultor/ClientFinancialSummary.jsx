@@ -168,9 +168,10 @@ export default function ClientFinancialSummary({ client }) {
           <CardContent className="p-0">
             <div className="divide-y divide-gray-100">
               {services.map((service, i) => {
-                const installmentValue = service.payment_type === 'parcelado' && service.installments
-                  ? parseFloat(service.value) / parseInt(service.installments)
-                  : null;
+                const totalValue = parseFloat(service.value) || 0;
+                const isParcelado = service.payment_type === 'parcelado';
+                const numParcelas = isParcelado ? parseInt(service.installments) || 1 : 1;
+                const installmentValue = isParcelado ? totalValue / numParcelas : null;
 
                 return (
                   <div key={i} className={`px-4 py-3 flex items-start gap-3 ${service.received ? 'bg-green-50/40' : service.status === 'Cancelado' ? 'opacity-50' : ''}`}>
@@ -188,14 +189,12 @@ export default function ClientFinancialSummary({ client }) {
                           {service.start_date && <p className="text-xs text-gray-400">Início: {new Date(service.start_date).toLocaleDateString('pt-BR')}</p>}
                         </div>
                         <div className="text-right flex-shrink-0">
-                          {parseFloat(service.value) > 0 && (
-                            <p className="text-sm font-bold text-gray-900">
-                              R$ {parseFloat(service.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </p>
-                          )}
+                          <p className="text-sm font-bold text-gray-900">
+                            R$ {totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
                           {installmentValue && (
-                            <p className="text-xs text-gray-500">
-                              {service.installments}x de R$ {installmentValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            <p className="text-xs text-gray-500 mt-1">
+                              {numParcelas}x de R$ {installmentValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </p>
                           )}
                         </div>
@@ -207,17 +206,20 @@ export default function ClientFinancialSummary({ client }) {
                         {service.payment_method && (
                           <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-md">{service.payment_method}</span>
                         )}
-                        {service.payment_type === 'parcelado'
-                          ? <span className="text-xs px-2 py-0.5 bg-purple-50 text-purple-600 rounded-md">{service.installments || '?'}x Parcelado</span>
+                        {isParcelado
+                          ? <span className="text-xs px-2 py-0.5 bg-purple-50 text-purple-600 rounded-md font-medium">📊 {numParcelas}x Parcelado</span>
                           : <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md">À Vista</span>
                         }
+                        {service.received && (
+                          <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-md font-medium">✓ Totalmente Recebido</span>
+                        )}
                         <Button
                           size="sm"
                           variant={service.received ? 'outline' : 'default'}
                           className={`h-6 text-xs px-2 ${service.received ? 'border-green-300 text-green-700 hover:bg-green-50' : 'bg-amber-500 hover:bg-amber-600 text-white'}`}
                           onClick={() => toggleReceived(i)}
                         >
-                          {service.received ? '✓ Recebido' : 'Marcar Recebido'}
+                          {service.received ? '✓ Marcar como não recebido' : 'Marcar Tudo Recebido'}
                         </Button>
                       </div>
                     </div>

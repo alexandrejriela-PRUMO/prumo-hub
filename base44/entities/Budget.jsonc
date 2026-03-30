@@ -1,0 +1,136 @@
+{
+  "name": "Budget",
+  "type": "object",
+  "properties": {
+    "consultor_email": {
+      "type": "string",
+      "description": "Email do consultor criador"
+    },
+    "client_name": {
+      "type": "string",
+      "description": "Nome do cliente/lead"
+    },
+    "client_email": {
+      "type": "string",
+      "description": "Email do cliente/lead"
+    },
+    "budget_number": {
+      "type": "string",
+      "description": "N\u00famero sequencial do or\u00e7amento"
+    },
+    "title": {
+      "type": "string",
+      "description": "T\u00edtulo do or\u00e7amento"
+    },
+    "property_id": {
+      "type": "string",
+      "description": "Propriedade relacionada (opcional)"
+    },
+    "services": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "hours": {
+            "type": "number"
+          },
+          "hourly_rate": {
+            "type": "number"
+          },
+          "subtotal": {
+            "type": "number"
+          }
+        }
+      },
+      "default": []
+    },
+    "travel_cost": {
+      "type": "number",
+      "default": 0,
+      "description": "Custo de deslocamento"
+    },
+    "fuel_cost": {
+      "type": "number",
+      "default": 0,
+      "description": "Custo de combust\u00edvel"
+    },
+    "additional_fees": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          }
+        }
+      },
+      "default": []
+    },
+    "discount_percentage": {
+      "type": "number",
+      "default": 0,
+      "description": "Desconto em percentual"
+    },
+    "total_amount": {
+      "type": "number",
+      "description": "Valor total do or\u00e7amento"
+    },
+    "validity_days": {
+      "type": "number",
+      "default": 30,
+      "description": "Dias de validade do or\u00e7amento"
+    },
+    "document_html": {
+      "type": "string",
+      "description": "Conte\u00fado HTML do documento editado"
+    },
+    "logo_url": {
+      "type": "string",
+      "description": "URL da logo para o documento"
+    },
+    "template_id": {
+      "type": "string",
+      "description": "ID do modelo utilizado"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Rascunho",
+        "Enviado",
+        "Aceito",
+        "Rejeitado"
+      ],
+      "default": "Rascunho"
+    },
+    "sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data do envio"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es adicionais"
+    }
+  },
+  "required": [
+    "consultor_email",
+    "client_name",
+    "client_email",
+    "title"
+  ]
+}

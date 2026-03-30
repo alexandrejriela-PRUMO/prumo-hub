@@ -1,0 +1,76 @@
+{
+  "name": "BudgetTemplate",
+  "type": "object",
+  "properties": {
+    "consultor_email": {
+      "type": "string",
+      "description": "Email do consultor dono do modelo"
+    },
+    "name": {
+      "type": "string",
+      "description": "Nome do modelo"
+    },
+    "description": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o do modelo"
+    },
+    "is_default": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se \u00e9 o modelo padr\u00e3o"
+    },
+    "html_template": {
+      "type": "string",
+      "description": "Conte\u00fado HTML do modelo"
+    },
+    "logo_url": {
+      "type": "string",
+      "description": "URL padr\u00e3o da logo"
+    },
+    "company_info": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "cnpj": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        }
+      },
+      "description": "Informa\u00e7\u00f5es da empresa"
+    },
+    "default_services": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "hourly_rate": {
+            "type": "number"
+          }
+        }
+      },
+      "default": []
+    },
+    "footer_text": {
+      "type": "string",
+      "description": "Texto do rodap\u00e9 padr\u00e3o"
+    }
+  },
+  "required": [
+    "consultor_email",
+    "name",
+    "html_template"
+  ]
+}

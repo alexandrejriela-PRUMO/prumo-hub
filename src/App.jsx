@@ -28,6 +28,7 @@ const ImportUsersStripe = React.lazy(() => import('./pages/ImportUsersStripe'));
 const CampMode = React.lazy(() => import('./pages/CampMode'));
 const PropertyCentral = React.lazy(() => import('./pages/PropertyCentral'));
 const EnvironmentalAssets = React.lazy(() => import('./pages/EnvironmentalAssets'));
+const GoogleCalendarCallback = React.lazy(() => import('./pages/GoogleCalendarCallback'));
 import OfflineIndicator from '@/components/offline/OfflineIndicator';
 import { useOfflineSync } from '@/components/offline/OfflineSyncHook';
 import { initializeOfflineDB } from '@/components/offline/OfflineStorageManager';
@@ -115,6 +116,7 @@ const AuthenticatedApp = () => {
       <Route path="/NotificationAudit" element={<LayoutWrapper currentPageName="NotificationAudit"><Suspense fallback={<LoadingSpinner />}><NotificationAudit /></Suspense></LayoutWrapper>} />
       <Route path="/NFeManagement" element={<LayoutWrapper currentPageName="NFeManagement"><Suspense fallback={<LoadingSpinner />}><NFeManagement /></Suspense></LayoutWrapper>} />
       <Route path="/ImportUsersStripe" element={<LayoutWrapper currentPageName="ImportUsersStripe"><Suspense fallback={<LoadingSpinner />}><ImportUsersStripe /></Suspense></LayoutWrapper>} />
+      <Route path="/GoogleCalendarCallback" element={<Suspense fallback={<LoadingSpinner />}><GoogleCalendarCallback /></Suspense>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
     </>

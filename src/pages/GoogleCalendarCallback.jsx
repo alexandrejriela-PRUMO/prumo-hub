@@ -1,74 +1,86 @@
 import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function GoogleCalendarCallback() {
-  const [status, setStatus] = useState('loading');
-  const [message, setMessage] = useState('');
+  const [status, setStatus] = useState('loading'); // loading, success, error
+  const [message, setMessage] = useState('Conectando ao Google Calendar...');
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    const error = params.get('error');
+    const handleCallback = async () => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        const error = params.get('error');
 
-    if (error) {
-      setStatus('error');
-      setMessage('Acesso negado: ' + error);
-      return;
-    }
+        if (error) {
+          setStatus('error');
+          setMessage(`Erro: ${error}`);
+          setTimeout(() => navigate('/NotificationSettings'), 3000);
+          return;
+        }
 
-    if (!code) {
-      setStatus('error');
-      setMessage('Código de autorização não encontrado.');
-      return;
-    }
+        if (!code) {
+          setStatus('error');
+          setMessage('Código de autorização não encontrado');
+          setTimeout(() => navigate('/NotificationSettings'), 3000);
+          return;
+        }
 
-    base44.functions.invoke('googleOAuthCallback', { code })
-      .then(res => {
-        if (res.data?.success) {
+        // Chama função backend para trocar o código por token
+        const response = await base44.functions.invoke('googleCalendarCallback', {
+          code,
+        });
+
+        if (response.data.success) {
           setStatus('success');
-          setMessage(`Conectado com sucesso! Conta Google: ${res.data.google_email}`);
-          setTimeout(() => { window.location.href = '/Agenda'; }, 2500);
+          setMessage('Google Calendar conectado com sucesso!');
+          setTimeout(() => navigate('/NotificationSettings'), 2000);
         } else {
           setStatus('error');
-          setMessage(res.data?.error || 'Erro ao salvar token.');
+          setMessage(response.data.error || 'Erro ao conectar');
+          setTimeout(() => navigate('/NotificationSettings'), 3000);
         }
-      })
-      .catch(err => {
+      } catch (error) {
+        console.error('Callback error:', error);
         setStatus('error');
-        setMessage(err.message || 'Erro inesperado.');
-      });
-  }, []);
+        setMessage(error.message || 'Erro ao processar autorização');
+        setTimeout(() => navigate('/NotificationSettings'), 3000);
+      }
+    };
+
+    handleCallback();
+  }, [navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-white">
-      <div className="bg-white rounded-2xl shadow-lg p-10 flex flex-col items-center gap-5 max-w-sm w-full">
-        <img
-          src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/9e64158f0_PRUMO1.png"
-          alt="PRUMO Hub"
-          className="h-14 object-contain mb-2"
-        />
-        {status === 'loading' && (
-          <>
-            <Loader2 className="w-10 h-10 text-emerald-600 animate-spin" />
-            <p className="text-emerald-800 font-medium">Conectando ao Google Calendar...</p>
-          </>
-        )}
-        {status === 'success' && (
-          <>
-            <CheckCircle2 className="w-12 h-12 text-emerald-500" />
-            <p className="text-emerald-800 font-semibold text-center">{message}</p>
-            <p className="text-sm text-gray-500">Redirecionando para a Agenda...</p>
-          </>
-        )}
-        {status === 'error' && (
-          <>
-            <XCircle className="w-12 h-12 text-red-500" />
-            <p className="text-red-700 font-medium text-center">{message}</p>
-            <a href="/Agenda" className="text-sm text-emerald-600 underline">Voltar para a Agenda</a>
-          </>
-        )}
-      </div>
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-stone-50 to-emerald-50/30">
+      <Card className="w-full max-w-md">
+        <CardContent className="pt-8 pb-8 text-center space-y-4">
+          {status === 'loading' && (
+            <>
+              <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto" />
+              <p className="text-gray-700 font-medium">{message}</p>
+            </>
+          )}
+          {status === 'success' && (
+            <>
+              <CheckCircle2 className="w-12 h-12 text-green-600 mx-auto" />
+              <p className="text-gray-700 font-medium">{message}</p>
+              <p className="text-sm text-gray-500">Redirecionando...</p>
+            </>
+          )}
+          {status === 'error' && (
+            <>
+              <AlertCircle className="w-12 h-12 text-red-600 mx-auto" />
+              <p className="text-gray-700 font-medium">{message}</p>
+              <p className="text-sm text-gray-500">Redirecionando em 3 segundos...</p>
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

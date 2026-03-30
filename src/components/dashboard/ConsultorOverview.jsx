@@ -141,7 +141,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
   };
 
   // Filter out client-only records without properties
-  const propertiesWithClients = properties.filter(p => !p.is_client_only);
+  const propertiesWithClients = properties.filter(p => p && !p.is_client_only);
 
   const criticalCount = propertiesWithClients.filter(p => getPropertyStatus(p.id) === 'critical').length;
   const attentionCount = propertiesWithClients.filter(p => getPropertyStatus(p.id) === 'attention').length;

@@ -159,28 +159,31 @@ export default function EnvironmentalAssets() {
   // ===== COMPRA DE CRA =====
   const saveBuyMutation = useMutation({
     mutationFn: async (data) => {
-      if (!data.property_id || !data.area_hectares || !data.price_per_hectare) {
-        throw new Error('Preencha os campos obrigatórios');
+      if (!data.property_id || !data.area_hectares) {
+        throw new Error('Selecione a propriedade e informe a área desejada');
       }
 
       const areaToBuy = parseFloat(data.area_hectares);
       if (areaToBuy <= 0) throw new Error('Área deve ser maior que zero');
 
+      const selectedProp = properties.find(p => p.id === data.property_id);
+
       const payload = {
+        origin_id: 'requisicao',
         buyer_email: effectiveEmail,
         buyer_property_id: data.property_id,
-        buyer_car: data.buyer_car || '',
-        seller_email: data.seller_email || 'pendente@exemplo.com',
-        seller_property_id: data.seller_property_id || '',
-        cra_title_id: data.cra_title_id || '',
-        cra_number: data.cra_number || '',
+        buyer_car: selectedProp?.car_numbers?.[0] || selectedProp?.car_number || '',
+        seller_email: 'pendente@cra.com',
+        seller_property_id: '',
+        cra_title_id: '',
+        cra_number: '',
         area_hectares: areaToBuy,
         available_area_hectares: areaToBuy,
-        price_per_hectare: parseFloat(data.price_per_hectare),
-        total_value: areaToBuy * parseFloat(data.price_per_hectare),
+        price_per_hectare: parseFloat(data.price_per_hectare) || 0,
+        total_value: areaToBuy * (parseFloat(data.price_per_hectare) || 0),
         transaction_date: new Date().toISOString().split('T')[0],
         status: 'Em negociação',
-        documents: data.documents || [],
+        documents: [],
         notes: data.notes || ''
       };
 
@@ -535,16 +538,19 @@ export default function EnvironmentalAssets() {
             <Card className="border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-white">
               <CardHeader className="border-b border-emerald-200">
                 <div className="flex justify-between items-center">
-                  <CardTitle className="text-emerald-900">Requisição de Compra</CardTitle>
+                  <CardTitle className="text-emerald-900">Nova Requisição de Compra de CRA</CardTitle>
                   <Button size="sm" variant="ghost" onClick={() => { setEditingBuy(null); setBuyFormData({}); }}><X className="w-4 h-4" /></Button>
                 </div>
               </CardHeader>
-              <CardContent className="pt-6 space-y-6">
+              <CardContent className="pt-6 space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+                  Registre sua necessidade de compra de CRA. Nossa equipe entrará em contato para conectar você com vendedores disponíveis.
+                </div>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="font-semibold text-emerald-900">Propriedade *</Label>
+                    <Label className="font-semibold text-emerald-900">Propriedade a Compensar *</Label>
                     <Select value={buyFormData.property_id || ''} onValueChange={(value) => setBuyFormData({ ...buyFormData, property_id: value })}>
-                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Selecione a propriedade" /></SelectTrigger>
                       <SelectContent>
                         {properties.map(p => (
                           <SelectItem key={p.id} value={p.id}>{p.property_name}</SelectItem>
@@ -553,56 +559,28 @@ export default function EnvironmentalAssets() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="font-semibold text-emerald-900">Área a Comprar (ha) *</Label>
-                    <Input type="number" step="0.01" value={buyFormData.area_hectares || ''} onChange={(e) => setBuyFormData({ ...buyFormData, area_hectares: e.target.value })} />
+                    <Label className="font-semibold text-emerald-900">Área Necessária (ha) *</Label>
+                    <Input type="number" step="0.01" min="0" placeholder="Ex: 50" value={buyFormData.area_hectares || ''} onChange={(e) => setBuyFormData({ ...buyFormData, area_hectares: e.target.value })} />
                   </div>
                   <div className="space-y-2">
-                    <Label className="font-semibold text-emerald-900">Preço Máximo por ha (R$) *</Label>
-                    <Input type="number" step="100" value={buyFormData.price_per_hectare || ''} onChange={(e) => setBuyFormData({ ...buyFormData, price_per_hectare: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="font-semibold text-emerald-900">Email do Vendedor</Label>
-                    <Input type="email" value={buyFormData.seller_email || ''} onChange={(e) => setBuyFormData({ ...buyFormData, seller_email: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="font-semibold text-emerald-900">CAR da Propriedade</Label>
-                    <Input value={buyFormData.buyer_car || ''} onChange={(e) => setBuyFormData({ ...buyFormData, buyer_car: e.target.value })} />
+                    <Label className="font-semibold text-emerald-900">Valor Máximo por ha (R$)</Label>
+                    <Input type="number" step="100" min="0" placeholder="Ex: 5000 (opcional)" value={buyFormData.price_per_hectare || ''} onChange={(e) => setBuyFormData({ ...buyFormData, price_per_hectare: e.target.value })} />
                   </div>
                   <div className="space-y-2">
                     <Label className="font-semibold text-emerald-900">Observações</Label>
-                    <Input value={buyFormData.notes || ''} onChange={(e) => setBuyFormData({ ...buyFormData, notes: e.target.value })} />
+                    <Input placeholder="Bioma preferido, urgência, etc." value={buyFormData.notes || ''} onChange={(e) => setBuyFormData({ ...buyFormData, notes: e.target.value })} />
                   </div>
-                  <div className="md:col-span-2 space-y-2">
-                    <Label className="font-semibold text-emerald-900">Upload de Contrato</Label>
-                    <div className="flex gap-2">
-                      <Input type="file" accept=".pdf,.doc,.docx" onChange={(e) => {
-                        if (e.target.files?.[0]) handleFileUpload(e.target.files[0], setBuyFormData, 'documents');
-                        e.target.value = '';
-                      }} />
-                      <Button type="button" size="sm" variant="outline"><Upload className="w-4 h-4" /></Button>
-                    </div>
-                    {buyFormData.documents?.length > 0 && (
-                      <div className="space-y-1 text-sm">
-                        {buyFormData.documents.map((doc, idx) => (
-                          <div key={idx} className="flex items-center gap-2 p-2 bg-emerald-50 rounded">
-                            <FileText className="w-3 h-3 text-emerald-600" />
-                            <span className="text-emerald-900">{doc.name}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {buyFormData.area_hectares && buyFormData.price_per_hectare && (
-                    <div className="md:col-span-2 bg-emerald-100 p-3 rounded-lg border border-emerald-300">
-                      <p className="font-bold text-emerald-900">Máximo: R$ {(parseFloat(buyFormData.area_hectares) * parseFloat(buyFormData.price_per_hectare)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                    </div>
-                  )}
                 </div>
-                <div className="flex gap-3 justify-end pt-4 border-t border-emerald-100">
+                {buyFormData.area_hectares && buyFormData.price_per_hectare && (
+                  <div className="bg-emerald-100 p-3 rounded-lg border border-emerald-300">
+                    <p className="font-bold text-emerald-900">Orçamento máximo: R$ {(parseFloat(buyFormData.area_hectares) * parseFloat(buyFormData.price_per_hectare)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                  </div>
+                )}
+                <div className="flex gap-3 justify-end pt-2 border-t border-emerald-100">
                   <Button variant="outline" onClick={() => { setEditingBuy(null); setBuyFormData({}); }}>Cancelar</Button>
                   <Button onClick={() => saveBuyMutation.mutate(buyFormData)} className="bg-emerald-600 hover:bg-emerald-700 text-white" disabled={saveBuyMutation.isPending}>
                     <Save className="w-4 h-4 mr-2" />
-                    {saveBuyMutation.isPending ? 'Criando...' : 'Criar Requisição'}
+                    {saveBuyMutation.isPending ? 'Enviando...' : 'Enviar Requisição'}
                   </Button>
                 </div>
               </CardContent>

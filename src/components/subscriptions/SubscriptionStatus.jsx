@@ -171,7 +171,10 @@ function ProdutorPlanCard({ billing, onSubscribe, loading }) {
             {loading ? 'Processando...' : 'Assinar Agora'}
           </Button>
           <Button
-            onClick={() => base44.functions.invoke('createStripePortal', {}).then(r => r.data?.url && (window.location.href = r.data.url))}
+            onClick={() => base44.functions.invoke('createStripePortal', {})
+              .then(r => { if (r.data?.url) window.location.href = r.data.url; else alert(r.data?.error || 'Portal indisponível.'); })
+              .catch(() => alert('Você ainda não possui uma assinatura ativa no Stripe. Assine um plano para começar.'))
+            }
             variant="outline"
             className="w-full"
           >

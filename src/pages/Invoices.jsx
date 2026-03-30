@@ -35,9 +35,18 @@ export default function Invoices() {
     setLoadingPortal(true);
     try {
       const response = await base44.functions.invoke('createStripePortal', {});
-      window.open(response.data.url, '_blank');
+      if (response.data?.url) {
+        window.open(response.data.url, '_blank');
+      } else {
+        alert(response.data?.error || 'Não foi possível abrir o portal.');
+      }
     } catch (error) {
-      console.error('Erro ao abrir o portal do Stripe:', error);
+      const msg = error?.response?.data?.error || error.message || '';
+      if (msg.includes('Nenhuma assinatura')) {
+        alert('Você ainda não possui uma assinatura ativa no Stripe. Assine um plano abaixo para começar.');
+      } else {
+        alert('Erro ao abrir o portal de assinatura. Tente novamente.');
+      }
     } finally {
       setLoadingPortal(false);
     }

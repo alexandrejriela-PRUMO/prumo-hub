@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const { action, event, eventId } = body;
 
-    const accessToken = await base44.asServiceRole.connectors.getCurrentAppUserAccessToken(CONNECTOR_ID);
+    const accessToken = await base44.connectors.getCurrentAppUserAccessToken(CONNECTOR_ID);
 
     // Listar eventos
     if (!action || action === 'list') {

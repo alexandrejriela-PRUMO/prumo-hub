@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
 
     const clientId = Deno.env.get('GOOGLE_OAUTH_CLIENT_ID');
     const clientSecret = Deno.env.get('GOOGLE_OAUTH_CLIENT_SECRET');
-    const appUrl = Deno.env.get('BASE44_APP_URL') || 'https://prumo.base44.app';
+    const appUrl = 'https://hub.prumo.site';
     const redirectUri = `${appUrl}/GoogleCalendarCallback`;
 
     // Exchange code for tokens

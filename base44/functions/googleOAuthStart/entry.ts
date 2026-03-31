@@ -7,7 +7,7 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const clientId = Deno.env.get('GOOGLE_OAUTH_CLIENT_ID');
-    const appUrl = Deno.env.get('BASE44_APP_URL') || 'https://prumo.base44.app';
+    const appUrl = 'https://hub.prumo.site';
     const redirectUri = `${appUrl}/GoogleCalendarCallback`;
 
     const params = new URLSearchParams({

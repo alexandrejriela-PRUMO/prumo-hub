@@ -297,11 +297,11 @@ export default function Properties() {
           </DialogHeader>
           <PropertyUsers
             property={selectedProperty}
-            currentUser={user}
+            currentUser={effectiveUser || user}
             onSave={(authorizedUsers) => {
               updateMutation.mutate({
                 id: selectedProperty.id,
-                data: { ...selectedProperty, authorized_users: authorizedUsers }
+                data: { ...selectedProperty, authorized_users: JSON.stringify(authorizedUsers) }
               });
             }}
             onCancel={() => setUsersDialogOpen(false)}

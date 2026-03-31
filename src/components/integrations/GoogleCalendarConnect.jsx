@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, CheckCircle2, Loader2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-const CONNECTOR_ID = '69cb25ebd88e121c980a50c0';
+const CONNECTOR_ID = '69cb271252e5869906bb2e32';
 
 export default function GoogleCalendarConnect({ onConnected }) {
   const [status, setStatus] = useState('checking'); // checking | connected | disconnected

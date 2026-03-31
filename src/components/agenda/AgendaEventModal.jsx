@@ -32,7 +32,6 @@ const defaultForm = (initialDate, user) => ({
   assigned_to_name: user?.full_name || '',
   status: 'Pendente',
   priority: 'Média',
-  sync_google: true,
   reminder_minutes: 30,
   notes: '',
 });
@@ -71,19 +70,6 @@ export default function AgendaEventModal({ event, initialDate, user, properties,
     set('assigned_to_name', found?.name || email);
   };
 
-  const toGCalEvent = (f) => ({
-    summary: f.title,
-    description: f.description || '',
-    location: f.location || '',
-    start: f.all_day
-      ? { date: f.start_datetime?.slice(0, 10) }
-      : { dateTime: new Date(f.start_datetime).toISOString(), timeZone: 'America/Sao_Paulo' },
-    end: f.all_day
-      ? { date: (f.end_datetime || f.start_datetime)?.slice(0, 10) }
-      : { dateTime: new Date(f.end_datetime || f.start_datetime).toISOString(), timeZone: 'America/Sao_Paulo' },
-    reminders: { useDefault: false, overrides: [{ method: 'popup', minutes: Number(f.reminder_minutes) || 30 }] }
-  });
-
   const handleSave = async () => {
     if (!form.title || !form.start_datetime) {
       toast.error('Preencha o título e a data/hora de início.');
@@ -97,10 +83,6 @@ export default function AgendaEventModal({ event, initialDate, user, properties,
         start_datetime: new Date(form.start_datetime).toISOString(),
         end_datetime: form.end_datetime ? new Date(form.end_datetime).toISOString() : new Date(form.start_datetime).toISOString(),
       };
-
-      let gcalId = form.google_calendar_event_id;
-
-      if (gcalId) payload.google_calendar_event_id = gcalId;
 
       if (event?.id) {
         await base44.entities.AgendaEvent.update(event.id, payload);

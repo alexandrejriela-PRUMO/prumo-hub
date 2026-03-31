@@ -146,10 +146,7 @@ export default function Agenda() {
 
   const deleteEventMutation = useMutation({
     mutationFn: async (ev) => {
-      if (ev.google_calendar_event_id) {
-        await base44.functions.invoke('googleCalendarAgenda', { action: 'delete', eventId: ev.google_calendar_event_id, event: {} });
-      }
-      await base44.entities.AgendaEvent.delete(ev.id);
+        await base44.entities.AgendaEvent.delete(ev.id);
     },
     onMutate: async (ev) => {
       await qc.cancelQueries(['agendaEvents']);
@@ -214,7 +211,7 @@ export default function Agenda() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-emerald-900">📅 Agenda</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Eventos, tarefas do CRM e delegações — tudo sincronizado com Google Agenda</p>
+          <p className="text-sm text-gray-500 mt-0.5">Eventos, tarefas do CRM e delegações da equipe</p>
         </div>
         <Button
           onClick={() => { setEditingEvent(null); setSelectedDate(new Date()); setShowModal(true); }}

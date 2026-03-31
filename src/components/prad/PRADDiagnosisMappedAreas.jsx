@@ -50,7 +50,7 @@ export default function PRADDiagnosisMappedAreas({ prad, onUpdate }) {
 
   const handleDeleteArea = (idx) => {
     const mappedAreas = prad.environmental_diagnosis?.mapped_areas?.filter((_, i) => i !== idx) || [];
-    const diagnosis = { ...prad.environmental_diagnosis, mapped_areas };
+    const diagnosis = { ...prad.environmental_diagnosis, mapped_areas: mappedAreas };
     updateMutation.mutate({ id: prad.id, data: { environmental_diagnosis: diagnosis } });
   };
 

@@ -11,7 +11,8 @@ import {
   Mountain,
   Target,
   Tractor,
-  FileText
+  FileText,
+  Activity
 } from 'lucide-react';
 
 export default function MappingDetailView({ mapping }) {

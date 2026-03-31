@@ -1,5 +1,6 @@
 import React from 'react';
 import { LayersControl, TileLayer, GeoJSON } from 'react-leaflet';
+import L from 'leaflet';
 
 const { BaseLayer, Overlay } = LayersControl;
 

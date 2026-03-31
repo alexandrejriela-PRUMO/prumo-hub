@@ -107,15 +107,18 @@ export default function CARModule() {
   });
 
   const updateMapLayers = useMutation({
-    mutationFn: (data) => carRecord
-      ? base44.entities.CARManagement.update(carRecord.id, data)
-      : base44.entities.CARManagement.create({
-          ...data,
-          property_id: effectivePropertyId,
-          owner_email: selectedProperty?.owner_email || effectiveEmail,
-          consultor_email: isConsultor ? effectiveEmail : undefined,
-          car_status: 'Pendente de análise',
-        }),
+    mutationFn: (data) => {
+      const firstRecord = carRecords[0];
+      return firstRecord
+        ? base44.entities.CARManagement.update(firstRecord.id, data)
+        : base44.entities.CARManagement.create({
+            ...data,
+            property_id: effectivePropertyId,
+            owner_email: selectedProperty?.owner_email || effectiveEmail,
+            consultor_email: isConsultor ? effectiveEmail : undefined,
+            car_status: 'Pendente de análise',
+          });
+    },
     onSuccess: () => queryClient.invalidateQueries(['car', effectivePropertyId]),
   });
 

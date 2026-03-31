@@ -48,21 +48,40 @@ export default function EnvironmentalEasementsPage() {
 
   const { effectiveEmail, userType } = useEffectiveUser();
   const isConsultor = userType === 'consultor' || userType === 'equipe';
+  const isClientConsultor = userType === 'client_consultor' || user?.user_type === 'client_consultor';
+  const canEdit = !isClientConsultor;
+
+  const { data: allPropertiesForClient = [] } = useQuery({
+    queryKey: ['all-properties-for-client-easements'],
+    queryFn: () => base44.entities.Property.list('-created_date', 500),
+    enabled: !!user?.email && isClientConsultor,
+  });
+
+  const clientConsultorProperties = isClientConsultor
+    ? allPropertiesForClient.filter(prop => {
+        if (!prop.authorized_users) return false;
+        try {
+          const au = Array.isArray(prop.authorized_users) ? prop.authorized_users : JSON.parse(prop.authorized_users);
+          return Array.isArray(au) && au.some(u => u.email === user?.email);
+        } catch { return false; }
+      })
+    : [];
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties', effectiveEmail, userType],
     queryFn: () => isConsultor
       ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
       : base44.entities.Property.filter({ owner_email: effectiveEmail }),
-    enabled: !!effectiveEmail
+    enabled: !!effectiveEmail && !isClientConsultor
   });
 
-  const propertyIds = new Set(properties.map(p => p.id));
+  const effectiveProperties = isClientConsultor ? clientConsultorProperties : properties;
+  const propertyIds = new Set(effectiveProperties.map(p => p.id));
 
   const { data: allEasements = [], isLoading } = useQuery({
-    queryKey: ['environmentalEasements', effectiveEmail],
+    queryKey: ['environmentalEasements', effectiveEmail, Array.from(propertyIds).join(',')],
     queryFn: () => base44.entities.EnvironmentalEasement.list('-created_date', 1000),
-    enabled: !!effectiveEmail,
+    enabled: !!effectiveEmail && effectiveProperties.length > 0,
     select: (data) => data.filter(e => propertyIds.size === 0 || propertyIds.has(e.property_id)),
   });
 
@@ -191,16 +210,18 @@ export default function EnvironmentalEasementsPage() {
           </h1>
           <p className="text-gray-600 mt-1">Gerencie contratos de servidão ambiental</p>
         </div>
-        <Button
-          onClick={() => {
-            setEditingEasement(null);
-            setShowForm(true);
-          }}
-          className="bg-green-600 hover:bg-green-700"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nova Servidão
-        </Button>
+        {canEdit && (
+          <Button
+            onClick={() => {
+              setEditingEasement(null);
+              setShowForm(true);
+            }}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Servidão
+          </Button>
+        )}
       </div>
 
       {/* Form Modal */}
@@ -221,17 +242,17 @@ export default function EnvironmentalEasementsPage() {
       {selectedEasement && (
         <EasementDetails
           easement={selectedEasement}
-          property={properties.find(p => p.id === selectedEasement.property_id)}
+          property={effectiveProperties.find(p => p.id === selectedEasement.property_id)}
           onClose={() => setSelectedEasement(null)}
-          onEdit={() => {
+          onEdit={canEdit ? () => {
             setEditingEasement(selectedEasement);
             setSelectedEasement(null);
             setShowForm(true);
-          }}
-          onDelete={() => {
+          } : null}
+          onDelete={canEdit ? () => {
             handleDelete(selectedEasement);
             setSelectedEasement(null);
-          }}
+          } : null}
         />
       )}
 
@@ -250,7 +271,7 @@ export default function EnvironmentalEasementsPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               >
                 <option value="all">Todas as Propriedades e Empreendimentos</option>
-                {properties.map(prop => (
+                {effectiveProperties.map(prop => (
                   <option key={prop.id} value={prop.id}>{prop.property_name}</option>
                 ))}
               </select>
@@ -488,21 +509,25 @@ export default function EnvironmentalEasementsPage() {
                         >
                           Ver Detalhes
                         </Button>
-                        <Button
-                          onClick={() => handleEdit(easement)}
-                          variant="outline"
-                          size="icon"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          onClick={() => handleDelete(easement)}
-                          variant="outline"
-                          size="icon"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        {canEdit && (
+                          <Button
+                            onClick={() => handleEdit(easement)}
+                            variant="outline"
+                            size="icon"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {canEdit && (
+                          <Button
+                            onClick={() => handleDelete(easement)}
+                            variant="outline"
+                            size="icon"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </CardContent>
                   </Card>

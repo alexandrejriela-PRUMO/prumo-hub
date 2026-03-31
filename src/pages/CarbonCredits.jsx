@@ -37,26 +37,47 @@ function CarbonCreditsContent() {
   const [statusFilter, setStatusFilter] = useState('all');
 
   const queryClient = useQueryClient();
-  const { user, effectiveEmail, linkedConsultant, memberRole, permissions, isConsultor, isProdutor, isLoading: userLoading } = useEffectiveUser();
+  const { user, effectiveEmail, linkedConsultant, memberRole, permissions, isConsultor, isProdutor, isLoading: userLoading, userType } = useEffectiveUser();
+  const isClientConsultor = userType === 'client_consultor' || user?.user_type === 'client_consultor';
+  const canEdit = !isClientConsultor;
+
+  const { data: allPropertiesForClient = [] } = useQuery({
+    queryKey: ['all-properties-for-client-carbon'],
+    queryFn: () => base44.entities.Property.list('-created_date', 500),
+    enabled: !!user?.email && isClientConsultor,
+  });
+
+  const clientConsultorProperties = isClientConsultor
+    ? allPropertiesForClient.filter(prop => {
+        if (!prop.authorized_users) return false;
+        try {
+          const au = Array.isArray(prop.authorized_users) ? prop.authorized_users : JSON.parse(prop.authorized_users);
+          return Array.isArray(au) && au.some(u => u.email === user?.email);
+        } catch { return false; }
+      })
+    : [];
 
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties', effectiveEmail, isProdutor],
+    queryKey: ['properties', effectiveEmail, isProdutor, isClientConsultor],
     queryFn: () => isProdutor
       ? base44.entities.Property.filter({ owner_email: effectiveEmail })
       : base44.entities.Property.filter({ consultor_email: effectiveEmail }),
-    enabled: !!effectiveEmail && !userLoading,
+    enabled: !!effectiveEmail && !userLoading && !isClientConsultor,
   });
+
+  const effectiveProperties = isClientConsultor ? clientConsultorProperties : properties;
 
   const { data: allCredits = [], isLoading } = useQuery({
     queryKey: ['carbonCredits', effectiveEmail, isProdutor, properties.map(p => p.id).join(',')],
     queryFn: async () => {
       if (!properties.length) return [];
+      const propsToSearch = isClientConsultor ? effectiveProperties : properties;
       const results = await Promise.all(
-        properties.map(p => base44.entities.CarbonCredit.filter({ property_id: p.id }))
+        propsToSearch.map(p => base44.entities.CarbonCredit.filter({ property_id: p.id }))
       );
       return results.flat();
     },
-    enabled: !!effectiveEmail && !userLoading && (!isProdutor || properties.length >= 0),
+    enabled: !!effectiveEmail && !userLoading && (isClientConsultor ? effectiveProperties.length > 0 : (!isProdutor || properties.length >= 0)),
   });
 
   const createMutation = useMutation({
@@ -186,16 +207,18 @@ function CarbonCreditsContent() {
           </h1>
           <p className="text-gray-600 mt-1">Gerencie seus projetos e transações de créditos de carbono</p>
         </div>
-        <Button
-          onClick={() => {
-            setEditingCredit(null);
-            setShowForm(true);
-          }}
-          className="bg-green-600 hover:bg-green-700"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Projeto
-        </Button>
+        {canEdit && (
+          <Button
+            onClick={() => {
+              setEditingCredit(null);
+              setShowForm(true);
+            }}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Projeto
+          </Button>
+        )}
       </div>
 
       {/* Form Modal */}
@@ -216,17 +239,17 @@ function CarbonCreditsContent() {
       {selectedCredit && (
         <CarbonCreditDetails
           credit={selectedCredit}
-          property={properties.find(p => p.id === selectedCredit.property_id)}
+          property={effectiveProperties.find(p => p.id === selectedCredit.property_id)}
           onClose={() => setSelectedCredit(null)}
-          onEdit={() => {
+          onEdit={canEdit ? () => {
             setEditingCredit(selectedCredit);
             setSelectedCredit(null);
             setShowForm(true);
-          }}
-          onDelete={() => {
+          } : null}
+          onDelete={canEdit ? () => {
             handleDelete(selectedCredit);
             setSelectedCredit(null);
-          }}
+          } : null}
         />
       )}
 
@@ -499,21 +522,25 @@ function CarbonCreditsContent() {
                           <FileText className="w-4 h-4 mr-2" />
                           Ver Detalhes
                         </Button>
-                        <Button
-                          onClick={() => handleEdit(credit)}
-                          variant="outline"
-                          size="icon"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          onClick={() => handleDelete(credit)}
-                          variant="outline"
-                          size="icon"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        {canEdit && (
+                          <Button
+                            onClick={() => handleEdit(credit)}
+                            variant="outline"
+                            size="icon"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {canEdit && (
+                          <Button
+                            onClick={() => handleDelete(credit)}
+                            variant="outline"
+                            size="icon"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </CardContent>
                   </Card>

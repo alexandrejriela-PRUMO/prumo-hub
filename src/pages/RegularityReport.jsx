@@ -36,21 +36,40 @@ export default function RegularityReport() {
   }, []);
 
   const isConsultorFamily = userType === 'consultor' || userType === 'equipe';
+  const isClientConsultor = userType === 'client_consultor' || user?.user_type === 'client_consultor';
+
+  const { data: allPropertiesForClient = [] } = useQuery({
+    queryKey: ['all-properties-for-client-regularity'],
+    queryFn: () => base44.entities.Property.list('-created_date', 500),
+    enabled: !!user?.email && isClientConsultor,
+  });
+
+  const clientConsultorProperties = isClientConsultor
+    ? allPropertiesForClient.filter(prop => {
+        if (!prop.authorized_users) return false;
+        try {
+          const au = Array.isArray(prop.authorized_users) ? prop.authorized_users : JSON.parse(prop.authorized_users);
+          return Array.isArray(au) && au.some(u => u.email === user?.email);
+        } catch { return false; }
+      })
+    : [];
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties', effectiveEmail, userType],
     queryFn: () => isConsultorFamily
       ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
       : base44.entities.Property.filter({ owner_email: effectiveEmail }),
-    enabled: !!effectiveEmail
+    enabled: !!effectiveEmail && !isClientConsultor
   });
 
-  const propertyIdsForLicenses = properties.map(p => p.id);
+  const effectiveProperties = isClientConsultor ? clientConsultorProperties : properties;
+
+  const propertyIdsForLicenses = effectiveProperties.map(p => p.id);
 
   const { data: licenses = [] } = useQuery({
     queryKey: ['licenses', user?.email, propertyIdsForLicenses.join(',')],
     queryFn: async () => {
-      if (isConsultorFamily && propertyIdsForLicenses.length > 0) {
+      if ((isConsultorFamily || isClientConsultor) && propertyIdsForLicenses.length > 0) {
         const results = await Promise.all(
           propertyIdsForLicenses.map(pid => base44.entities.License.filter({ property_id: pid }))
         );
@@ -58,15 +77,15 @@ export default function RegularityReport() {
       }
       return base44.entities.License.filter({ owner_email: effectiveEmail });
     },
-    enabled: !!effectiveEmail && (isConsultorFamily ? properties.length > 0 : true)
+    enabled: !!effectiveEmail && ((isConsultorFamily || isClientConsultor) ? effectiveProperties.length > 0 : true)
   });
 
-  const propertyIds = properties.map(p => p.id);
+  const propertyIds = effectiveProperties.map(p => p.id);
 
   const { data: documents = [] } = useQuery({
     queryKey: ['documents', user?.email, propertyIds.join(',')],
     queryFn: async () => {
-      if (isConsultorFamily && propertyIds.length > 0) {
+      if ((isConsultorFamily || isClientConsultor) && propertyIds.length > 0) {
         const results = await Promise.all(
           propertyIds.map(pid => Promise.all([
             base44.entities.Document.filter({ property_id: pid }),
@@ -75,20 +94,20 @@ export default function RegularityReport() {
         );
         return results.flat(2);
       }
-      const propIds = properties.map(p => p.id);
+      const propIds = effectiveProperties.map(p => p.id);
       const [docs, ...unifiedResults] = await Promise.all([
         base44.entities.Document.filter({ owner_email: effectiveEmail }),
         ...propIds.map(pid => base44.entities.UnifiedDocument.filter({ entity_id: pid }))
       ]);
       return [...docs, ...unifiedResults.flat()];
     },
-    enabled: !!effectiveEmail && (isConsultorFamily ? properties.length > 0 : true)
+    enabled: !!effectiveEmail && ((isConsultorFamily || isClientConsultor) ? effectiveProperties.length > 0 : true)
   });
 
   const { data: georeferencing = [] } = useQuery({
     queryKey: ['georeferencing', user?.email, propertyIds.join(',')],
     queryFn: async () => {
-      if (isConsultorFamily && propertyIds.length > 0) {
+      if ((isConsultorFamily || isClientConsultor) && propertyIds.length > 0) {
         const results = await Promise.all(
           propertyIds.map(pid => base44.entities.Georeferencing.filter({ property_id: pid }))
         );
@@ -96,13 +115,13 @@ export default function RegularityReport() {
       }
       return base44.entities.Georeferencing.filter({ owner_email: effectiveEmail });
     },
-    enabled: !!effectiveEmail && (isConsultorFamily ? properties.length > 0 : true)
+    enabled: !!effectiveEmail && ((isConsultorFamily || isClientConsultor) ? effectiveProperties.length > 0 : true)
   });
 
   const { data: environmentalAlerts = [] } = useQuery({
     queryKey: ['envAlerts', user?.email, propertyIds.join(',')],
     queryFn: async () => {
-      if (isConsultorFamily && propertyIds.length > 0) {
+      if ((isConsultorFamily || isClientConsultor) && propertyIds.length > 0) {
         const results = await Promise.all(
           propertyIds.map(pid => base44.entities.EnvironmentalAlert.filter({ property_id: pid }))
         );
@@ -110,13 +129,13 @@ export default function RegularityReport() {
       }
       return base44.entities.EnvironmentalAlert.filter({ property_id: { $in: propertyIds } });
     },
-    enabled: !!effectiveEmail && (isConsultorFamily ? properties.length > 0 : true)
+    enabled: !!effectiveEmail && ((isConsultorFamily || isClientConsultor) ? effectiveProperties.length > 0 : true)
   });
 
   const { data: processes = [] } = useQuery({
     queryKey: ['processes', user?.email, propertyIds.join(',')],
     queryFn: async () => {
-      if (isConsultorFamily && propertyIds.length > 0) {
+      if ((isConsultorFamily || isClientConsultor) && propertyIds.length > 0) {
         const results = await Promise.all(
           propertyIds.map(pid => base44.entities.Process.filter({ property_id: pid }))
         );
@@ -124,14 +143,14 @@ export default function RegularityReport() {
       }
       return base44.entities.Process.filter({ client_email: effectiveEmail });
     },
-    enabled: !!effectiveEmail && (isConsultorFamily ? properties.length > 0 : true)
+    enabled: !!effectiveEmail && ((isConsultorFamily || isClientConsultor) ? effectiveProperties.length > 0 : true)
   });
 
   useEffect(() => {
-    if (properties.length > 0 && !selectedPropertyId) {
-      setSelectedPropertyId(properties[0].id);
+    if (effectiveProperties.length > 0 && !selectedPropertyId) {
+      setSelectedPropertyId(effectiveProperties[0].id);
     }
-  }, [properties, selectedPropertyId]);
+  }, [effectiveProperties, selectedPropertyId]);
 
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
   const propertyLicenses = licenses.filter(l => l.property_id === selectedPropertyId);
@@ -183,7 +202,7 @@ export default function RegularityReport() {
     totalScore += geoAnalysis.score;
 
     // Processos (10 pontos)
-    const propertyProcesses = isConsultorFamily
+    const propertyProcesses = (isConsultorFamily || isClientConsultor)
       ? processes.filter(p => p.property_id === selectedPropertyId)
       : processes;
     const processAnalysis = analyzeProcesses(propertyProcesses);
@@ -467,7 +486,7 @@ export default function RegularityReport() {
       </div>
 
       {/* Seletor de Propriedade */}
-      {(properties.length > 1 || isConsultorFamily) && (
+      {(effectiveProperties.length > 1 || isConsultorFamily || isClientConsultor) && (
         <Card>
           <CardContent className="pt-4 pb-4">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
@@ -480,7 +499,7 @@ export default function RegularityReport() {
                   <SelectValue placeholder="Selecione uma propriedade" />
                 </SelectTrigger>
                 <SelectContent>
-                  {properties.map(prop => (
+                  {effectiveProperties.map(prop => (
                     <SelectItem key={prop.id} value={prop.id}>
                       {prop.property_name} - {prop.city}/{prop.state}
                     </SelectItem>

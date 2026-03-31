@@ -212,7 +212,6 @@ const clientConsultorNavItems = [
     ]
   },
   { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
-  { name: 'Modo Campo', page: 'CampMode', icon: Smartphone, separator: true },
 ];
 
 // Consultor: itens adicionais abaixo dos fixos (consultorNavItems)

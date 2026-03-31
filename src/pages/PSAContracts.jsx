@@ -50,21 +50,41 @@ export default function PSAContractsPage() {
 
   const { effectiveEmail, userType } = useEffectiveUser();
   const isConsultor = userType === 'consultor' || userType === 'equipe';
+  const isClientConsultor = userType === 'client_consultor' || user?.user_type === 'client_consultor';
+  const canEdit = !isClientConsultor;
+
+  const { data: allPropertiesForClient = [] } = useQuery({
+    queryKey: ['all-properties-for-client-psa'],
+    queryFn: () => base44.entities.Property.list('-created_date', 500),
+    enabled: !!user?.email && isClientConsultor,
+  });
+
+  const clientConsultorProperties = isClientConsultor
+    ? allPropertiesForClient.filter(prop => {
+        if (!prop.authorized_users) return false;
+        try {
+          const au = Array.isArray(prop.authorized_users) ? prop.authorized_users : JSON.parse(prop.authorized_users);
+          return Array.isArray(au) && au.some(u => u.email === user?.email);
+        } catch { return false; }
+      })
+    : [];
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties', effectiveEmail, userType],
     queryFn: () => isConsultor
       ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
       : base44.entities.Property.filter({ owner_email: effectiveEmail }),
-    enabled: !!effectiveEmail
+    enabled: !!effectiveEmail && !isClientConsultor
   });
 
-  const propertyIds = new Set(properties.map(p => p.id));
+  const effectiveProperties = isClientConsultor ? clientConsultorProperties : properties;
+
+  const propertyIds = new Set(effectiveProperties.map(p => p.id));
 
   const { data: allContracts = [], isLoading } = useQuery({
     queryKey: ['psaContracts', effectiveEmail, Array.from(propertyIds).join(',')],
     queryFn: () => base44.entities.PSAContract.list('-created_date', 1000),
-    enabled: !!effectiveEmail && properties.length > 0,
+    enabled: !!effectiveEmail && effectiveProperties.length > 0,
     select: (data) => data.filter(c => propertyIds.has(c.property_id)),
   });
 
@@ -193,16 +213,18 @@ export default function PSAContractsPage() {
           </h1>
           <p className="text-gray-600 mt-1">Gerencie contratos de PSA e monitore conformidade</p>
         </div>
-        <Button
-          onClick={() => {
-            setEditingContract(null);
-            setShowForm(true);
-          }}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Contrato
-        </Button>
+        {canEdit && (
+          <Button
+            onClick={() => {
+              setEditingContract(null);
+              setShowForm(true);
+            }}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Contrato
+          </Button>
+        )}
       </div>
 
       {/* Form Modal */}
@@ -223,17 +245,17 @@ export default function PSAContractsPage() {
       {selectedContract && (
         <PSAContractDetails
           contract={selectedContract}
-          property={properties.find(p => p.id === selectedContract.property_id)}
+          property={effectiveProperties.find(p => p.id === selectedContract.property_id)}
           onClose={() => setSelectedContract(null)}
-          onEdit={() => {
+          onEdit={canEdit ? () => {
             setEditingContract(selectedContract);
             setSelectedContract(null);
             setShowForm(true);
-          }}
-          onDelete={() => {
+          } : null}
+          onDelete={canEdit ? () => {
             handleDelete(selectedContract);
             setSelectedContract(null);
-          }}
+          } : null}
         />
       )}
 
@@ -252,7 +274,7 @@ export default function PSAContractsPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="all">Todas as Propriedades e Empreendimentos</option>
-                {properties.map(prop => (
+                {effectiveProperties.map(prop => (
                   <option key={prop.id} value={prop.id}>{prop.property_name}</option>
                 ))}
               </select>
@@ -536,21 +558,25 @@ export default function PSAContractsPage() {
                         >
                           Ver Detalhes
                         </Button>
-                        <Button
-                          onClick={() => handleEdit(contract)}
-                          variant="outline"
-                          size="icon"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          onClick={() => handleDelete(contract)}
-                          variant="outline"
-                          size="icon"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        {canEdit && (
+                          <Button
+                            onClick={() => handleEdit(contract)}
+                            variant="outline"
+                            size="icon"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {canEdit && (
+                          <Button
+                            onClick={() => handleDelete(contract)}
+                            variant="outline"
+                            size="icon"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </CardContent>
                   </Card>

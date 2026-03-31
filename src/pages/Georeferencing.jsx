@@ -69,18 +69,37 @@ export default function Georeferencing() {
 
   const { effectiveEmail, userType, memberRole } = useEffectiveUser();
   const isConsultor = userType === 'consultor' || userType === 'equipe';
-  const canCreateGeo = !isConsultor || memberRole !== 'Advogado';
+  const isClientConsultor = userType === 'client_consultor' || user?.user_type === 'client_consultor';
+  const canCreateGeo = !isConsultor && !isClientConsultor || (isConsultor && memberRole !== 'Advogado');
+
+  const { data: allPropertiesForClient = [] } = useQuery({
+    queryKey: ['all-properties-for-client-geo'],
+    queryFn: () => base44.entities.Property.list('-created_date', 500),
+    enabled: !!user?.email && isClientConsultor,
+  });
+
+  const clientConsultorProperties = isClientConsultor
+    ? allPropertiesForClient.filter(prop => {
+        if (!prop.authorized_users) return false;
+        try {
+          const au = Array.isArray(prop.authorized_users) ? prop.authorized_users : JSON.parse(prop.authorized_users);
+          return Array.isArray(au) && au.some(u => u.email === user?.email);
+        } catch { return false; }
+      })
+    : [];
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
     queryKey: ['properties', effectiveEmail, userType],
     queryFn: () => isConsultor
       ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
       : base44.entities.Property.filter({ owner_email: effectiveEmail }),
-    enabled: !!effectiveEmail,
+    enabled: !!effectiveEmail && !isClientConsultor,
     initialData: [],
   });
 
-  // Para consultor usa consultorPropertyId, para produtor usa selectedProperty
+  const effectiveProperties = isClientConsultor ? clientConsultorProperties : properties;
+
+  // Para consultor usa consultorPropertyId, para produtor/client usa selectedProperty
   const effectivePropertyId = isConsultor ? consultorPropertyId : selectedProperty;
 
   const { data: georeferences = [], isLoading } = useQuery({
@@ -94,10 +113,10 @@ export default function Georeferencing() {
   const viewingGeo = viewingGeoId ? georeferences.find(g => g.id === viewingGeoId) || null : null;
 
   useEffect(() => {
-    if (properties.length > 0 && !selectedProperty && !isConsultor) {
-      setSelectedProperty(properties[0].id);
+    if (effectiveProperties.length > 0 && !selectedProperty && !isConsultor) {
+      setSelectedProperty(effectiveProperties[0].id);
     }
-  }, [properties, selectedProperty, isConsultor]);
+  }, [effectiveProperties, selectedProperty, isConsultor]);
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Georeferencing.create(data),
@@ -186,11 +205,27 @@ export default function Georeferencing() {
       {/* Consultor Property Selector */}
       {isConsultor && (
         <ConsultorPropertySelector
-          properties={properties}
+          properties={effectiveProperties}
           selectedPropertyId={consultorPropertyId}
           onSelect={setConsultorPropertyId}
           isLoading={propertiesLoading}
         />
+      )}
+
+      {/* Client Consultor Property Selector */}
+      {isClientConsultor && clientConsultorProperties.length > 1 && (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 bg-white rounded-xl border border-emerald-100 shadow-sm">
+          <span className="text-gray-700 font-medium text-sm">Propriedade:</span>
+          <select
+            value={selectedProperty || ''}
+            onChange={(e) => setSelectedProperty(e.target.value || null)}
+            className="w-full px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm"
+          >
+            {clientConsultorProperties.map(prop => (
+              <option key={prop.id} value={prop.id}>{prop.property_name} - {prop.city || 'N/A'}</option>
+            ))}
+          </select>
+        </div>
       )}
 
       {/* Header */}
@@ -225,7 +260,7 @@ export default function Georeferencing() {
           </div>
 
       {/* Property Selector */}
-      {properties.length > 1 && (
+      {!isClientConsultor && effectiveProperties.length > 1 && (
         <Card>
           <CardContent className="p-4">
             <Label>Propriedade ou Empreendimento</Label>
@@ -234,7 +269,7 @@ export default function Georeferencing() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {properties.map((prop) => (
+                {effectiveProperties.map((prop) => (
                   <SelectItem key={prop.id} value={prop.id}>
                     {prop.property_name}
                   </SelectItem>
@@ -246,7 +281,7 @@ export default function Georeferencing() {
       )}
 
       {/* Georeferencing List */}
-      {isConsultor && !consultorPropertyId ? (
+      {(isConsultor && !consultorPropertyId) || (isClientConsultor && !selectedProperty) ? (
         <Card className="border-dashed border-2 border-amber-200">
           <CardContent className="py-16 text-center">
             <MapPin className="w-16 h-16 mx-auto text-amber-300 mb-4" />

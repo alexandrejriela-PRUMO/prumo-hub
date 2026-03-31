@@ -78,14 +78,36 @@ export default function EnvironmentalAlerts() {
 
   const { effectiveEmail, userType } = useEffectiveUser();
   const isConsultorFamily = userType === 'consultor' || userType === 'equipe';
+  const isClientConsultor = userType === 'client_consultor' || user?.user_type === 'client_consultor';
+  const canEdit = !isClientConsultor;
+
+  const { data: allPropertiesForClient = [] } = useQuery({
+    queryKey: ['all-properties-for-client-alerts'],
+    queryFn: () => base44.entities.Property.list('-created_date', 500),
+    enabled: !!user?.email && isClientConsultor,
+  });
+
+  const clientConsultorProperties = isClientConsultor
+    ? allPropertiesForClient.filter(prop => {
+        if (!prop.authorized_users) return false;
+        try {
+          const au = Array.isArray(prop.authorized_users)
+            ? prop.authorized_users
+            : JSON.parse(prop.authorized_users);
+          return Array.isArray(au) && au.some(u => u.email === user?.email);
+        } catch { return false; }
+      })
+    : [];
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
     queryKey: ['properties', effectiveEmail, userType],
     queryFn: () => isConsultorFamily
       ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
       : base44.entities.Property.filter({ owner_email: effectiveEmail }),
-    enabled: !!effectiveEmail
+    enabled: !!effectiveEmail && !isClientConsultor
   });
+
+  const effectiveProperties = isClientConsultor ? clientConsultorProperties : properties;
 
   const { data: allAlerts = [] } = useQuery({
     queryKey: ['environmental-alerts', selectedPropertyId],
@@ -201,10 +223,10 @@ export default function EnvironmentalAlerts() {
   });
 
   useEffect(() => {
-    if (properties.length > 0 && !selectedPropertyId && !isConsultorFamily) {
-      setSelectedPropertyId(properties[0].id);
+    if (effectiveProperties.length > 0 && !selectedPropertyId && !isConsultorFamily) {
+      setSelectedPropertyId(effectiveProperties[0].id);
     }
-  }, [properties, selectedPropertyId, isConsultorFamily]);
+  }, [effectiveProperties, selectedPropertyId, isConsultorFamily]);
 
   useEffect(() => {
     // Invalidate mapbiomas-alerts cache when selectedPropertyId changes
@@ -213,7 +235,7 @@ export default function EnvironmentalAlerts() {
     }
   }, [selectedPropertyId, queryClient]);
 
-  const selectedProperty = properties.find(p => p.id === selectedPropertyId);
+  const selectedProperty = effectiveProperties.find(p => p.id === selectedPropertyId);
   const propertyAlerts = allAlerts.filter(a => a.property_id === selectedPropertyId);
 
   const filteredAlerts = propertyAlerts.filter(alert => {
@@ -315,31 +337,33 @@ export default function EnvironmentalAlerts() {
               </div>
             </div>
 
-            <div className="flex gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setEditingAlert(alert);
-                  setFormDialogOpen(true);
-                }}
-              >
-                <Edit className="w-4 h-4 text-blue-600" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (confirm('Deseja realmente excluir este alerta?')) {
-                    deleteMutation.mutate(alert.id);
-                  }
-                }}
-              >
-                <Trash2 className="w-4 h-4 text-red-600" />
-              </Button>
-            </div>
+            {canEdit && (
+              <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingAlert(alert);
+                    setFormDialogOpen(true);
+                  }}
+                >
+                  <Edit className="w-4 h-4 text-blue-600" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (confirm('Deseja realmente excluir este alerta?')) {
+                      deleteMutation.mutate(alert.id);
+                    }
+                  }}
+                >
+                  <Trash2 className="w-4 h-4 text-red-600" />
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -365,11 +389,27 @@ export default function EnvironmentalAlerts() {
       {/* Consultor/Equipe Selector */}
       {isConsultorFamily && (
         <ConsultorPropertySelector
-          properties={properties}
+          properties={effectiveProperties}
           selectedPropertyId={selectedPropertyId}
           onSelect={setSelectedPropertyId}
           isLoading={propertiesLoading}
         />
+      )}
+
+      {/* Client Consultor Property Selector */}
+      {isClientConsultor && clientConsultorProperties.length > 1 && (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 bg-white rounded-xl border border-emerald-100 shadow-sm">
+          <span className="text-gray-700 font-medium text-sm">Propriedade:</span>
+          <select
+            value={selectedPropertyId || ''}
+            onChange={(e) => setSelectedPropertyId(e.target.value || null)}
+            className="w-full px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm"
+          >
+            {clientConsultorProperties.map(prop => (
+              <option key={prop.id} value={prop.id}>{prop.property_name} - {prop.city || 'N/A'}</option>
+            ))}
+          </select>
+        </div>
       )}
 
       {/* Tabs for Manual and MapBiomas Alerts */}
@@ -419,19 +459,21 @@ export default function EnvironmentalAlerts() {
           </h1>
           <p className="text-gray-500 mt-1">Monitoramento e gestão de alertas de infrações</p>
         </div>
-        <Button 
-          onClick={() => {
-            setEditingAlert(null);
-            setFormDialogOpen(true);
-          }}
-          className="bg-emerald-600 hover:bg-emerald-700"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nova Infração
-        </Button>
+        {canEdit && (
+          <Button 
+            onClick={() => {
+              setEditingAlert(null);
+              setFormDialogOpen(true);
+            }}
+            className="bg-emerald-600 hover:bg-emerald-700"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Infração
+          </Button>
+        )}
       </div>
 
-      {isConsultorFamily && !selectedPropertyId && (
+      {(isConsultorFamily || isClientConsultor) && !selectedPropertyId && (
         <Card className="border-dashed border-2 border-amber-200">
           <CardContent className="py-16 text-center">
             <AlertTriangle className="w-16 h-16 mx-auto text-amber-300 mb-4" />
@@ -442,7 +484,7 @@ export default function EnvironmentalAlerts() {
       )}
 
       {/* Property Selector */}
-      {!isConsultorFamily && properties.length > 1 && (
+      {!isConsultorFamily && !isClientConsultor && effectiveProperties.length > 1 && (
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
@@ -453,7 +495,7 @@ export default function EnvironmentalAlerts() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {properties.map(prop => (
+                  {effectiveProperties.map(prop => (
                     <SelectItem key={prop.id} value={prop.id}>
                       {prop.property_name} - {prop.city}/{prop.state}
                     </SelectItem>

@@ -14,7 +14,6 @@ import AgendaSidePanel from '../components/agenda/AgendaSidePanel';
 import AgendaEventModal from '../components/agenda/AgendaEventModal';
 import AgendaEventDetail from '../components/agenda/AgendaEventDetail';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
-import GoogleCalendarConnect from '../components/integrations/GoogleCalendarConnect';
 
 export default function Agenda() {
   const { user, effectiveEmail, isLoading: effectiveLoading } = useEffectiveUser();
@@ -217,15 +216,12 @@ export default function Agenda() {
           <h1 className="text-2xl font-bold text-emerald-900">📅 Agenda</h1>
           <p className="text-sm text-gray-500 mt-0.5">Eventos, tarefas do CRM e delegações — tudo sincronizado com Google Agenda</p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <GoogleCalendarConnect />
-          <Button
-            onClick={() => { setEditingEvent(null); setSelectedDate(new Date()); setShowModal(true); }}
-            className="bg-emerald-700 hover:bg-emerald-800 gap-2"
-          >
-            <Plus className="w-4 h-4" /> Novo Evento
-          </Button>
-        </div>
+        <Button
+          onClick={() => { setEditingEvent(null); setSelectedDate(new Date()); setShowModal(true); }}
+          className="bg-emerald-700 hover:bg-emerald-800 gap-2"
+        >
+          <Plus className="w-4 h-4" /> Novo Evento
+        </Button>
       </div>
 
       {/* Stats */}

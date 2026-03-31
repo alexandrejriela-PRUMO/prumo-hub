@@ -24,7 +24,6 @@ const AcceptInvite = React.lazy(() => import('./pages/AcceptInvite'));
 const NotificationAudit = React.lazy(() => import('./pages/NotificationAudit'));
 const NFeManagement = React.lazy(() => import('./pages/NFeManagement'));
 const ImportUsersStripe = React.lazy(() => import('./pages/ImportUsersStripe'));
-const GoogleCalendarCallback = React.lazy(() => import('./pages/GoogleCalendarCallback'));
 
 const CampMode = React.lazy(() => import('./pages/CampMode'));
 const PropertyCentral = React.lazy(() => import('./pages/PropertyCentral'));
@@ -126,7 +125,6 @@ const AuthenticatedApp = () => {
       <Route path="/ImportUsersStripe" element={<LayoutWrapper currentPageName="ImportUsersStripe"><Suspense fallback={<LoadingSpinner />}><ImportUsersStripe /></Suspense></LayoutWrapper>} />
       <Route path="/BudgetGenerator" element={<LayoutWrapper currentPageName="BudgetGenerator"><Suspense fallback={<LoadingSpinner />}><BudgetGenerator /></Suspense></LayoutWrapper>} />
       <Route path="/ContractGenerator" element={<LayoutWrapper currentPageName="ContractGenerator"><Suspense fallback={<LoadingSpinner />}><ContractGenerator /></Suspense></LayoutWrapper>} />
-      <Route path="/GoogleCalendarCallback" element={<Suspense fallback={<LoadingSpinner />}><GoogleCalendarCallback /></Suspense>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
     </>

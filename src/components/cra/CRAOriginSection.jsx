@@ -10,7 +10,6 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, FileText, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useState } from 'react';
 import DocumentUpload from '../documents/DocumentUpload';
 
 export default function CRAOriginSection({ user }) {

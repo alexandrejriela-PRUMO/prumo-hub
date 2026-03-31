@@ -71,6 +71,14 @@ export default function DocumentsHub() {
   });
 
   const isConsultorFamily = userType === 'consultor' || userType === 'equipe';
+  const isClientConsultor = userType === 'client_consultor' || user?.user_type === 'client_consultor';
+  const canEdit = !isClientConsultor;
+
+  const { data: allPropertiesForClient = [] } = useQuery({
+    queryKey: ['all-properties-for-client'],
+    queryFn: () => base44.entities.Property.list('-created_date', 500),
+    enabled: !!user?.email && isClientConsultor,
+  });
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
     queryKey: ['properties', effectiveEmail, userType],
@@ -84,14 +92,32 @@ export default function DocumentsHub() {
       }
       return base44.entities.Property.filter({ owner_email: effectiveEmail }, '-created_date', 100);
     },
-    enabled: !!effectiveEmail
+    enabled: !!effectiveEmail && !isClientConsultor
   });
 
+  // Para client_consultor: filtra propriedades onde o email consta em authorized_users
+  const clientConsultorProperties = isClientConsultor
+    ? allPropertiesForClient.filter(prop => {
+        if (!prop.authorized_users) return false;
+        try {
+          const au = Array.isArray(prop.authorized_users)
+            ? prop.authorized_users
+            : JSON.parse(prop.authorized_users);
+          return Array.isArray(au) && au.some(u => u.email === user?.email);
+        } catch { return false; }
+      })
+    : [];
+
+  const effectiveProperties = isClientConsultor ? clientConsultorProperties : properties;
+
   useEffect(() => {
-    if (properties.length > 0 && !selectedPropertyId && !isConsultorFamily) {
-      setSelectedPropertyId(properties[0].id);
+    if (effectiveProperties.length > 0 && !selectedPropertyId && !isConsultorFamily) {
+      setSelectedPropertyId(effectiveProperties[0].id);
     }
-  }, [properties, selectedPropertyId, isConsultorFamily]);
+    if (isClientConsultor && clientConsultorProperties.length > 0 && !selectedPropertyId) {
+      setSelectedPropertyId(clientConsultorProperties[0].id);
+    }
+  }, [effectiveProperties, selectedPropertyId, isConsultorFamily, isClientConsultor]);
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.UnifiedDocument.create({
@@ -235,15 +261,34 @@ export default function DocumentsHub() {
       {/* Consultor/Equipe Property Selector */}
       {isConsultorFamily && (
         <ConsultorPropertySelector
-          properties={properties}
+          properties={effectiveProperties}
           selectedPropertyId={selectedPropertyId}
           onSelect={setSelectedPropertyId}
           isLoading={propertiesLoading}
         />
       )}
 
+      {/* Client Consultor Property Selector */}
+      {isClientConsultor && clientConsultorProperties.length > 1 && (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-white rounded-xl border border-emerald-100 shadow-sm">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Filter className="w-4 h-4 text-gray-500" />
+            <span className="text-gray-700 font-medium text-sm sm:text-base">Propriedade:</span>
+          </div>
+          <select
+            value={selectedPropertyId || ''}
+            onChange={(e) => setSelectedPropertyId(e.target.value || null)}
+            className="w-full px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+          >
+            {clientConsultorProperties.map(prop => (
+              <option key={prop.id} value={prop.id}>{prop.property_name} - {prop.city || 'N/A'}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* Produtor Property Selector */}
-      {!isConsultorFamily && properties.length > 1 && (
+      {!isConsultorFamily && !isClientConsultor && effectiveProperties.length > 1 && (
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-white rounded-xl border border-emerald-100 shadow-sm">
           <div className="flex items-center gap-2 flex-shrink-0">
             <Filter className="w-4 h-4 text-gray-500" />
@@ -255,7 +300,7 @@ export default function DocumentsHub() {
             className="w-full px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
           >
             <option value="">Todas as Propriedades e Empreendimentos</option>
-            {properties.map(prop => (
+            {effectiveProperties.map(prop => (
               <option key={prop.id} value={prop.id}>{prop.property_name} - {prop.city || 'N/A'}</option>
             ))}
           </select>
@@ -263,7 +308,7 @@ export default function DocumentsHub() {
       )}
 
       {/* Bloqueio para consultor/equipe sem propriedade selecionada */}
-      {isConsultorFamily && !selectedPropertyId ? (
+      {(isConsultorFamily || isClientConsultor) && !selectedPropertyId ? (
         <Card className="text-center py-16 border-dashed border-2 border-amber-200">
           <CardContent>
             <FileText className="w-16 h-16 mx-auto text-amber-300 mb-4" />
@@ -272,8 +317,8 @@ export default function DocumentsHub() {
         </Card>
       ) : null}
 
-      {/* Conteúdo principal - oculto para consultor/equipe sem propriedade */}
-      {(!isConsultorFamily || selectedPropertyId) && (
+      {/* Conteúdo principal - oculto para consultor/equipe/client sem propriedade */}
+      {((!isConsultorFamily && !isClientConsultor) || selectedPropertyId) && (
       <div className="space-y-6">
 
       {/* Header */}
@@ -285,13 +330,15 @@ export default function DocumentsHub() {
           </h1>
           <p className="text-gray-600 mt-1">Gerencie todos os documentos do sistema</p>
         </div>
-        <Button
-          onClick={() => setShowUpload(true)}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          <Upload className="w-4 h-4 mr-2" />
-          Novo Documento
-        </Button>
+        {canEdit && (
+          <Button
+            onClick={() => setShowUpload(true)}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Novo Documento
+          </Button>
+        )}
       </div>
 
       {/* Upload Modal */}
@@ -302,7 +349,7 @@ export default function DocumentsHub() {
           onSuccess={handleUploadSuccess}
           onCancel={() => setShowUpload(false)}
           allowedTypes={undefined}
-          properties={properties}
+          properties={effectiveProperties}
         />
       )}
 
@@ -438,7 +485,7 @@ export default function DocumentsHub() {
                   : 'Nenhum documento cadastrado ainda'
                 }
               </p>
-              {!searchTerm && filters.entityType === 'all' && (
+              {canEdit && !searchTerm && filters.entityType === 'all' && (
                 <Button onClick={() => setShowUpload(true)} className="bg-blue-600 hover:bg-blue-700">
                   <Upload className="w-4 h-4 mr-2" />
                   Enviar Primeiro Documento
@@ -500,12 +547,16 @@ export default function DocumentsHub() {
                               <Button variant="outline" size="sm" onClick={() => window.open(doc.file_url, '_blank')}>
                                 <Download className="w-4 h-4" />
                               </Button>
-                              <Button variant="outline" size="sm" onClick={() => setEditingDoc(doc)} className="text-blue-600 hover:text-blue-700">
-                                <Pencil className="w-4 h-4" />
-                              </Button>
-                              <Button variant="outline" size="sm" onClick={() => handleDelete(doc)} className="text-red-600 hover:text-red-700">
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
+                              {canEdit && (
+                                <Button variant="outline" size="sm" onClick={() => setEditingDoc(doc)} className="text-blue-600 hover:text-blue-700">
+                                  <Pencil className="w-4 h-4" />
+                                </Button>
+                              )}
+                              {canEdit && (
+                                <Button variant="outline" size="sm" onClick={() => handleDelete(doc)} className="text-red-600 hover:text-red-700">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              )}
                             </div>
                           </div>
                         )}

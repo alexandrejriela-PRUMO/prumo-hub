@@ -38,7 +38,6 @@ import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 export default function Processes() {
   const { effectiveEmail, userType, isEquipe, memberRole, loading: effectiveLoading } = useEffectiveUser();
-  const canCreateProcess = !isEquipe || memberRole === 'Administrador' || memberRole === 'Advogado';
   const [user, setUser] = useState(null);
   const [consultorPropertyId, setConsultorPropertyId] = useState(null);
   const [showDialog, setShowDialog] = useState(false);
@@ -72,21 +71,48 @@ export default function Processes() {
   }, []);
 
   const isConsultorFamily = userType === 'consultor' || userType === 'equipe';
+  const isClientConsultor = userType === 'client_consultor' || user?.user_type === 'client_consultor';
+  const canCreateProcess = !isClientConsultor && (!isEquipe || memberRole === 'Administrador' || memberRole === 'Advogado');
 
-  const { data: properties = [], isLoading: propertiesLoading } = useQuery({
+  const { data: allPropsRaw = [] } = useQuery({
+    queryKey: ['all-properties-processes-client', user?.email],
+    queryFn: () => base44.entities.Property.list('-created_date', 500),
+    enabled: !!user?.email && isClientConsultor,
+  });
+
+  const { data: propertiesRaw = [], isLoading: propertiesLoading } = useQuery({
     queryKey: ['properties', effectiveEmail, userType],
     queryFn: () => isConsultorFamily
       ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
       : base44.entities.Property.filter({ owner_email: effectiveEmail }),
-    enabled: !!effectiveEmail
+    enabled: !!effectiveEmail && !isClientConsultor
   });
 
+  const clientConsultorProperties = allPropsRaw.filter(prop => {
+    if (!prop.authorized_users) return false;
+    try {
+      const au = Array.isArray(prop.authorized_users) ? prop.authorized_users : JSON.parse(prop.authorized_users);
+      return Array.isArray(au) && au.some(u => u.email === user?.email);
+    } catch { return false; }
+  });
+
+  const properties = isClientConsultor ? clientConsultorProperties : propertiesRaw;
+
   const { data: processes, isLoading } = useQuery({
-    queryKey: ['processes', effectiveEmail, consultorPropertyId],
-    queryFn: () => isConsultorFamily
-      ? base44.entities.Process.filter({ property_id: consultorPropertyId })
-      : base44.entities.Process.filter({ client_email: effectiveEmail }),
-    enabled: isConsultorFamily ? !!consultorPropertyId : !!effectiveEmail,
+    queryKey: ['processes', effectiveEmail, consultorPropertyId, isClientConsultor],
+    queryFn: () => {
+      if (isConsultorFamily && consultorPropertyId) {
+        return base44.entities.Process.filter({ property_id: consultorPropertyId });
+      }
+      if (isClientConsultor) {
+        // Busca processos das propriedades vinculadas
+        return Promise.all(
+          properties.map(p => base44.entities.Process.filter({ property_id: p.id }))
+        ).then(r => r.flat());
+      }
+      return base44.entities.Process.filter({ client_email: effectiveEmail });
+    },
+    enabled: isConsultorFamily ? !!consultorPropertyId : isClientConsultor ? properties.length > 0 : !!effectiveEmail,
     initialData: []
   });
 
@@ -518,8 +544,8 @@ export default function Processes() {
         </div>
       }
 
-      {/* Monitoramento DOE-RS */}
-      <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-3">
+      {/* Monitoramento DOE-RS - apenas consultores/equipe */}
+      {!isClientConsultor && <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-2">
             <Radio className="w-5 h-5 text-amber-600" />
@@ -556,7 +582,7 @@ export default function Processes() {
           }
           </div>
         }
-      </div>
+      </div>}
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
         <div className="min-w-0">

@@ -147,6 +147,8 @@ export default function Licenses() {
   }, []);
 
   const isConsultor = user?.user_type === 'consultor' || isEquipe;
+  const isClientConsultor = user?.user_type === 'client_consultor';
+  const canEdit = !isClientConsultor && canCreate;
   const queryEmail = effectiveEmail || user?.email;
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
@@ -158,16 +160,39 @@ export default function Licenses() {
   const { data: ownerProperties = [] } = useQuery({
     queryKey: ['properties-owner', user?.email],
     queryFn: () => base44.entities.Property.filter({ owner_email: user.email }),
-    enabled: !!user?.email && !isEquipe && user?.user_type !== 'consultor',
+    enabled: !!user?.email && !isEquipe && user?.user_type !== 'consultor' && !isClientConsultor,
   });
 
-  const allProperties = (user?.user_type === 'consultor' || isEquipe) ? properties : ownerProperties;
+  const { data: allPropsForClient = [] } = useQuery({
+    queryKey: ['all-properties-client', user?.email],
+    queryFn: () => base44.entities.Property.list('-created_date', 500),
+    enabled: !!user?.email && isClientConsultor,
+  });
+
+  const clientConsultorProperties = isClientConsultor
+    ? allPropsForClient.filter(prop => {
+        if (!prop.authorized_users) return false;
+        try {
+          const au = Array.isArray(prop.authorized_users) ? prop.authorized_users : JSON.parse(prop.authorized_users);
+          return Array.isArray(au) && au.some(u => u.email === user?.email);
+        } catch { return false; }
+      })
+    : [];
+
+  const allProperties = isClientConsultor
+    ? clientConsultorProperties
+    : (user?.user_type === 'consultor' || isEquipe) ? properties : ownerProperties;
 
   const { data: licenses, isLoading } = useQuery({
-    queryKey: ['licenses', consultorPropertyId, queryEmail],
+    queryKey: ['licenses', consultorPropertyId, queryEmail, isClientConsultor],
     queryFn: () => {
-      if (isConsultor) {
+      if (isConsultor && consultorPropertyId) {
         return base44.entities.License.filter({ property_id: consultorPropertyId });
+      }
+      if (isClientConsultor) {
+        return Promise.all(
+          clientConsultorProperties.map(p => base44.entities.License.filter({ property_id: p.id }))
+        ).then(r => r.flat());
       }
       return base44.entities.License.filter({ owner_email: user.email });
     },
@@ -329,7 +354,7 @@ export default function Licenses() {
       </Link>
 
       {/* Consultor Selector */}
-      {isConsultor && (
+      {isConsultor && !isClientConsultor && (
         <ConsultorPropertySelector
           properties={allProperties}
           selectedPropertyId={consultorPropertyId}
@@ -373,15 +398,17 @@ export default function Licenses() {
           <p className="text-gray-500 mt-1 text-sm sm:text-base">Gerencie licenças, ARTs, laudos e documentos técnicos</p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate(createPageUrl('ChecklistTemplates'))}
-            className="gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-          >
-            <ClipboardList className="w-4 h-4" /> Modelos de Checklist
-          </Button>
-        {canCreate && <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          {!isClientConsultor && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(createPageUrl('ChecklistTemplates'))}
+              className="gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+            >
+              <ClipboardList className="w-4 h-4" /> Modelos de Checklist
+            </Button>
+          )}
+        {canEdit && <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-emerald-600 hover:bg-emerald-700">
               <Plus className="w-4 h-4 mr-2" />
@@ -575,7 +602,7 @@ export default function Licenses() {
       </div>
 
       {/* Licenses Grid */}
-      {isConsultor && !consultorPropertyId ? (
+      {isConsultor && !isClientConsultor && !consultorPropertyId ? (
         <Card className="border-dashed border-2 border-amber-200">
           <CardContent className="py-16 text-center">
             <FileCheck className="w-16 h-16 mx-auto text-amber-300 mb-4" />
@@ -672,16 +699,18 @@ export default function Licenses() {
                     )}
 
                     <div className="flex gap-1 sm:gap-2 pt-2 sm:pt-3">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditDialog(license)}
-                        className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 text-xs sm:text-sm"
-                      >
-                        <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                        <span className="hidden sm:inline">Editar</span>
-                        <span className="sm:hidden">Edit</span>
-                      </Button>
+                      {canEdit && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditDialog(license)}
+                          className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 text-xs sm:text-sm"
+                        >
+                          <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                          <span className="hidden sm:inline">Editar</span>
+                          <span className="sm:hidden">Edit</span>
+                        </Button>
+                      )}
                       <Button
                         variant="outline"
                         size="sm"
@@ -708,18 +737,20 @@ export default function Licenses() {
                         <span className="hidden sm:inline">Checklist</span>
                         <span className="sm:hidden">Check</span>
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50 px-2 sm:px-3"
-                        onClick={() => {
-                          if (window.confirm('Deseja realmente excluir esta licença?')) {
-                            deleteMutation.mutate(license.id);
-                          }
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      {canEdit && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 px-2 sm:px-3"
+                          onClick={() => {
+                            if (window.confirm('Deseja realmente excluir esta licença?')) {
+                              deleteMutation.mutate(license.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardContent>

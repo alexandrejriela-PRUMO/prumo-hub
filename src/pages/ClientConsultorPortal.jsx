@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Building2, FileCheck, AlertTriangle, Scale, FileText, MapPin, Eye, Leaf, TrendingUp, Sparkles } from 'lucide-react';
+import { Building2, FileCheck, AlertTriangle, Scale, FileText, MapPin, Eye, Leaf } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 
@@ -21,51 +21,70 @@ export default function ClientConsultorPortal() {
     loadUser();
   }, []);
 
-  const { data: properties = [], isLoading: loadingProperties } = useQuery({
-    queryKey: ['client-properties', user?.email],
-    queryFn: () => base44.entities.Property.filter({ owner_email: user.email }),
+  // Busca TODAS as propriedades e filtra localmente pelas que têm o email do usuário em authorized_users
+  const { data: allProperties = [], isLoading: loadingProperties } = useQuery({
+    queryKey: ['client-consultor-properties', user?.email],
+    queryFn: () => base44.entities.Property.list('-created_date', 500),
     enabled: !!user?.email,
-    initialData: []
+  });
+
+  // Filtra propriedades onde o email do usuário consta em authorized_users (JSON string ou array)
+  const properties = allProperties.filter(prop => {
+    if (!prop.authorized_users) return false;
+    try {
+      const au = Array.isArray(prop.authorized_users)
+        ? prop.authorized_users
+        : JSON.parse(prop.authorized_users);
+      return Array.isArray(au) && au.some(u => u.email === user?.email);
+    } catch {
+      return false;
+    }
   });
 
   const { data: licenses = [] } = useQuery({
-    queryKey: ['client-licenses', user?.email],
-    queryFn: () => base44.entities.License.filter({ owner_email: user.email }),
-    enabled: !!user?.email,
+    queryKey: ['client-licenses', properties.map(p => p.id).join(',')],
+    queryFn: () => {
+      if (properties.length === 0) return [];
+      // Busca licenças das propriedades vinculadas
+      return Promise.all(
+        properties.map(p => base44.entities.License.filter({ property_id: p.id }))
+      ).then(results => results.flat());
+    },
+    enabled: properties.length > 0,
     initialData: []
   });
 
   const { data: alerts = [] } = useQuery({
-    queryKey: ['client-alerts-all'],
-    queryFn: () => base44.entities.EnvironmentalAlert.list(),
-    enabled: !!user?.email,
+    queryKey: ['client-alerts', properties.map(p => p.id).join(',')],
+    queryFn: () => Promise.all(
+      properties.map(p => base44.entities.EnvironmentalAlert.filter({ property_id: p.id }))
+    ).then(r => r.flat()),
+    enabled: properties.length > 0,
     initialData: []
   });
 
   const { data: processes = [] } = useQuery({
-    queryKey: ['client-processes', user?.email],
-    queryFn: () => base44.entities.Process.filter({ client_email: user.email }),
-    enabled: !!user?.email,
+    queryKey: ['client-processes', properties.map(p => p.id).join(',')],
+    queryFn: () => Promise.all(
+      properties.map(p => base44.entities.Process.filter({ property_id: p.id }))
+    ).then(r => r.flat()),
+    enabled: properties.length > 0,
     initialData: []
   });
 
   const property = properties[0];
-  const propertyAlerts = alerts.filter(a => a.property_id === property?.id);
   const now = new Date();
   const expiredLicenses = licenses.filter(l => l.expiry_date && new Date(l.expiry_date) < now);
   const activeLicenses = licenses.filter(l => l.status === 'Vigente');
-  const openAlerts = propertyAlerts.filter(a => a.status === 'Aberto');
+  const openAlerts = alerts.filter(a => a.status === 'Aberto');
 
   const modules = [
     { name: 'Documentos', page: 'DocumentsHub', icon: FileText, bg: 'bg-blue-50', iconColor: 'text-blue-600', desc: 'Visualizar e baixar documentos' },
-    { name: 'Licenças Ambientais', page: 'Licenses', icon: FileCheck, bg: 'bg-emerald-50', iconColor: 'text-emerald-600', desc: `${activeLicenses.length} licença(s) ativa(s)` },
+    { name: 'Licenças e Projetos', page: 'Licenses', icon: FileCheck, bg: 'bg-emerald-50', iconColor: 'text-emerald-600', desc: `${activeLicenses.length} licença(s) ativa(s)` },
     { name: 'Processos', page: 'Processes', icon: Scale, bg: 'bg-purple-50', iconColor: 'text-purple-600', desc: `${processes.length} processo(s)` },
     { name: 'Alertas de Infrações', page: 'EnvironmentalAlerts', icon: AlertTriangle, bg: 'bg-amber-50', iconColor: 'text-amber-600', desc: `${openAlerts.length} alerta(s) aberto(s)` },
     { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: FileCheck, bg: 'bg-teal-50', iconColor: 'text-teal-600', desc: 'Índice de conformidade ambiental' },
     { name: 'PRAD', page: 'PRAD', icon: Leaf, bg: 'bg-green-50', iconColor: 'text-green-600', desc: 'Plano de recuperação de área' },
-    { name: 'Agricultura de Precisão', page: 'Mappings', icon: Sparkles, bg: 'bg-indigo-50', iconColor: 'text-indigo-600', desc: 'Mapeamentos e monitoramento' },
-    { name: 'Ativos Ambientais', page: 'CarbonCredits', icon: TrendingUp, bg: 'bg-rose-50', iconColor: 'text-rose-600', desc: 'Créditos de carbono e PSA' },
-    { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin, bg: 'bg-orange-50', iconColor: 'text-orange-600', desc: 'Dados geoespaciais da propriedade' },
   ];
 
   return (
@@ -118,40 +137,39 @@ export default function ClientConsultorPortal() {
         </Card>
       )}
 
-      {/* Info banner */}
+      {/* Info banner somente leitura */}
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
         <Eye className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
         <p className="text-sm text-amber-800">
           <span className="font-semibold">Acesso somente leitura e download.</span>
-          {user?.consultor_email && (
-            <> Seu consultor responsável: <span className="font-semibold">{user.consultor_email}</span>.</>
-          )}
-          {' '}Para solicitar alterações, entre em contato diretamente com seu consultor.
+          {' '}Você pode visualizar andamentos, históricos e baixar documentos. Para solicitar alterações, entre em contato com seu consultor.
         </p>
       </div>
 
       {/* Modules Grid */}
-      <div>
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Módulos disponíveis</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {modules.map((mod) => {
-            const Icon = mod.icon;
-            return (
-              <Link key={mod.page} to={createPageUrl(mod.page)}>
-                <Card className="border border-gray-200 hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer h-full">
-                  <CardContent className="p-4">
-                    <div className={`inline-flex p-2 rounded-lg ${mod.bg} mb-2.5`}>
-                      <Icon className={`w-4 h-4 ${mod.iconColor}`} />
-                    </div>
-                    <p className="font-semibold text-sm text-gray-900 leading-tight">{mod.name}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{mod.desc}</p>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
+      {property && (
+        <div>
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Módulos disponíveis</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {modules.map((mod) => {
+              const Icon = mod.icon;
+              return (
+                <Link key={mod.page} to={createPageUrl(mod.page)}>
+                  <Card className="border border-gray-200 hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer h-full">
+                    <CardContent className="p-4">
+                      <div className={`inline-flex p-2 rounded-lg ${mod.bg} mb-2.5`}>
+                        <Icon className={`w-4 h-4 ${mod.iconColor}`} />
+                      </div>
+                      <p className="font-semibold text-sm text-gray-900 leading-tight">{mod.name}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{mod.desc}</p>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -1,8 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
 async function refreshAccessToken(base44, tokenRecord) {
-  const clientId = Deno.env.get('GOOGLE_OAUTH_CLIENT_ID');
-  const clientSecret = Deno.env.get('GOOGLE_OAUTH_CLIENT_SECRET');
+  const clientId = Deno.env.get('GOOGLE_CALENDAR_CLIENT_ID');
+  const clientSecret = Deno.env.get('GOOGLE_CALENDAR_CLIENT_SECRET');
 
   const res = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',

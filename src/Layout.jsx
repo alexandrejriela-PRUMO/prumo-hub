@@ -74,7 +74,6 @@ const consultorNavItems = [
       { name: 'Gerador de Contratos', page: 'ContractGenerator', icon: FileText },
       { name: 'Gerador de Orçamentos', page: 'BudgetGenerator', icon: ReceiptText },
       { name: 'Gestão de Licenças', page: 'Licenses', icon: FileCheck },
-      { name: 'Modelos de Checklist', page: 'ChecklistTemplates', icon: ClipboardList },
       { name: 'Minha Equipe', page: 'MyTeam', icon: Users },
     ]
   },

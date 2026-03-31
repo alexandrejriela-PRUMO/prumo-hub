@@ -20,18 +20,21 @@ import {
   FileText,
   Upload,
   Trash2,
-  ChevronLeft
+  ChevronLeft,
+  ClipboardList
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import LicenseHistory from '../components/history/LicenseHistory';
 import LicenseDocuments from '../components/license/LicenseDocuments';
+import LicenseChecklistPanel from '../components/license/LicenseChecklistPanel';
 import { toast } from 'sonner';
 import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
+
 
 const licenseTypes = [
   // Licenças Ambientais
@@ -112,6 +115,7 @@ export default function Licenses() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedLicense, setSelectedLicense] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [showChecklist, setShowChecklist] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     property_id: '',
@@ -128,6 +132,7 @@ export default function Licenses() {
   const [docType, setDocType] = useState('Licença Principal');
 
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const loadUser = async () => {
@@ -367,13 +372,23 @@ export default function Licenses() {
           <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 bg-clip-text text-transparent">Licenças e Documentos Técnicos</h1>
           <p className="text-gray-500 mt-1 text-sm sm:text-base">Gerencie licenças, ARTs, laudos e documentos técnicos</p>
         </div>
-        {canCreate ? <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate(createPageUrl('ChecklistTemplates'))}
+            className="gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+          >
+            <ClipboardList className="w-4 h-4" /> Modelos de Checklist
+          </Button>
+        {canCreate && <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-emerald-600 hover:bg-emerald-700">
               <Plus className="w-4 h-4 mr-2" />
               Novo Registro
             </Button>
           </DialogTrigger>
+
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Adicionar Licença ou Projeto</DialogTitle>
@@ -555,7 +570,8 @@ export default function Licenses() {
               </Button>
             </form>
           </DialogContent>
-        </Dialog> : null}
+        </Dialog>}
+        </div>
       </div>
 
       {/* Licenses Grid */}
@@ -678,6 +694,19 @@ export default function Licenses() {
                         <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                         <span className="hidden sm:inline">Histórico</span>
                         <span className="sm:hidden">Hist</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedLicense(license);
+                          setShowChecklist(true);
+                        }}
+                        className="flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50 text-xs sm:text-sm"
+                      >
+                        <ClipboardList className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                        <span className="hidden sm:inline">Checklist</span>
+                        <span className="sm:hidden">Check</span>
                       </Button>
                       <Button
                         variant="ghost"
@@ -882,6 +911,21 @@ export default function Licenses() {
               {updateMutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
             </Button>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Checklist */}
+      <Dialog open={showChecklist} onOpenChange={setShowChecklist}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardList className="w-5 h-5 text-emerald-600" />
+              Checklist — {selectedLicense?.license_type} {selectedLicense?.license_number}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedLicense && (
+            <LicenseChecklistPanel license={selectedLicense} user={user} />
+          )}
         </DialogContent>
       </Dialog>
 

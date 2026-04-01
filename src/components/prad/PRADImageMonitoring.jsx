@@ -48,7 +48,7 @@ export default function PRADImageMonitoring({ prad, onUpdate }) {
     
     updateMutation.mutate({
       id: prad.id,
-      data: { image_monitoring: { ...imageMonitoring, ndvi_evolution } }
+      data: { image_monitoring: { ...imageMonitoring, ndvi_evolution: ndviEvolution } }
     });
   };
 

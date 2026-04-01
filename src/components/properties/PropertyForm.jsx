@@ -37,7 +37,7 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
   useEffect(() => {
     if (isConsultor && user?.email) {
       // Buscar clientes ATIVOS da entidade ClientCRM (equivalente a "Meus Clientes")
-      base44.entities.ClientCRM.filter({ consultor_email: user.email, status: 'Ativo' })
+      base44.entities.ClientCRM.filter({ consultor_email: user.email })
         .then(clients => {
           const map = new Map();
           clients.forEach(c => {

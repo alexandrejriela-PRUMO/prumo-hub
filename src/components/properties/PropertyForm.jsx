@@ -40,12 +40,17 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
       base44.entities.ClientCRM.filter({ consultor_email: user.email })
         .then(clients => {
           const map = new Map();
+          const list = [];
           clients.forEach(c => {
-            if (c.client_email && c.client_name && !map.has(c.client_email)) {
-              map.set(c.client_email, { email: c.client_email, name: c.client_name });
+            if (c.client_name) {
+              const key = c.client_email || c.client_name;
+              if (!map.has(key)) {
+                map.set(key, { email: c.client_email || '', name: c.client_name });
+              }
             }
           });
-          setExistingClients(Array.from(map.values()));
+          map.forEach(v => list.push(v));
+          setExistingClients(list);
         })
         .catch(() => {});
     }
@@ -59,7 +64,7 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
   const filteredSuggestions = clientNameSearch.length >= 1
     ? existingClients.filter(c =>
         c.name.toLowerCase().includes(clientNameSearch.toLowerCase()) ||
-        c.email.toLowerCase().includes(clientNameSearch.toLowerCase())
+        (c.email && c.email.toLowerCase().includes(clientNameSearch.toLowerCase()))
       )
     : existingClients;
 

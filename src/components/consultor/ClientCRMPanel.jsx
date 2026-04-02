@@ -158,8 +158,11 @@ export default function ClientCRMPanel({ property, onClose }) {
     setShowInteractionForm(true);
   };
 
-  const saveInteractionThread = (interactionId, thread) => {
-    const interactions = (activeCRM?.interactions || []).map(i => i.id === interactionId ? { ...i, thread } : i);
+  const saveInteractionThread = async (interactionId, thread) => {
+    // Busca estado fresco do CRM para evitar race condition em múltiplas threads abertas
+    const fresh = await base44.entities.ClientCRM.filter({ id: crmId });
+    const freshCRM = fresh?.[0];
+    const interactions = (freshCRM?.interactions || activeCRM?.interactions || []).map(i => i.id === interactionId ? { ...i, thread } : i);
     return updateCRM.mutateAsync({ interactions });
   };
 
@@ -190,8 +193,11 @@ export default function ClientCRMPanel({ property, onClose }) {
     setShowTaskForm(true);
   };
 
-  const saveTaskThread = (taskId, thread) => {
-    const tasks = (activeCRM?.tasks || []).map(t => t.id === taskId ? { ...t, thread } : t);
+  const saveTaskThread = async (taskId, thread) => {
+    // Busca estado fresco do CRM para evitar race condition em múltiplas threads abertas
+    const fresh = await base44.entities.ClientCRM.filter({ id: crmId });
+    const freshCRM = fresh?.[0];
+    const tasks = (freshCRM?.tasks || activeCRM?.tasks || []).map(t => t.id === taskId ? { ...t, thread } : t);
     return updateCRM.mutateAsync({ tasks });
   };
 

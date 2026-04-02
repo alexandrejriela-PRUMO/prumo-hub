@@ -556,10 +556,22 @@ export default function ClientCRMPanel({ property, onClose }) {
                     </Select>
                   </div>
                   {newService.payment_type === 'avista' && (
-                    <div>
-                      <Label className="text-xs text-gray-600 mb-1 block">Data de Vencimento</Label>
-                      <Input className="h-9 text-sm" type="date" value={newService.start_date} onChange={e => setNewService(p => ({ ...p, start_date: e.target.value }))} />
-                    </div>
+                    <>
+                      <div>
+                        <Label className="text-xs text-gray-600 mb-1 block">Data de Vencimento</Label>
+                        <Input className="h-9 text-sm" type="date" value={newService.start_date} onChange={e => setNewService(p => ({ ...p, start_date: e.target.value }))} />
+                      </div>
+                      <div className="sm:col-span-2 flex items-center gap-2">
+                        <input type="checkbox" id="svc-received" checked={newService.received} onChange={e => setNewService(p => ({ ...p, received: e.target.checked }))} className="w-4 h-4 accent-emerald-600" />
+                        <label htmlFor="svc-received" className="text-sm text-gray-700 cursor-pointer">Valor já recebido</label>
+                      </div>
+                      {newService.received && (
+                        <div>
+                          <Label className="text-xs text-gray-600 mb-1 block">Data do Recebimento</Label>
+                          <Input className="h-9 text-sm" type="date" value={newService.received_at} onChange={e => setNewService(p => ({ ...p, received_at: e.target.value }))} />
+                        </div>
+                      )}
+                    </>
                   )}
                   {newService.payment_type === 'parcelado' && (
                     <>
@@ -568,40 +580,60 @@ export default function ClientCRMPanel({ property, onClose }) {
                         <Input className="h-9 text-sm" type="number" min="2" value={newService.installments} onChange={e => {
                           const n = parseInt(e.target.value) || 0;
                           const dates = Array.from({ length: n }, (_, i) => newService.due_dates?.[i] || '');
-                          setNewService(p => ({ ...p, installments: e.target.value, due_dates: dates }));
+                          const inst_data = Array.from({ length: n }, (_, i) => newService.installments_data?.[i] || { due_date: dates[i] || '', received: false, received_date: '' });
+                          setNewService(p => ({ ...p, installments: e.target.value, due_dates: dates, installments_data: inst_data }));
                         }} placeholder="Ex: 3" />
                       </div>
                       {parseInt(newService.installments) > 0 && (
-                        <div className="sm:col-span-2 space-y-2">
-                          <Label className="text-xs text-gray-600 block">Datas de Vencimento das Parcelas</Label>
-                          <div className="grid grid-cols-2 gap-2">
-                            {Array.from({ length: parseInt(newService.installments) }, (_, i) => (
-                              <div key={i}>
-                                <Label className="text-xs text-gray-400 mb-1 block">Parcela {i + 1}</Label>
-                                <Input className="h-8 text-xs" type="date" value={newService.due_dates?.[i] || ''} onChange={e => {
-                                  const dates = [...(newService.due_dates || [])];
-                                  dates[i] = e.target.value;
-                                  setNewService(p => ({ ...p, due_dates: dates }));
-                                }} />
-                              </div>
-                            ))}
+                        <div className="sm:col-span-2 space-y-3">
+                          <Label className="text-xs text-gray-600 block">Parcelas</Label>
+                          <div className="space-y-3">
+                            {Array.from({ length: parseInt(newService.installments) }, (_, idx) => {
+                              const inst = newService.installments_data?.[idx] || { due_date: newService.due_dates?.[idx] || '', received: false, received_date: '' };
+                              return (
+                                <div key={idx} className="p-3 border border-gray-200 rounded-lg">
+                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                    <div>
+                                      <Label className="text-xs text-gray-500 mb-1 block">Vencimento</Label>
+                                      <Input className="h-8 text-xs" type="date" value={inst.due_date || ''} onChange={e => {
+                                        const inst_data = [...(newService.installments_data || [])];
+                                        inst_data[idx] = { ...inst_data[idx], due_date: e.target.value };
+                                        setNewService(p => ({ ...p, installments_data: inst_data }));
+                                      }} />
+                                    </div>
+                                    <div>
+                                      <Label className="text-xs text-gray-500 mb-1 block">Data Receb.</Label>
+                                      <Input className="h-8 text-xs" type="date" value={inst.received_date || ''} onChange={e => {
+                                        const inst_data = [...(newService.installments_data || [])];
+                                        inst_data[idx] = { ...inst_data[idx], received_date: e.target.value };
+                                        setNewService(p => ({ ...p, installments_data: inst_data }));
+                                      }} />
+                                    </div>
+                                    <div className="flex items-end gap-1">
+                                      <input type="checkbox" id={`new-inst-${idx}`} checked={inst.received} onChange={e => {
+                                        const inst_data = [...(newService.installments_data || [])];
+                                        inst_data[idx] = { ...inst_data[idx], received: e.target.checked };
+                                        setNewService(p => ({ ...p, installments_data: inst_data }));
+                                      }} className="w-4 h-4 accent-emerald-600" />
+                                      <label htmlFor={`new-inst-${idx}`} className="text-xs text-gray-600 cursor-pointer flex-1">Recebido</label>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
-                    </>
-                  )}
-                  <div className="sm:col-span-2 flex items-center gap-2 mt-1">
-                    <input type="checkbox" id="svc-received" checked={newService.received} onChange={e => setNewService(p => ({ ...p, received: e.target.checked }))} className="w-4 h-4 accent-emerald-600" />
-                    <label htmlFor="svc-received" className="text-sm text-gray-700 cursor-pointer">Valor já recebido</label>
-                  </div>
-                  {newService.received && (
-                    <div>
-                      <Label className="text-xs text-gray-600 mb-1 block">Data do Recebimento</Label>
-                      <Input className="h-9 text-sm" type="date" value={newService.received_at} onChange={e => setNewService(p => ({ ...p, received_at: e.target.value }))} />
-                    </div>
-                  )}
-                  <div>
-                    <Label className="text-xs text-gray-600 mb-1 block">Conta Financeira</Label>
+                      {newService.payment_type === 'parcelado' && (
+                        <div className="sm:col-span-2 text-xs text-gray-500 px-3 py-2 bg-gray-50 rounded-lg">
+                          ℹ️ Configure a data de recebimento de cada parcela acima
+                        </div>
+                      )}
+                      </>
+                      )}
+
+                      <div>
+                      <Label className="text-xs text-gray-600 mb-1 block">Conta Financeira</Label>
                     <Select value={newService.account_id || ''} onValueChange={v => { const acc = accounts.find(a => a.id === v); setNewService(p => ({ ...p, account_id: v || '', account_name: acc?.name || '' })); }}>
                       <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
                       <SelectContent>

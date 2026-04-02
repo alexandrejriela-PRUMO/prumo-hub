@@ -53,7 +53,7 @@ export default function ClientCRMPanel({ property, onClose }) {
   const [editingServiceIndex, setEditingServiceIndex] = useState(null);
   const [newInteraction, setNewInteraction] = useState({ type: 'Ligação', title: '', description: '', next_action: '', next_action_date: '', responsible_email: '', responsible_name: '' });
   const [newTask, setNewTask] = useState({ title: '', due_date: '', priority: 'Média', responsible_email: '', responsible_name: '' });
-  const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], received: false, received_at: '', account_id: '', account_name: '' });
+  const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], installments_data: [], received: false, received_at: '', account_id: '', account_name: '' });
 
   // ── ID do ClientCRM — é a chave única para todas as operações ────────────
   // property.id É o id do registro ClientCRM (passado pelo CRMBoard ou ConsultorClients)
@@ -210,16 +210,36 @@ export default function ClientCRMPanel({ property, onClose }) {
        : (newService.received ? new Date().toISOString() : null);
 
      // Estruturar dados parcelados corretamente
-     let serviceObj = { ...newService, value: serviceValue, received_at, installments_data: [] };
+     let serviceObj = { 
+       name: newService.name, 
+       status: newService.status, 
+       value: serviceValue, 
+       notes: newService.notes,
+       payment_type: newService.payment_type,
+       payment_method: newService.payment_method,
+       start_date: newService.payment_type === 'avista' ? newService.start_date : '',
+       received: newService.received && newService.payment_type === 'avista',
+       received_at: newService.payment_type === 'avista' ? received_at : null,
+       account_id: newService.account_id,
+       account_name: newService.account_name,
+       installments_data: []
+     };
+
      if (newService.payment_type === 'parcelado') {
        const numInstallments = parseInt(newService.installments) || 1;
        const installmentValue = serviceValue / numInstallments;
-       serviceObj.installments_data = Array.from({ length: numInstallments }, (_, i) => ({
+       serviceObj.installments_data = (newService.installments_data || Array.from({ length: numInstallments }, (_, i) => ({
          number: i + 1,
          amount: installmentValue,
-         due_date: newService.due_dates?.[i] || '',
+         due_date: '',
          received: false,
          received_date: null,
+       }))).map((inst, i) => ({
+         number: inst.number || i + 1,
+         amount: inst.amount || installmentValue,
+         due_date: inst.due_date || newService.due_dates?.[i] || '',
+         received: inst.received || false,
+         received_date: inst.received_date || null,
        }));
      }
 
@@ -230,7 +250,7 @@ export default function ClientCRMPanel({ property, onClose }) {
        services = [...(activeCRM?.services || []), serviceObj];
      }
      updateCRM.mutate({ services });
-     setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], received: false, received_at: '', account_id: '', account_name: '' });
+     setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], installments_data: [], received: false, received_at: '', account_id: '', account_name: '' });
      setShowServiceForm(false); setEditingServiceIndex(null);
      toast.success(editingServiceIndex !== null ? 'Serviço atualizado!' : 'Serviço adicionado!');
    };
@@ -514,7 +534,7 @@ export default function ClientCRMPanel({ property, onClose }) {
 
         {/* ── Serviços ── */}
         <TabsContent value="services" className="space-y-3 mt-4">
-          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto" onClick={() => { setEditingServiceIndex(null); setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], received: false, received_at: '', account_id: '', account_name: '' }); setShowServiceForm(true); }}>
+          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto" onClick={() => { setEditingServiceIndex(null); setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], installments_data: [], received: false, received_at: '', account_id: '', account_name: '' }); setShowServiceForm(true); }}>
             <Plus className="w-3 h-3 mr-1" /> Novo Serviço
           </Button>
 

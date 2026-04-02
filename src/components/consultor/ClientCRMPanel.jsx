@@ -234,12 +234,18 @@ export default function ClientCRMPanel({ property, onClose }) {
          due_date: '',
          received: false,
          received_date: null,
+         account_id: '',
+         account_name: '',
+         payment_method: '',
        }))).map((inst, i) => ({
          number: inst.number || i + 1,
          amount: inst.amount || installmentValue,
          due_date: inst.due_date || newService.due_dates?.[i] || '',
          received: inst.received || false,
          received_date: inst.received_date || null,
+         account_id: inst.account_id || '',
+         account_name: inst.account_name || '',
+         payment_method: inst.payment_method || '',
        }));
      }
 
@@ -606,11 +612,11 @@ export default function ClientCRMPanel({ property, onClose }) {
                       <div>
                         <Label className="text-xs text-gray-600 mb-1 block">Nº de Parcelas</Label>
                         <Input className="h-9 text-sm" type="number" min="2" value={newService.installments} onChange={e => {
-                          const n = parseInt(e.target.value) || 0;
-                          const dates = Array.from({ length: n }, (_, i) => newService.due_dates?.[i] || '');
-                          const inst_data = Array.from({ length: n }, (_, i) => newService.installments_data?.[i] || { due_date: dates[i] || '', received: false, received_date: '' });
-                          setNewService(p => ({ ...p, installments: e.target.value, due_dates: dates, installments_data: inst_data }));
-                        }} placeholder="Ex: 3" />
+                           const n = parseInt(e.target.value) || 0;
+                           const dates = Array.from({ length: n }, (_, i) => newService.due_dates?.[i] || '');
+                           const inst_data = Array.from({ length: n }, (_, i) => newService.installments_data?.[i] || { number: i + 1, due_date: dates[i] || '', received: false, received_date: '', account_id: '', account_name: '', payment_method: '' });
+                           setNewService(p => ({ ...p, installments: e.target.value, due_dates: dates, installments_data: inst_data }));
+                         }} placeholder="Ex: 3" />
                       </div>
                       {parseInt(newService.installments) > 0 && (
                         <div className="sm:col-span-2 space-y-3">

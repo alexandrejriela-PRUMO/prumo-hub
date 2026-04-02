@@ -61,6 +61,12 @@ export default function ChecklistView({ checklist, isEditable = false }) {
     setItems(items.filter(item => item.id !== itemId));
   };
 
+  const handleFieldChange = (itemId, field, value) => {
+    setItems(items.map(item =>
+      item.id === itemId ? { ...item, [field]: value } : item
+    ));
+  };
+
   const handleSave = () => {
     const updated = calculateProgress(items);
     updateChecklistMutation.mutate({
@@ -134,6 +140,7 @@ export default function ChecklistView({ checklist, isEditable = false }) {
                     item={item}
                     onStatusChange={(status) => handleStatusChange(item.id, status)}
                     onDelete={() => handleDeleteItem(item.id)}
+                    onFieldChange={(field, value) => handleFieldChange(item.id, field, value)}
                     isExpanded={expandedItems[item.id]}
                     onToggleExpand={() =>
                       setExpandedItems(prev => ({

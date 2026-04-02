@@ -25,6 +25,7 @@ export default function ChecklistItem({
   onDelete,
   onAddNote,
   onFileUpload,
+  onFieldChange,
   isExpanded,
   onToggleExpand
 }) {
@@ -96,6 +97,7 @@ export default function ChecklistItem({
                 <label className="text-xs font-semibold text-gray-600 block mb-2">Prioridade</label>
                 <select
                   value={item.priority}
+                  onChange={(e) => onFieldChange && onFieldChange('priority', e.target.value)}
                   className="w-full px-3 py-2 border rounded-lg text-sm"
                 >
                   <option>Baixa</option>
@@ -114,6 +116,7 @@ export default function ChecklistItem({
                 <input
                   type="date"
                   value={item.start_date || ''}
+                  onChange={(e) => onFieldChange && onFieldChange('start_date', e.target.value)}
                   className="w-full px-3 py-2 border rounded-lg text-sm"
                 />
               </div>
@@ -124,6 +127,7 @@ export default function ChecklistItem({
                 <input
                   type="date"
                   value={item.due_date || ''}
+                  onChange={(e) => onFieldChange && onFieldChange('due_date', e.target.value)}
                   className={`w-full px-3 py-2 border rounded-lg text-sm ${isOverdue ? 'border-red-500 bg-red-50' : ''}`}
                 />
               </div>
@@ -137,6 +141,7 @@ export default function ChecklistItem({
                 type="text"
                 placeholder="Nome ou email"
                 value={item.responsible_name || ''}
+                onChange={(e) => onFieldChange && onFieldChange('responsible_name', e.target.value)}
                 className="w-full px-3 py-2 border rounded-lg text-sm"
               />
             </div>
@@ -146,6 +151,7 @@ export default function ChecklistItem({
               <label className="text-xs font-semibold text-gray-600 block mb-2">Observações</label>
               <textarea
                 value={item.notes || ''}
+                onChange={(e) => onFieldChange && onFieldChange('notes', e.target.value)}
                 placeholder="Adicionar notas..."
                 className="w-full px-3 py-2 border rounded-lg text-sm h-20"
               />

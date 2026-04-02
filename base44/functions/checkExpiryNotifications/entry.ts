@@ -173,6 +173,30 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ─── LICENSE CONDITIONS (condicionantes com prazo) ───────────────────
+    for (const lic of licenses) {
+      if (!lic.owner_email || !lic.conditions?.length) continue;
+      const consultorEmail = await getConsultor(lic.property_id);
+      for (const cond of lic.conditions) {
+        if (typeof cond === 'string' || !cond?.due_date) continue;
+        const days = getDays(cond.due_date);
+        if (days === null) continue;
+        const condText = cond.text || 'Condicionante';
+        const licLabel = `${lic.license_type}${lic.license_number ? ` nº ${lic.license_number}` : ''}`;
+        if (days <= 0) {
+          await notifyWithTeam(lic.owner_email, consultorEmail,
+            'Prazo de Condicionante Vencido',
+            `Condicionante "${condText}" da ${licLabel} está VENCIDA.`,
+            'licenca_vencida', 'error', '/Licenses');
+        } else if ([1, 7, 15, 30].includes(days)) {
+          await notifyWithTeam(lic.owner_email, consultorEmail,
+            `Condicionante vence em ${days} dia${days > 1 ? 's' : ''}`,
+            `"${condText}" (${licLabel}) vence em ${days} dia${days > 1 ? 's' : ''}.`,
+            'licenca_vencendo', days <= 7 ? 'error' : 'warning', '/Licenses');
+        }
+      }
+    }
+
     // ─── PROCESSES ───────────────────────────────────────────────────────
     const processes = await base44.asServiceRole.entities.Process.list();
     for (const proc of processes) {

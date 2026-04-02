@@ -29,14 +29,15 @@ Deno.serve(async (req) => {
     });
 
     for (const service of services) {
-      if (service.payment_type === 'parcelado' && service.installments?.length > 0) {
-        for (let idx = 0; idx < service.installments.length; idx++) {
-          const inst = service.installments[idx];
+      const installments = service.installments_data || service.installments || [];
+      if (service.payment_type === 'parcelado' && installments.length > 0) {
+        for (let idx = 0; idx < installments.length; idx++) {
+          const inst = installments[idx];
           
           // Só criar transação se parcela foi recebida e tem data de recebimento
           if (inst.received && inst.received_date) {
             const dateStr = inst.received_date;
-            const description = `${service.name} - Parcela ${inst.number}/${service.installments.length}`;
+            const description = `${service.name} - Parcela ${inst.number}/${installments.length}`;
 
             // Verificar se a transação já existe
             const exists = existingExpenses.some(exp => 
@@ -60,7 +61,7 @@ Deno.serve(async (req) => {
                 client_property_id: crm.property_id,
                 status: 'Pago',
                 payment_method: service.payment_method || 'Pix',
-                notes: `Parcela ${inst.number}/${service.installments.length} de "${service.name}"`,
+                notes: `Parcela ${inst.number}/${installments.length} de "${service.name}"`,
               });
               createdTransactions.push(transaction);
             }

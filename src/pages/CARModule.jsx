@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   FileText, Plus, Edit, Leaf, MapPin, Clock, Building2,
-  AlertTriangle, CheckCircle2
+  AlertTriangle, CheckCircle2, ChevronLeft
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, parseISO, isValid } from 'date-fns';
@@ -127,17 +127,13 @@ export default function CARModule() {
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Back Link */}
-      {!isConsultor && (
-        <a
-          href="javascript:history.back()"
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-emerald-700 hover:bg-emerald-50 transition-colors text-xs font-medium"
-        >
-          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Voltar
-        </a>
-      )}
+      <a
+        href="javascript:history.back()"
+        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-emerald-700 hover:bg-emerald-50 transition-colors text-xs font-medium"
+      >
+        <ChevronLeft className="w-3 h-3" />
+        Voltar
+      </a>
 
       {/* Property Selector (consultor) */}
       {isConsultor && (

@@ -53,7 +53,10 @@ export default function Processes() {
     notes: '',
     updates: [],
     fine_value: '',
-    location: ''
+    fine_paid: false,
+    location: '',
+    is_civil_inquiry: false,
+    civil_inquiry_resolution: 'Não resolvido'
   });
 
   const queryClient = useQueryClient();
@@ -155,7 +158,10 @@ export default function Processes() {
       notes: '',
       updates: [],
       fine_value: '',
-      location: ''
+      fine_paid: false,
+      location: '',
+      is_civil_inquiry: false,
+      civil_inquiry_resolution: 'Não resolvido'
     });
     setEditingProcess(null);
   };
@@ -188,7 +194,10 @@ export default function Processes() {
       notes: process.notes || '',
       updates: process.updates || [],
       fine_value: process.fine_value || '',
-      location: process.location || ''
+      fine_paid: process.fine_paid || false,
+      location: process.location || '',
+      is_civil_inquiry: process.is_civil_inquiry || false,
+      civil_inquiry_resolution: process.civil_inquiry_resolution || 'Não resolvido'
     });
     setShowDialog(true);
   };
@@ -453,8 +462,66 @@ export default function Processes() {
         value={formData.fine_value}
         onChange={(e) => setFormData({ ...formData, fine_value: e.target.value })}
         placeholder="Ex: 15000.00" />
-      
       </div>
+
+      {/* Campo "Multa paga" apenas para processos Administrativos */}
+      {formData.process_type === 'Administrativo' && formData.fine_value && (
+        <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <input
+            type="checkbox"
+            id="fine_paid"
+            checked={formData.fine_paid}
+            onChange={(e) => setFormData({ ...formData, fine_paid: e.target.checked })}
+            className="w-4 h-4 accent-emerald-600"
+          />
+          <label htmlFor="fine_paid" className="text-sm font-medium text-green-800 cursor-pointer">
+            Multa arbitrada já foi paga (regularidade positiva no termômetro)
+          </label>
+        </div>
+      )}
+
+      {/* Campos específicos para processos Civis */}
+      {formData.process_type === 'Civil' && (
+        <div className="space-y-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+          <p className="text-xs font-semibold text-indigo-800 uppercase tracking-wide">Inquérito Civil</p>
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="is_civil_inquiry"
+              checked={formData.is_civil_inquiry}
+              onChange={(e) => setFormData({ ...formData, is_civil_inquiry: e.target.checked })}
+              className="w-4 h-4 accent-indigo-600"
+            />
+            <label htmlFor="is_civil_inquiry" className="text-sm font-medium text-indigo-800 cursor-pointer">
+              Trata-se de Inquérito Civil relacionado à propriedade
+            </label>
+          </div>
+          {formData.is_civil_inquiry && (
+            <div>
+              <Label className="text-indigo-800">Situação do Inquérito Civil</Label>
+              <Select
+                value={formData.civil_inquiry_resolution}
+                onValueChange={(value) => setFormData({ ...formData, civil_inquiry_resolution: value })}>
+                <SelectTrigger className="bg-white border-indigo-300">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Não resolvido">Não resolvido — pendência ativa</SelectItem>
+                  <SelectItem value="TAC firmado">TAC firmado — acordo celebrado</SelectItem>
+                  <SelectItem value="Indenização paga">Indenização paga</SelectItem>
+                  <SelectItem value="Acordo regular">Acordo regular</SelectItem>
+                </SelectContent>
+              </Select>
+              {formData.civil_inquiry_resolution === 'Não resolvido' && (
+                <p className="text-xs text-red-600 mt-1">⚠️ Inquérito civil não resolvido impacta negativamente o Termômetro de Regularidade.</p>
+              )}
+              {formData.civil_inquiry_resolution !== 'Não resolvido' && (
+                <p className="text-xs text-green-600 mt-1">✓ Situação resolvida impacta positivamente o Termômetro de Regularidade.</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <div>
         <Label>Status</Label>

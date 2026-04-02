@@ -46,20 +46,44 @@ export default function RegularityThermometer({ property, licenses = [], documen
 
     // ── 2. DOCUMENTOS CADASTRAIS (peso 25) ───────────────────────────────
     const docWeight = 25;
-    // CAR: verificar via CARManagement (car_number preenchido)
-    const hasCAR = carManagements.length > 0 && carManagements.some(c => c.car_number && c.car_number.trim() !== '');
-    // CCIR: verificar nos documentos (sem georreferenciamento)
+    // CAR: verificar via CARManagement
+    const activeCARs = carManagements.filter(c => c.car_number && c.car_number.trim() !== '');
+    const hasCAR = activeCARs.length > 0;
+    const carNeedsRectification = activeCARs.some(c =>
+      c.car_status === 'Necessita retificação' || c.car_status === 'Com inconsistências' || c.car_status === 'Cancelado'
+    );
+    const carFullyValid = activeCARs.length > 0 && activeCARs.every(c =>
+      c.car_status === 'Validado' || c.car_status === 'Em análise pelo órgão ambiental' || c.car_status === 'Pendente de análise'
+    );
+
+    // CCIR: verificar nos documentos
     const hasCCIR = documents.some(d => d.document_type === 'CCIR');
 
     let docScore = 0;
     const missing = [];
-    if (hasCAR) docScore += docWeight * 0.50; else missing.push('CAR (Gestão do CAR)');
+
+    // CAR: pontuação baseada no status
+    if (!hasCAR) {
+      missing.push('CAR (Gestão do CAR)');
+    } else if (carNeedsRectification) {
+      // CAR com necessidade de retificação: pontuação reduzida (30% do peso do CAR)
+      docScore += docWeight * 0.50 * 0.30;
+    } else if (carFullyValid) {
+      // CAR totalmente válido: pontuação completa + bônus pequeno
+      docScore += docWeight * 0.55;
+    } else {
+      docScore += docWeight * 0.50;
+    }
+
     if (hasCCIR) docScore += docWeight * 0.50; else missing.push('CCIR');
 
     totalScore += docScore;
 
-    if (missing.length === 0) {
-      details.push({ category: 'Documentos', status: 'ok', message: 'Documentos essenciais em ordem (CAR + CCIR)' });
+    if (missing.length === 0 && !carNeedsRectification) {
+      const bonusMsg = carFullyValid ? ' (CAR validado ✓)' : '';
+      details.push({ category: 'Documentos', status: 'ok', message: `Documentos essenciais em ordem (CAR + CCIR)${bonusMsg}` });
+    } else if (carNeedsRectification && missing.length === 0) {
+      details.push({ category: 'Documentos', status: 'warning', message: 'CAR necessita retificação — regularize para melhorar a pontuação' });
     } else {
       const severity = missing.length >= 2 ? 'critical' : 'warning';
       details.push({ category: 'Documentos', status: severity, message: `Faltam: ${missing.join(', ')}` });
@@ -85,36 +109,75 @@ export default function RegularityThermometer({ property, licenses = [], documen
     }
 
     // ── 4. PROCESSOS (peso 15) ────────────────────────────────────────────
-    // Status temporariamente positivos: Suspenso, Arquivado, Finalizado
+    // Criminais: IGNORADOS completamente no termômetro
+    // Civis: apenas Inquérito Civil relacionado à propriedade é valorado
+    // Administrativos: totalmente valorados
     const processWeight = 15;
-    const RESOLVED_STATUSES = ['Suspenso', 'Arquivado', 'Finalizado', 'Concluído', 'Encerrado'];
-    if (processes.length > 0) {
-      const active = processes.filter(p => !RESOLVED_STATUSES.includes(p.status) && p.status === 'Em Andamento');
-      const temporarilyOk = processes.filter(p => RESOLVED_STATUSES.includes(p.status));
-      const criminalActive = active.filter(p => p.process_type === 'Criminal');
-      const adminCivilActive = active.filter(p => p.process_type !== 'Criminal');
+    const RESOLVED_STATUSES = ['Suspenso', 'Arquivado', 'Finalizado'];
 
-      if (active.length === 0) {
-        // Todos os processos estão suspensos/arquivados/finalizados
-        totalScore += processWeight;
-        const msg = temporarilyOk.length > 0
-          ? `${temporarilyOk.length} processo(s) suspenso(s)/arquivado(s)/finalizado(s) — situação temporariamente regular`
-          : 'Sem processos ativos';
-        details.push({ category: 'Processos', status: 'ok', message: msg });
-      } else if (criminalActive.length > 0) {
-        // Penalização máxima por processo criminal ativo
-        totalScore += processWeight * 0.1;
-        details.push({ category: 'Processos', status: 'critical', message: `${criminalActive.length} processo(s) criminal(is) em andamento` });
-      } else {
-        // Processos administrativos/civis ativos — penalização moderada
-        totalScore += processWeight * 0.4;
-        const parts = [`${adminCivilActive.length} processo(s) administrativo(s)/civil(is) em andamento`];
-        if (temporarilyOk.length > 0) parts.push(`${temporarilyOk.length} suspenso(s)/finalizado(s)`);
-        details.push({ category: 'Processos', status: 'warning', message: parts.join(' | ') });
+    // Filtra apenas administrativos e inquéritos civis vinculados à propriedade
+    const adminProcesses = processes.filter(p => p.process_type === 'Administrativo');
+    const civilInquiries = processes.filter(p => p.process_type === 'Civil' && p.is_civil_inquiry === true);
+
+    // --- Processos Administrativos ---
+    const adminActive = adminProcesses.filter(p => p.status === 'Em Andamento');
+    // Suspenso com multa paga ou arquivado/finalizado = positivo
+    const adminPositive = adminProcesses.filter(p =>
+      RESOLVED_STATUSES.includes(p.status) ||
+      (p.status === 'Suspenso') ||
+      (p.fine_paid === true)
+    );
+
+    // --- Inquéritos Civis ---
+    const CIVIL_RESOLVED = ['TAC firmado', 'Indenização paga', 'Acordo regular'];
+    const civilUnresolved = civilInquiries.filter(p =>
+      p.civil_inquiry_resolution === 'Não resolvido' || !p.civil_inquiry_resolution
+    );
+    const civilResolved = civilInquiries.filter(p =>
+      CIVIL_RESOLVED.includes(p.civil_inquiry_resolution)
+    );
+
+    const processMessages = [];
+    let processScore = processWeight; // começa cheio, penaliza conforme problemas
+
+    if (adminActive.length > 0) {
+      // Penalização moderada por administrativos em andamento (sem multa paga)
+      const unpaid = adminActive.filter(p => !p.fine_paid);
+      if (unpaid.length > 0) {
+        processScore -= processWeight * 0.5 * Math.min(unpaid.length / (adminProcesses.length || 1), 1);
+        processMessages.push(`${unpaid.length} proc. administrativo(s) em andamento`);
       }
+    }
+    if (adminPositive.length > 0) {
+      processMessages.push(`${adminPositive.length} administrativo(s) suspenso(s)/encerrado(s)/multa paga`);
+    }
+    if (civilUnresolved.length > 0) {
+      // Inquérito civil não resolvido = penalização significativa
+      processScore -= processWeight * 0.4 * Math.min(civilUnresolved.length, 1);
+      processMessages.push(`${civilUnresolved.length} inquérito(s) civil(is) NÃO resolvido(s)`);
+    }
+    if (civilResolved.length > 0) {
+      // Inquérito civil resolvido (TAC/indenização/acordo) = bônus pequeno
+      processScore = Math.min(processScore + processWeight * 0.05 * civilResolved.length, processWeight);
+      processMessages.push(`${civilResolved.length} inquérito(s) civil(is) resolvido(s) ✓`);
+    }
+
+    processScore = Math.max(0, processScore);
+    totalScore += processScore;
+
+    const hasProblem = adminActive.some(p => !p.fine_paid) || civilUnresolved.length > 0;
+    const processStatus = hasProblem
+      ? (civilUnresolved.length > 0 || adminActive.filter(p => !p.fine_paid).length >= 2 ? 'critical' : 'warning')
+      : 'ok';
+
+    if (processes.filter(p => p.process_type !== 'Criminal').length === 0) {
+      details.push({ category: 'Processos', status: 'ok', message: 'Sem processos administrativos ou inquéritos civis cadastrados' });
     } else {
-      totalScore += processWeight;
-      details.push({ category: 'Processos', status: 'ok', message: 'Sem processos cadastrados' });
+      details.push({
+        category: 'Processos',
+        status: processStatus,
+        message: processMessages.length > 0 ? processMessages.join(' | ') : 'Processos administrativos e inquéritos civis sem pendências'
+      });
     }
 
     // ── 5. PRAD (peso 10) ─────────────────────────────────────────────────

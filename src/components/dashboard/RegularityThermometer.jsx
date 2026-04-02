@@ -7,8 +7,8 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 
 // ── Pesos por categoria ───────────────────────────────────────────────────────
-// Licença: 40 | CAR: 20 | Documentos: 10 | Geo: 8 | Processos: 12 | PRAD: 10
-// Total base = 100 (sem PRAD quando não há prads cadastrados)
+// Licença: 40 | CAR: 20 | Documentos: 5 | Geo: 5 | Processos: 20 | PRAD: 10
+// Total base = 90 sem PRAD, 100 com PRAD
 
 export default function RegularityThermometer({ property, licenses = [], documents = [], processes = [], georeferencing = [], prads = [], carManagements = [] }) {
   const score = useMemo(() => {
@@ -75,7 +75,7 @@ export default function RegularityThermometer({ property, licenses = [], documen
     if (!hasCAR) {
       details.push({ category: 'CAR', status: 'critical', message: 'CAR não cadastrado — regularize pelo módulo Gestão do CAR', score: 0, max: carWeight });
     } else if (carNeedsRectification) {
-      const pts = Math.round(carWeight * 0.25);
+      const pts = 10;
       totalScore += pts;
       details.push({ category: 'CAR', status: 'critical', message: 'CAR necessita retificação ou possui inconsistências', score: pts, max: carWeight });
     } else if (carFullyValid) {
@@ -91,17 +91,15 @@ export default function RegularityThermometer({ property, licenses = [], documen
       details.push({ category: 'CAR', status: 'warning', message: `CAR cadastrado — verifique o status (${activeCARs.length} CAR${activeCARs.length > 1 ? 's' : ''})`, score: pts, max: carWeight });
     }
 
-    // ── 3. DOCUMENTOS CADASTRAIS — CCIR + ITR (peso 10) ──────────────────
-    // Peso reduzido: CCIR e ITR são importantes mas secundários ao CAR/Licença
-    const docWeight = 10;
+    // ── 3. DOCUMENTOS CADASTRAIS — CCIR + ITR (peso 5) ───────────────────
+    const docWeight = 5;
     const hasCCIR = documents.some(d => d.document_type === 'CCIR');
     const hasITR = documents.some(d => d.document_type === 'ITR');
 
     let docScore = 0;
     const docMissing = [];
-    if (hasCCIR) docScore += docWeight * 0.6; else docMissing.push('CCIR');
-    if (hasITR) docScore += docWeight * 0.4; else docMissing.push('ITR anual');
-    docScore = Math.round(docScore);
+    if (hasCCIR) docScore += 3; else docMissing.push('CCIR');
+    if (hasITR) docScore += 2; else docMissing.push('ITR anual');
     totalScore += docScore;
 
     if (docMissing.length === 0) {
@@ -112,8 +110,8 @@ export default function RegularityThermometer({ property, licenses = [], documen
       details.push({ category: 'Documentos (CCIR/ITR)', status: 'warning', message: 'CCIR e ITR não cadastrados', score: docScore, max: docWeight });
     }
 
-    // ── 4. GEORREFERENCIAMENTO (peso 8 — reduzido) ────────────────────────
-    const geoWeight = 8;
+    // ── 4. GEORREFERENCIAMENTO (peso 5) ───────────────────────────────────
+    const geoWeight = 5;
     const regularGeo = georeferencing.find(g => g.status === 'Regular');
     const pendingGeo = georeferencing.find(g => g.status === 'Pendente' || g.status === 'Em Atualização');
     const irregularGeo = georeferencing.find(g => g.status === 'Irregular');
@@ -122,70 +120,80 @@ export default function RegularityThermometer({ property, licenses = [], documen
       totalScore += geoWeight;
       details.push({ category: 'Georreferenciamento', status: 'ok', message: 'Georreferenciamento regular', score: geoWeight, max: geoWeight });
     } else if (pendingGeo) {
-      const pts = Math.round(geoWeight * 0.5);
+      const pts = 2;
       totalScore += pts;
       details.push({ category: 'Georreferenciamento', status: 'warning', message: `Georreferenciamento ${pendingGeo.status}`, score: pts, max: geoWeight });
     } else if (irregularGeo) {
-      const pts = Math.round(geoWeight * 0.1);
+      const pts = 1;
       totalScore += pts;
       details.push({ category: 'Georreferenciamento', status: 'warning', message: 'Georreferenciamento irregular', score: pts, max: geoWeight });
     } else {
       details.push({ category: 'Georreferenciamento', status: 'warning', message: 'Sem georreferenciamento cadastrado', score: 0, max: geoWeight });
     }
 
-    // ── 5. PROCESSOS (peso 12) ─────────────────────────────────────────────
-    const processWeight = 12;
+    // ── 5. PROCESSOS (peso 20) ─────────────────────────────────────────────
+    const processWeight = 20;
     const RESOLVED_STATUSES = ['Suspenso', 'Arquivado', 'Finalizado'];
-    const adminProcesses = processes.filter(p => p.process_type === 'Administrativo');
-    const civilInquiries = processes.filter(p => p.process_type === 'Civil' && p.is_civil_inquiry === true);
-    const adminActive = adminProcesses.filter(p => p.status === 'Em Andamento');
-    const adminPositive = adminProcesses.filter(p =>
-      RESOLVED_STATUSES.includes(p.status) || p.fine_paid === true
-    );
+    const activeProcesses = processes.filter(p => p.status === 'Em Andamento');
+    const resolvedProcesses = processes.filter(p => RESOLVED_STATUSES.includes(p.status));
+    const criminalActive = activeProcesses.filter(p => p.process_type === 'Criminal');
+    const adminCivilActive = activeProcesses.filter(p => p.process_type !== 'Criminal');
+
+    // Verificar se há TAC firmado ou inquérito civil resolvido
     const CIVIL_RESOLVED = ['TAC firmado', 'Indenização paga', 'Acordo regular'];
-    const civilUnresolved = civilInquiries.filter(p =>
-      p.civil_inquiry_resolution === 'Não resolvido' || !p.civil_inquiry_resolution
+    const civilResolved = processes.filter(p =>
+      p.process_type === 'Civil' && CIVIL_RESOLVED.includes(p.civil_inquiry_resolution)
     );
-    const civilResolved = civilInquiries.filter(p => CIVIL_RESOLVED.includes(p.civil_inquiry_resolution));
 
     let processScore = processWeight;
     const processMessages = [];
 
-    if (adminActive.length > 0) {
-      const unpaid = adminActive.filter(p => !p.fine_paid);
-      if (unpaid.length > 0) {
-        processScore -= processWeight * 0.5 * Math.min(unpaid.length / (adminProcesses.length || 1), 1);
-        processMessages.push(`${unpaid.length} proc. administrativo(s) em andamento`);
+    if (processes.length === 0) {
+      processMessages.push('Sem processos registrados');
+    } else if (activeProcesses.length === 0) {
+      processMessages.push(`${resolvedProcesses.length} processo(s) — todos encerrados/suspensos`);
+    } else if (criminalActive.length > 0) {
+      processScore = Math.round(processWeight * 0.05);
+      processMessages.push(`${criminalActive.length} processo(s) criminal(is) em andamento`);
+      if (adminCivilActive.length > 0) processMessages.push(`${adminCivilActive.length} proc. administrativo(s)/civil(is) em andamento`);
+    } else {
+      // Processos admin/civil ativos — verificar TAC e multa paga
+      const withTAC = adminCivilActive.filter(p => p.civil_inquiry_resolution && CIVIL_RESOLVED.includes(p.civil_inquiry_resolution));
+      const withFinePaid = adminCivilActive.filter(p => p.fine_paid === true);
+      const withEmbargo = adminCivilActive.filter(p => p.has_embargo === true && p.embargo_respected !== false);
+      const pending = adminCivilActive.filter(p =>
+        !p.fine_paid &&
+        !(p.civil_inquiry_resolution && CIVIL_RESOLVED.includes(p.civil_inquiry_resolution))
+      );
+
+      if (pending.length === 0) {
+        // Todos resolvidos (TAC / multa paga)
+        processScore = Math.round(processWeight * 0.75);
+        processMessages.push(`${adminCivilActive.length} proc. em andamento — regularizados (TAC/multa paga)`);
+      } else {
+        processScore = Math.round(processWeight * 0.35);
+        processMessages.push(`${pending.length} proc. administrativo(s)/civil(is) em andamento`);
       }
+      if (withTAC.length > 0) processMessages.push(`✓ ${withTAC.length} com TAC firmado`);
+      if (withFinePaid.length > 0) processMessages.push(`✓ ${withFinePaid.length} com multa paga`);
+      if (resolvedProcesses.length > 0) processMessages.push(`✓ ${resolvedProcesses.length} encerrado(s)`);
     }
-    if (adminPositive.length > 0) processMessages.push(`${adminPositive.length} administrativo(s) encerrado(s)/multa paga`);
-    if (civilUnresolved.length > 0) {
-      processScore -= processWeight * 0.4 * Math.min(civilUnresolved.length, 1);
-      processMessages.push(`${civilUnresolved.length} inquérito(s) civil(is) não resolvido(s)`);
-    }
-    if (civilResolved.length > 0) {
-      processScore = Math.min(processScore + processWeight * 0.05 * civilResolved.length, processWeight);
-      processMessages.push(`${civilResolved.length} inquérito(s) civil(is) resolvido(s) ✓`);
-    }
+
     processScore = Math.max(0, Math.round(processScore));
     totalScore += processScore;
 
-    const hasProblem = adminActive.some(p => !p.fine_paid) || civilUnresolved.length > 0;
-    const processStatus = hasProblem
-      ? (civilUnresolved.length > 0 || adminActive.filter(p => !p.fine_paid).length >= 2 ? 'critical' : 'warning')
-      : 'ok';
+    const hasProblem = criminalActive.length > 0 || adminCivilActive.some(p =>
+      !p.fine_paid && !(p.civil_inquiry_resolution && CIVIL_RESOLVED.includes(p.civil_inquiry_resolution))
+    );
+    const processStatus = !hasProblem ? 'ok' : criminalActive.length > 0 ? 'critical' : 'warning';
 
-    if (processes.filter(p => p.process_type !== 'Criminal').length === 0) {
-      details.push({ category: 'Processos', status: 'ok', message: 'Sem processos administrativos ou inquéritos civis', score: processScore, max: processWeight });
-    } else {
-      details.push({
-        category: 'Processos',
-        status: processStatus,
-        message: processMessages.length > 0 ? processMessages.join(' | ') : 'Processos sem pendências relevantes',
-        score: processScore,
-        max: processWeight
-      });
-    }
+    details.push({
+      category: 'Processos',
+      status: processStatus,
+      message: processMessages.join(' | '),
+      score: processScore,
+      max: processWeight
+    });
 
     // ── 6. EMBARGO (penalidade direta sobre o total) ───────────────────────
     const adminWithEmbargo = processes.filter(p => p.process_type === 'Administrativo' && p.has_embargo === true);
@@ -226,7 +234,7 @@ export default function RegularityThermometer({ property, licenses = [], documen
       }
     }
 
-    const maxScore = licenseWeight + carWeight + docWeight + geoWeight + processWeight + (prads.length > 0 ? pradWeight : 0);
+    const maxScore = 40 + 20 + 5 + 5 + 20 + (prads.length > 0 ? pradWeight : 0);
     const percentage = maxScore > 0 ? Math.min(100, Math.round((totalScore / maxScore) * 100)) : 0;
 
     return { percentage, details, totalScore, maxScore };

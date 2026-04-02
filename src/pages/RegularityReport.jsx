@@ -294,28 +294,46 @@ export default function RegularityReport() {
 
     // ── 5. PROCESSOS (20pts) ──────────────────────────────────────────────
     const RESOLVED = ['Suspenso', 'Arquivado', 'Finalizado'];
+    const CIVIL_RESOLVED_STATUSES = ['TAC firmado', 'Indenização paga', 'Acordo regular'];
     const active = propertyProcesses.filter(p => p.status === 'Em Andamento');
     const resolved = propertyProcesses.filter(p => RESOLVED.includes(p.status));
+    const criminalActive = active.filter(p => p.process_type === 'Criminal');
+    const adminCivilActive = active.filter(p => p.process_type !== 'Criminal');
     let procScore = 20; const procDetails = [];
+
     if (propertyProcesses.length === 0) {
       procDetails.push('✓ Sem processos registrados');
     } else if (active.length === 0) {
       procDetails.push(`✓ ${propertyProcesses.length} processo(s) — todos suspensos/arquivados/finalizados`);
+    } else if (criminalActive.length > 0) {
+      procScore = Math.round(20 * 0.05);
+      procDetails.push(`✗ ${criminalActive.length} processo(s) criminal(is) em andamento`);
+      if (adminCivilActive.length > 0) procDetails.push(`⚠ ${adminCivilActive.length} processo(s) administrativo(s)/civil(is) em andamento`);
     } else {
-      const criminal = active.filter(p => p.process_type === 'Criminal');
-      const adminCivil = active.filter(p => p.process_type !== 'Criminal');
-      if (criminal.length > 0) {
-        procScore = Math.round(20 * 0.05);
-        procDetails.push(`✗ ${criminal.length} processo(s) criminal(is) em andamento`);
-        if (adminCivil.length > 0) procDetails.push(`⚠ ${adminCivil.length} processo(s) administrativo(s)/civil(is) em andamento`);
+      // Verificar TAC firmado / multa paga
+      const withTAC = adminCivilActive.filter(p => p.civil_inquiry_resolution && CIVIL_RESOLVED_STATUSES.includes(p.civil_inquiry_resolution));
+      const withFinePaid = adminCivilActive.filter(p => p.fine_paid === true);
+      const pending = adminCivilActive.filter(p =>
+        !p.fine_paid && !(p.civil_inquiry_resolution && CIVIL_RESOLVED_STATUSES.includes(p.civil_inquiry_resolution))
+      );
+
+      if (pending.length === 0) {
+        procScore = Math.round(20 * 0.75);
+        procDetails.push(`⚠ ${adminCivilActive.length} proc. em andamento — regularizados (TAC/multa paga)`);
       } else {
         procScore = Math.round(20 * 0.35);
-        procDetails.push(`⚠ ${adminCivil.length} processo(s) administrativo(s)/civil(is) em andamento`);
+        procDetails.push(`⚠ ${pending.length} processo(s) administrativo(s)/civil(is) em andamento`);
       }
+      if (withTAC.length > 0) procDetails.push(`✓ ${withTAC.length} com TAC firmado`);
+      if (withFinePaid.length > 0) procDetails.push(`✓ ${withFinePaid.length} com multa paga`);
       if (resolved.length > 0) procDetails.push(`✓ ${resolved.length} processo(s) encerrado(s)`);
     }
+
     procScore = Math.max(0, Math.round(procScore));
-    const procStatus = active.length === 0 ? 'ok' : active.some(p => p.process_type === 'Criminal') ? 'critical' : 'warning';
+    const hasPendingProc = criminalActive.length > 0 || adminCivilActive.some(p =>
+      !p.fine_paid && !(p.civil_inquiry_resolution && CIVIL_RESOLVED_STATUSES.includes(p.civil_inquiry_resolution))
+    );
+    const procStatus = active.length === 0 ? 'ok' : criminalActive.length > 0 ? 'critical' : hasPendingProc ? 'warning' : 'ok';
     categories.push({ name: 'Situação Processual', icon: Scale, weight: 20, score: procScore, status: procStatus, details: procDetails });
     totalScore += procScore;
 

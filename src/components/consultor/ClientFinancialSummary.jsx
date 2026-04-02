@@ -59,7 +59,7 @@ export default function ClientFinancialSummary({ client }) {
     
     // Para parcelado: mapear do array installments (agora é array de objetos)
     let installments_data = [];
-    if (service.payment_type === 'parcelado' && service.installments?.length > 0) {
+    if (service.payment_type === 'parcelado' && Array.isArray(service.installments) && service.installments.length > 0) {
       installments_data = service.installments.map(inst => ({
         due_date: inst.due_date || '',
         received: inst.received || false,

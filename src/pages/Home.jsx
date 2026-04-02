@@ -103,6 +103,13 @@ export default function Home() {
     initialData: []
   });
 
+  const { data: carManagements = [] } = useQuery({
+    queryKey: ['carManagements', selectedPropertyId],
+    queryFn: () => base44.entities.CARManagement.filter({ property_id: selectedPropertyId }),
+    enabled: !!selectedPropertyId,
+    initialData: []
+  });
+
   const { data: environmentalAlerts = [], isLoading: loadingAlerts } = useQuery({
     queryKey: ['environmental-alerts'],
     queryFn: () => base44.entities.EnvironmentalAlert.list(),
@@ -390,6 +397,7 @@ export default function Home() {
               processes={filteredData.processes}
               georeferencing={georeferencing}
               prads={prads}
+              carManagements={carManagements}
             />
           )}
 

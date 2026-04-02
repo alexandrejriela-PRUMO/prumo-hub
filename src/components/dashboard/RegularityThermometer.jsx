@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 
-export default function RegularityThermometer({ property, licenses = [], documents = [], processes = [], georeferencing = [], prads = [] }) {
+export default function RegularityThermometer({ property, licenses = [], documents = [], processes = [], georeferencing = [], prads = [], carManagements = [] }) {
   const score = useMemo(() => {
     let totalScore = 0;
     const details = [];
@@ -44,30 +44,25 @@ export default function RegularityThermometer({ property, licenses = [], documen
       details.push({ category: 'Licenças', status: 'critical', message: 'Nenhuma licença cadastrada' });
     }
 
-    // ── 2. DOCUMENTOS (peso 25) ───────────────────────────────────────────
+    // ── 2. DOCUMENTOS CADASTRAIS (peso 25) ───────────────────────────────
     const docWeight = 25;
-    if (documents.length > 0) {
-      const hasCAR = documents.some(d => d.document_type === 'CAR');
-      const hasCCIR = documents.some(d => d.document_type === 'CCIR');
-      const hasGeoDoc = documents.some(d => d.document_type === 'Georreferenciamento');
-      const hasOutro = documents.some(d => d.document_type === 'Outro');
+    // CAR: verificar via CARManagement (car_number preenchido)
+    const hasCAR = carManagements.length > 0 && carManagements.some(c => c.car_number && c.car_number.trim() !== '');
+    // CCIR: verificar nos documentos (sem georreferenciamento)
+    const hasCCIR = documents.some(d => d.document_type === 'CCIR');
 
-      let docScore = 0;
-      const missing = [];
-      if (hasCAR) docScore += docWeight * 0.40; else missing.push('CAR');
-      if (hasCCIR) docScore += docWeight * 0.35; else missing.push('CCIR');
-      if (hasGeoDoc || hasOutro) docScore += docWeight * 0.25;
+    let docScore = 0;
+    const missing = [];
+    if (hasCAR) docScore += docWeight * 0.50; else missing.push('CAR (Gestão do CAR)');
+    if (hasCCIR) docScore += docWeight * 0.50; else missing.push('CCIR');
 
-      totalScore += docScore;
+    totalScore += docScore;
 
-      if (missing.length === 0) {
-        details.push({ category: 'Documentos', status: 'ok', message: 'Documentos essenciais em ordem' });
-      } else {
-        const severity = missing.length >= 2 ? 'critical' : 'warning';
-        details.push({ category: 'Documentos', status: severity, message: `Faltam: ${missing.join(', ')}` });
-      }
+    if (missing.length === 0) {
+      details.push({ category: 'Documentos', status: 'ok', message: 'Documentos essenciais em ordem (CAR + CCIR)' });
     } else {
-      details.push({ category: 'Documentos', status: 'critical', message: 'Nenhum documento cadastrado' });
+      const severity = missing.length >= 2 ? 'critical' : 'warning';
+      details.push({ category: 'Documentos', status: severity, message: `Faltam: ${missing.join(', ')}` });
     }
 
     // ── 3. GEORREFERENCIAMENTO (peso 15) ──────────────────────────────────
@@ -85,27 +80,37 @@ export default function RegularityThermometer({ property, licenses = [], documen
     } else if (irregularGeo) {
       totalScore += geoWeight * 0.1;
       details.push({ category: 'Georreferenciamento', status: 'critical', message: 'Georreferenciamento irregular' });
-    } else if (property?.coordinates) {
-      totalScore += geoWeight * 0.6;
-      details.push({ category: 'Georreferenciamento', status: 'warning', message: 'Coordenadas cadastradas (sem certificação)' });
     } else {
-      details.push({ category: 'Georreferenciamento', status: 'warning', message: 'Georreferenciamento não cadastrado' });
+      details.push({ category: 'Georreferenciamento', status: 'warning', message: 'Nenhum georreferenciamento com status Regular cadastrado' });
     }
 
     // ── 4. PROCESSOS (peso 15) ────────────────────────────────────────────
+    // Status temporariamente positivos: Suspenso, Arquivado, Finalizado
     const processWeight = 15;
+    const RESOLVED_STATUSES = ['Suspenso', 'Arquivado', 'Finalizado', 'Concluído', 'Encerrado'];
     if (processes.length > 0) {
-      const active = processes.filter(p => p.status === 'Em Andamento');
-      const criminal = processes.filter(p => p.process_type === 'Criminal' && p.status === 'Em Andamento');
-      if (criminal.length > 0) {
-        totalScore += processWeight * 0.1;
-        details.push({ category: 'Processos', status: 'critical', message: `${criminal.length} processo(s) criminal(is) ativo(s)` });
-      } else if (active.length > 0) {
-        totalScore += processWeight * 0.4;
-        details.push({ category: 'Processos', status: 'warning', message: `${active.length} processo(s) administrativo(s)/civil(is) ativo(s)` });
-      } else {
+      const active = processes.filter(p => !RESOLVED_STATUSES.includes(p.status) && p.status === 'Em Andamento');
+      const temporarilyOk = processes.filter(p => RESOLVED_STATUSES.includes(p.status));
+      const criminalActive = active.filter(p => p.process_type === 'Criminal');
+      const adminCivilActive = active.filter(p => p.process_type !== 'Criminal');
+
+      if (active.length === 0) {
+        // Todos os processos estão suspensos/arquivados/finalizados
         totalScore += processWeight;
-        details.push({ category: 'Processos', status: 'ok', message: 'Sem processos ativos' });
+        const msg = temporarilyOk.length > 0
+          ? `${temporarilyOk.length} processo(s) suspenso(s)/arquivado(s)/finalizado(s) — situação temporariamente regular`
+          : 'Sem processos ativos';
+        details.push({ category: 'Processos', status: 'ok', message: msg });
+      } else if (criminalActive.length > 0) {
+        // Penalização máxima por processo criminal ativo
+        totalScore += processWeight * 0.1;
+        details.push({ category: 'Processos', status: 'critical', message: `${criminalActive.length} processo(s) criminal(is) em andamento` });
+      } else {
+        // Processos administrativos/civis ativos — penalização moderada
+        totalScore += processWeight * 0.4;
+        const parts = [`${adminCivilActive.length} processo(s) administrativo(s)/civil(is) em andamento`];
+        if (temporarilyOk.length > 0) parts.push(`${temporarilyOk.length} suspenso(s)/finalizado(s)`);
+        details.push({ category: 'Processos', status: 'warning', message: parts.join(' | ') });
       }
     } else {
       totalScore += processWeight;
@@ -136,7 +141,7 @@ export default function RegularityThermometer({ property, licenses = [], documen
     const percentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
 
     return { percentage, details, totalScore, maxScore };
-  }, [property, licenses, documents, processes, georeferencing, prads]);
+  }, [property, licenses, documents, processes, georeferencing, prads, carManagements]);
 
   const getStatus = (pct) => {
     if (pct >= 80) return { color: 'green', label: 'Regular', icon: CheckCircle2, bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', bar: '#22c55e' };

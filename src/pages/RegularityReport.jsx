@@ -146,17 +146,32 @@ export default function RegularityReport() {
     enabled: !!effectiveEmail && ((isConsultorFamily || isClientConsultor) ? effectiveProperties.length > 0 : true)
   });
 
+  const { data: carManagements = [] } = useQuery({
+    queryKey: ['carManagements', user?.email, propertyIds.join(',')],
+    queryFn: async () => {
+      if ((isConsultorFamily || isClientConsultor) && propertyIds.length > 0) {
+        const results = await Promise.all(
+          propertyIds.map(pid => base44.entities.CARManagement.filter({ property_id: pid }))
+        );
+        return results.flat();
+      }
+      return base44.entities.CARManagement.filter({ owner_email: effectiveEmail });
+    },
+    enabled: !!effectiveEmail && ((isConsultorFamily || isClientConsultor) ? effectiveProperties.length > 0 : true)
+  });
+
   useEffect(() => {
     if (effectiveProperties.length > 0 && !selectedPropertyId) {
       setSelectedPropertyId(effectiveProperties[0].id);
     }
   }, [effectiveProperties, selectedPropertyId]);
 
-  const selectedProperty = properties.find(p => p.id === selectedPropertyId);
+  const selectedProperty = effectiveProperties.find(p => p.id === selectedPropertyId);
   const propertyLicenses = licenses.filter(l => l.property_id === selectedPropertyId);
   const propertyDocuments = documents.filter(d => 
     d.property_id === selectedPropertyId || d.entity_id === selectedPropertyId
   );
+  const propertyCarManagements = carManagements.filter(c => c.property_id === selectedPropertyId);
 
   // Cálculo de pontuação detalhado
   const calculateDetailedScore = () => {
@@ -177,7 +192,7 @@ export default function RegularityReport() {
     totalScore += licenseAnalysis.score;
 
     // Documentos (25 pontos)
-    const docAnalysis = analyzeDocuments(propertyDocuments);
+    const docAnalysis = analyzeDocuments(propertyDocuments, propertyCarManagements);
     categories.push({
       name: 'Documentação Cadastral',
       icon: FileText,
@@ -188,9 +203,9 @@ export default function RegularityReport() {
     });
     totalScore += docAnalysis.score;
 
-    // Georreferenciamento (15 pontos)
+    // Georreferenciamento (15 pontos) — baseado apenas em registros com status Regular
     const propertyGeo = georeferencing.filter(g => g.property_id === selectedPropertyId);
-    const geoAnalysis = analyzeGeoreferencing(selectedProperty, propertyGeo);
+    const geoAnalysis = analyzeGeoreferencing(null, propertyGeo);
     categories.push({
       name: 'Georreferenciamento',
       icon: MapPin,
@@ -234,21 +249,51 @@ export default function RegularityReport() {
   };
 
   const analyzeLicenses = (licenses) => {
+    // Verifica isenção: licença do tipo "Dispensa de Licenciamento" indica que a atividade está isenta
+    const isExempt = licenses.some(l => l.license_type === 'Dispensa de Licenciamento' && l.status === 'Vigente');
+    if (isExempt) {
+      return {
+        score: 35,
+        status: 'ok',
+        details: ['✓ Atividade isenta de licenciamento (Dispensa cadastrada e vigente)']
+      };
+    }
+
+    // Filtrar apenas licenças ambientais (LP, LI, LO, LAS, LAC, LAU) para avaliação obrigatória
+    const envLicenses = licenses.filter(l => [
+      'LP - Licença Prévia', 'LI - Licença de Instalação', 'LO - Licença de Operação',
+      'LAU - Licença de Autorização de Uso', 'LAS - Licença Ambiental Simplificada',
+      'LAC - Licença Ambiental Corretiva'
+    ].includes(l.license_type));
+
     if (!licenses || licenses.length === 0) {
       return {
         score: 0,
         status: 'critical',
-        details: ['Nenhuma licença cadastrada']
+        details: ['Nenhuma licença cadastrada', '💡 Se a atividade for isenta, cadastre uma "Dispensa de Licenciamento"']
+      };
+    }
+
+    if (envLicenses.length === 0) {
+      // Tem outros documentos técnicos mas não licenças ambientais
+      return {
+        score: 20,
+        status: 'warning',
+        details: [
+          `⚠ Nenhuma licença ambiental (LP/LI/LO/LAS) cadastrada`,
+          `✓ ${licenses.length} documento(s) técnico(s) cadastrado(s)`,
+          '💡 Se isento, cadastre uma "Dispensa de Licenciamento" vigente'
+        ]
       };
     }
 
     const now = new Date();
-    const valid = licenses.filter(l => l.expiry_date && new Date(l.expiry_date) > now);
-    const expired = licenses.filter(l => !l.expiry_date || new Date(l.expiry_date) <= now);
-    const expiringSoon = licenses.filter(l => {
-      if (!l.expiry_date) return false;
+    const valid = envLicenses.filter(l => l.expiry_date && new Date(l.expiry_date) > now);
+    const expired = envLicenses.filter(l => l.expiry_date && new Date(l.expiry_date) <= now && l.status !== 'Em Análise' && l.status !== 'Renovação');
+    const inRenewal = envLicenses.filter(l => l.status === 'Em Análise' || l.status === 'Renovação');
+    const expiringSoon = valid.filter(l => {
       const days = Math.floor((new Date(l.expiry_date) - now) / (1000 * 60 * 60 * 24));
-      return days > 0 && days <= 30;
+      return days <= 30;
     });
 
     const details = [];
@@ -258,7 +303,12 @@ export default function RegularityReport() {
     if (expired.length === 0 && expiringSoon.length === 0) {
       score = 35;
       status = 'ok';
-      details.push(`✓ Todas as ${licenses.length} licenças válidas`);
+      details.push(`✓ Todas as ${envLicenses.length} licenças ambientais válidas`);
+    } else if (expired.length === 0 && inRenewal.length > 0) {
+      score = 25;
+      status = 'warning';
+      details.push(`⚠ ${inRenewal.length} licença(s) em renovação/análise — situação temporariamente regular`);
+      if (valid.length > 0) details.push(`✓ ${valid.length} licença(s) válidas`);
     } else if (expired.length === 0) {
       score = 22;
       status = 'warning';
@@ -274,87 +324,73 @@ export default function RegularityReport() {
     return { score, status, details };
   };
 
-  const analyzeDocuments = (documents) => {
-    if (!documents || documents.length === 0) {
-      return {
-        score: 0,
-        status: 'critical',
-        details: ['Nenhum documento cadastrado']
-      };
-    }
-
-    const hasCAR = documents.some(d => d.document_type === 'CAR');
+  const analyzeDocuments = (documents, carMgmts = []) => {
+    // CAR: verificado via CARManagement (car_number preenchido)
+    const hasCAR = carMgmts.length > 0 && carMgmts.some(c => c.car_number && c.car_number.trim() !== '');
+    // CCIR: verificado nos documentos (sem georreferenciamento — tem categoria própria)
     const hasCCIR = documents.some(d => d.document_type === 'CCIR');
-    const hasGeo = documents.some(d => d.document_type === 'Georreferenciamento');
 
     const details = [];
     let score = 0;
     let status = 'ok';
 
     if (hasCAR) {
-      score += 10;
-      details.push('✓ CAR cadastrado');
+      const carRecord = carMgmts.find(c => c.car_number && c.car_number.trim() !== '');
+      score += 13;
+      details.push(`✓ CAR cadastrado em Gestão do CAR (${carRecord?.car_status || 'registrado'})`);
     } else {
-      details.push('✗ CAR não cadastrado');
+      details.push('✗ CAR não cadastrado em Gestão do CAR');
       status = 'warning';
     }
 
     if (hasCCIR) {
-      score += 8;
+      score += 12;
       details.push('✓ CCIR cadastrado');
     } else {
       details.push('✗ CCIR não cadastrado');
-      status = 'warning';
-    }
-
-    if (hasGeo) {
-      score += 7;
-      details.push('✓ Georreferenciamento cadastrado');
-    } else {
-      details.push('✗ Georreferenciamento não cadastrado');
-      status = 'warning';
+      if (status !== 'critical') status = 'warning';
     }
 
     if (score === 25) status = 'ok';
-    else if (score < 12) status = 'critical';
+    else if (score < 13) status = 'critical';
 
     return { score, status, details };
   };
 
   const analyzeGeoreferencing = (property, geoRecords = []) => {
-    const hasCoordinates = !!property?.coordinates;
-    const hasGeoRecord = geoRecords.length > 0;
+    // Parâmetro: existência de georreferenciamento com status "Regular" em Central da Propriedade
     const regularGeo = geoRecords.find(g => g.status === 'Regular');
-
-    if (!hasCoordinates && !hasGeoRecord) {
-      return {
-        score: 0,
-        status: 'warning',
-        details: ['Coordenadas não cadastradas']
-      };
-    }
+    const pendingGeo = geoRecords.find(g => g.status === 'Pendente' || g.status === 'Em Atualização');
+    const irregularGeo = geoRecords.find(g => g.status === 'Irregular');
 
     if (regularGeo) {
       return {
         score: 15,
         status: 'ok',
-        details: ['✓ Georreferenciamento regular cadastrado']
+        details: ['✓ Georreferenciamento com status Regular cadastrado']
       };
     }
 
-    if (hasGeoRecord) {
-      const geo = geoRecords[0];
+    if (pendingGeo) {
       return {
-        score: 10,
+        score: 8,
         status: 'warning',
-        details: [`⚠ Georreferenciamento ${geo.status || 'cadastrado'} (não regular)`]
+        details: [`⚠ Georreferenciamento cadastrado com status: ${pendingGeo.status}`]
+      };
+    }
+
+    if (irregularGeo) {
+      return {
+        score: 2,
+        status: 'critical',
+        details: ['✗ Georreferenciamento cadastrado como Irregular']
       };
     }
 
     return {
-      score: 15,
-      status: 'ok',
-      details: ['✓ Coordenadas GPS cadastradas']
+      score: 0,
+      status: 'warning',
+      details: ['✗ Nenhum georreferenciamento com status Regular cadastrado em Central da Propriedade']
     };
   };
 
@@ -367,24 +403,32 @@ export default function RegularityReport() {
       };
     }
 
+    const RESOLVED_STATUSES = ['Suspenso', 'Arquivado', 'Finalizado', 'Concluído', 'Encerrado'];
     const active = processes.filter(p => p.status === 'Em Andamento');
-    
+    const temporarilyOk = processes.filter(p => RESOLVED_STATUSES.includes(p.status));
+    const criminalActive = active.filter(p => p.process_type === 'Criminal');
+    const adminCivilActive = active.filter(p => p.process_type !== 'Criminal');
+
     if (active.length === 0) {
-      return {
-        score: 10,
-        status: 'ok',
-        details: [`✓ ${processes.length} processo(s) arquivado(s) ou finalizado(s)`]
-      };
+      const details = [`✓ ${processes.length} processo(s) cadastrado(s)`];
+      if (temporarilyOk.length > 0) {
+        details.push(`✓ Todos suspensos/arquivados/finalizados — situação temporariamente regular`);
+      }
+      return { score: 10, status: 'ok', details };
     }
 
-    return {
-      score: 4,
-      status: 'warning',
-      details: [
-        `⚠ ${active.length} processo(s) ativo(s)`,
-        `${processes.length - active.length} processo(s) encerrado(s)`
-      ]
-    };
+    if (criminalActive.length > 0) {
+      const details = [`✗ ${criminalActive.length} processo(s) criminal(is) em andamento`];
+      if (adminCivilActive.length > 0) details.push(`⚠ ${adminCivilActive.length} processo(s) administrativo(s)/civil(is) em andamento`);
+      if (temporarilyOk.length > 0) details.push(`✓ ${temporarilyOk.length} processo(s) suspenso(s)/finalizado(s)`);
+      return { score: 1, status: 'critical', details };
+    }
+
+    const details = [`⚠ ${adminCivilActive.length} processo(s) administrativo(s)/civil(is) em andamento`];
+    if (temporarilyOk.length > 0) {
+      details.push(`✓ ${temporarilyOk.length} processo(s) suspenso(s)/finalizado(s) — temporariamente regular`);
+    }
+    return { score: 4, status: 'warning', details };
   };
 
   const analyzeAlerts = (alerts) => {

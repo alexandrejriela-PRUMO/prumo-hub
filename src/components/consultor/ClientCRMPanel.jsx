@@ -617,10 +617,10 @@ export default function ClientCRMPanel({ property, onClose }) {
                               const acc = accounts.find(a => a.id === v);
                               setNewService(p => ({ ...p, account_id: v || '', account_name: acc?.name || '' }));
                             }}>
-                              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
+                              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder={accounts.length === 0 ? "Nenhuma conta cadastrada" : "Selecione a conta"} /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value={null}>Sem conta</SelectItem>
-                                {accounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>)}
+                                {accounts.length > 0 ? accounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>) : <SelectItem value={null}>Nenhuma conta disponível</SelectItem>}
                               </SelectContent>
                             </Select>
                           </div>

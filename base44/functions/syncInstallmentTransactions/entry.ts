@@ -38,8 +38,50 @@ Deno.serve(async (req) => {
     });
 
     for (const service of services) {
+      console.log(`[syncInstallments] Processando serviço: ${service.name}, tipo: ${service.payment_type}, received: ${service.received}`);
+      
+      // Processar serviços à vista recebidos
+      if (service.payment_type === 'avista' && service.received && service.received_at) {
+        const dateStr = service.received_at.split('T')[0];
+        const description = `${service.name}`;
+
+        const exists = existingExpenses.some(exp => 
+          exp.description === description && 
+          exp.date === dateStr &&
+          Math.abs(parseFloat(exp.amount) - service.value) < 0.01
+        );
+
+        if (!exists) {
+          let accountName = service.account_name || '';
+          let accountId = service.account_id || '';
+          
+          if (accountId && !accountName) {
+            const acc = accounts.find(a => a.id === accountId);
+            accountName = acc?.name || '';
+          }
+
+          const transaction = await base44.entities.Expense.create({
+            consultor_email,
+            description,
+            amount: service.value,
+            date: dateStr,
+            competencia: dateStr,
+            transaction_type: 'receita',
+            category: 'Cobran\u00e7a de Cliente (Manual)',
+            account_id: accountId,
+            account_name: accountName,
+            client_name: crm.client_name,
+            client_property_id: clientPropertyId,
+            status: 'Pago',
+            payment_method: service.payment_method || 'Pix',
+            notes: `Serviço "${service.name}"`,
+          });
+          createdTransactions.push(transaction);
+        }
+      }
+      
+      // Processar serviços parcelados
       const installments = service.installments_data || service.installments || [];
-      console.log(`[syncInstallments] Processando serviço: ${service.name}, tipo: ${service.payment_type}, parcelas: ${installments.length}`);
       if (service.payment_type === 'parcelado' && installments.length > 0) {
         for (let idx = 0; idx < installments.length; idx++) {
           const inst = installments[idx];

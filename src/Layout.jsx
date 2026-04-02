@@ -163,6 +163,7 @@ const equipeNavItems = [
     name: 'Central da Propriedade',
     icon: Building,
     children: [
+      { name: 'Visão Geral', page: 'PropertyCentral', icon: Building2 },
       { name: 'Documentos', page: 'DocumentsHub', icon: FileText },
       { name: 'Licenças e Projetos', page: 'Licenses', icon: FileCheck },
       { name: 'Gestão do CAR', page: 'CARModule', icon: TreePine },
@@ -202,12 +203,20 @@ const equipeNavItems = [
 // Cliente do consultor (Enterprise): somente leitura/download, sem IA, notificações ou equipe
 const clientConsultorNavItems = [
   { name: 'Minha Propriedade', page: 'ClientConsultorPortal', icon: Building2 },
-  { name: 'Documentos', page: 'DocumentsHub', icon: FileText },
-  { name: 'Licenças e Projetos', page: 'Licenses', icon: FileCheck },
-  { name: 'Processos', page: 'Processes', icon: Scale },
-  { name: 'Alertas de Infrações', page: 'EnvironmentalAlerts', icon: AlertTriangle },
-  { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: FileCheck },
-  { name: 'PRAD - Recuperação de Área', page: 'PRAD', icon: Leaf },
+  {
+    name: 'Central da Propriedade',
+    icon: Building,
+    children: [
+      { name: 'Visão Geral', page: 'PropertyCentral', icon: Building2 },
+      { name: 'Documentos', page: 'DocumentsHub', icon: FileText },
+      { name: 'Licenças e Projetos', page: 'Licenses', icon: FileCheck },
+      { name: 'Processos', page: 'Processes', icon: Scale },
+      { name: 'Alertas de Infrações', page: 'EnvironmentalAlerts', icon: AlertTriangle },
+      { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: FileCheck },
+      { name: 'PRAD - Recuperação de Área', page: 'PRAD', icon: Leaf },
+      { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
+    ]
+  },
   { 
     name: 'Agricultura de Precisão', 
     icon: Sparkles,
@@ -226,7 +235,6 @@ const clientConsultorNavItems = [
       { name: 'Servidão Ambiental', page: 'EnvironmentalEasements', icon: Shield },
     ]
   },
-  { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
 ];
 
 // Consultor: itens adicionais abaixo dos fixos (consultorNavItems)
@@ -235,6 +243,7 @@ const navItems = [
     name: 'Central da Propriedade',
     icon: Building,
     children: [
+      { name: 'Visão Geral', page: 'PropertyCentral', icon: Building2 },
       { name: 'Documentos', page: 'DocumentsHub', icon: FileText },
       { name: 'Licenças e Projetos', page: 'Licenses', icon: FileCheck },
       { name: 'Gestão do CAR', page: 'CARModule', icon: TreePine },
@@ -304,7 +313,7 @@ export default function Layout({ children, currentPageName }) {
   // Auto-expand menus that contain the current active page
   useEffect(() => {
     if (!currentPageName) return;
-    const allMenus = [...consultorNavItems, ...equipeNavItems, ...navItems, ...produtorNavItems];
+    const allMenus = [...consultorNavItems, ...equipeNavItems, ...navItems, ...produtorNavItems, ...clientConsultorNavItems];
     allMenus.forEach(item => {
       if (item.children && item.children.some(child => child.page === currentPageName)) {
         setExpandedMenus(prev => ({ ...prev, [item.name]: true }));

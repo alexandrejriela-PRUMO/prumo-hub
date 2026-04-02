@@ -14,7 +14,6 @@ import {
   CheckCircle2, 
   AlertTriangle, 
   AlertCircle,
-  ShieldAlert,
   Download,
   Calendar,
   User,
@@ -196,7 +195,7 @@ export default function RegularityReport() {
   const propertyAlerts = environmentalAlerts.filter(a => a.property_id === selectedPropertyId);
 
   // ── Pesos alinhados com o Termômetro ─────────────────────────────────────
-  // Licença: 40 | CAR: 20 | Docs(CCIR+ITR): 10 | Geo: 8 | Processos: 12 | PRAD: 10
+  // Licença: 40 | CAR: 20 | Docs(CCIR+ITR): 10 | Geo: 5 | Processos: 15 | PRAD: 10
   const calculateDetailedScore = () => {
     const categories = [];
     let totalScore = 0;
@@ -281,59 +280,44 @@ export default function RegularityReport() {
     categories.push({ name: 'Documentos Cadastrais (CCIR/ITR)', icon: FileText, weight: 10, score: docScore, status: docStatus, details: docDetails });
     totalScore += docScore;
 
-    // ── 4. GEORREFERENCIAMENTO (8pts) ─────────────────────────────────────
+    // ── 4. GEORREFERENCIAMENTO (5pts) ─────────────────────────────────────
     const regularGeo = propertyGeo.find(g => g.status === 'Regular');
     const pendingGeo = propertyGeo.find(g => g.status === 'Pendente' || g.status === 'Em Atualização');
     const irregularGeo = propertyGeo.find(g => g.status === 'Irregular');
     let geoScore = 0; let geoStatus = 'warning'; let geoDetails = [];
-    if (regularGeo) { geoScore = 8; geoStatus = 'ok'; geoDetails = ['✓ Georreferenciamento regular']; }
-    else if (pendingGeo) { geoScore = 4; geoStatus = 'warning'; geoDetails = [`⚠ Georreferenciamento ${pendingGeo.status}`]; }
+    if (regularGeo) { geoScore = 5; geoStatus = 'ok'; geoDetails = ['✓ Georreferenciamento regular']; }
+    else if (pendingGeo) { geoScore = 2; geoStatus = 'warning'; geoDetails = [`⚠ Georreferenciamento ${pendingGeo.status}`]; }
     else if (irregularGeo) { geoScore = 1; geoStatus = 'warning'; geoDetails = ['⚠ Georreferenciamento irregular']; }
     else { geoDetails = ['⚠ Nenhum georreferenciamento com status Regular cadastrado']; }
-    categories.push({ name: 'Georreferenciamento', icon: MapPin, weight: 8, score: geoScore, status: geoStatus, details: geoDetails });
+    categories.push({ name: 'Georreferenciamento', icon: MapPin, weight: 5, score: geoScore, status: geoStatus, details: geoDetails });
     totalScore += geoScore;
 
-    // ── 5. PROCESSOS (12pts) ──────────────────────────────────────────────
+    // ── 5. PROCESSOS (15pts) ──────────────────────────────────────────────
     const RESOLVED = ['Suspenso', 'Arquivado', 'Finalizado'];
-    const CIVIL_RESOLVED = ['TAC firmado', 'Indenização paga', 'Acordo regular'];
-    const adminProcs = propertyProcesses.filter(p => p.process_type === 'Administrativo');
-    const civilInqs = propertyProcesses.filter(p => p.process_type === 'Civil' && p.is_civil_inquiry === true);
-    const adminActive = adminProcs.filter(p => p.status === 'Em Andamento');
-    const civilUnresolved = civilInqs.filter(p => p.civil_inquiry_resolution === 'Não resolvido' || !p.civil_inquiry_resolution);
-    const civilResolved = civilInqs.filter(p => CIVIL_RESOLVED.includes(p.civil_inquiry_resolution));
-    let procScore = 12; const procDetails = [];
-    if (propertyProcesses.filter(p => p.process_type !== 'Criminal').length === 0) {
-      procDetails.push('✓ Sem processos administrativos ou inquéritos civis');
+    const active = propertyProcesses.filter(p => p.status === 'Em Andamento');
+    const resolved = propertyProcesses.filter(p => RESOLVED.includes(p.status));
+    let procScore = 15; const procDetails = [];
+    if (propertyProcesses.length === 0) {
+      procDetails.push('✓ Sem processos registrados');
+    } else if (active.length === 0) {
+      procDetails.push(`✓ ${propertyProcesses.length} processo(s) — todos suspensos/arquivados/finalizados`);
     } else {
-      const unpaid = adminActive.filter(p => !p.fine_paid);
-      if (unpaid.length > 0) {
-        procScore -= 12 * 0.5 * Math.min(unpaid.length / (adminProcs.length || 1), 1);
-        procDetails.push(`⚠ ${unpaid.length} proc. administrativo(s) em andamento`);
+      const criminal = active.filter(p => p.process_type === 'Criminal');
+      const adminCivil = active.filter(p => p.process_type !== 'Criminal');
+      if (criminal.length > 0) {
+        procScore = Math.round(15 * 0.05);
+        procDetails.push(`✗ ${criminal.length} processo(s) criminal(is) em andamento`);
+        if (adminCivil.length > 0) procDetails.push(`⚠ ${adminCivil.length} processo(s) administrativo(s)/civil(is) em andamento`);
+      } else {
+        procScore = Math.round(15 * 0.35);
+        procDetails.push(`⚠ ${adminCivil.length} processo(s) administrativo(s)/civil(is) em andamento`);
       }
-      if (civilUnresolved.length > 0) {
-        procScore -= 12 * 0.4 * Math.min(civilUnresolved.length, 1);
-        procDetails.push(`✗ ${civilUnresolved.length} inquérito(s) civil(is) não resolvido(s)`);
-      }
-      if (civilResolved.length > 0) procDetails.push(`✓ ${civilResolved.length} inquérito(s) civil(is) resolvido(s)`);
-      const positiveAdmin = adminProcs.filter(p => RESOLVED.includes(p.status) || p.fine_paid);
-      if (positiveAdmin.length > 0) procDetails.push(`✓ ${positiveAdmin.length} administrativo(s) encerrado(s)/multa paga`);
+      if (resolved.length > 0) procDetails.push(`✓ ${resolved.length} processo(s) encerrado(s)`);
     }
     procScore = Math.max(0, Math.round(procScore));
-    const procHasProblem = adminActive.some(p => !p.fine_paid) || civilUnresolved.length > 0;
-    const procStatus = procHasProblem ? (civilUnresolved.length > 0 ? 'critical' : 'warning') : 'ok';
-    categories.push({ name: 'Situação Processual', icon: Scale, weight: 12, score: procScore, status: procStatus, details: procDetails });
+    const procStatus = active.length === 0 ? 'ok' : active.some(p => p.process_type === 'Criminal') ? 'critical' : 'warning';
+    categories.push({ name: 'Situação Processual', icon: Scale, weight: 15, score: procScore, status: procStatus, details: procDetails });
     totalScore += procScore;
-
-    // ── 6. EMBARGO (penalidade) ───────────────────────────────────────────
-    const adminWithEmbargo = adminProcs.filter(p => p.has_embargo === true);
-    const embargoNotRespected = adminWithEmbargo.filter(p => p.embargo_respected === false);
-    if (embargoNotRespected.length > 0) {
-      const penalty = 10 * embargoNotRespected.length;
-      totalScore = Math.max(0, totalScore - penalty);
-      categories.push({ name: 'Embargo', icon: ShieldAlert, weight: 0, score: -penalty, status: 'critical', details: [`✗ ${embargoNotRespected.length} embargo(s) NÃO respeitado(s) — penalidade -${penalty} pts`, 'Risco grave de autuação adicional'] });
-    } else if (adminWithEmbargo.length > 0) {
-      categories.push({ name: 'Embargo', icon: ShieldAlert, weight: 0, score: 0, status: 'ok', details: [`✓ ${adminWithEmbargo.length} embargo(s) sendo respeitado(s)`] });
-    }
 
     // ── 7. PRAD (10pts) ───────────────────────────────────────────────────
     if (propertyPrads.length > 0) {
@@ -360,7 +344,7 @@ export default function RegularityReport() {
       totalScore += pradScore;
     }
 
-    const maxScore = 40 + 20 + 10 + 8 + 12 + (propertyPrads.length > 0 ? 10 : 0);
+    const maxScore = 40 + 20 + 10 + 5 + 15 + (propertyPrads.length > 0 ? 10 : 0);
     const percentage = maxScore > 0 ? Math.min(100, Math.round((totalScore / maxScore) * 100)) : 0;
     return { percentage, categories };
   };

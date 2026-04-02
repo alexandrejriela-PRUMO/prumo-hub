@@ -102,7 +102,14 @@ export default function ClientFinancialSummary({ client }) {
       let received_at = null;
       if (editForm.payment_type === 'parcelado') {
         received = installments_data.length > 0 && installments_data.every(inst => inst.received);
-        if (received) received_at = new Date().toISOString();
+        if (received) {
+          // Usar a data da última parcela recebida
+          const lastReceivedDate = installments_data
+            .filter(inst => inst.received && inst.received_at)
+            .map(inst => new Date(inst.received_at).getTime())
+            .sort((a, b) => b - a)[0];
+          received_at = lastReceivedDate ? new Date(lastReceivedDate).toISOString() : new Date().toISOString();
+        }
       } else {
         received = editForm.received;
         received_at = editForm.received && editForm.received_at
@@ -141,7 +148,14 @@ export default function ClientFinancialSummary({ client }) {
     let received_at = null;
     if (newService.payment_type === 'parcelado') {
       received = installments_data.length > 0 && installments_data.every(inst => inst.received);
-      if (received) received_at = new Date().toISOString();
+      if (received) {
+        // Usar a data da última parcela recebida
+        const lastReceivedDate = installments_data
+          .filter(inst => inst.received && inst.received_at)
+          .map(inst => new Date(inst.received_at).getTime())
+          .sort((a, b) => b - a)[0];
+        received_at = lastReceivedDate ? new Date(lastReceivedDate).toISOString() : new Date().toISOString();
+      }
     } else {
       received = newService.received;
       received_at = newService.received && newService.received_at

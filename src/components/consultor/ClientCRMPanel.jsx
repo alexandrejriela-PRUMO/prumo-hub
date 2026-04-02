@@ -241,10 +241,26 @@ export default function ClientCRMPanel({ property, onClose }) {
   };
 
   const startEditService = (service, index) => {
-    setEditingServiceIndex(index);
-    setNewService({ name: service.name, status: service.status, value: service.value?.toString() || '', notes: service.notes || '', payment_type: service.payment_type || 'avista', payment_method: service.payment_method || 'Pix', installments: service.installments || '', start_date: service.start_date || '', due_dates: service.due_dates || [], received: service.received || false, received_at: service.received_at ? service.received_at.split('T')[0] : '', account_id: service.account_id || '', account_name: service.account_name || '' });
-    setShowServiceForm(true);
-  };
+     setEditingServiceIndex(index);
+     const installmentsData = service.installments_data || [];
+     const duesDates = installmentsData.map(inst => inst.due_date || '');
+     setNewService({ 
+       name: service.name, 
+       status: service.status, 
+       value: service.value?.toString() || '', 
+       notes: service.notes || '', 
+       payment_type: service.payment_type || 'avista', 
+       payment_method: service.payment_method || 'Pix', 
+       installments: installmentsData.length?.toString() || '', 
+       start_date: service.start_date || '', 
+       due_dates: duesDates, 
+       received: service.received || false, 
+       received_at: service.received_at ? service.received_at.split('T')[0] : '', 
+       account_id: service.account_id || '', 
+       account_name: service.account_name || '' 
+     });
+     setShowServiceForm(true);
+   };
 
   // ── Sincronização Google Calendar ────────────────────────────────────────
   const syncToGoogleCalendar = async (interaction) => {

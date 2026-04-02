@@ -483,10 +483,11 @@ export default function ClientFinancialSummary({ client }) {
           <CardContent className="p-0">
             <div className="divide-y divide-gray-100">
               {services.map((service, i) => {
-                const totalValue = parseFloat(service.value) || 0;
-                const isParcelado = service.payment_type === 'parcelado';
-                const numParcelas = isParcelado ? parseInt(service.installments) || 1 : 1;
-                const installmentValue = isParcelado ? totalValue / numParcelas : null;
+                 const totalValue = parseFloat(service.value) || 0;
+                 const isParcelado = service.payment_type === 'parcelado';
+                 const installmentsArray = Array.isArray(service.installments) ? service.installments : [];
+                 const numParcelas = isParcelado ? installmentsArray.length || 1 : 1;
+                 const installmentValue = isParcelado ? totalValue / numParcelas : null;
 
                 return (
                    <div key={i} className={`px-4 py-3 ${service.received ? 'bg-green-50/40' : service.status === 'Cancelado' ? 'opacity-50' : ''}`}>
@@ -642,9 +643,9 @@ export default function ClientFinancialSummary({ client }) {
                           )}
                         </div>
                       </div>
-                      {isParcelado && service.installments?.length > 0 && (
+                      {isParcelado && installmentsArray.length > 0 && (
                         <div className="mt-1.5 space-y-1.5">
-                          {service.installments.map((inst, pi) => (
+                          {installmentsArray.map((inst, pi) => (
                             <div key={pi} className="text-xs px-2 py-1 bg-purple-50 text-purple-700 rounded-md flex items-center justify-between gap-2">
                               <span>
                                 Parcela {inst.number}: {new Date(inst.due_date + 'T12:00:00').toLocaleDateString('pt-BR')}

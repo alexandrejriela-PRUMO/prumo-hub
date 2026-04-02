@@ -53,7 +53,7 @@ export default function ClientCRMPanel({ property, onClose }) {
   const [editingServiceIndex, setEditingServiceIndex] = useState(null);
   const [newInteraction, setNewInteraction] = useState({ type: 'Ligação', title: '', description: '', next_action: '', next_action_date: '', responsible_email: '', responsible_name: '' });
   const [newTask, setNewTask] = useState({ title: '', due_date: '', priority: 'Média', responsible_email: '', responsible_name: '' });
-  const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', received: false, account_id: '', account_name: '' });
+  const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], received: false, received_at: '', account_id: '', account_name: '' });
 
   // ── ID do ClientCRM — é a chave única para todas as operações ────────────
   // property.id É o id do registro ClientCRM (passado pelo CRMBoard ou ConsultorClients)
@@ -205,16 +205,17 @@ export default function ClientCRMPanel({ property, onClose }) {
   const addService = () => {
     if (!newService.name) { toast.error('Informe o nome do serviço.'); return; }
     const serviceValue = parseFloat(newService.value) || 0;
+    const received_at = newService.received && newService.received_at
+      ? new Date(newService.received_at + 'T12:00:00').toISOString()
+      : (newService.received ? new Date().toISOString() : null);
     let services;
     if (editingServiceIndex !== null) {
-      const prev = activeCRM?.services?.[editingServiceIndex];
-      const received_at = newService.received && !prev?.received ? new Date().toISOString() : (newService.received ? prev?.received_at || new Date().toISOString() : null);
       services = (activeCRM?.services || []).map((s, i) => i === editingServiceIndex ? { ...s, ...newService, value: serviceValue, received_at } : s);
     } else {
-      services = [...(activeCRM?.services || []), { ...newService, value: serviceValue, received_at: newService.received ? new Date().toISOString() : null }];
+      services = [...(activeCRM?.services || []), { ...newService, value: serviceValue, received_at }];
     }
     updateCRM.mutate({ services });
-    setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', received: false, account_id: '', account_name: '' });
+    setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], received: false, received_at: '', account_id: '', account_name: '' });
     setShowServiceForm(false); setEditingServiceIndex(null);
     toast.success(editingServiceIndex !== null ? 'Serviço atualizado!' : 'Serviço adicionado!');
   };
@@ -226,7 +227,7 @@ export default function ClientCRMPanel({ property, onClose }) {
 
   const startEditService = (service, index) => {
     setEditingServiceIndex(index);
-    setNewService({ name: service.name, status: service.status, value: service.value?.toString() || '', notes: service.notes || '', payment_type: service.payment_type || 'avista', payment_method: service.payment_method || 'Pix', installments: service.installments || '', start_date: service.start_date || '', received: service.received || false, account_id: service.account_id || '', account_name: service.account_name || '' });
+    setNewService({ name: service.name, status: service.status, value: service.value?.toString() || '', notes: service.notes || '', payment_type: service.payment_type || 'avista', payment_method: service.payment_method || 'Pix', installments: service.installments || '', start_date: service.start_date || '', due_dates: service.due_dates || [], received: service.received || false, received_at: service.received_at ? service.received_at.split('T')[0] : '', account_id: service.account_id || '', account_name: service.account_name || '' });
     setShowServiceForm(true);
   };
 
@@ -471,7 +472,7 @@ export default function ClientCRMPanel({ property, onClose }) {
 
         {/* ── Serviços ── */}
         <TabsContent value="services" className="space-y-3 mt-4">
-          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto" onClick={() => { setEditingServiceIndex(null); setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', received: false }); setShowServiceForm(true); }}>
+          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto" onClick={() => { setEditingServiceIndex(null); setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], received: false, received_at: '', account_id: '', account_name: '' }); setShowServiceForm(true); }}>
             <Plus className="w-3 h-3 mr-1" /> Novo Serviço
           </Button>
 
@@ -496,12 +497,8 @@ export default function ClientCRMPanel({ property, onClose }) {
                     <Input className="h-9 text-sm" type="number" value={newService.value} onChange={e => setNewService(p => ({ ...p, value: e.target.value }))} placeholder="0,00" />
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-600 mb-1 block">Data de Início</Label>
-                    <Input className="h-9 text-sm" type="date" value={newService.start_date} onChange={e => setNewService(p => ({ ...p, start_date: e.target.value }))} />
-                  </div>
-                  <div>
                     <Label className="text-xs text-gray-600 mb-1 block">Tipo de Pagamento</Label>
-                    <Select value={newService.payment_type} onValueChange={v => setNewService(p => ({ ...p, payment_type: v }))}>
+                    <Select value={newService.payment_type} onValueChange={v => setNewService(p => ({ ...p, payment_type: v, due_dates: [], installments: '' }))}>
                       <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="avista">À Vista</SelectItem>
@@ -516,16 +513,51 @@ export default function ClientCRMPanel({ property, onClose }) {
                       <SelectContent>{['Pix','Transferência','Boleto','Cartão de Crédito','Cartão de Débito','Dinheiro','Cheque','Outro'].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
-                  {newService.payment_type === 'parcelado' && (
+                  {newService.payment_type === 'avista' && (
                     <div>
-                      <Label className="text-xs text-gray-600 mb-1 block">Nº de Parcelas</Label>
-                      <Input className="h-9 text-sm" type="number" min="2" value={newService.installments} onChange={e => setNewService(p => ({ ...p, installments: e.target.value }))} placeholder="Ex: 3" />
+                      <Label className="text-xs text-gray-600 mb-1 block">Data de Vencimento</Label>
+                      <Input className="h-9 text-sm" type="date" value={newService.start_date} onChange={e => setNewService(p => ({ ...p, start_date: e.target.value }))} />
                     </div>
+                  )}
+                  {newService.payment_type === 'parcelado' && (
+                    <>
+                      <div>
+                        <Label className="text-xs text-gray-600 mb-1 block">Nº de Parcelas</Label>
+                        <Input className="h-9 text-sm" type="number" min="2" value={newService.installments} onChange={e => {
+                          const n = parseInt(e.target.value) || 0;
+                          const dates = Array.from({ length: n }, (_, i) => newService.due_dates?.[i] || '');
+                          setNewService(p => ({ ...p, installments: e.target.value, due_dates: dates }));
+                        }} placeholder="Ex: 3" />
+                      </div>
+                      {parseInt(newService.installments) > 0 && (
+                        <div className="sm:col-span-2 space-y-2">
+                          <Label className="text-xs text-gray-600 block">Datas de Vencimento das Parcelas</Label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {Array.from({ length: parseInt(newService.installments) }, (_, i) => (
+                              <div key={i}>
+                                <Label className="text-xs text-gray-400 mb-1 block">Parcela {i + 1}</Label>
+                                <Input className="h-8 text-xs" type="date" value={newService.due_dates?.[i] || ''} onChange={e => {
+                                  const dates = [...(newService.due_dates || [])];
+                                  dates[i] = e.target.value;
+                                  setNewService(p => ({ ...p, due_dates: dates }));
+                                }} />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                   <div className="sm:col-span-2 flex items-center gap-2 mt-1">
                     <input type="checkbox" id="svc-received" checked={newService.received} onChange={e => setNewService(p => ({ ...p, received: e.target.checked }))} className="w-4 h-4 accent-emerald-600" />
                     <label htmlFor="svc-received" className="text-sm text-gray-700 cursor-pointer">Valor já recebido</label>
                   </div>
+                  {newService.received && (
+                    <div>
+                      <Label className="text-xs text-gray-600 mb-1 block">Data do Recebimento</Label>
+                      <Input className="h-9 text-sm" type="date" value={newService.received_at} onChange={e => setNewService(p => ({ ...p, received_at: e.target.value }))} />
+                    </div>
+                  )}
                   <div>
                     <Label className="text-xs text-gray-600 mb-1 block">Conta Financeira</Label>
                     <Select value={newService.account_id || ''} onValueChange={v => { const acc = accounts.find(a => a.id === v); setNewService(p => ({ ...p, account_id: v || '', account_name: acc?.name || '' })); }}>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,9 +45,16 @@ export default function ClientFinancialSummary({ client }) {
     },
   });
 
+  const [receivedDateInput, setReceivedDateInput] = React.useState({});
+
   const toggleReceived = (index) => {
+     const svc = crm?.services?.[index];
+     const nowReceived = !svc?.received;
+     const received_at = nowReceived
+       ? (receivedDateInput[index] ? new Date(receivedDateInput[index] + 'T12:00:00').toISOString() : new Date().toISOString())
+       : null;
      const services = (crm?.services || []).map((s, i) =>
-       i === index ? { ...s, received: !s.received, received_at: !s.received ? new Date().toISOString() : null } : s
+       i === index ? { ...s, received: nowReceived, received_at } : s
      );
      upsertCRM.mutate({ services }, {
        onSuccess: () => {
@@ -186,7 +193,9 @@ export default function ClientFinancialSummary({ client }) {
                         <div>
                           <p className="text-sm font-semibold text-gray-900">{service.name}</p>
                           {service.notes && <p className="text-xs text-gray-500">{service.notes}</p>}
-                          {service.start_date && <p className="text-xs text-gray-400">Início: {new Date(service.start_date).toLocaleDateString('pt-BR')}</p>}
+                          {!isParcelado && service.start_date && (
+                            <p className="text-xs text-gray-400">Vencimento: {new Date(service.start_date + 'T12:00:00').toLocaleDateString('pt-BR')}</p>
+                          )}
                         </div>
                         <div className="text-right flex-shrink-0">
                           <p className="text-sm font-bold text-gray-900">
@@ -199,6 +208,15 @@ export default function ClientFinancialSummary({ client }) {
                           )}
                         </div>
                       </div>
+                      {isParcelado && service.due_dates?.some(d => d) && (
+                        <div className="mt-1.5 flex flex-wrap gap-1.5">
+                          {service.due_dates.map((d, pi) => d ? (
+                            <span key={pi} className="text-xs px-2 py-0.5 bg-purple-50 text-purple-700 rounded-md">
+                              {pi + 1}ª: {new Date(d + 'T12:00:00').toLocaleDateString('pt-BR')}
+                            </span>
+                          ) : null)}
+                        </div>
+                      )}
                       <div className="flex flex-wrap items-center gap-2 mt-2">
                         <Badge className={`${STATUS_COLOR[service.status] || 'bg-gray-100 text-gray-700'} border-0 text-xs`}>
                           {service.status}
@@ -210,17 +228,28 @@ export default function ClientFinancialSummary({ client }) {
                           ? <span className="text-xs px-2 py-0.5 bg-purple-50 text-purple-600 rounded-md font-medium">📊 {numParcelas}x Parcelado</span>
                           : <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md">À Vista</span>
                         }
-                        {service.received && (
-                          <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-md font-medium">✓ Totalmente Recebido</span>
+                        {service.received ? (
+                          <>
+                            <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-md font-medium">
+                              ✓ Recebido{service.received_at ? ` em ${new Date(service.received_at).toLocaleDateString('pt-BR')}` : ''}
+                            </span>
+                            <Button size="sm" variant="outline" className="h-6 text-xs px-2 border-green-300 text-green-700 hover:bg-green-50" onClick={() => toggleReceived(i)}>
+                              Desfazer
+                            </Button>
+                          </>
+                        ) : (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <input
+                              type="date"
+                              className="h-7 text-xs border border-gray-300 rounded px-1.5 text-gray-600"
+                              value={receivedDateInput[i] || ''}
+                              onChange={e => setReceivedDateInput(prev => ({ ...prev, [i]: e.target.value }))}
+                            />
+                            <Button size="sm" className="h-7 text-xs px-2 bg-amber-500 hover:bg-amber-600 text-white" onClick={() => toggleReceived(i)}>
+                              Marcar Recebido
+                            </Button>
+                          </div>
                         )}
-                        <Button
-                          size="sm"
-                          variant={service.received ? 'outline' : 'default'}
-                          className={`h-6 text-xs px-2 ${service.received ? 'border-green-300 text-green-700 hover:bg-green-50' : 'bg-amber-500 hover:bg-amber-600 text-white'}`}
-                          onClick={() => toggleReceived(i)}
-                        >
-                          {service.received ? '✓ Marcar como não recebido' : 'Marcar Tudo Recebido'}
-                        </Button>
                       </div>
                     </div>
                   </div>

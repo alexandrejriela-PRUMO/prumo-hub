@@ -354,78 +354,59 @@ function ChecklistTaskItem({
   };
 
   return (
-    <Card className={`mb-2 transition-all overflow-hidden ${isOverdue ? 'border-red-400 border-l-4' : 'border-gray-200'}`}>
-      {/* Header clicável */}
+    <div className={`rounded-lg border bg-white transition-all ${isOverdue ? 'border-l-4 border-l-red-400 border-r-gray-200 border-t-gray-200 border-b-gray-200' : 'border-gray-200'}`}>
+      {/* Header */}
       <div
-        className="flex items-start justify-between p-3 cursor-pointer hover:bg-gray-50 transition-colors"
+        className="flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-gray-50 transition-colors rounded-lg"
         onClick={onToggleExpand}
       >
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <ChevronDown className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
-            <span className="font-semibold text-sm text-gray-800">{item.title}</span>
-            <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${statusColors[item.status] || statusColors['Pendente']}`}>
-              {item.status}
-            </span>
-            {item.priority && (
-              <span className={`text-xs font-bold ${priorityColors[item.priority]}`}>
-                {item.priority === 'Alta' ? '●' : item.priority === 'Média' ? '◐' : '○'} {item.priority}
-              </span>
-            )}
-            {item.responsible_name && (
-              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                <User className="w-2.5 h-2.5" />{item.responsible_name}
-              </span>
-            )}
-            {item.due_date && (
-              <span className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 ${isOverdue ? 'bg-red-100 text-red-700 font-semibold' : 'bg-gray-100 text-gray-600'}`}>
-                <Calendar className="w-2.5 h-2.5" />
-                {new Date(item.due_date + 'T00:00:00').toLocaleDateString('pt-BR')}
-                {isOverdue && ' ⚠'}
-              </span>
-            )}
-            {item.thread?.length > 0 && (
-              <span className="text-xs text-emerald-600 flex items-center gap-0.5">
-                <MessageSquare className="w-3 h-3" />{item.thread.length}
-              </span>
-            )}
-          </div>
-          {item.description && (
-            <p className="text-xs text-gray-400 ml-6 mt-0.5 truncate">{item.description}</p>
-          )}
-        </div>
+        {/* Status como checkbox visual */}
         <button
-          onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="ml-2 text-gray-300 hover:text-red-500 transition-colors p-1"
+          onClick={(e) => { e.stopPropagation(); onStatusChange(item.status === 'Concluído' ? 'Pendente' : 'Concluído'); }}
+          className="flex-shrink-0"
         >
-          <Trash2 className="w-3.5 h-3.5" />
+          {item.status === 'Concluído'
+            ? <CheckCircle2 className="w-4 h-4 text-green-500" />
+            : <div className="w-4 h-4 rounded-full border-2 border-gray-300 hover:border-emerald-400 transition-colors" />
+          }
+        </button>
+
+        <span className={`flex-1 text-sm font-medium truncate ${item.status === 'Concluído' ? 'line-through text-gray-400' : 'text-gray-800'}`}>
+          {item.title}
+        </span>
+
+        {/* Badges compactos */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {item.priority === 'Alta' && <span className="text-red-500 text-xs font-bold">●</span>}
+          {item.priority === 'Média' && <span className="text-orange-400 text-xs">◐</span>}
+          {item.due_date && (
+            <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${isOverdue ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
+              {new Date(item.due_date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+            </span>
+          )}
+          {item.thread?.length > 0 && (
+            <span className="text-[10px] text-emerald-600 flex items-center gap-0.5">
+              <MessageSquare className="w-2.5 h-2.5" />{item.thread.length}
+            </span>
+          )}
+          <ChevronDown className={`w-3.5 h-3.5 text-gray-300 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+        </div>
+
+        <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-gray-200 hover:text-red-400 transition-colors p-0.5 flex-shrink-0">
+          <Trash2 className="w-3 h-3" />
         </button>
       </div>
 
       {/* Conteúdo expandido */}
       {isExpanded && (
-        <div className="border-t bg-gray-50/50 p-3 space-y-3">
+        <div className="border-t border-gray-100 px-3 py-3 space-y-3 bg-gray-50/40 rounded-b-lg">
 
-          {/* Linha 1: Título editável */}
-          <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-1">Título</label>
-            <input
-              type="text"
-              value={item.title}
-              onChange={(e) => onFieldChange('title', e.target.value)}
-              className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:ring-1 focus:ring-emerald-300"
-            />
-          </div>
-
-          {/* Linha 2: Status + Prioridade */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-1">Status</label>
-              <select
-                value={item.status}
-                onChange={(e) => onStatusChange(e.target.value)}
-                className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-white"
-              >
+          {/* Linha 1: título + status + prioridade */}
+          <div className="grid grid-cols-3 gap-2">
+            <div className="col-span-1">
+              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide block mb-1">Status</label>
+              <select value={item.status} onChange={(e) => onStatusChange(e.target.value)}
+                className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white">
                 <option>Pendente</option>
                 <option>Em Progresso</option>
                 <option>Concluído</option>
@@ -433,185 +414,112 @@ function ChecklistTaskItem({
                 <option>Bloqueado</option>
               </select>
             </div>
-            <div>
-              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-1">Prioridade</label>
-              <select
-                value={item.priority || 'Média'}
-                onChange={(e) => onFieldChange('priority', e.target.value)}
-                className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-white"
-              >
+            <div className="col-span-1">
+              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide block mb-1">Prioridade</label>
+              <select value={item.priority || 'Média'} onChange={(e) => onFieldChange('priority', e.target.value)}
+                className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white">
                 <option>Baixa</option>
                 <option>Média</option>
                 <option>Alta</option>
               </select>
             </div>
+            <div className="col-span-1">
+              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide block mb-1">Prazo</label>
+              <input type="date" value={item.due_date || ''} onChange={(e) => { onFieldChange('due_date', e.target.value); setAgendaDate(e.target.value); }}
+                className={`w-full px-2 py-1.5 border rounded-lg text-xs bg-white ${isOverdue ? 'border-red-300 bg-red-50' : 'border-gray-200'}`} />
+            </div>
           </div>
 
-          {/* Linha 3: Responsável */}
-          <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-1 flex items-center gap-1">
-              <User className="w-3 h-3" /> Responsável
-            </label>
-            {teamMembers.length > 1 ? (
-              <select
-                value={item.responsible_email || ''}
-                onChange={(e) => {
+          {/* Linha 2: título editável + responsável */}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide block mb-1">Título</label>
+              <input type="text" value={item.title} onChange={(e) => onFieldChange('title', e.target.value)}
+                className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white focus:ring-1 focus:ring-emerald-300" />
+            </div>
+            <div>
+              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide block mb-1">Responsável</label>
+              {teamMembers.length > 1 ? (
+                <select value={item.responsible_email || ''} onChange={(e) => {
                   const m = teamMembers.find(tm => tm.member_email === e.target.value);
                   onFieldChange('responsible_email', e.target.value);
                   onFieldChange('responsible_name', m?.member_name || e.target.value);
-                }}
-                className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-white"
-              >
-                <option value="">— Selecionar —</option>
-                {teamMembers.map(m => (
-                  <option key={m.id} value={m.member_email}>
-                    {m.member_name} ({m.member_role})
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                type="text"
-                value={item.responsible_name || ''}
-                onChange={(e) => onFieldChange('responsible_name', e.target.value)}
-                className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-white"
-                placeholder="Nome do responsável"
-              />
-            )}
-          </div>
-
-          {/* Linha 4: Datas */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-1">Início</label>
-              <input type="date" value={item.start_date || ''} onChange={(e) => onFieldChange('start_date', e.target.value)}
-                className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-white" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-1">Prazo</label>
-              <input type="date" value={item.due_date || ''} onChange={(e) => {
-                onFieldChange('due_date', e.target.value);
-                setAgendaDate(e.target.value);
-              }}
-                className={`w-full px-2 py-1.5 border rounded-lg text-sm bg-white ${isOverdue ? 'border-red-400 bg-red-50' : 'border-gray-200'}`} />
+                }} className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white">
+                  <option value="">— Selecionar —</option>
+                  {teamMembers.map(m => <option key={m.id} value={m.member_email}>{m.member_name}</option>)}
+                </select>
+              ) : (
+                <input type="text" value={item.responsible_name || ''} onChange={(e) => onFieldChange('responsible_name', e.target.value)}
+                  className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white" placeholder="Responsável" />
+              )}
             </div>
           </div>
 
-          {/* Linha 5: Observações */}
-          <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-1 flex items-center gap-1">
-              <MessageSquare className="w-3 h-3" /> Observações
-            </label>
-            <textarea
-              value={item.notes || ''}
-              onChange={(e) => onFieldChange('notes', e.target.value)}
-              placeholder="Observações sobre esta tarefa..."
-              rows={2}
-              className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-white resize-none"
-            />
-          </div>
+          {/* Notas */}
+          <textarea value={item.notes || ''} onChange={(e) => onFieldChange('notes', e.target.value)}
+            placeholder="Observações..." rows={2}
+            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white resize-none" />
 
-          {/* Linha 6: Criar evento na Agenda (form inline) */}
-          <div className="bg-white border border-gray-200 rounded-xl p-3 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-600 flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-blue-500" /> Agendar na Agenda
-              </span>
-              <button
-                onClick={() => setShowAgendaForm(v => !v)}
-                className="text-xs text-blue-600 hover:underline"
-              >
-                {showAgendaForm ? 'Fechar' : '+ Criar evento'}
-              </button>
-            </div>
+          {/* Agendar — colapsável */}
+          <div className="border border-gray-200 rounded-lg bg-white overflow-hidden">
+            <button onClick={() => setShowAgendaForm(v => !v)}
+              className="w-full flex items-center justify-between px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 transition-colors">
+              <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-blue-400" /> Agendar na Agenda</span>
+              <ChevronDown className={`w-3.5 h-3.5 text-gray-300 transition-transform ${showAgendaForm ? 'rotate-180' : ''}`} />
+            </button>
             {showAgendaForm && (
-              <div className="space-y-2">
-                {/* Data + horários */}
-                <div className="grid grid-cols-3 gap-2">
+              <div className="px-3 pb-3 space-y-2 border-t border-gray-100">
+                <div className="grid grid-cols-3 gap-2 pt-2">
                   <div>
-                    <label className="text-xs text-gray-400 block mb-0.5">Data</label>
-                    <input type="date" value={agendaDate} onChange={(e) => setAgendaDate(e.target.value)}
-                      className="w-full px-2 py-1 border rounded text-xs" />
+                    <label className="text-[10px] text-gray-400 block mb-0.5">Data</label>
+                    <input type="date" value={agendaDate} onChange={(e) => setAgendaDate(e.target.value)} className="w-full px-2 py-1 border rounded text-xs" />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-400 block mb-0.5">Início</label>
-                    <input type="time" value={agendaTime} onChange={(e) => setAgendaTime(e.target.value)}
-                      className="w-full px-2 py-1 border rounded text-xs" />
+                    <label className="text-[10px] text-gray-400 block mb-0.5">Início</label>
+                    <input type="time" value={agendaTime} onChange={(e) => setAgendaTime(e.target.value)} className="w-full px-2 py-1 border rounded text-xs" />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-400 block mb-0.5">Fim</label>
-                    <input type="time" value={agendaEndTime} onChange={(e) => setAgendaEndTime(e.target.value)}
-                      className="w-full px-2 py-1 border rounded text-xs" />
+                    <label className="text-[10px] text-gray-400 block mb-0.5">Fim</label>
+                    <input type="time" value={agendaEndTime} onChange={(e) => setAgendaEndTime(e.target.value)} className="w-full px-2 py-1 border rounded text-xs" />
                   </div>
                 </div>
-                {/* Delegado para */}
                 {teamMembers.length > 1 && (
-                  <div>
-                    <label className="text-xs text-gray-400 block mb-0.5">Delegar para</label>
-                    <select value={agendaAssignee} onChange={(e) => setAgendaAssignee(e.target.value)}
-                      className="w-full px-2 py-1 border rounded text-xs">
-                      {teamMembers.map(m => (
-                        <option key={m.id} value={m.member_email}>{m.member_name} ({m.member_role})</option>
-                      ))}
-                    </select>
-                  </div>
+                  <select value={agendaAssignee} onChange={(e) => setAgendaAssignee(e.target.value)} className="w-full px-2 py-1 border rounded text-xs">
+                    {teamMembers.map(m => <option key={m.id} value={m.member_email}>{m.member_name}</option>)}
+                  </select>
                 )}
                 <Button size="sm" onClick={handleCreateAgendaEvent} disabled={savingAgenda}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-xs h-8 gap-1">
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-xs h-7 gap-1">
                   <Calendar className="w-3 h-3" />
-                  {savingAgenda ? 'Criando...' : 'Confirmar Evento na Agenda'}
+                  {savingAgenda ? 'Criando...' : 'Confirmar Evento'}
                 </Button>
               </div>
             )}
           </div>
 
-          {/* Linha 7: Arquivos */}
-          {(item.files?.length > 0 || showFileInput) && (
-            <div>
-              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-1">
-                Arquivos ({item.files?.length || 0})
-              </label>
-              {item.files?.map(file => (
-                <div key={file.id} className="flex items-center gap-2 bg-white border rounded p-1.5 mb-1 text-xs">
-                  <FileText className="w-3 h-3 text-blue-500 flex-shrink-0" />
-                  <a href={file.url} target="_blank" rel="noopener noreferrer" className="flex-1 truncate text-blue-600 hover:underline">{file.name}</a>
-                </div>
-              ))}
-            </div>
-          )}
-          <Button size="sm" variant="outline" className="gap-1 text-xs w-full h-8" onClick={() => setShowFileInput(v => !v)}>
-            <Upload className="w-3 h-3" /> Anexar Arquivo
-          </Button>
-          {showFileInput && (
-            <input type="file" onChange={handleFileUpload} disabled={uploading} className="w-full text-xs" />
-          )}
-
-          {/* Linha 8: Histórico compacto */}
-          {item.activity_history?.length > 0 && (
-            <div>
-              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-1">Histórico</label>
-              <div className="space-y-1 max-h-24 overflow-y-auto">
-                {[...item.activity_history].reverse().slice(0, 5).map(act => (
-                  <div key={act.id} className="text-xs text-gray-500 flex items-start gap-1">
-                    <span className="text-gray-300 mt-0.5">•</span>
-                    <span>
-                      <span className="font-medium text-gray-600">{act.user_name}: </span>
-                      {act.details}
-                      <span className="text-gray-300 ml-1">
-                        · {formatDistanceToNow(new Date(act.timestamp), { locale: ptBR, addSuffix: true })}
-                      </span>
-                    </span>
+          {/* Arquivos */}
+          <div>
+            {item.files?.length > 0 && (
+              <div className="space-y-1 mb-1">
+                {item.files.map(file => (
+                  <div key={file.id} className="flex items-center gap-1.5 text-xs text-blue-600 bg-blue-50 border border-blue-100 rounded px-2 py-1">
+                    <FileText className="w-3 h-3 flex-shrink-0" />
+                    <a href={file.url} target="_blank" rel="noopener noreferrer" className="truncate hover:underline">{file.name}</a>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+            <button onClick={() => setShowFileInput(v => !v)}
+              className="text-[10px] text-gray-400 hover:text-gray-600 flex items-center gap-1 transition-colors">
+              <Upload className="w-3 h-3" /> {showFileInput ? 'Fechar' : 'Anexar arquivo'}
+            </button>
+            {showFileInput && <input type="file" onChange={handleFileUpload} disabled={uploading} className="w-full text-xs mt-1" />}
+          </div>
 
-          {/* Linha 9: Thread de comentários com @ */}
-          <div className="bg-white border border-gray-200 rounded-xl p-3">
-            <p className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1">
-              <MessageSquare className="w-3.5 h-3.5 text-emerald-500" />
-              Discussão da tarefa
+          {/* Thread */}
+          <div className="border-t border-gray-100 pt-3">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1">
+              <MessageSquare className="w-3 h-3 text-emerald-400" /> Discussão
             </p>
             <ChecklistThread
               thread={item.thread || []}
@@ -624,7 +532,7 @@ function ChecklistTaskItem({
 
         </div>
       )}
-    </Card>
+    </div>
   );
 }
 
@@ -757,60 +665,52 @@ function InlineChecklistView({ checklist, user, consultorEmail, teamMembers, lic
   const sorted = [...items].sort((a, b) => (a.order || 0) - (b.order || 0));
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <ChecklistProgress checklist={{ ...checklist, items }} />
 
-      {/* Stats rápidas */}
-      <div className="grid grid-cols-3 gap-2">
-        {[
-          { label: 'Pendentes', count: items.filter(i => i.status === 'Pendente').length, icon: Clock, color: 'text-yellow-500 bg-yellow-50' },
-          { label: 'Concluídas', count: items.filter(i => i.status === 'Concluído').length, icon: CheckCircle2, color: 'text-green-500 bg-green-50' },
-          { label: 'Atrasadas', count: items.filter(i => i.due_date && new Date(i.due_date) < new Date() && i.status !== 'Concluído').length, icon: AlertTriangle, color: 'text-red-500 bg-red-50' },
-        ].map(s => (
-          <div key={s.label} className={`${s.color} rounded-lg p-2 text-center`}>
-            <s.icon className={`w-4 h-4 mx-auto mb-0.5 ${s.color.split(' ')[0]}`} />
-            <p className="text-xs font-bold">{s.count}</p>
-            <p className="text-[10px] text-gray-500">{s.label}</p>
-          </div>
-        ))}
-      </div>
-
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-700">Tarefas ({items.length})</h3>
+        <span className="text-xs text-gray-500">
+          {items.filter(i => i.status === 'Concluído').length}/{items.length} concluídas
+          {items.filter(i => i.due_date && new Date(i.due_date) < new Date() && i.status !== 'Concluído').length > 0 && (
+            <span className="text-red-500 ml-2">· {items.filter(i => i.due_date && new Date(i.due_date) < new Date() && i.status !== 'Concluído').length} atrasada(s)</span>
+          )}
+        </span>
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={handleAddItem} className="gap-1 text-xs h-8">
+          <Button size="sm" variant="outline" onClick={handleAddItem} className="gap-1 text-xs h-7">
             <Plus className="w-3 h-3" /> Adicionar
           </Button>
-          <Button size="sm" onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700 gap-1 text-xs h-8" disabled={updateMutation.isPending}>
+          <Button size="sm" onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700 gap-1 text-xs h-7" disabled={updateMutation.isPending}>
             <Save className="w-3 h-3" /> {updateMutation.isPending ? 'Salvando...' : 'Salvar'}
           </Button>
         </div>
       </div>
 
       {sorted.length === 0 ? (
-        <p className="text-center py-6 text-gray-400 text-sm border-2 border-dashed border-gray-200 rounded-xl">
+        <p className="text-center py-5 text-gray-400 text-xs border-2 border-dashed border-gray-200 rounded-xl">
           Nenhuma tarefa. Clique em "Adicionar" para começar.
         </p>
       ) : (
-        sorted.map(item => (
-          <ChecklistTaskItem
-            key={item.id}
-            item={item}
-            teamMembers={teamMembers}
-            consultorEmail={consultorEmail}
-            licenseId={licenseId}
-            licenseLabel={licenseLabel}
-            propertyId={propertyId}
-            licenseOwnerEmail={licenseOwnerEmail}
-            onFieldChange={(field, value) => handleFieldChange(item.id, field, value)}
-            onStatusChange={(status) => handleStatusChange(item.id, status)}
-            onDelete={() => handleDeleteItem(item.id)}
-            onSaveThread={(thread) => handleSaveThread(item.id, thread)}
-            isExpanded={!!expandedItems[item.id]}
-            onToggleExpand={() => setExpandedItems(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
-            user={user}
-          />
-        ))
+        <div className="space-y-1.5">
+          {sorted.map(item => (
+            <ChecklistTaskItem
+              key={item.id}
+              item={item}
+              teamMembers={teamMembers}
+              consultorEmail={consultorEmail}
+              licenseId={licenseId}
+              licenseLabel={licenseLabel}
+              propertyId={propertyId}
+              licenseOwnerEmail={licenseOwnerEmail}
+              onFieldChange={(field, value) => handleFieldChange(item.id, field, value)}
+              onStatusChange={(status) => handleStatusChange(item.id, status)}
+              onDelete={() => handleDeleteItem(item.id)}
+              onSaveThread={(thread) => handleSaveThread(item.id, thread)}
+              isExpanded={!!expandedItems[item.id]}
+              onToggleExpand={() => setExpandedItems(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+              user={user}
+            />
+          ))}
+        </div>
       )}
     </div>
   );

@@ -25,16 +25,18 @@ Deno.serve(async (req) => {
     // Buscar transações existentes para esta CRM
     const existingExpenses = await base44.entities.Expense.filter({
       consultor_email,
-      client_property_id: crm.property_id,
+      client_property_id: crm.property_id || crm.id,
     });
 
     for (const service of services) {
       const installments = service.installments_data || service.installments || [];
+      console.log(`[syncInstallments] Processando serviço: ${service.name}, tipo: ${service.payment_type}, parcelas: ${installments.length}`);
       if (service.payment_type === 'parcelado' && installments.length > 0) {
         for (let idx = 0; idx < installments.length; idx++) {
           const inst = installments[idx];
           
           // Só criar transação se parcela foi recebida e tem data de recebimento
+          console.log(`[syncInstallments] Parcela ${inst.number}: received=${inst.received}, received_date=${inst.received_date}`);
           if (inst.received && inst.received_date) {
             const dateStr = inst.received_date;
             const description = `${service.name} - Parcela ${inst.number}/${installments.length}`;
@@ -56,9 +58,9 @@ Deno.serve(async (req) => {
                 competencia: dateStr,
                 transaction_type: 'receita',
                 category: 'Cobran\u00e7a de Cliente (Manual)',
-                account_name: service.payment_method || 'Pix',
+                account_name: service.account_name || service.payment_method || 'Pix',
                 client_name: crm.client_name,
-                client_property_id: crm.property_id,
+                client_property_id: crm.property_id || crm.id,
                 status: 'Pago',
                 payment_method: service.payment_method || 'Pix',
                 notes: `Parcela ${inst.number}/${installments.length} de "${service.name}"`,

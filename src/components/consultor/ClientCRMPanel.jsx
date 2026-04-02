@@ -256,9 +256,14 @@ export default function ClientCRMPanel({ property, onClose }) {
          toast.success(editingServiceIndex !== null ? 'Serviço atualizado!' : 'Serviço adicionado!');
          // Sincronizar transações de parcelas recebidas
          try {
-           await base44.functions.invoke('syncInstallmentTransactions', { crmId, consultor_email: crmConsultorEmail });
+           const result = await base44.functions.invoke('syncInstallmentTransactions', { crmId, consultor_email: crmConsultorEmail });
+           if (result.data?.transactionsCreated > 0) {
+             toast.success(`${result.data.transactionsCreated} transação(ões) criada(s)!`);
+             queryClient.invalidateQueries({ queryKey: ['fin-accounts-crm', crmConsultorEmail] });
+           }
          } catch (e) {
-           console.warn('Erro ao sincronizar transações:', e.message);
+           console.error('Erro ao sincronizar transações:', e.message);
+           toast.error('Erro ao sincronizar transações: ' + e.message);
          }
        }
      });

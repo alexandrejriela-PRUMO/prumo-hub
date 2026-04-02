@@ -255,7 +255,7 @@ export default function ConsultorClients() {
                 <ClientProfilePanel client={enrichClient(selectedClient)} onUpdate={() => queryClient.invalidateQueries(['consultor-crm-clients'])} />
               </TabsContent>
               <TabsContent value="crm" className="mt-4">
-                <ClientCRMPanel property={enrichClient(selectedClient)} onClose={() => setSelectedClient(null)} />
+                <ClientCRMPanel property={selectedClient} onClose={() => setSelectedClient(null)} />
               </TabsContent>
               {canViewFinancial && (
                 <TabsContent value="financeiro" className="mt-4">

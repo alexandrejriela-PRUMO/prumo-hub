@@ -600,10 +600,32 @@ export default function ClientCRMPanel({ property, onClose }) {
                         <label htmlFor="svc-received" className="text-sm text-gray-700 cursor-pointer">Valor já recebido</label>
                       </div>
                       {newService.received && (
-                        <div>
-                          <Label className="text-xs text-gray-600 mb-1 block">Data do Recebimento</Label>
-                          <Input className="h-9 text-sm" type="date" value={newService.received_at} onChange={e => setNewService(p => ({ ...p, received_at: e.target.value }))} />
-                        </div>
+                        <>
+                          <div>
+                            <Label className="text-xs text-gray-600 mb-1 block">Data do Recebimento</Label>
+                            <Input className="h-9 text-sm" type="date" value={newService.received_at} onChange={e => setNewService(p => ({ ...p, received_at: e.target.value }))} />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-gray-600 mb-1 block">Conta Receb.</Label>
+                            <Select value={newService.account_id || ''} onValueChange={v => {
+                              const acc = accounts.find(a => a.id === v);
+                              setNewService(p => ({ ...p, account_id: v || '', account_name: acc?.name || '' }));
+                            }}>
+                              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value={null}>Sem conta</SelectItem>
+                                {accounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-gray-600 mb-1 block">Forma de Pagamento</Label>
+                            <Select value={newService.payment_method || ''} onValueChange={v => setNewService(p => ({ ...p, payment_method: v }))}>
+                              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                              <SelectContent>{['Pix','Transferência','Boleto','Cartão de Crédito','Cartão de Débito','Dinheiro','Cheque','Outro'].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                            </Select>
+                          </div>
+                        </>
                       )}
                     </>
                   )}
@@ -710,19 +732,7 @@ export default function ClientCRMPanel({ property, onClose }) {
             </Card>
           )}
 
-          {(activeCRM?.services || []).length > 0 && (() => {
-            const services = activeCRM.services || [];
-            const total = services.reduce((s, svc) => s + (parseFloat(svc.value) || 0), 0);
-            const received = services.filter(s => s.received).reduce((s, svc) => s + (parseFloat(svc.value) || 0), 0);
-            const pending = total - received;
-            return (
-              <div className="grid grid-cols-3 gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100 mb-2">
-                <div className="text-center"><p className="text-xs text-gray-500">Total Contratado</p><p className="text-sm font-bold text-gray-800">R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
-                <div className="text-center"><p className="text-xs text-gray-500">Recebido</p><p className="text-sm font-bold text-emerald-700">R$ {received.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
-                <div className="text-center"><p className="text-xs text-gray-500">A Receber</p><p className={`text-sm font-bold ${pending > 0 ? 'text-amber-700' : 'text-gray-500'}`}>R$ {pending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
-              </div>
-            );
-          })()}
+
 
           <div className="space-y-2">
             {(activeCRM?.services || []).length === 0 ? (

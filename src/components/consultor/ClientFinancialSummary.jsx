@@ -565,6 +565,11 @@ export default function ClientFinancialSummary({ client }) {
                                )}
                              </>
                            )}
+                           {editForm.payment_type === 'parcelado' && (
+                             <div className="sm:col-span-2 text-xs text-gray-500 px-3 py-2 bg-gray-50 rounded-lg">
+                               ℹ️ Configure a data de recebimento de cada parcela acima
+                             </div>
+                           )}
                            <div className="sm:col-span-2">
                              <Label className="text-xs text-gray-600 mb-1 block">Observações</Label>
                              <Input className="h-9 text-sm" value={editForm.notes} onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))} />

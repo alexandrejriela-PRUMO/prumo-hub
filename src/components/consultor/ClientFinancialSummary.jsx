@@ -88,42 +88,56 @@ export default function ClientFinancialSummary({ client }) {
   };
 
   const saveEdit = () => {
-    const services = (crm?.services || []).map((s, i) => {
-      if (i !== editingIndex) return s;
-      // Normalizar installments_data para guardar somente o necessário
-      const installments_data = editForm.installments_data?.map(inst => ({
-        due_date: inst.due_date,
-        received: inst.received,
-        received_at: inst.received_at ? new Date(inst.received_at + 'T12:00:00').toISOString() : null,
-      })) || [];
-      
-      // Para parcelado: calcular se todos recebidos; para avista: usar checkbox
-      let received = false;
-      let received_at = null;
-      if (editForm.payment_type === 'parcelado') {
-        received = installments_data.length > 0 && installments_data.every(inst => inst.received);
-        if (received) {
-          // Usar a data da última parcela recebida
-          const lastReceivedDate = installments_data
-            .filter(inst => inst.received && inst.received_at)
-            .map(inst => new Date(inst.received_at).getTime())
-            .sort((a, b) => b - a)[0];
-          received_at = lastReceivedDate ? new Date(lastReceivedDate).toISOString() : new Date().toISOString();
-        }
-      } else {
-        received = editForm.received;
-        received_at = editForm.received && editForm.received_at
-          ? new Date(editForm.received_at + 'T12:00:00').toISOString()
-          : (editForm.received ? new Date().toISOString() : null);
-      }
-      
-      return { ...s, ...editForm, value: parseFloat(editForm.value) || 0, received, received_at, installments_data, due_dates: editForm.due_dates };
-    });
-    upsertCRM.mutate({ services }, {
-      onSuccess: () => { toast.success('Serviço atualizado!'); setEditingIndex(null); },
-      onError: (e) => toast.error('Erro ao salvar: ' + e.message),
-    });
-  };
+     const services = (crm?.services || []).map((s, i) => {
+       if (i !== editingIndex) return s;
+       // Normalizar installments_data para guardar somente o necessário
+       const installments_data = editForm.installments_data?.map(inst => ({
+         due_date: inst.due_date,
+         received: inst.received,
+         received_at: inst.received_at ? new Date(inst.received_at + 'T12:00:00').toISOString() : null,
+       })) || [];
+
+       // Para parcelado: calcular se todos recebidos; para avista: usar checkbox
+       let received = false;
+       let received_at = null;
+       if (editForm.payment_type === 'parcelado') {
+         received = installments_data.length > 0 && installments_data.every(inst => inst.received);
+         if (received) {
+           // Usar a data da última parcela recebida
+           const lastReceivedDate = installments_data
+             .filter(inst => inst.received && inst.received_at)
+             .map(inst => new Date(inst.received_at).getTime())
+             .sort((a, b) => b - a)[0];
+           received_at = lastReceivedDate ? new Date(lastReceivedDate).toISOString() : new Date().toISOString();
+         }
+       } else {
+         received = editForm.received;
+         received_at = editForm.received && editForm.received_at
+           ? new Date(editForm.received_at + 'T12:00:00').toISOString()
+           : (editForm.received ? new Date().toISOString() : null);
+       }
+
+       return { ...s, ...editForm, value: parseFloat(editForm.value) || 0, received, received_at, installments_data, due_dates: editForm.due_dates };
+     });
+     upsertCRM.mutate({ services }, {
+       onSuccess: async () => {
+         // Sincronizar parcelas recebidas como transações
+         if (editForm.payment_type === 'parcelado') {
+           try {
+             await base44.functions.invoke('syncInstallmentTransactions', {
+               crmId: crmId,
+               consultor_email: crmConsultorEmail,
+             });
+           } catch (err) {
+             console.warn('Erro ao sincronizar transações:', err);
+           }
+         }
+         toast.success('Serviço atualizado!');
+         setEditingIndex(null);
+       },
+       onError: (e) => toast.error('Erro ao salvar: ' + e.message),
+     });
+   };
 
   const deleteService = (index) => {
     const services = (crm?.services || []).filter((_, i) => i !== index);
@@ -142,7 +156,7 @@ export default function ClientFinancialSummary({ client }) {
       received: inst.received,
       received_at: inst.received_at ? new Date(inst.received_at + 'T12:00:00').toISOString() : null,
     })) || [];
-    
+
     // Para parcelado: calcular se todos recebidos; para avista: usar checkbox
     let received = false;
     let received_at = null;
@@ -162,10 +176,21 @@ export default function ClientFinancialSummary({ client }) {
         ? new Date(newService.received_at + 'T12:00:00').toISOString()
         : (newService.received ? new Date().toISOString() : null);
     }
-    
+
     const services = [...(crm?.services || []), { ...newService, value: serviceValue, received, received_at, installments_data }];
     upsertCRM.mutate({ services }, {
-      onSuccess: () => {
+      onSuccess: async () => {
+        // Sincronizar parcelas recebidas como transações
+        if (newService.payment_type === 'parcelado') {
+          try {
+            await base44.functions.invoke('syncInstallmentTransactions', {
+              crmId: crmId,
+              consultor_email: crmConsultorEmail,
+            });
+          } catch (err) {
+            console.warn('Erro ao sincronizar transações:', err);
+          }
+        }
         toast.success('Serviço adicionado!');
         setShowNewServiceForm(false);
         setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], installments_data: [], received: false, received_at: '' });

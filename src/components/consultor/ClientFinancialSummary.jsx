@@ -90,20 +90,19 @@ export default function ClientFinancialSummary({ client }) {
   const saveEdit = () => {
      const services = (crm?.services || []).map((s, i) => {
        if (i !== editingIndex) return s;
-       // Normalizar installments_data para guardar somente o necessário
+       // Normalizar installments_data com as datas de vencimento
        const installments_data = editForm.installments_data?.map(inst => ({
-         due_date: inst.due_date,
-         received: inst.received,
+         due_date: inst.due_date || '',
+         received: inst.received || false,
          received_at: inst.received_at ? new Date(inst.received_at + 'T12:00:00').toISOString() : null,
        })) || [];
 
-       // Para parcelado: calcular se todos recebidos; para avista: usar checkbox
+       // Para parcelado: usar data da última parcela recebida como received_at
        let received = false;
        let received_at = null;
        if (editForm.payment_type === 'parcelado') {
          received = installments_data.length > 0 && installments_data.every(inst => inst.received);
          if (received) {
-           // Usar a data da última parcela recebida
            const lastReceivedDate = installments_data
              .filter(inst => inst.received && inst.received_at)
              .map(inst => new Date(inst.received_at).getTime())
@@ -117,7 +116,7 @@ export default function ClientFinancialSummary({ client }) {
            : (editForm.received ? new Date().toISOString() : null);
        }
 
-       return { ...s, ...editForm, value: parseFloat(editForm.value) || 0, received, received_at, installments_data, due_dates: editForm.due_dates };
+       return { ...s, ...editForm, value: parseFloat(editForm.value) || 0, received, received_at, installments_data };
      });
      upsertCRM.mutate({ services }, {
        onSuccess: async () => {
@@ -150,20 +149,19 @@ export default function ClientFinancialSummary({ client }) {
   const addNewService = () => {
     if (!newService.name) { toast.error('Informe o nome do serviço.'); return; }
     const serviceValue = parseFloat(newService.value) || 0;
-    // Normalizar installments_data para guardar somente o necessário
+    // Normalizar installments_data com as datas de vencimento
     const installments_data = newService.installments_data?.map(inst => ({
-      due_date: inst.due_date,
-      received: inst.received,
+      due_date: inst.due_date || '',
+      received: inst.received || false,
       received_at: inst.received_at ? new Date(inst.received_at + 'T12:00:00').toISOString() : null,
     })) || [];
 
-    // Para parcelado: calcular se todos recebidos; para avista: usar checkbox
+    // Para parcelado: usar data da última parcela recebida como received_at
     let received = false;
     let received_at = null;
     if (newService.payment_type === 'parcelado') {
       received = installments_data.length > 0 && installments_data.every(inst => inst.received);
       if (received) {
-        // Usar a data da última parcela recebida
         const lastReceivedDate = installments_data
           .filter(inst => inst.received && inst.received_at)
           .map(inst => new Date(inst.received_at).getTime())

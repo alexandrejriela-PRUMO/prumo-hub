@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
                 competencia: dateStr,
                 transaction_type: 'receita',
                 category: 'Cobran\u00e7a de Cliente (Manual)',
-                account_name: service.account_name || service.payment_method || 'Pix',
+                account_name: service.account_name || '',
                 client_name: crm.client_name,
                 client_property_id: clientPropertyId,
                 status: 'Pago',

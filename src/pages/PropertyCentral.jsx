@@ -6,7 +6,7 @@ import { createPageUrl } from '@/utils';
 import PropertySelector from '@/components/properties/PropertySelector';
 import { 
   Building2, FileText, MapPin, AlertTriangle, FileCheck, 
-  Leaf, Map, Scale, TreePine, BarChart3, ChevronRight, ScrollText, ChevronLeft
+  Leaf, Map, Scale, TreePine, BarChart3, ChevronRight, ChevronLeft
 } from 'lucide-react';
 
 export default function PropertyCentral() {
@@ -68,7 +68,6 @@ export default function PropertyCentral() {
 
   const modules = [
     { name: 'Minhas Propriedades', page: 'Properties', icon: Building2, color: 'bg-blue-50 text-blue-700 border-blue-200' },
-    { name: 'Meus Contratos', page: 'Contracts', icon: ScrollText, color: 'bg-purple-50 text-purple-700 border-purple-200' },
     { name: 'Documentos', page: 'DocumentsHub', icon: FileText, color: 'bg-amber-50 text-amber-700 border-amber-200' },
     { name: 'Licenças e Projetos', page: 'Licenses', icon: FileCheck, color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
     { name: 'Gestão do CAR', page: 'CARModule', icon: TreePine, color: 'bg-green-50 text-green-700 border-green-200' },

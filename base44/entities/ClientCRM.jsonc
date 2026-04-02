@@ -301,7 +301,31 @@
             "type": "string"
           },
           "installments": {
-            "type": "string"
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "number": {
+                  "type": "number"
+                },
+                "amount": {
+                  "type": "number"
+                },
+                "due_date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "received": {
+                  "type": "boolean",
+                  "default": false
+                },
+                "received_date": {
+                  "type": "string",
+                  "format": "date"
+                }
+              }
+            },
+            "default": []
           },
           "received": {
             "type": "boolean",

@@ -57,7 +57,7 @@ export default function ClientFinancialSummary({ client }) {
   const startEdit = (service, index) => {
     setEditingIndex(index);
     
-    // Para parcelado: mapear do array installments
+    // Para parcelado: mapear do array installments (agora é array de objetos)
     let installments_data = [];
     if (service.payment_type === 'parcelado' && service.installments?.length > 0) {
       installments_data = service.installments.map(inst => ({
@@ -83,58 +83,59 @@ export default function ClientFinancialSummary({ client }) {
   };
 
   const saveEdit = () => {
-     const services = (crm?.services || []).map((s, i) => {
-       if (i !== editingIndex) return s;
+    const services = (crm?.services || []).map((s, i) => {
+      if (i !== editingIndex) return s;
 
-       // Para parcelado: estrutura com array installments
-       if (editForm.payment_type === 'parcelado') {
-         const installmentValue = parseFloat(editForm.value) / parseInt(editForm.installments || 1);
-         const installments = editForm.installments_data?.map((inst, idx) => ({
-           number: idx + 1,
-           amount: installmentValue,
-           due_date: inst.due_date || '',
-           received: inst.received || false,
-           received_date: inst.received_at ? inst.received_at : null,
-         })) || [];
+      // Para parcelado: estrutura com array installments
+      if (editForm.payment_type === 'parcelado') {
+        const installmentValue = parseFloat(editForm.value) / parseInt(editForm.installments || 1);
+        const installments = editForm.installments_data?.map((inst, idx) => ({
+          number: idx + 1,
+          amount: installmentValue,
+          due_date: inst.due_date || '',
+          received: inst.received || false,
+          received_date: inst.received_at ? inst.received_at : null,
+        })) || [];
 
-         return {
-           ...editForm,
-           value: parseFloat(editForm.value) || 0,
-           installments,
-           received: false, // Parcelado nunca é "recebido" único
-           received_at: null,
-         };
-       } else {
-         // À vista: uso do modelo antigo
-         return {
-           ...editForm,
-           value: parseFloat(editForm.value) || 0,
-           received: editForm.received || false,
-           received_at: editForm.received && editForm.received_at
-             ? editForm.received_at
-             : null,
-         };
-       }
-     });
+        return {
+          ...editForm,
+          value: parseFloat(editForm.value) || 0,
+          installments,
+          received: false,
+          received_at: null,
+        };
+      } else {
+        // À vista
+        return {
+          ...editForm,
+          value: parseFloat(editForm.value) || 0,
+          installments: [],
+          received: editForm.received || false,
+          received_at: editForm.received && editForm.received_at
+            ? editForm.received_at
+            : null,
+        };
+      }
+    });
 
-      upsertCRM.mutate({ services }, {
-        onSuccess: async () => {
-          if (editForm.payment_type === 'parcelado') {
-            try {
-              await base44.functions.invoke('syncInstallmentTransactions', {
-                crmId: crmId,
-                consultor_email: crmConsultorEmail,
-              });
-            } catch (err) {
-              console.warn('Erro ao sincronizar transações:', err);
-            }
+    upsertCRM.mutate({ services }, {
+      onSuccess: async () => {
+        if (editForm.payment_type === 'parcelado') {
+          try {
+            await base44.functions.invoke('syncInstallmentTransactions', {
+              crmId: crmId,
+              consultor_email: crmConsultorEmail,
+            });
+          } catch (err) {
+            console.warn('Erro ao sincronizar transações:', err);
           }
-          toast.success('Serviço atualizado!');
-          setEditingIndex(null);
-        },
-        onError: (e) => toast.error('Erro ao salvar: ' + e.message),
-      });
-    };
+        }
+        toast.success('Serviço atualizado!');
+        setEditingIndex(null);
+      },
+      onError: (e) => toast.error('Erro ao salvar: ' + e.message),
+    });
+  };
 
   const deleteService = (index) => {
     const services = (crm?.services || []).filter((_, i) => i !== index);
@@ -189,6 +190,7 @@ export default function ClientFinancialSummary({ client }) {
       const newServiceObj = {
         ...newService,
         value: serviceValue,
+        installments: [],
         received: newService.received || false,
         received_at: newService.received && newService.received_at ? newService.received_at : null,
       };

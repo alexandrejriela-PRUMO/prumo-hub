@@ -628,29 +628,11 @@ export default function ClientCRMPanel({ property, onClose }) {
             const total = services.reduce((s, svc) => s + (parseFloat(svc.value) || 0), 0);
             const received = services.filter(s => s.received).reduce((s, svc) => s + (parseFloat(svc.value) || 0), 0);
             const pending = total - received;
-            const percentage = total > 0 ? (received / total) * 100 : 0;
             return (
-              <div className="space-y-2 mb-2">
-                <div className="grid grid-cols-3 gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-                  <div className="text-center"><p className="text-xs text-gray-500">Total Contratado</p><p className="text-sm font-bold text-gray-800">R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
-                  <div className="text-center"><p className="text-xs text-gray-500">Recebido</p><p className="text-sm font-bold text-emerald-700">R$ {received.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
-                  <div className="text-center"><p className="text-xs text-gray-500">A Receber</p><p className={`text-sm font-bold ${pending > 0 ? 'text-amber-700' : 'text-gray-500'}`}>R$ {pending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
-                </div>
-                {total > 0 && (
-                  <div className="p-3 bg-white border border-gray-200 rounded-xl">
-                    <div className="flex justify-between items-center mb-2">
-                      <p className="text-sm font-semibold text-gray-700">Progresso de Recebimento</p>
-                      <span className="text-sm font-bold text-emerald-700">{Math.round(percentage)}%</span>
-                    </div>
-                    <div className="w-full bg-gray-100 rounded-full h-3">
-                      <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-3 rounded-full transition-all duration-500" style={{ width: `${percentage}%` }} />
-                    </div>
-                    <div className="flex justify-between text-xs text-gray-500 mt-1">
-                      <span>R$ {received.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} recebidos</span>
-                      <span>R$ {pending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} pendentes</span>
-                    </div>
-                  </div>
-                )}
+              <div className="grid grid-cols-3 gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100 mb-2">
+                <div className="text-center"><p className="text-xs text-gray-500">Total Contratado</p><p className="text-sm font-bold text-gray-800">R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+                <div className="text-center"><p className="text-xs text-gray-500">Recebido</p><p className="text-sm font-bold text-emerald-700">R$ {received.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+                <div className="text-center"><p className="text-xs text-gray-500">A Receber</p><p className={`text-sm font-bold ${pending > 0 ? 'text-amber-700' : 'text-gray-500'}`}>R$ {pending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
               </div>
             );
           })()}

@@ -83,16 +83,27 @@ export default function ClientFinancialSummary({ client }) {
   const saveEdit = () => {
     const services = (crm?.services || []).map((s, i) => {
       if (i !== editingIndex) return s;
-      const received_at = editForm.received && editForm.received_at
-        ? new Date(editForm.received_at + 'T12:00:00').toISOString()
-        : (editForm.received ? new Date().toISOString() : null);
       // Normalizar installments_data para guardar somente o necessário
       const installments_data = editForm.installments_data?.map(inst => ({
         due_date: inst.due_date,
         received: inst.received,
         received_at: inst.received_at ? new Date(inst.received_at + 'T12:00:00').toISOString() : null,
       })) || [];
-      return { ...s, ...editForm, value: parseFloat(editForm.value) || 0, received_at, installments_data, due_dates: editForm.due_dates };
+      
+      // Para parcelado: calcular se todos recebidos; para avista: usar checkbox
+      let received = false;
+      let received_at = null;
+      if (editForm.payment_type === 'parcelado') {
+        received = installments_data.length > 0 && installments_data.every(inst => inst.received);
+        if (received) received_at = new Date().toISOString();
+      } else {
+        received = editForm.received;
+        received_at = editForm.received && editForm.received_at
+          ? new Date(editForm.received_at + 'T12:00:00').toISOString()
+          : (editForm.received ? new Date().toISOString() : null);
+      }
+      
+      return { ...s, ...editForm, value: parseFloat(editForm.value) || 0, received, received_at, installments_data, due_dates: editForm.due_dates };
     });
     upsertCRM.mutate({ services }, {
       onSuccess: () => { toast.success('Serviço atualizado!'); setEditingIndex(null); },
@@ -111,16 +122,27 @@ export default function ClientFinancialSummary({ client }) {
   const addNewService = () => {
     if (!newService.name) { toast.error('Informe o nome do serviço.'); return; }
     const serviceValue = parseFloat(newService.value) || 0;
-    const received_at = newService.received && newService.received_at
-      ? new Date(newService.received_at + 'T12:00:00').toISOString()
-      : (newService.received ? new Date().toISOString() : null);
     // Normalizar installments_data para guardar somente o necessário
     const installments_data = newService.installments_data?.map(inst => ({
       due_date: inst.due_date,
       received: inst.received,
       received_at: inst.received_at ? new Date(inst.received_at + 'T12:00:00').toISOString() : null,
     })) || [];
-    const services = [...(crm?.services || []), { ...newService, value: serviceValue, received_at, installments_data }];
+    
+    // Para parcelado: calcular se todos recebidos; para avista: usar checkbox
+    let received = false;
+    let received_at = null;
+    if (newService.payment_type === 'parcelado') {
+      received = installments_data.length > 0 && installments_data.every(inst => inst.received);
+      if (received) received_at = new Date().toISOString();
+    } else {
+      received = newService.received;
+      received_at = newService.received && newService.received_at
+        ? new Date(newService.received_at + 'T12:00:00').toISOString()
+        : (newService.received ? new Date().toISOString() : null);
+    }
+    
+    const services = [...(crm?.services || []), { ...newService, value: serviceValue, received, received_at, installments_data }];
     upsertCRM.mutate({ services }, {
       onSuccess: () => {
         toast.success('Serviço adicionado!');
@@ -356,15 +378,19 @@ export default function ClientFinancialSummary({ client }) {
                       )}
                     </>
                   )}
-                  <div className="sm:col-span-2 flex items-center gap-2">
-                    <input type="checkbox" id="new-received" checked={newService.received} onChange={e => setNewService(p => ({ ...p, received: e.target.checked }))} className="w-4 h-4 accent-emerald-600" />
-                    <label htmlFor="new-received" className="text-sm text-gray-700 cursor-pointer">Valor já recebido</label>
-                  </div>
-                  {newService.received && (
-                    <div>
-                      <Label className="text-xs text-gray-600 mb-1 block">Data do Recebimento</Label>
-                      <Input className="h-9 text-sm" type="date" value={newService.received_at} onChange={e => setNewService(p => ({ ...p, received_at: e.target.value }))} />
-                    </div>
+                  {newService.payment_type === 'avista' && (
+                    <>
+                      <div className="sm:col-span-2 flex items-center gap-2">
+                        <input type="checkbox" id="new-received" checked={newService.received} onChange={e => setNewService(p => ({ ...p, received: e.target.checked }))} className="w-4 h-4 accent-emerald-600" />
+                        <label htmlFor="new-received" className="text-sm text-gray-700 cursor-pointer">Valor já recebido</label>
+                      </div>
+                      {newService.received && (
+                        <div>
+                          <Label className="text-xs text-gray-600 mb-1 block">Data do Recebimento</Label>
+                          <Input className="h-9 text-sm" type="date" value={newService.received_at} onChange={e => setNewService(p => ({ ...p, received_at: e.target.value }))} />
+                        </div>
+                      )}
+                    </>
                   )}
                   <div className="sm:col-span-2">
                     <Label className="text-xs text-gray-600 mb-1 block">Observações</Label>
@@ -485,15 +511,19 @@ export default function ClientFinancialSummary({ client }) {
                                )}
                              </>
                            )}
-                           <div className="sm:col-span-2 flex items-center gap-2">
-                             <input type="checkbox" id={`edit-received-${i}`} checked={editForm.received} onChange={e => setEditForm(p => ({ ...p, received: e.target.checked }))} className="w-4 h-4 accent-emerald-600" />
-                             <label htmlFor={`edit-received-${i}`} className="text-sm text-gray-700 cursor-pointer">Valor já recebido</label>
-                           </div>
-                           {editForm.received && (
-                             <div>
-                               <Label className="text-xs text-gray-600 mb-1 block">Data do Recebimento</Label>
-                               <Input className="h-9 text-sm" type="date" value={editForm.received_at} onChange={e => setEditForm(p => ({ ...p, received_at: e.target.value }))} />
-                             </div>
+                           {editForm.payment_type === 'avista' && (
+                             <>
+                               <div className="sm:col-span-2 flex items-center gap-2">
+                                 <input type="checkbox" id={`edit-received-${i}`} checked={editForm.received} onChange={e => setEditForm(p => ({ ...p, received: e.target.checked }))} className="w-4 h-4 accent-emerald-600" />
+                                 <label htmlFor={`edit-received-${i}`} className="text-sm text-gray-700 cursor-pointer">Valor já recebido</label>
+                               </div>
+                               {editForm.received && (
+                                 <div>
+                                   <Label className="text-xs text-gray-600 mb-1 block">Data do Recebimento</Label>
+                                   <Input className="h-9 text-sm" type="date" value={editForm.received_at} onChange={e => setEditForm(p => ({ ...p, received_at: e.target.value }))} />
+                                 </div>
+                               )}
+                             </>
                            )}
                            <div className="sm:col-span-2">
                              <Label className="text-xs text-gray-600 mb-1 block">Observações</Label>

@@ -50,6 +50,12 @@ export default function FinancialDashboard() {
 
   useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);
 
+  const { data: crms = [] } = useQuery({
+    queryKey: ['fd-crms', user?.email],
+    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: user.email }, '-updated_date', 500),
+    enabled: !!user?.email,
+  });
+
   const { data: charges = [] } = useQuery({
     queryKey: ['fd-charges', user?.email],
     queryFn: () => base44.entities.ConsultorCharge.filter({ consultor_email: user.email }, '-due_date', 1000),
@@ -95,16 +101,26 @@ export default function FinancialDashboard() {
     months.forEach(m => { byMonth[m] = { receita: 0, despesa: 0 }; });
 
     effectiveCharges.forEach(c => {
-      const month = (c.due_date || c.paid_at || '')?.substring(0,7);
-      if (byMonth[month] && normalizeStatus(c.status) === 'Pago') byMonth[month].receita += c.amount || 0;
-    });
-    effectiveManual.forEach(e => {
-      const month = e.competencia || e.date?.substring(0,7);
-      if (byMonth[month]) {
-        if (e.transaction_type === 'receita') byMonth[month].receita += e.amount || 0;
-        else byMonth[month].despesa += e.amount || 0;
-      }
-    });
+        const month = (c.due_date || c.paid_at || '')?.substring(0,7);
+        if (byMonth[month] && normalizeStatus(c.status) === 'Pago') byMonth[month].receita += c.amount || 0;
+      });
+      effectiveManual.forEach(e => {
+        const month = e.competencia || e.date?.substring(0,7);
+        if (byMonth[month]) {
+          if (e.transaction_type === 'receita') byMonth[month].receita += e.amount || 0;
+          else byMonth[month].despesa += e.amount || 0;
+        }
+      });
+      // Adicionar receitas de serviços parcelados e avista do CRM
+      crms.forEach(crm => {
+        if (!crm.services) return;
+        crm.services.forEach(svc => {
+          if (!svc.received) return;
+          const month = svc.received_at?.substring(0,7);
+          const value = parseFloat(svc.value) || 0;
+          if (byMonth[month]) byMonth[month].receita += value;
+        });
+      });
     return months.map(m => ({
       mes: format(parseISO(m+'-01'), 'MMM/yy', { locale: ptBR }),
       mesKey: m,
@@ -112,7 +128,7 @@ export default function FinancialDashboard() {
       despesa: byMonth[m].despesa,
       resultado: byMonth[m].receita - byMonth[m].despesa,
     }));
-  }, [effectiveCharges, effectiveManual]);
+    }, [effectiveCharges, effectiveManual, crms]);
 
   // ── Next 12 months projection ─────────────────────────────────────────────
   const projecao = useMemo(() => {
@@ -161,6 +177,17 @@ export default function FinancialDashboard() {
     });
     const avgInc = Object.values(incByMonth).reduce((s,v)=>s+v,0)/3;
 
+    // Adicionar receitas de serviços parcelados e avista do CRM às projeções
+    crms.forEach(crm => {
+      if (!crm.services) return;
+      crm.services.forEach(svc => {
+        if (svc.received) return; // Já foi pago, não contar como pendente
+        const month = svc.start_date?.substring(0,7) || format(new Date(), 'yyyy-MM');
+        const value = parseFloat(svc.value) || 0;
+        if (byMonth[month]) byMonth[month].receita += value;
+      });
+    });
+
     let accSaldo = historico.reduce((s,h)=>s+h.resultado, 0);
     return months.map((m,i) => {
       const projReceita = byMonth[m].receita + avgInc;
@@ -171,7 +198,7 @@ export default function FinancialDashboard() {
         receita: Math.round(projReceita), despesa: Math.round(projDespesa),
         resultado: Math.round(resultado), saldoAcumulado: Math.round(accSaldo), isCurrent: i===0 };
     });
-  }, [charges, effectiveManual, contracts, historico, filterAccount]);
+    }, [charges, effectiveManual, contracts, historico, filterAccount, crms]);
 
   const kpis = useMemo(() => {
     const totalReceita12 = historico.reduce((s,h)=>s+h.receita, 0);

@@ -52,10 +52,19 @@ export default function ClientFinancialSummary({ client }) {
   const [editingIndex, setEditingIndex] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [showNewServiceForm, setShowNewServiceForm] = useState(false);
-  const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], received: false, received_at: '' });
+  const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], installments_data: [], received: false, received_at: '' });
 
   const startEdit = (service, index) => {
     setEditingIndex(index);
+    // Normalizar parcelas para novo formato
+    let installments_data = service.installments_data || [];
+    if (!installments_data.length && service.due_dates?.length) {
+      installments_data = service.due_dates.map((d, i) => ({
+        due_date: d,
+        received: service.received && i === 0 ? service.received : false,
+        received_at: service.received && i === 0 ? (service.received_at ? service.received_at.split('T')[0] : '') : '',
+      }));
+    }
     setEditForm({
       name: service.name,
       status: service.status,
@@ -65,7 +74,7 @@ export default function ClientFinancialSummary({ client }) {
       payment_method: service.payment_method || 'Pix',
       installments: service.installments || '',
       start_date: service.start_date || '',
-      due_dates: service.due_dates || [],
+      installments_data,
       received: service.received || false,
       received_at: service.received_at ? service.received_at.split('T')[0] : '',
     });
@@ -77,7 +86,13 @@ export default function ClientFinancialSummary({ client }) {
       const received_at = editForm.received && editForm.received_at
         ? new Date(editForm.received_at + 'T12:00:00').toISOString()
         : (editForm.received ? new Date().toISOString() : null);
-      return { ...s, ...editForm, value: parseFloat(editForm.value) || 0, received_at };
+      // Normalizar installments_data para guardar somente o necessário
+      const installments_data = editForm.installments_data?.map(inst => ({
+        due_date: inst.due_date,
+        received: inst.received,
+        received_at: inst.received_at ? new Date(inst.received_at + 'T12:00:00').toISOString() : null,
+      })) || [];
+      return { ...s, ...editForm, value: parseFloat(editForm.value) || 0, received_at, installments_data, due_dates: editForm.due_dates };
     });
     upsertCRM.mutate({ services }, {
       onSuccess: () => { toast.success('Serviço atualizado!'); setEditingIndex(null); },
@@ -99,12 +114,18 @@ export default function ClientFinancialSummary({ client }) {
     const received_at = newService.received && newService.received_at
       ? new Date(newService.received_at + 'T12:00:00').toISOString()
       : (newService.received ? new Date().toISOString() : null);
-    const services = [...(crm?.services || []), { ...newService, value: serviceValue, received_at }];
+    // Normalizar installments_data para guardar somente o necessário
+    const installments_data = newService.installments_data?.map(inst => ({
+      due_date: inst.due_date,
+      received: inst.received,
+      received_at: inst.received_at ? new Date(inst.received_at + 'T12:00:00').toISOString() : null,
+    })) || [];
+    const services = [...(crm?.services || []), { ...newService, value: serviceValue, received_at, installments_data }];
     upsertCRM.mutate({ services }, {
       onSuccess: () => {
         toast.success('Serviço adicionado!');
         setShowNewServiceForm(false);
-        setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], received: false, received_at: '' });
+        setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], installments_data: [], received: false, received_at: '' });
       },
       onError: (e) => toast.error('Erro ao adicionar: ' + e.message),
     });
@@ -287,23 +308,49 @@ export default function ClientFinancialSummary({ client }) {
                         <Input className="h-9 text-sm" type="number" min="2" value={newService.installments} onChange={e => {
                           const n = parseInt(e.target.value) || 0;
                           const dates = Array.from({ length: n }, (_, i) => newService.due_dates?.[i] || '');
-                          setNewService(p => ({ ...p, installments: e.target.value, due_dates: dates }));
+                          const inst_data = Array.from({ length: n }, (_, i) => newService.installments_data?.[i] || { due_date: dates[i] || '', received: false, received_at: '' });
+                          setNewService(p => ({ ...p, installments: e.target.value, due_dates: dates, installments_data: inst_data }));
                         }} placeholder="Ex: 3" />
                       </div>
                       {parseInt(newService.installments) > 0 && (
-                        <div className="sm:col-span-2 space-y-2">
-                          <Label className="text-xs text-gray-600 block">Datas de Vencimento das Parcelas</Label>
-                          <div className="grid grid-cols-2 gap-2">
-                            {Array.from({ length: parseInt(newService.installments) }, (_, i) => (
-                              <div key={i}>
-                                <Label className="text-xs text-gray-400 mb-1 block">Parcela {i + 1}</Label>
-                                <Input className="h-8 text-xs" type="date" value={newService.due_dates?.[i] || ''} onChange={e => {
-                                  const dates = [...(newService.due_dates || [])];
-                                  dates[i] = e.target.value;
-                                  setNewService(p => ({ ...p, due_dates: dates }));
-                                }} />
-                              </div>
-                            ))}
+                        <div className="sm:col-span-2 space-y-3">
+                          <Label className="text-xs text-gray-600 block">Parcelas</Label>
+                          <div className="space-y-3">
+                            {Array.from({ length: parseInt(newService.installments) }, (_, idx) => {
+                              const inst = newService.installments_data?.[idx] || { due_date: newService.due_dates?.[idx] || '', received: false, received_at: '' };
+                              return (
+                                <div key={idx} className="p-3 border border-gray-200 rounded-lg">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+                                    <div>
+                                      <Label className="text-xs text-gray-500 mb-1 block">Parcela {idx + 1} - Vencimento</Label>
+                                      <Input className="h-8 text-xs" type="date" value={inst.due_date || ''} onChange={e => {
+                                        const inst_data = [...(newService.installments_data || [])];
+                                        inst_data[idx] = { ...inst_data[idx], due_date: e.target.value };
+                                        setNewService(p => ({ ...p, installments_data: inst_data }));
+                                      }} />
+                                    </div>
+                                    <div className="flex items-end gap-1">
+                                      <input type="checkbox" id={`new-inst-${idx}`} checked={inst.received} onChange={e => {
+                                        const inst_data = [...(newService.installments_data || [])];
+                                        inst_data[idx] = { ...inst_data[idx], received: e.target.checked };
+                                        setNewService(p => ({ ...p, installments_data: inst_data }));
+                                      }} className="w-4 h-4 accent-emerald-600" />
+                                      <label htmlFor={`new-inst-${idx}`} className="text-xs text-gray-600 cursor-pointer flex-1">Recebido</label>
+                                    </div>
+                                  </div>
+                                  {inst.received && (
+                                    <div>
+                                      <Label className="text-xs text-gray-500 mb-1 block">Data do Recebimento</Label>
+                                      <Input className="h-8 text-xs" type="date" value={inst.received_at || ''} onChange={e => {
+                                        const inst_data = [...(newService.installments_data || [])];
+                                        inst_data[idx] = { ...inst_data[idx], received_at: e.target.value };
+                                        setNewService(p => ({ ...p, installments_data: inst_data }));
+                                      }} />
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
@@ -390,23 +437,49 @@ export default function ClientFinancialSummary({ client }) {
                                  <Input className="h-9 text-sm" type="number" min="2" value={editForm.installments} onChange={e => {
                                    const n = parseInt(e.target.value) || 0;
                                    const dates = Array.from({ length: n }, (_, i) => editForm.due_dates?.[i] || '');
-                                   setEditForm(p => ({ ...p, installments: e.target.value, due_dates: dates }));
+                                   const inst_data = Array.from({ length: n }, (_, i) => editForm.installments_data?.[i] || { due_date: dates[i] || '', received: false, received_at: '' });
+                                   setEditForm(p => ({ ...p, installments: e.target.value, due_dates: dates, installments_data: inst_data }));
                                  }} />
                                </div>
                                {parseInt(editForm.installments) > 0 && (
-                                 <div className="sm:col-span-2 space-y-2">
-                                   <Label className="text-xs text-gray-600 block">Datas de Vencimento das Parcelas</Label>
-                                   <div className="grid grid-cols-2 gap-2">
-                                     {Array.from({ length: parseInt(editForm.installments) }, (_, idx) => (
-                                       <div key={idx}>
-                                         <Label className="text-xs text-gray-400 mb-1 block">Parcela {idx + 1}</Label>
-                                         <Input className="h-8 text-xs" type="date" value={editForm.due_dates?.[idx] || ''} onChange={e => {
-                                           const dates = [...(editForm.due_dates || [])];
-                                           dates[idx] = e.target.value;
-                                           setEditForm(p => ({ ...p, due_dates: dates }));
-                                         }} />
-                                       </div>
-                                     ))}
+                                 <div className="sm:col-span-2 space-y-3">
+                                   <Label className="text-xs text-gray-600 block">Parcelas</Label>
+                                   <div className="space-y-3">
+                                     {Array.from({ length: parseInt(editForm.installments) }, (_, idx) => {
+                                       const inst = editForm.installments_data?.[idx] || { due_date: editForm.due_dates?.[idx] || '', received: false, received_at: '' };
+                                       return (
+                                         <div key={idx} className="p-3 border border-gray-200 rounded-lg">
+                                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+                                             <div>
+                                               <Label className="text-xs text-gray-500 mb-1 block">Parcela {idx + 1} - Vencimento</Label>
+                                               <Input className="h-8 text-xs" type="date" value={inst.due_date || ''} onChange={e => {
+                                                 const inst_data = [...(editForm.installments_data || [])];
+                                                 inst_data[idx] = { ...inst_data[idx], due_date: e.target.value };
+                                                 setEditForm(p => ({ ...p, installments_data: inst_data }));
+                                               }} />
+                                             </div>
+                                             <div className="flex items-end gap-1">
+                                               <input type="checkbox" id={`edit-inst-${idx}`} checked={inst.received} onChange={e => {
+                                                 const inst_data = [...(editForm.installments_data || [])];
+                                                 inst_data[idx] = { ...inst_data[idx], received: e.target.checked };
+                                                 setEditForm(p => ({ ...p, installments_data: inst_data }));
+                                               }} className="w-4 h-4 accent-emerald-600" />
+                                               <label htmlFor={`edit-inst-${idx}`} className="text-xs text-gray-600 cursor-pointer flex-1">Recebido</label>
+                                             </div>
+                                           </div>
+                                           {inst.received && (
+                                             <div>
+                                               <Label className="text-xs text-gray-500 mb-1 block">Data do Recebimento</Label>
+                                               <Input className="h-8 text-xs" type="date" value={inst.received_at || ''} onChange={e => {
+                                                 const inst_data = [...(editForm.installments_data || [])];
+                                                 inst_data[idx] = { ...inst_data[idx], received_at: e.target.value };
+                                                 setEditForm(p => ({ ...p, installments_data: inst_data }));
+                                               }} />
+                                             </div>
+                                           )}
+                                         </div>
+                                       );
+                                     })}
                                    </div>
                                  </div>
                                )}
@@ -460,12 +533,21 @@ export default function ClientFinancialSummary({ client }) {
                           )}
                         </div>
                       </div>
-                      {isParcelado && service.due_dates?.some(d => d) && (
-                        <div className="mt-1.5 flex flex-wrap gap-1.5">
-                          {service.due_dates.map((d, pi) => d ? (
-                            <span key={pi} className="text-xs px-2 py-0.5 bg-purple-50 text-purple-700 rounded-md">
-                              {pi + 1}ª: {new Date(d + 'T12:00:00').toLocaleDateString('pt-BR')}
-                            </span>
+                      {isParcelado && (service.due_dates?.some(d => d) || service.installments_data?.some(inst => inst.due_date)) && (
+                        <div className="mt-1.5 space-y-1.5">
+                          {(service.installments_data?.length > 0 ? service.installments_data : service.due_dates?.map(d => ({ due_date: d }))).map((inst, pi) => inst?.due_date || inst ? (
+                            <div key={pi} className="text-xs px-2 py-1 bg-purple-50 text-purple-700 rounded-md flex items-center justify-between gap-2">
+                              <span>
+                                {pi + 1}ª: {new Date((inst.due_date || inst) + 'T12:00:00').toLocaleDateString('pt-BR')}
+                              </span>
+                              {inst.received ? (
+                                <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded font-medium">
+                                  ✓ {inst.received_at ? new Date(inst.received_at).toLocaleDateString('pt-BR') : 'Recebido'}
+                                </span>
+                              ) : (
+                                <span className="text-xs px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded">Aguardando</span>
+                              )}
+                            </div>
                           ) : null)}
                         </div>
                       )}

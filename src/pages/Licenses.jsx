@@ -760,19 +760,21 @@ export default function Licenses() {
                         <span className="hidden sm:inline">Histórico</span>
                         <span className="sm:hidden">Hist</span>
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedLicense(license);
-                          setShowChecklist(true);
-                        }}
-                        className="flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50 text-xs sm:text-sm"
-                      >
-                        <ClipboardList className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                        <span className="hidden sm:inline">Checklist</span>
-                        <span className="sm:hidden">Check</span>
-                      </Button>
+                      {!isClientConsultor && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedLicense(license);
+                            setShowChecklist(true);
+                          }}
+                          className="flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50 text-xs sm:text-sm"
+                        >
+                          <ClipboardList className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                          <span className="hidden sm:inline">Checklist</span>
+                          <span className="sm:hidden">Check</span>
+                        </Button>
+                      )}
                       {canEdit && (
                         <Button
                           variant="ghost"

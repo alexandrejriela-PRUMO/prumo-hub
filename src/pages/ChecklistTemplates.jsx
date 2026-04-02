@@ -4,7 +4,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Plus, Edit2, Trash2, Copy } from 'lucide-react';
+import { Plus, Edit2, Trash2, Copy, ChevronLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '../utils';
 
 export default function ChecklistTemplates() {
   const [user, setUser] = useState(null);
@@ -161,6 +163,13 @@ export default function ChecklistTemplates() {
       <div className="max-w-5xl mx-auto px-4">
         {step === 'list' && (
           <>
+            <Link
+              to={createPageUrl('Licenses')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-emerald-700 hover:bg-emerald-50 transition-colors text-xs font-medium mb-4"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              Voltar para Licenças e Projetos
+            </Link>
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h1 className="text-3xl font-bold text-emerald-900 mb-2">Modelos de Checklist</h1>

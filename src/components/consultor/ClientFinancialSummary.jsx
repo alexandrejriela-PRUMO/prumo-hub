@@ -486,14 +486,9 @@ export default function ClientFinancialSummary({ client }) {
                  const totalValue = parseFloat(service.value) || 0;
                  const isParcelado = service.payment_type === 'parcelado';
                  
-                 // Normalizar installments para sempre ser array
-                 let installmentsArray = service.installments;
-                 if (typeof installmentsArray === 'string') {
-                   try { installmentsArray = JSON.parse(installmentsArray); } catch { installmentsArray = []; }
-                 }
-                 if (!Array.isArray(installmentsArray)) {
-                   installmentsArray = [];
-                 }
+                 const installmentsArray = Array.isArray(service.installments)
+                   ? service.installments
+                   : [];
                  
                  const numParcelas = isParcelado ? installmentsArray.length || 1 : 1;
                  const installmentValue = isParcelado ? totalValue / numParcelas : null;

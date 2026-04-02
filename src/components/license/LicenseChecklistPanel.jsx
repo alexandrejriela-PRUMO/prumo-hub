@@ -259,15 +259,36 @@ function ChecklistTaskItem({
         notes: item.notes || '',
       });
 
-      // 2. Cria interação no CRM da propriedade vinculada (se houver propertyId)
+      // 2. Cria interação + tarefa no CRM da propriedade vinculada (se houver propertyId)
       if (propertyId) {
         try {
           const crmList = await base44.entities.ClientCRM.filter({ consultor_email: consultorEmail });
-          // tenta achar o CRM pela property_id
-          const crmMatch = crmList.find(c => c.property_id === propertyId);
+          // busca por property_id direto ou por qualquer CRM que tenha essa property
+          const crmMatch = crmList.find(c => c.property_id === propertyId) || crmList.find(c => c.property_id === propertyId);
           if (crmMatch) {
+            const taskId = Date.now().toString();
+            const interactionId = (Date.now() + 1).toString();
+
+            // Tarefa no CRM (aparece no card do board e na aba Tarefas)
+            const newTask = {
+              id: taskId,
+              title: `📋 ${item.title}`,
+              description: `Checklist: ${licenseLabel}${item.notes ? ' — ' + item.notes : ''}`,
+              due_date: agendaDate,
+              done: false,
+              status: 'pending',
+              priority: item.priority || 'Média',
+              responsible_email: agendaAssignee,
+              responsible_name: assignee?.member_name || agendaAssignee,
+              assigned_to_email: agendaAssignee,
+              assigned_by_email: consultorEmail,
+              assigned_at: new Date().toISOString(),
+              thread: [...(item.thread || [])], // espelha thread existente da tarefa do checklist
+            };
+
+            // Interação no CRM (aparece na aba Interações)
             const newInteraction = {
-              id: Date.now().toString(),
+              id: interactionId,
               date: new Date().toISOString(),
               type: 'Reunião',
               title: `📋 ${item.title} — Checklist: ${licenseLabel}`,
@@ -279,8 +300,14 @@ function ChecklistTaskItem({
               created_by: consultorEmail,
               thread: [],
             };
-            const updatedInteractions = [...(crmMatch.interactions || []), newInteraction];
-            await base44.entities.ClientCRM.update(crmMatch.id, { interactions: updatedInteractions });
+
+            // Busca estado fresco para evitar race condition
+            const freshList = await base44.entities.ClientCRM.filter({ id: crmMatch.id });
+            const freshCRM = freshList?.[0] || crmMatch;
+            await base44.entities.ClientCRM.update(crmMatch.id, {
+              tasks: [...(freshCRM.tasks || []), newTask],
+              interactions: [...(freshCRM.interactions || []), newInteraction],
+            });
           }
         } catch {
           // silencioso — agenda já foi criada, CRM é opcional
@@ -652,7 +679,8 @@ function InlineChecklistView({ checklist, user, consultorEmail, teamMembers, lic
     // Atualiza state local imediatamente
     const newItems = itemsRef.current.map(item => item.id === itemId ? { ...item, thread: updatedThread } : item);
     setItems(newItems);
-    // Persiste no banco sem toast de "salvo" para não atrapalhar UX
+
+    // Persiste no banco (checklist)
     const completed = newItems.filter(i => i.status === 'Concluído').length;
     const pending   = newItems.filter(i => i.status === 'Pendente').length;
     const delayed   = newItems.filter(i => i.status === 'Atrasado').length;
@@ -663,6 +691,31 @@ function InlineChecklistView({ checklist, user, consultorEmail, teamMembers, lic
       completed_tasks: completed, pending_tasks: pending, delayed_tasks: delayed,
       last_updated: new Date().toISOString(),
     });
+
+    // Espelha a thread na tarefa correspondente do CRM (se houver)
+    if (propertyId) {
+      try {
+        const changedItem = newItems.find(i => i.id === itemId);
+        if (!changedItem) return;
+        const crmList = await base44.entities.ClientCRM.filter({ consultor_email: consultorEmail });
+        const crmMatch = crmList.find(c => c.property_id === propertyId);
+        if (crmMatch) {
+          // Encontra a tarefa no CRM pelo título espelhado
+          const crmTaskTitle = `📋 ${changedItem.title}`;
+          const hasMirroredTask = (crmMatch.tasks || []).some(t => t.title === crmTaskTitle);
+          if (hasMirroredTask) {
+            const freshList = await base44.entities.ClientCRM.filter({ id: crmMatch.id });
+            const freshCRM = freshList?.[0] || crmMatch;
+            const updatedTasks = (freshCRM.tasks || []).map(t =>
+              t.title === crmTaskTitle ? { ...t, thread: updatedThread } : t
+            );
+            await base44.entities.ClientCRM.update(crmMatch.id, { tasks: updatedTasks });
+          }
+        }
+      } catch {
+        // silencioso
+      }
+    }
   };
 
   const handleDeleteItem = (itemId) => {

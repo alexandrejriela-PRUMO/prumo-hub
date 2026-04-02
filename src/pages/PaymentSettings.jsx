@@ -12,6 +12,7 @@ import {
   Clock, FileText, Settings, TrendingUp, Building2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import AccountsManager from '@/components/financial/AccountsManager';
 
 
 const STATUS_COLOR = {
@@ -99,11 +100,12 @@ export default function PaymentSettings() {
       </div>
 
       <Tabs defaultValue="recebimentos">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="recebimentos">Recebimentos</TabsTrigger>
-          <TabsTrigger value="fiscal">Dados Fiscais (NF-e)</TabsTrigger>
-          <TabsTrigger value="historico">Histórico</TabsTrigger>
-        </TabsList>
+         <TabsList className="grid w-full grid-cols-4">
+           <TabsTrigger value="recebimentos">Recebimentos</TabsTrigger>
+           <TabsTrigger value="contas">Contas Financeiras</TabsTrigger>
+           <TabsTrigger value="fiscal">Dados Fiscais (NF-e)</TabsTrigger>
+           <TabsTrigger value="historico">Histórico</TabsTrigger>
+         </TabsList>
 
         {/* ── Recebimentos ──────────────────────────────────────────── */}
         <TabsContent value="recebimentos" className="mt-5 space-y-5">
@@ -204,6 +206,11 @@ export default function PaymentSettings() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* ── Contas Financeiras ──────────────────────────────────────────── */}
+        <TabsContent value="contas" className="mt-5 space-y-5">
+          <AccountsManager userId={user?.email} />
         </TabsContent>
 
         {/* ── Dados Fiscais ──────────────────────────────────────────── */}

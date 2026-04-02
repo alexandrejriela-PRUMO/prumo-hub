@@ -4,7 +4,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CreditCard, TrendingUp, Calendar, Loader2, CheckCircle2, Clock, DollarSign, AlertCircle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CreditCard, TrendingUp, Loader2, CheckCircle2, Clock, DollarSign, AlertCircle, Edit3, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const STATUS_COLOR = {
@@ -46,6 +49,47 @@ export default function ClientFinancialSummary({ client }) {
   });
 
   const [receivedDateInput, setReceivedDateInput] = React.useState({});
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [editForm, setEditForm] = useState({});
+
+  const startEdit = (service, index) => {
+    setEditingIndex(index);
+    setEditForm({
+      name: service.name,
+      status: service.status,
+      value: service.value?.toString() || '',
+      notes: service.notes || '',
+      payment_type: service.payment_type || 'avista',
+      payment_method: service.payment_method || 'Pix',
+      installments: service.installments || '',
+      start_date: service.start_date || '',
+      due_dates: service.due_dates || [],
+      received: service.received || false,
+      received_at: service.received_at ? service.received_at.split('T')[0] : '',
+    });
+  };
+
+  const saveEdit = () => {
+    const services = (crm?.services || []).map((s, i) => {
+      if (i !== editingIndex) return s;
+      const received_at = editForm.received && editForm.received_at
+        ? new Date(editForm.received_at + 'T12:00:00').toISOString()
+        : (editForm.received ? new Date().toISOString() : null);
+      return { ...s, ...editForm, value: parseFloat(editForm.value) || 0, received_at };
+    });
+    upsertCRM.mutate({ services }, {
+      onSuccess: () => { toast.success('Serviço atualizado!'); setEditingIndex(null); },
+      onError: (e) => toast.error('Erro ao salvar: ' + e.message),
+    });
+  };
+
+  const deleteService = (index) => {
+    const services = (crm?.services || []).filter((_, i) => i !== index);
+    upsertCRM.mutate({ services }, {
+      onSuccess: () => toast.success('Serviço removido.'),
+      onError: (e) => toast.error('Erro ao remover: ' + e.message),
+    });
+  };
 
   const toggleReceived = (index) => {
      const svc = crm?.services?.[index];
@@ -181,14 +225,107 @@ export default function ClientFinancialSummary({ client }) {
                 const installmentValue = isParcelado ? totalValue / numParcelas : null;
 
                 return (
-                  <div key={i} className={`px-4 py-3 flex items-start gap-3 ${service.received ? 'bg-green-50/40' : service.status === 'Cancelado' ? 'opacity-50' : ''}`}>
-                    <div className="mt-0.5">
-                      {service.received
-                        ? <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
-                        : <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0" />
-                      }
-                    </div>
-                    <div className="flex-1 min-w-0">
+                   <div key={i} className={`px-4 py-3 ${service.received ? 'bg-green-50/40' : service.status === 'Cancelado' ? 'opacity-50' : ''}`}>
+                     {editingIndex === i ? (
+                       <div className="space-y-3 bg-blue-50/40 border border-blue-100 rounded-xl p-4">
+                         <p className="text-sm font-semibold text-blue-800">Editar Serviço</p>
+                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                           <div className="sm:col-span-2">
+                             <Label className="text-xs text-gray-600 mb-1 block">Nome do Serviço *</Label>
+                             <Input className="h-9 text-sm" value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} />
+                           </div>
+                           <div>
+                             <Label className="text-xs text-gray-600 mb-1 block">Status</Label>
+                             <Select value={editForm.status} onValueChange={v => setEditForm(p => ({ ...p, status: v }))}>
+                               <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                               <SelectContent>{['Em Proposta','Contratado','Em Andamento','Concluído','Cancelado'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                             </Select>
+                           </div>
+                           <div>
+                             <Label className="text-xs text-gray-600 mb-1 block">Valor Total (R$)</Label>
+                             <Input className="h-9 text-sm" type="number" value={editForm.value} onChange={e => setEditForm(p => ({ ...p, value: e.target.value }))} />
+                           </div>
+                           <div>
+                             <Label className="text-xs text-gray-600 mb-1 block">Tipo de Pagamento</Label>
+                             <Select value={editForm.payment_type} onValueChange={v => setEditForm(p => ({ ...p, payment_type: v, due_dates: [], installments: '' }))}>
+                               <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                               <SelectContent>
+                                 <SelectItem value="avista">À Vista</SelectItem>
+                                 <SelectItem value="parcelado">Parcelado</SelectItem>
+                               </SelectContent>
+                             </Select>
+                           </div>
+                           <div>
+                             <Label className="text-xs text-gray-600 mb-1 block">Forma de Pagamento</Label>
+                             <Select value={editForm.payment_method} onValueChange={v => setEditForm(p => ({ ...p, payment_method: v }))}>
+                               <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                               <SelectContent>{['Pix','Transferência','Boleto','Cartão de Crédito','Cartão de Débito','Dinheiro','Cheque','Outro'].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                             </Select>
+                           </div>
+                           {editForm.payment_type === 'avista' && (
+                             <div>
+                               <Label className="text-xs text-gray-600 mb-1 block">Data de Vencimento</Label>
+                               <Input className="h-9 text-sm" type="date" value={editForm.start_date} onChange={e => setEditForm(p => ({ ...p, start_date: e.target.value }))} />
+                             </div>
+                           )}
+                           {editForm.payment_type === 'parcelado' && (
+                             <>
+                               <div>
+                                 <Label className="text-xs text-gray-600 mb-1 block">Nº de Parcelas</Label>
+                                 <Input className="h-9 text-sm" type="number" min="2" value={editForm.installments} onChange={e => {
+                                   const n = parseInt(e.target.value) || 0;
+                                   const dates = Array.from({ length: n }, (_, i) => editForm.due_dates?.[i] || '');
+                                   setEditForm(p => ({ ...p, installments: e.target.value, due_dates: dates }));
+                                 }} />
+                               </div>
+                               {parseInt(editForm.installments) > 0 && (
+                                 <div className="sm:col-span-2 space-y-2">
+                                   <Label className="text-xs text-gray-600 block">Datas de Vencimento das Parcelas</Label>
+                                   <div className="grid grid-cols-2 gap-2">
+                                     {Array.from({ length: parseInt(editForm.installments) }, (_, idx) => (
+                                       <div key={idx}>
+                                         <Label className="text-xs text-gray-400 mb-1 block">Parcela {idx + 1}</Label>
+                                         <Input className="h-8 text-xs" type="date" value={editForm.due_dates?.[idx] || ''} onChange={e => {
+                                           const dates = [...(editForm.due_dates || [])];
+                                           dates[idx] = e.target.value;
+                                           setEditForm(p => ({ ...p, due_dates: dates }));
+                                         }} />
+                                       </div>
+                                     ))}
+                                   </div>
+                                 </div>
+                               )}
+                             </>
+                           )}
+                           <div className="sm:col-span-2 flex items-center gap-2">
+                             <input type="checkbox" id={`edit-received-${i}`} checked={editForm.received} onChange={e => setEditForm(p => ({ ...p, received: e.target.checked }))} className="w-4 h-4 accent-emerald-600" />
+                             <label htmlFor={`edit-received-${i}`} className="text-sm text-gray-700 cursor-pointer">Valor já recebido</label>
+                           </div>
+                           {editForm.received && (
+                             <div>
+                               <Label className="text-xs text-gray-600 mb-1 block">Data do Recebimento</Label>
+                               <Input className="h-9 text-sm" type="date" value={editForm.received_at} onChange={e => setEditForm(p => ({ ...p, received_at: e.target.value }))} />
+                             </div>
+                           )}
+                           <div className="sm:col-span-2">
+                             <Label className="text-xs text-gray-600 mb-1 block">Observações</Label>
+                             <Input className="h-9 text-sm" value={editForm.notes} onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))} />
+                           </div>
+                         </div>
+                         <div className="flex justify-end gap-2 pt-1">
+                           <Button size="sm" variant="outline" onClick={() => setEditingIndex(null)}>Cancelar</Button>
+                           <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={saveEdit} disabled={upsertCRM.isPending}>Salvar</Button>
+                         </div>
+                       </div>
+                     ) : (
+                     <div className="flex items-start gap-3">
+                     <div className="mt-0.5">
+                       {service.received
+                         ? <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                         : <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                       }
+                     </div>
+                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-start gap-2 justify-between">
                         <div>
                           <p className="text-sm font-semibold text-gray-900">{service.name}</p>
@@ -252,11 +389,17 @@ export default function ClientFinancialSummary({ client }) {
                         )}
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
+                    <div className="flex flex-col gap-1 flex-shrink-0 ml-2">
+                      <button onClick={() => startEdit(service, i)} className="p-1 hover:bg-blue-50 rounded text-gray-300 hover:text-blue-500 transition-colors"><Edit3 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => deleteService(i)} className="p-1 hover:bg-red-50 rounded text-gray-300 hover:text-red-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                    </div>
+                    </div>
+                    )}
+                    </div>
+                    );
+                    })}
+                    </div>
+                    </CardContent>
         </Card>
       ) : (
         <p className="text-sm text-gray-400 text-center py-6">Nenhum serviço cadastrado. Adicione serviços na aba CRM.</p>

@@ -627,7 +627,7 @@ export default function ClientCRMPanel({ property, onClose }) {
                               const inst = newService.installments_data?.[idx] || { due_date: newService.due_dates?.[idx] || '', received: false, received_date: '' };
                               return (
                                 <div key={idx} className="p-3 border border-gray-200 rounded-lg">
-                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
                                     <div>
                                       <Label className="text-xs text-gray-500 mb-1 block">Vencimento</Label>
                                       <Input className="h-8 text-xs" type="date" value={inst.due_date || ''} onChange={e => {
@@ -653,6 +653,36 @@ export default function ClientCRMPanel({ property, onClose }) {
                                       <label htmlFor={`new-inst-${idx}`} className="text-xs text-gray-600 cursor-pointer flex-1">Recebido</label>
                                     </div>
                                   </div>
+                                  {inst.received && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      <div>
+                                        <Label className="text-xs text-gray-500 mb-1 block">Conta Receb.</Label>
+                                        <Select value={inst.account_id || ''} onValueChange={v => {
+                                          const inst_data = [...(newService.installments_data || [])];
+                                          const acc = accounts.find(a => a.id === v);
+                                          inst_data[idx] = { ...inst_data[idx], account_id: v || '', account_name: acc?.name || '' };
+                                          setNewService(p => ({ ...p, installments_data: inst_data }));
+                                        }}>
+                                          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value={null}>Sem conta</SelectItem>
+                                            {accounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>)}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div>
+                                        <Label className="text-xs text-gray-500 mb-1 block">Forma Pagto.</Label>
+                                        <Select value={inst.payment_method || ''} onValueChange={v => {
+                                          const inst_data = [...(newService.installments_data || [])];
+                                          inst_data[idx] = { ...inst_data[idx], payment_method: v };
+                                          setNewService(p => ({ ...p, installments_data: inst_data }));
+                                        }}>
+                                          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                                          <SelectContent>{['Pix','Transferência','Boleto','Cartão de Crédito','Cartão de Débito','Dinheiro','Cheque','Outro'].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                                        </Select>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })}

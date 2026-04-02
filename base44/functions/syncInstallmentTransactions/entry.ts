@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
             );
 
             if (!exists) {
-              // Criar transação
+              // Criar transação com dados específicos da parcela se disponível, senão usar dados do serviço
               const transaction = await base44.entities.Expense.create({
                 consultor_email,
                 description,
@@ -62,11 +62,11 @@ Deno.serve(async (req) => {
                 competencia: dateStr,
                 transaction_type: 'receita',
                 category: 'Cobran\u00e7a de Cliente (Manual)',
-                account_name: service.account_name || '',
+                account_name: inst.account_name || service.account_name || '',
                 client_name: crm.client_name,
                 client_property_id: clientPropertyId,
                 status: 'Pago',
-                payment_method: service.payment_method || 'Pix',
+                payment_method: inst.payment_method || service.payment_method || 'Pix',
                 notes: `Parcela ${inst.number}/${installments.length} de "${service.name}"`,
               });
               createdTransactions.push(transaction);

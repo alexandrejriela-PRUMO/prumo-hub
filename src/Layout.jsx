@@ -92,7 +92,22 @@ const consultorNavItems = [
 // Produtor Rural: menu completo
 const produtorNavItems = [
   { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
-  { name: 'Central da Propriedade', page: 'PropertyCentral', icon: Building2 },
+  {
+    name: 'Central da Propriedade',
+    icon: Building2,
+    children: [
+      { name: 'Visão Geral', page: 'PropertyCentral', icon: Building2 },
+      { name: 'Documentos', page: 'DocumentsHub', icon: FileText },
+      { name: 'Licenças e Projetos', page: 'Licenses', icon: FileCheck },
+      { name: 'Gestão do CAR', page: 'CARModule', icon: TreePine },
+      { name: 'Mapa Interativo', page: 'PropertyMapView', icon: Map },
+      { name: 'Processos', page: 'Processes', icon: Scale },
+      { name: 'Alertas de Infrações', page: 'EnvironmentalAlerts', icon: AlertTriangle },
+      { name: 'Termômetro de Regularidade', page: 'RegularityReport', icon: BarChart3 },
+      { name: 'PRAD - Recuperação de Área', page: 'PRAD', icon: Leaf },
+      { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
+    ]
+  },
   { 
     name: 'Agricultura de Precisão', 
     icon: Sparkles,
@@ -285,6 +300,17 @@ export default function Layout({ children, currentPageName }) {
     };
     loadUser();
   }, []);
+
+  // Auto-expand menus that contain the current active page
+  useEffect(() => {
+    if (!currentPageName) return;
+    const allMenus = [...consultorNavItems, ...equipeNavItems, ...navItems, ...produtorNavItems];
+    allMenus.forEach(item => {
+      if (item.children && item.children.some(child => child.page === currentPageName)) {
+        setExpandedMenus(prev => ({ ...prev, [item.name]: true }));
+      }
+    });
+  }, [currentPageName]);
 
   const { data: notifications = [] } = useQuery({
     queryKey: ['inAppNotifications', user?.email],
@@ -564,23 +590,29 @@ export default function Layout({ children, currentPageName }) {
                 if (item.children) {
                   const isExpanded = expandedMenus[item.name];
                   const hasActiveChild = item.children.some(child => child.page === currentPageName);
+                  const isGroupActive = currentPageName === item.page || hasActiveChild;
                   const Icon = item.icon;
                   return (
                     <div key={itemKey} className="mb-1">
                       <button
-                        onClick={() => setExpandedMenus(prev => ({ ...prev, [item.name]: !prev[item.name] }))}
+                        onClick={() => {
+                          setExpandedMenus(prev => ({ ...prev, [item.name]: !prev[item.name] }));
+                          if (item.page) {
+                            window.location.href = createPageUrl(item.page);
+                          }
+                        }}
                         className={cn(
                           "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group border",
-                          hasActiveChild
+                          isGroupActive
                             ? "bg-emerald-700/60 text-white border-emerald-600/60 shadow-sm"
                             : "text-emerald-100 hover:bg-emerald-800/60 hover:text-white border-emerald-800/40 hover:border-emerald-600/40"
                         )}
                       >
                         <div className={cn(
                           "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0",
-                          hasActiveChild ? "bg-amber-500/20" : "bg-emerald-800/60 group-hover:bg-emerald-700/60"
+                          isGroupActive ? "bg-amber-500/20" : "bg-emerald-800/60 group-hover:bg-emerald-700/60"
                         )}>
-                          <Icon className={cn("w-4 h-4", hasActiveChild ? "text-amber-400" : "text-emerald-400 group-hover:text-amber-400")} />
+                          <Icon className={cn("w-4 h-4", isGroupActive ? "text-amber-400" : "text-emerald-400 group-hover:text-amber-400")} />
                         </div>
                         <span className="font-semibold text-xs uppercase tracking-wider">{item.name}</span>
                         <ChevronDown className={cn("w-3.5 h-3.5 ml-auto transition-transform text-emerald-400", isExpanded && "rotate-180")} />

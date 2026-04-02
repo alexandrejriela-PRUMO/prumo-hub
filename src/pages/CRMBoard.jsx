@@ -321,7 +321,7 @@ export default function CRMBoard() {
 
       {/* Client Detail Modal */}
       <Dialog open={!!selectedCRM} onOpenChange={() => setSelectedCRM(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto relative z-50 bg-white">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle className="flex items-center gap-2 text-emerald-800">

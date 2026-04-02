@@ -477,7 +477,7 @@ export default function ClientCRMPanel({ property, onClose }) {
           </Button>
 
           {showServiceForm && (
-            <Card className="border-emerald-200 bg-emerald-50/30">
+            <Card className="border-emerald-200 bg-white relative z-10">
               <CardContent className="p-4 space-y-3">
                 <p className="text-sm font-semibold text-emerald-800">{editingServiceIndex !== null ? 'Editar Serviço' : 'Novo Serviço'}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

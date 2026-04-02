@@ -354,7 +354,7 @@ export default function CRMBoard() {
                 <ClientProfilePanel client={selectedClient} />
               </TabsContent>
               <TabsContent value="crm" className="mt-4">
-                <ClientCRMPanel property={selectedClient} onClose={() => setSelectedCRM(null)} />
+                {selectedClient && <ClientCRMPanel property={selectedClient} onClose={() => setSelectedCRM(null)} />}
               </TabsContent>
               <TabsContent value="financeiro" className="mt-4">
                 <ClientFinancialSummary client={selectedClient} />

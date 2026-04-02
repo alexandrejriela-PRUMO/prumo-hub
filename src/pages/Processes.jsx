@@ -56,7 +56,9 @@ export default function Processes() {
     fine_paid: false,
     location: '',
     is_civil_inquiry: false,
-    civil_inquiry_resolution: 'Não resolvido'
+    civil_inquiry_resolution: 'Não resolvido',
+    has_embargo: false,
+    embargo_respected: true
   });
 
   const queryClient = useQueryClient();
@@ -161,7 +163,9 @@ export default function Processes() {
       fine_paid: false,
       location: '',
       is_civil_inquiry: false,
-      civil_inquiry_resolution: 'Não resolvido'
+      civil_inquiry_resolution: 'Não resolvido',
+      has_embargo: false,
+      embargo_respected: true
     });
     setEditingProcess(null);
   };
@@ -197,7 +201,9 @@ export default function Processes() {
       fine_paid: process.fine_paid || false,
       location: process.location || '',
       is_civil_inquiry: process.is_civil_inquiry || false,
-      civil_inquiry_resolution: process.civil_inquiry_resolution || 'Não resolvido'
+      civil_inquiry_resolution: process.civil_inquiry_resolution || 'Não resolvido',
+      has_embargo: process.has_embargo || false,
+      embargo_respected: process.embargo_respected !== false
     });
     setShowDialog(true);
   };
@@ -477,6 +483,58 @@ export default function Processes() {
           <label htmlFor="fine_paid" className="text-sm font-medium text-green-800 cursor-pointer">
             Multa arbitrada já foi paga (regularidade positiva no termômetro)
           </label>
+        </div>
+      )}
+
+      {/* Embargo — apenas para processos Administrativos */}
+      {formData.process_type === 'Administrativo' && (
+        <div className="space-y-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+          <p className="text-xs font-semibold text-orange-800 uppercase tracking-wide">Embargo</p>
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="has_embargo"
+              checked={formData.has_embargo}
+              onChange={(e) => setFormData({ ...formData, has_embargo: e.target.checked })}
+              className="w-4 h-4 accent-orange-600"
+            />
+            <label htmlFor="has_embargo" className="text-sm font-medium text-orange-800 cursor-pointer">
+              Existe embargo vinculado a este processo
+            </label>
+          </div>
+          {formData.has_embargo && (
+            <div className="space-y-2 pl-1">
+              <Label className="text-orange-800">O embargo está sendo respeitado?</Label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="embargo_respected"
+                    checked={formData.embargo_respected === true}
+                    onChange={() => setFormData({ ...formData, embargo_respected: true })}
+                    className="accent-green-600"
+                  />
+                  <span className="text-sm text-green-800 font-medium">Sim, está sendo respeitado</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="embargo_respected"
+                    checked={formData.embargo_respected === false}
+                    onChange={() => setFormData({ ...formData, embargo_respected: false })}
+                    className="accent-red-600"
+                  />
+                  <span className="text-sm text-red-800 font-medium">Não está sendo respeitado</span>
+                </label>
+              </div>
+              {formData.embargo_respected === false && (
+                <p className="text-xs text-red-700 font-medium">⚠️ Embargo não respeitado é considerado risco grave no Termômetro de Regularidade.</p>
+              )}
+              {formData.embargo_respected === true && (
+                <p className="text-xs text-green-700">✓ Embargo respeitado não representa risco adicional.</p>
+              )}
+            </div>
+          )}
         </div>
       )}
 

@@ -186,10 +186,19 @@ export default function RegularityThermometer({ property, licenses = [], documen
       const hasPending = prads.some(p => p.status === 'Pendente' || p.status === 'Não Iniciado');
       const hasInProgress = prads.some(p => p.status === 'Em Execução');
       const allConcluded = prads.every(p => p.status === 'Concluído' || p.status === 'Aprovado');
+      // "Em elaboração" é positivo — demonstra proatividade e conformidade em andamento
+      const hasInElaboration = prads.some(p =>
+        p.status === 'Em Elaboração' || p.status === 'Em elaboração' ||
+        p.status === 'Elaboração' || p.status === 'elaboração'
+      );
 
       if (allConcluded) {
         totalScore += pradWeight;
         details.push({ category: 'PRAD', status: 'ok', message: 'Todos os PRADs concluídos/aprovados' });
+      } else if (hasInElaboration) {
+        // Em elaboração = positivo (proativo, em conformidade)
+        totalScore += pradWeight * 0.75;
+        details.push({ category: 'PRAD', status: 'ok', message: 'PRAD em elaboração — situação proativa ✓' });
       } else if (hasInProgress) {
         totalScore += pradWeight * 0.6;
         details.push({ category: 'PRAD', status: 'warning', message: 'PRAD em execução' });
@@ -200,7 +209,20 @@ export default function RegularityThermometer({ property, licenses = [], documen
     }
     // Se não há PRADs, não penaliza (nem bonifica)
 
+    // ── 6. EMBARGO (verificado nos processos administrativos) ─────────────
+    // Embargo não respeitado = risco crítico adicional (penaliza o score total)
+    const adminWithEmbargo = processes.filter(p => p.process_type === 'Administrativo' && p.has_embargo === true);
+    const embargoNotRespected = adminWithEmbargo.filter(p => p.embargo_respected === false);
+    if (embargoNotRespected.length > 0) {
+      // Penalização direta no total: -10 pontos por embargo não respeitado
+      totalScore = Math.max(0, totalScore - 10 * embargoNotRespected.length);
+      details.push({ category: 'Embargo', status: 'critical', message: `${embargoNotRespected.length} embargo(s) NÃO respeitado(s) — risco grave` });
+    } else if (adminWithEmbargo.length > 0) {
+      details.push({ category: 'Embargo', status: 'ok', message: `${adminWithEmbargo.length} embargo(s) sendo respeitado(s) ✓` });
+    }
+
     const maxScore = licenseWeight + docWeight + geoWeight + processWeight + (prads.length > 0 ? pradWeight : 0);
+    // Nota: embargo não adiciona ao maxScore pois é penalidade direta
     const percentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
 
     return { percentage, details, totalScore, maxScore };
@@ -221,6 +243,7 @@ export default function RegularityThermometer({ property, licenses = [], documen
     'Georreferenciamento': MapPin,
     'Processos': Scale,
     'PRAD': Leaf,
+    'Embargo': AlertCircle,
   };
 
   return (

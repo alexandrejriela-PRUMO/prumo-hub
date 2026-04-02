@@ -49,6 +49,16 @@
       "default": false,
       "description": "Indica se a multa arbitrada j\u00e1 foi paga (processo administrativo)"
     },
+    "has_embargo": {
+      "type": "boolean",
+      "default": false,
+      "description": "Indica se h\u00e1 embargo vinculado ao processo administrativo"
+    },
+    "embargo_respected": {
+      "type": "boolean",
+      "default": true,
+      "description": "Indica se o embargo est\u00e1 sendo respeitado (quando has_embargo = true)"
+    },
     "status": {
       "type": "string",
       "enum": [

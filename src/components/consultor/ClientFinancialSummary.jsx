@@ -63,7 +63,7 @@ export default function ClientFinancialSummary({ client }) {
       installments_data = service.installments.map(inst => ({
         due_date: inst.due_date || '',
         received: inst.received || false,
-        received_at: inst.received_date ? inst.received_date : '',
+        received_date: inst.received_date || '',
       }));
     }
     
@@ -88,18 +88,26 @@ export default function ClientFinancialSummary({ client }) {
 
       // Para parcelado: estrutura com array installments
       if (editForm.payment_type === 'parcelado') {
-        const installmentValue = parseFloat(editForm.value) / parseInt(editForm.installments || 1);
+        const totalValue = parseFloat(editForm.value) || 0;
+        const numInstallments = parseInt(editForm.installments) || 1;
+        const installmentValue = totalValue / numInstallments;
+        
         const installments = editForm.installments_data?.map((inst, idx) => ({
           number: idx + 1,
           amount: installmentValue,
           due_date: inst.due_date || '',
           received: inst.received || false,
-          received_date: inst.received_at ? inst.received_at : null,
+          received_date: inst.received_date || null,
         })) || [];
 
         return {
-          ...editForm,
-          value: parseFloat(editForm.value) || 0,
+          name: editForm.name,
+          status: editForm.status,
+          value: totalValue,
+          notes: editForm.notes,
+          payment_type: 'parcelado',
+          payment_method: editForm.payment_method,
+          start_date: editForm.start_date || '',
           installments,
           received: false,
           received_at: null,
@@ -107,8 +115,13 @@ export default function ClientFinancialSummary({ client }) {
       } else {
         // À vista
         return {
-          ...editForm,
+          name: editForm.name,
+          status: editForm.status,
           value: parseFloat(editForm.value) || 0,
+          notes: editForm.notes,
+          payment_type: 'avista',
+          payment_method: editForm.payment_method,
+          start_date: editForm.start_date || '',
           installments: [],
           received: editForm.received || false,
           received_at: editForm.received && editForm.received_at
@@ -151,18 +164,24 @@ export default function ClientFinancialSummary({ client }) {
 
     // Para parcelado: estrutura com array installments
     if (newService.payment_type === 'parcelado') {
-      const installmentValue = serviceValue / parseInt(newService.installments || 1);
+      const numInstallments = parseInt(newService.installments) || 1;
+      const installmentValue = serviceValue / numInstallments;
       const installments = newService.installments_data?.map((inst, idx) => ({
         number: idx + 1,
         amount: installmentValue,
         due_date: inst.due_date || '',
         received: inst.received || false,
-        received_date: inst.received_at ? inst.received_at : null,
+        received_date: inst.received_date || null,
       })) || [];
 
       const newServiceObj = {
-        ...newService,
+        name: newService.name,
+        status: newService.status,
         value: serviceValue,
+        notes: newService.notes,
+        payment_type: 'parcelado',
+        payment_method: newService.payment_method,
+        start_date: newService.start_date || '',
         installments,
         received: false,
         received_at: null,
@@ -181,15 +200,20 @@ export default function ClientFinancialSummary({ client }) {
           }
           toast.success('Serviço adicionado!');
           setShowNewServiceForm(false);
-          setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], installments_data: [], received: false, received_at: '' });
+          setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '' });
         },
         onError: (e) => toast.error('Erro ao adicionar: ' + e.message),
       });
     } else {
       // À vista
       const newServiceObj = {
-        ...newService,
+        name: newService.name,
+        status: newService.status,
         value: serviceValue,
+        notes: newService.notes,
+        payment_type: 'avista',
+        payment_method: newService.payment_method,
+        start_date: newService.start_date || '',
         installments: [],
         received: newService.received || false,
         received_at: newService.received && newService.received_at ? newService.received_at : null,
@@ -200,7 +224,7 @@ export default function ClientFinancialSummary({ client }) {
         onSuccess: () => {
           toast.success('Serviço adicionado!');
           setShowNewServiceForm(false);
-          setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], installments_data: [], received: false, received_at: '' });
+          setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '' });
         },
         onError: (e) => toast.error('Erro ao adicionar: ' + e.message),
       });
@@ -407,9 +431,9 @@ export default function ClientFinancialSummary({ client }) {
                                     </div>
                                     <div>
                                       <Label className="text-xs text-gray-500 mb-1 block">Data Receb.</Label>
-                                      <Input className="h-8 text-xs" type="date" value={inst.received_at || ''} onChange={e => {
+                                      <Input className="h-8 text-xs" type="date" value={inst.received_date || ''} onChange={e => {
                                         const inst_data = [...(newService.installments_data || [])];
-                                        inst_data[idx] = { ...inst_data[idx], received_at: e.target.value };
+                                        inst_data[idx] = { ...inst_data[idx], received_date: e.target.value };
                                         setNewService(p => ({ ...p, installments_data: inst_data }));
                                       }} />
                                     </div>
@@ -537,13 +561,13 @@ export default function ClientFinancialSummary({ client }) {
                                                }} />
                                              </div>
                                              <div>
-                                               <Label className="text-xs text-gray-500 mb-1 block">Data Receb.</Label>
-                                               <Input className="h-8 text-xs" type="date" value={inst.received_at || ''} onChange={e => {
-                                                 const inst_data = [...(editForm.installments_data || [])];
-                                                 inst_data[idx] = { ...inst_data[idx], received_at: e.target.value };
-                                                 setEditForm(p => ({ ...p, installments_data: inst_data }));
-                                               }} />
-                                             </div>
+                                                         <Label className="text-xs text-gray-500 mb-1 block">Data Receb.</Label>
+                                                         <Input className="h-8 text-xs" type="date" value={inst.received_date || ''} onChange={e => {
+                                                           const inst_data = [...(editForm.installments_data || [])];
+                                                           inst_data[idx] = { ...inst_data[idx], received_date: e.target.value };
+                                                           setEditForm(p => ({ ...p, installments_data: inst_data }));
+                                                         }} />
+                                                       </div>
                                              <div className="flex items-end gap-1">
                                                <input type="checkbox" id={`edit-inst-${idx}`} checked={inst.received} onChange={e => {
                                                  const inst_data = [...(editForm.installments_data || [])];

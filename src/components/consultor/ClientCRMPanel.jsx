@@ -660,7 +660,7 @@ export default function ClientCRMPanel({ property, onClose }) {
                       {service.payment_type === 'parcelado' && Array.isArray(service.installments_data) && service.installments_data.length > 0 && (
                         <div className="mt-2 space-y-1">
                           {service.installments_data.map((inst, pi) => (
-                            <div key={pi} className="text-xs px-2 py-1 bg-purple-50 text-purple-700 rounded-md flex items-center justify-between gap-2">
+                            <div key={`inst-${i}-${pi}`} className="text-xs px-2 py-1 bg-purple-50 text-purple-700 rounded-md flex items-center justify-between gap-2">
                               <span>Parcela {inst.number}: {inst.due_date ? format(new Date(inst.due_date + 'T12:00:00'), 'dd/MM/yy') : '—'}</span>
                               {inst.received ? (
                                 <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded font-medium">✓ {inst.received_date ? format(new Date(inst.received_date + 'T12:00:00'), 'dd/MM/yy') : 'Recebido'}</span>

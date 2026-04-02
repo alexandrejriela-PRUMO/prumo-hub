@@ -195,7 +195,7 @@ export default function RegularityReport() {
   const propertyAlerts = environmentalAlerts.filter(a => a.property_id === selectedPropertyId);
 
   // ── Pesos alinhados com o Termômetro ─────────────────────────────────────
-  // Licença: 40 | CAR: 20 | Docs(CCIR+ITR): 10 | Geo: 5 | Processos: 15 | PRAD: 10
+  // Licença: 40 | CAR: 20 | Docs(CCIR+ITR): 5 | Geo: 5 | Processos: 20 | PRAD: 10
   const calculateDetailedScore = () => {
     const categories = [];
     let totalScore = 0;
@@ -250,7 +250,7 @@ export default function RegularityReport() {
       const carFullyValid = activeCARs.every(c => c.car_status === 'Validado');
       const carInAnalysis = activeCARs.every(c => ['Validado','Em análise pelo órgão ambiental','Pendente de análise'].includes(c.car_status));
       if (carNeedsRect) {
-        carScore = Math.round(20 * 0.25); carStatus = 'critical';
+        carScore = 10; carStatus = 'critical';
         carDetails.push(`✗ CAR necessita retificação/possui inconsistências`);
         activeCARs.forEach(c => carDetails.push(`  • ${c.car_number} — ${c.car_status}`));
       } else if (carFullyValid) {
@@ -270,14 +270,14 @@ export default function RegularityReport() {
     categories.push({ name: 'CAR — Cadastro Ambiental Rural', icon: TreePine, weight: 20, score: carScore, status: carStatus, details: carDetails });
     totalScore += carScore;
 
-    // ── 3. DOCUMENTOS CCIR + ITR (10pts) ─────────────────────────────────
+    // ── 3. DOCUMENTOS CCIR + ITR (5pts) ──────────────────────────────────
     const hasCCIR = propertyDocuments.some(d => d.document_type === 'CCIR');
     const hasITR = propertyDocuments.some(d => d.document_type === 'ITR');
     let docScore = 0; const docDetails = [];
-    if (hasCCIR) { docScore += 6; docDetails.push('✓ CCIR cadastrado'); } else { docDetails.push('⚠ CCIR não cadastrado'); }
-    if (hasITR) { docScore += 4; docDetails.push('✓ ITR anual cadastrado'); } else { docDetails.push('⚠ ITR anual não cadastrado'); }
-    const docStatus = docScore === 10 ? 'ok' : docScore > 0 ? 'warning' : 'warning';
-    categories.push({ name: 'Documentos Cadastrais (CCIR/ITR)', icon: FileText, weight: 10, score: docScore, status: docStatus, details: docDetails });
+    if (hasCCIR) { docScore += 3; docDetails.push('✓ CCIR cadastrado'); } else { docDetails.push('⚠ CCIR não cadastrado'); }
+    if (hasITR) { docScore += 2; docDetails.push('✓ ITR anual cadastrado'); } else { docDetails.push('⚠ ITR anual não cadastrado'); }
+    const docStatus = docScore === 5 ? 'ok' : docScore > 0 ? 'warning' : 'warning';
+    categories.push({ name: 'Documentos Cadastrais (CCIR/ITR)', icon: FileText, weight: 5, score: docScore, status: docStatus, details: docDetails });
     totalScore += docScore;
 
     // ── 4. GEORREFERENCIAMENTO (5pts) ─────────────────────────────────────
@@ -292,11 +292,11 @@ export default function RegularityReport() {
     categories.push({ name: 'Georreferenciamento', icon: MapPin, weight: 5, score: geoScore, status: geoStatus, details: geoDetails });
     totalScore += geoScore;
 
-    // ── 5. PROCESSOS (15pts) ──────────────────────────────────────────────
+    // ── 5. PROCESSOS (20pts) ──────────────────────────────────────────────
     const RESOLVED = ['Suspenso', 'Arquivado', 'Finalizado'];
     const active = propertyProcesses.filter(p => p.status === 'Em Andamento');
     const resolved = propertyProcesses.filter(p => RESOLVED.includes(p.status));
-    let procScore = 15; const procDetails = [];
+    let procScore = 20; const procDetails = [];
     if (propertyProcesses.length === 0) {
       procDetails.push('✓ Sem processos registrados');
     } else if (active.length === 0) {
@@ -305,18 +305,18 @@ export default function RegularityReport() {
       const criminal = active.filter(p => p.process_type === 'Criminal');
       const adminCivil = active.filter(p => p.process_type !== 'Criminal');
       if (criminal.length > 0) {
-        procScore = Math.round(15 * 0.05);
+        procScore = Math.round(20 * 0.05);
         procDetails.push(`✗ ${criminal.length} processo(s) criminal(is) em andamento`);
         if (adminCivil.length > 0) procDetails.push(`⚠ ${adminCivil.length} processo(s) administrativo(s)/civil(is) em andamento`);
       } else {
-        procScore = Math.round(15 * 0.35);
+        procScore = Math.round(20 * 0.35);
         procDetails.push(`⚠ ${adminCivil.length} processo(s) administrativo(s)/civil(is) em andamento`);
       }
       if (resolved.length > 0) procDetails.push(`✓ ${resolved.length} processo(s) encerrado(s)`);
     }
     procScore = Math.max(0, Math.round(procScore));
     const procStatus = active.length === 0 ? 'ok' : active.some(p => p.process_type === 'Criminal') ? 'critical' : 'warning';
-    categories.push({ name: 'Situação Processual', icon: Scale, weight: 15, score: procScore, status: procStatus, details: procDetails });
+    categories.push({ name: 'Situação Processual', icon: Scale, weight: 20, score: procScore, status: procStatus, details: procDetails });
     totalScore += procScore;
 
     // ── 7. PRAD (10pts) ───────────────────────────────────────────────────
@@ -344,7 +344,7 @@ export default function RegularityReport() {
       totalScore += pradScore;
     }
 
-    const maxScore = 40 + 20 + 10 + 5 + 15 + (propertyPrads.length > 0 ? 10 : 0);
+    const maxScore = 40 + 20 + 5 + 5 + 20 + (propertyPrads.length > 0 ? 10 : 0);
     const percentage = maxScore > 0 ? Math.min(100, Math.round((totalScore / maxScore) * 100)) : 0;
     return { percentage, categories };
   };

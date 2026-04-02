@@ -59,12 +59,18 @@ export default function ClientFinancialSummary({ client }) {
     // Normalizar parcelas para novo formato
     let installments_data = service.installments_data || [];
     if (!installments_data.length && service.due_dates?.length) {
-      installments_data = service.due_dates.map((d, i) => ({
+      installments_data = service.due_dates.map((d) => ({
         due_date: d,
-        received: service.received && i === 0 ? service.received : false,
-        received_at: service.received && i === 0 ? (service.received_at ? service.received_at.split('T')[0] : '') : '',
+        received: false,
+        received_at: '',
       }));
     }
+    // Garantir que installments_data tenha o formato correto
+    installments_data = installments_data.map(inst => ({
+      due_date: inst.due_date || '',
+      received: inst.received || false,
+      received_at: inst.received_at ? (typeof inst.received_at === 'string' ? inst.received_at.split('T')[0] : inst.received_at) : '',
+    }));
     setEditForm({
       name: service.name,
       status: service.status,
@@ -74,6 +80,7 @@ export default function ClientFinancialSummary({ client }) {
       payment_method: service.payment_method || 'Pix',
       installments: service.installments || '',
       start_date: service.start_date || '',
+      due_dates: service.due_dates || [],
       installments_data,
       received: service.received || false,
       received_at: service.received_at ? service.received_at.split('T')[0] : '',

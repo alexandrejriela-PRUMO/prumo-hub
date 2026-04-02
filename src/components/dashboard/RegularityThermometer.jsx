@@ -1,20 +1,31 @@
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, CheckCircle2, AlertCircle, TrendingUp, FileCheck, FileText, MapPin, Scale, Leaf } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, AlertCircle, TrendingUp, FileCheck, FileText, MapPin, Scale, Leaf, TreePine, ShieldAlert } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+
+// ── Pesos por categoria ───────────────────────────────────────────────────────
+// Licença: 40 | CAR: 20 | Documentos: 10 | Geo: 8 | Processos: 12 | PRAD: 10
+// Total base = 100 (sem PRAD quando não há prads cadastrados)
 
 export default function RegularityThermometer({ property, licenses = [], documents = [], processes = [], georeferencing = [], prads = [], carManagements = [] }) {
   const score = useMemo(() => {
     let totalScore = 0;
     const details = [];
 
-    // ── 1. LICENÇAS (peso 35) ─────────────────────────────────────────────
-    const licenseWeight = 35;
-    if (licenses.length > 0) {
+    // ── 1. LICENÇAS AMBIENTAIS (peso 40) ──────────────────────────────────
+    const licenseWeight = 40;
+    const isento = licenses.some(lic =>
+      lic.license_type === 'Dispensa de Licenciamento' || (lic.license_type || '').toLowerCase().includes('isento') || (lic.license_type || '').toLowerCase().includes('dispensa')
+    );
+
+    if (isento) {
+      // Isento: 30 de 40 (muito positivo, mas não pleno pois não há licença vigente)
+      totalScore += 30;
+      details.push({ category: 'Licenças', status: 'ok', message: 'Imóvel isento de licenciamento — pontuação base aplicada', score: 30, max: licenseWeight });
+    } else if (licenses.length > 0) {
       const now = new Date();
       const expired = licenses.filter(lic => {
         if (!lic.expiry_date) return false;
@@ -29,140 +40,134 @@ export default function RegularityThermometer({ property, licenses = [], documen
 
       if (expired.length === 0 && soonToExpire.length === 0) {
         totalScore += licenseWeight;
-        details.push({ category: 'Licenças', status: 'ok', message: 'Todas as licenças vigentes' });
+        details.push({ category: 'Licenças', status: 'ok', message: 'Todas as licenças vigentes', score: licenseWeight, max: licenseWeight });
       } else if (expired.length === 0 && soonToExpire.length > 0) {
-        totalScore += licenseWeight * 0.65;
-        details.push({ category: 'Licenças', status: 'warning', message: `${soonToExpire.length} licença(s) vencendo em até 60 dias` });
+        const pts = Math.round(licenseWeight * 0.65);
+        totalScore += pts;
+        details.push({ category: 'Licenças', status: 'warning', message: `${soonToExpire.length} licença(s) vencendo em até 60 dias`, score: pts, max: licenseWeight });
       } else if (inRenewal.length > 0 && expired.length <= inRenewal.length) {
-        totalScore += licenseWeight * 0.7;
-        details.push({ category: 'Licenças', status: 'warning', message: `${inRenewal.length} licença(s) em renovação/análise` });
+        const pts = Math.round(licenseWeight * 0.7);
+        totalScore += pts;
+        details.push({ category: 'Licenças', status: 'warning', message: `${inRenewal.length} licença(s) em renovação/análise`, score: pts, max: licenseWeight });
       } else {
-        totalScore += licenseWeight * 0.2;
-        details.push({ category: 'Licenças', status: 'critical', message: `${expired.length} licença(s) vencida(s)` });
+        const pts = Math.round(licenseWeight * 0.2);
+        totalScore += pts;
+        details.push({ category: 'Licenças', status: 'critical', message: `${expired.length} licença(s) vencida(s)`, score: pts, max: licenseWeight });
       }
     } else {
-      details.push({ category: 'Licenças', status: 'critical', message: 'Nenhuma licença cadastrada' });
+      details.push({ category: 'Licenças', status: 'critical', message: 'Nenhuma licença cadastrada', score: 0, max: licenseWeight });
     }
 
-    // ── 2. DOCUMENTOS CADASTRAIS (peso 25) ───────────────────────────────
-    const docWeight = 25;
-    // CAR: verificar via CARManagement
+    // ── 2. CAR — Cadastro Ambiental Rural (peso 20) ───────────────────────
+    const carWeight = 20;
     const activeCARs = carManagements.filter(c => c.car_number && c.car_number.trim() !== '');
     const hasCAR = activeCARs.length > 0;
     const carNeedsRectification = activeCARs.some(c =>
       c.car_status === 'Necessita retificação' || c.car_status === 'Com inconsistências' || c.car_status === 'Cancelado'
     );
     const carFullyValid = activeCARs.length > 0 && activeCARs.every(c =>
+      c.car_status === 'Validado'
+    );
+    const carInAnalysis = activeCARs.length > 0 && activeCARs.every(c =>
       c.car_status === 'Validado' || c.car_status === 'Em análise pelo órgão ambiental' || c.car_status === 'Pendente de análise'
     );
 
-    // CCIR: verificar nos documentos
+    if (!hasCAR) {
+      details.push({ category: 'CAR', status: 'critical', message: 'CAR não cadastrado — regularize pelo módulo Gestão do CAR', score: 0, max: carWeight });
+    } else if (carNeedsRectification) {
+      const pts = Math.round(carWeight * 0.25);
+      totalScore += pts;
+      details.push({ category: 'CAR', status: 'critical', message: 'CAR necessita retificação ou possui inconsistências', score: pts, max: carWeight });
+    } else if (carFullyValid) {
+      totalScore += carWeight;
+      details.push({ category: 'CAR', status: 'ok', message: `CAR validado pelo órgão ambiental ✓ (${activeCARs.length} CAR${activeCARs.length > 1 ? 's' : ''})`, score: carWeight, max: carWeight });
+    } else if (carInAnalysis) {
+      const pts = Math.round(carWeight * 0.8);
+      totalScore += pts;
+      details.push({ category: 'CAR', status: 'ok', message: `CAR em análise/pendente — situação regular (${activeCARs.length} CAR${activeCARs.length > 1 ? 's' : ''})`, score: pts, max: carWeight });
+    } else {
+      const pts = Math.round(carWeight * 0.6);
+      totalScore += pts;
+      details.push({ category: 'CAR', status: 'warning', message: `CAR cadastrado — verifique o status (${activeCARs.length} CAR${activeCARs.length > 1 ? 's' : ''})`, score: pts, max: carWeight });
+    }
+
+    // ── 3. DOCUMENTOS CADASTRAIS — CCIR + ITR (peso 10) ──────────────────
+    // Peso reduzido: CCIR e ITR são importantes mas secundários ao CAR/Licença
+    const docWeight = 10;
     const hasCCIR = documents.some(d => d.document_type === 'CCIR');
+    const hasITR = documents.some(d => d.document_type === 'ITR');
 
     let docScore = 0;
-    const missing = [];
-
-    // CAR: pontuação baseada no status
-    if (!hasCAR) {
-      missing.push('CAR (Gestão do CAR)');
-    } else if (carNeedsRectification) {
-      // CAR com necessidade de retificação: pontuação reduzida (30% do peso do CAR)
-      docScore += docWeight * 0.50 * 0.30;
-    } else if (carFullyValid) {
-      // CAR totalmente válido: pontuação completa + bônus pequeno
-      docScore += docWeight * 0.55;
-    } else {
-      docScore += docWeight * 0.50;
-    }
-
-    if (hasCCIR) docScore += docWeight * 0.50; else missing.push('CCIR');
-
+    const docMissing = [];
+    if (hasCCIR) docScore += docWeight * 0.6; else docMissing.push('CCIR');
+    if (hasITR) docScore += docWeight * 0.4; else docMissing.push('ITR anual');
+    docScore = Math.round(docScore);
     totalScore += docScore;
 
-    if (missing.length === 0 && !carNeedsRectification) {
-      const bonusMsg = carFullyValid ? ' (CAR validado ✓)' : '';
-      details.push({ category: 'Documentos', status: 'ok', message: `Documentos essenciais em ordem (CAR + CCIR)${bonusMsg}` });
-    } else if (carNeedsRectification && missing.length === 0) {
-      details.push({ category: 'Documentos', status: 'warning', message: 'CAR necessita retificação — regularize para melhorar a pontuação' });
+    if (docMissing.length === 0) {
+      details.push({ category: 'Documentos (CCIR/ITR)', status: 'ok', message: 'CCIR e ITR cadastrados', score: docScore, max: docWeight });
+    } else if (docMissing.length === 1) {
+      details.push({ category: 'Documentos (CCIR/ITR)', status: 'warning', message: `Falta: ${docMissing[0]}`, score: docScore, max: docWeight });
     } else {
-      const severity = missing.length >= 2 ? 'critical' : 'warning';
-      details.push({ category: 'Documentos', status: severity, message: `Faltam: ${missing.join(', ')}` });
+      details.push({ category: 'Documentos (CCIR/ITR)', status: 'warning', message: 'CCIR e ITR não cadastrados', score: docScore, max: docWeight });
     }
 
-    // ── 3. GEORREFERENCIAMENTO (peso 15) ──────────────────────────────────
-    const geoWeight = 15;
+    // ── 4. GEORREFERENCIAMENTO (peso 8 — reduzido) ────────────────────────
+    const geoWeight = 8;
     const regularGeo = georeferencing.find(g => g.status === 'Regular');
     const pendingGeo = georeferencing.find(g => g.status === 'Pendente' || g.status === 'Em Atualização');
     const irregularGeo = georeferencing.find(g => g.status === 'Irregular');
 
     if (regularGeo) {
       totalScore += geoWeight;
-      details.push({ category: 'Georreferenciamento', status: 'ok', message: 'Georreferenciamento regular' });
+      details.push({ category: 'Georreferenciamento', status: 'ok', message: 'Georreferenciamento regular', score: geoWeight, max: geoWeight });
     } else if (pendingGeo) {
-      totalScore += geoWeight * 0.5;
-      details.push({ category: 'Georreferenciamento', status: 'warning', message: `Georreferenciamento ${pendingGeo.status}` });
+      const pts = Math.round(geoWeight * 0.5);
+      totalScore += pts;
+      details.push({ category: 'Georreferenciamento', status: 'warning', message: `Georreferenciamento ${pendingGeo.status}`, score: pts, max: geoWeight });
     } else if (irregularGeo) {
-      totalScore += geoWeight * 0.1;
-      details.push({ category: 'Georreferenciamento', status: 'critical', message: 'Georreferenciamento irregular' });
+      const pts = Math.round(geoWeight * 0.1);
+      totalScore += pts;
+      details.push({ category: 'Georreferenciamento', status: 'warning', message: 'Georreferenciamento irregular', score: pts, max: geoWeight });
     } else {
-      details.push({ category: 'Georreferenciamento', status: 'warning', message: 'Nenhum georreferenciamento com status Regular cadastrado' });
+      details.push({ category: 'Georreferenciamento', status: 'warning', message: 'Sem georreferenciamento cadastrado', score: 0, max: geoWeight });
     }
 
-    // ── 4. PROCESSOS (peso 15) ────────────────────────────────────────────
-    // Criminais: IGNORADOS completamente no termômetro
-    // Civis: apenas Inquérito Civil relacionado à propriedade é valorado
-    // Administrativos: totalmente valorados
-    const processWeight = 15;
+    // ── 5. PROCESSOS (peso 12) ─────────────────────────────────────────────
+    const processWeight = 12;
     const RESOLVED_STATUSES = ['Suspenso', 'Arquivado', 'Finalizado'];
-
-    // Filtra apenas administrativos e inquéritos civis vinculados à propriedade
     const adminProcesses = processes.filter(p => p.process_type === 'Administrativo');
     const civilInquiries = processes.filter(p => p.process_type === 'Civil' && p.is_civil_inquiry === true);
-
-    // --- Processos Administrativos ---
     const adminActive = adminProcesses.filter(p => p.status === 'Em Andamento');
-    // Suspenso com multa paga ou arquivado/finalizado = positivo
     const adminPositive = adminProcesses.filter(p =>
-      RESOLVED_STATUSES.includes(p.status) ||
-      (p.status === 'Suspenso') ||
-      (p.fine_paid === true)
+      RESOLVED_STATUSES.includes(p.status) || p.fine_paid === true
     );
-
-    // --- Inquéritos Civis ---
     const CIVIL_RESOLVED = ['TAC firmado', 'Indenização paga', 'Acordo regular'];
     const civilUnresolved = civilInquiries.filter(p =>
       p.civil_inquiry_resolution === 'Não resolvido' || !p.civil_inquiry_resolution
     );
-    const civilResolved = civilInquiries.filter(p =>
-      CIVIL_RESOLVED.includes(p.civil_inquiry_resolution)
-    );
+    const civilResolved = civilInquiries.filter(p => CIVIL_RESOLVED.includes(p.civil_inquiry_resolution));
 
+    let processScore = processWeight;
     const processMessages = [];
-    let processScore = processWeight; // começa cheio, penaliza conforme problemas
 
     if (adminActive.length > 0) {
-      // Penalização moderada por administrativos em andamento (sem multa paga)
       const unpaid = adminActive.filter(p => !p.fine_paid);
       if (unpaid.length > 0) {
         processScore -= processWeight * 0.5 * Math.min(unpaid.length / (adminProcesses.length || 1), 1);
         processMessages.push(`${unpaid.length} proc. administrativo(s) em andamento`);
       }
     }
-    if (adminPositive.length > 0) {
-      processMessages.push(`${adminPositive.length} administrativo(s) suspenso(s)/encerrado(s)/multa paga`);
-    }
+    if (adminPositive.length > 0) processMessages.push(`${adminPositive.length} administrativo(s) encerrado(s)/multa paga`);
     if (civilUnresolved.length > 0) {
-      // Inquérito civil não resolvido = penalização significativa
       processScore -= processWeight * 0.4 * Math.min(civilUnresolved.length, 1);
-      processMessages.push(`${civilUnresolved.length} inquérito(s) civil(is) NÃO resolvido(s)`);
+      processMessages.push(`${civilUnresolved.length} inquérito(s) civil(is) não resolvido(s)`);
     }
     if (civilResolved.length > 0) {
-      // Inquérito civil resolvido (TAC/indenização/acordo) = bônus pequeno
       processScore = Math.min(processScore + processWeight * 0.05 * civilResolved.length, processWeight);
       processMessages.push(`${civilResolved.length} inquérito(s) civil(is) resolvido(s) ✓`);
     }
-
-    processScore = Math.max(0, processScore);
+    processScore = Math.max(0, Math.round(processScore));
     totalScore += processScore;
 
     const hasProblem = adminActive.some(p => !p.fine_paid) || civilUnresolved.length > 0;
@@ -171,59 +176,58 @@ export default function RegularityThermometer({ property, licenses = [], documen
       : 'ok';
 
     if (processes.filter(p => p.process_type !== 'Criminal').length === 0) {
-      details.push({ category: 'Processos', status: 'ok', message: 'Sem processos administrativos ou inquéritos civis cadastrados' });
+      details.push({ category: 'Processos', status: 'ok', message: 'Sem processos administrativos ou inquéritos civis', score: processScore, max: processWeight });
     } else {
       details.push({
         category: 'Processos',
         status: processStatus,
-        message: processMessages.length > 0 ? processMessages.join(' | ') : 'Processos administrativos e inquéritos civis sem pendências'
+        message: processMessages.length > 0 ? processMessages.join(' | ') : 'Processos sem pendências relevantes',
+        score: processScore,
+        max: processWeight
       });
     }
 
-    // ── 5. PRAD (peso 10) ─────────────────────────────────────────────────
+    // ── 6. EMBARGO (penalidade direta sobre o total) ───────────────────────
+    const adminWithEmbargo = processes.filter(p => p.process_type === 'Administrativo' && p.has_embargo === true);
+    const embargoNotRespected = adminWithEmbargo.filter(p => p.embargo_respected === false);
+    if (embargoNotRespected.length > 0) {
+      const penalty = 10 * embargoNotRespected.length;
+      totalScore = Math.max(0, totalScore - penalty);
+      details.push({ category: 'Embargo', status: 'critical', message: `${embargoNotRespected.length} embargo(s) NÃO respeitado(s) — risco grave (-${penalty} pts)`, score: -penalty, max: 0 });
+    } else if (adminWithEmbargo.length > 0) {
+      details.push({ category: 'Embargo', status: 'ok', message: `${adminWithEmbargo.length} embargo(s) sendo respeitado(s) ✓`, score: 0, max: 0 });
+    }
+
+    // ── 7. PRAD (peso 10) ─────────────────────────────────────────────────
     const pradWeight = 10;
     if (prads.length > 0) {
       const hasPending = prads.some(p => p.status === 'Pendente' || p.status === 'Não Iniciado');
       const hasInProgress = prads.some(p => p.status === 'Em Execução');
       const allConcluded = prads.every(p => p.status === 'Concluído' || p.status === 'Aprovado');
-      // "Em elaboração" é positivo — demonstra proatividade e conformidade em andamento
       const hasInElaboration = prads.some(p =>
-        p.status === 'Em Elaboração' || p.status === 'Em elaboração' ||
-        p.status === 'Elaboração' || p.status === 'elaboração'
+        (p.status || '').toLowerCase().includes('elabor')
       );
 
       if (allConcluded) {
         totalScore += pradWeight;
-        details.push({ category: 'PRAD', status: 'ok', message: 'Todos os PRADs concluídos/aprovados' });
+        details.push({ category: 'PRAD', status: 'ok', message: 'Todos os PRADs concluídos/aprovados', score: pradWeight, max: pradWeight });
       } else if (hasInElaboration) {
-        // Em elaboração = positivo (proativo, em conformidade)
-        totalScore += pradWeight * 0.75;
-        details.push({ category: 'PRAD', status: 'ok', message: 'PRAD em elaboração — situação proativa ✓' });
+        const pts = Math.round(pradWeight * 0.75);
+        totalScore += pts;
+        details.push({ category: 'PRAD', status: 'ok', message: 'PRAD em elaboração — situação proativa ✓', score: pts, max: pradWeight });
       } else if (hasInProgress) {
-        totalScore += pradWeight * 0.6;
-        details.push({ category: 'PRAD', status: 'warning', message: 'PRAD em execução' });
+        const pts = Math.round(pradWeight * 0.6);
+        totalScore += pts;
+        details.push({ category: 'PRAD', status: 'warning', message: 'PRAD em execução', score: pts, max: pradWeight });
       } else if (hasPending) {
-        totalScore += pradWeight * 0.2;
-        details.push({ category: 'PRAD', status: 'critical', message: 'PRAD(s) pendente(s) ou não iniciado(s)' });
+        const pts = Math.round(pradWeight * 0.2);
+        totalScore += pts;
+        details.push({ category: 'PRAD', status: 'critical', message: 'PRAD(s) pendente(s) ou não iniciado(s)', score: pts, max: pradWeight });
       }
     }
-    // Se não há PRADs, não penaliza (nem bonifica)
 
-    // ── 6. EMBARGO (verificado nos processos administrativos) ─────────────
-    // Embargo não respeitado = risco crítico adicional (penaliza o score total)
-    const adminWithEmbargo = processes.filter(p => p.process_type === 'Administrativo' && p.has_embargo === true);
-    const embargoNotRespected = adminWithEmbargo.filter(p => p.embargo_respected === false);
-    if (embargoNotRespected.length > 0) {
-      // Penalização direta no total: -10 pontos por embargo não respeitado
-      totalScore = Math.max(0, totalScore - 10 * embargoNotRespected.length);
-      details.push({ category: 'Embargo', status: 'critical', message: `${embargoNotRespected.length} embargo(s) NÃO respeitado(s) — risco grave` });
-    } else if (adminWithEmbargo.length > 0) {
-      details.push({ category: 'Embargo', status: 'ok', message: `${adminWithEmbargo.length} embargo(s) sendo respeitado(s) ✓` });
-    }
-
-    const maxScore = licenseWeight + docWeight + geoWeight + processWeight + (prads.length > 0 ? pradWeight : 0);
-    // Nota: embargo não adiciona ao maxScore pois é penalidade direta
-    const percentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+    const maxScore = licenseWeight + carWeight + docWeight + geoWeight + processWeight + (prads.length > 0 ? pradWeight : 0);
+    const percentage = maxScore > 0 ? Math.min(100, Math.round((totalScore / maxScore) * 100)) : 0;
 
     return { percentage, details, totalScore, maxScore };
   }, [property, licenses, documents, processes, georeferencing, prads, carManagements]);
@@ -239,11 +243,12 @@ export default function RegularityThermometer({ property, licenses = [], documen
 
   const categoryIcons = {
     'Licenças': FileCheck,
-    'Documentos': FileText,
+    'CAR': TreePine,
+    'Documentos (CCIR/ITR)': FileText,
     'Georreferenciamento': MapPin,
     'Processos': Scale,
+    'Embargo': ShieldAlert,
     'PRAD': Leaf,
-    'Embargo': AlertCircle,
   };
 
   return (
@@ -290,30 +295,53 @@ export default function RegularityThermometer({ property, licenses = [], documen
         </div>
 
         {/* Detalhes por Categoria */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           <h3 className="font-semibold text-gray-900 text-sm uppercase tracking-wide">Análise Detalhada</h3>
           {score.details.map((detail, idx) => {
             const Icon = categoryIcons[detail.category] || FileText;
+            const isEmbargo = detail.category === 'Embargo';
             const ds = detail.status === 'ok'
-              ? { bg: 'bg-green-50', text: 'text-green-700', icon: 'text-green-600', border: 'border-green-100' }
+              ? { bg: 'bg-green-50', text: 'text-green-700', icon: 'text-green-600', border: 'border-green-200' }
               : detail.status === 'warning'
-              ? { bg: 'bg-yellow-50', text: 'text-yellow-700', icon: 'text-yellow-600', border: 'border-yellow-100' }
-              : { bg: 'bg-red-50', text: 'text-red-700', icon: 'text-red-600', border: 'border-red-100' };
+              ? { bg: 'bg-yellow-50', text: 'text-yellow-700', icon: 'text-yellow-600', border: 'border-yellow-200' }
+              : { bg: 'bg-red-50', text: 'text-red-700', icon: 'text-red-600', border: 'border-red-200' };
+
+            const scoreLabel = isEmbargo
+              ? (detail.score < 0 ? <span className="text-xs font-bold text-red-700">{detail.score} pts</span> : null)
+              : detail.max > 0
+              ? <span className="text-xs font-semibold tabular-nums whitespace-nowrap" style={{ color: detail.score === detail.max ? '#16a34a' : detail.score >= detail.max * 0.5 ? '#ca8a04' : '#dc2626' }}>{detail.score}/{detail.max}</span>
+              : null;
 
             return (
-              <div key={idx} className={`p-3 rounded-lg border ${ds.bg} ${ds.border}`}>
-                <div className="flex items-center gap-3">
-                  <Icon className={`w-5 h-5 flex-shrink-0 ${ds.icon}`} />
+              <div key={idx} className={`px-3 py-2.5 rounded-lg border ${ds.bg} ${ds.border}`}>
+                <div className="flex items-center gap-2.5">
+                  <Icon className={`w-4 h-4 flex-shrink-0 ${ds.icon}`} />
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm text-gray-900">{detail.category}</div>
-                    <div className={`text-xs ${ds.text}`}>{detail.message}</div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-xs text-gray-900">{detail.category}</span>
+                      {scoreLabel}
+                    </div>
+                    <div className={`text-xs mt-0.5 ${ds.text}`}>{detail.message}</div>
+                    {detail.max > 0 && !isEmbargo && (
+                      <div className="mt-1.5 h-1.5 rounded-full bg-gray-200 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${Math.max(0, Math.min(100, (detail.score / detail.max) * 100))}%`,
+                            backgroundColor: detail.score === detail.max ? '#22c55e' : detail.score >= detail.max * 0.5 ? '#eab308' : '#ef4444'
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
-                  {detail.status === 'ok'
-                    ? <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
-                    : detail.status === 'warning'
-                    ? <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0" />
-                    : <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-                  }
+                  <div className="flex-shrink-0">
+                    {detail.status === 'ok'
+                      ? <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      : detail.status === 'warning'
+                      ? <AlertTriangle className="w-4 h-4 text-yellow-500" />
+                      : <AlertCircle className="w-4 h-4 text-red-500" />
+                    }
+                  </div>
                 </div>
               </div>
             );

@@ -52,7 +52,7 @@ export default function ClientFinancialSummary({ client }) {
   const [editingIndex, setEditingIndex] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [showNewServiceForm, setShowNewServiceForm] = useState(false);
-  const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], installments_data: [], received: false, received_at: '' });
+  const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '' });
 
   const startEdit = (service, index) => {
     setEditingIndex(index);
@@ -474,7 +474,7 @@ export default function ClientFinancialSummary({ client }) {
                   </div>
                 </div>
                 <div className="flex justify-end gap-2 pt-1">
-                  <Button size="sm" variant="outline" onClick={() => { setShowNewServiceForm(false); setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], received: false, received_at: '' }); }}>Cancelar</Button>
+                  <Button size="sm" variant="outline" onClick={() => { setShowNewServiceForm(false); setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '' }); }}>Cancelar</Button>
                   <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={addNewService} disabled={upsertCRM.isPending}>Salvar</Button>
                 </div>
               </div>
@@ -485,7 +485,16 @@ export default function ClientFinancialSummary({ client }) {
               {services.map((service, i) => {
                  const totalValue = parseFloat(service.value) || 0;
                  const isParcelado = service.payment_type === 'parcelado';
-                 const installmentsArray = Array.isArray(service.installments) ? service.installments : [];
+                 
+                 // Normalizar installments para sempre ser array
+                 let installmentsArray = service.installments;
+                 if (typeof installmentsArray === 'string') {
+                   try { installmentsArray = JSON.parse(installmentsArray); } catch { installmentsArray = []; }
+                 }
+                 if (!Array.isArray(installmentsArray)) {
+                   installmentsArray = [];
+                 }
+                 
                  const numParcelas = isParcelado ? installmentsArray.length || 1 : 1;
                  const installmentValue = isParcelado ? totalValue / numParcelas : null;
 

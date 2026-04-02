@@ -628,11 +628,29 @@ export default function ClientCRMPanel({ property, onClose }) {
             const total = services.reduce((s, svc) => s + (parseFloat(svc.value) || 0), 0);
             const received = services.filter(s => s.received).reduce((s, svc) => s + (parseFloat(svc.value) || 0), 0);
             const pending = total - received;
+            const percentage = total > 0 ? (received / total) * 100 : 0;
             return (
-              <div className="grid grid-cols-3 gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100 mb-2">
-                <div className="text-center"><p className="text-xs text-gray-500">Total Contratado</p><p className="text-sm font-bold text-gray-800">R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
-                <div className="text-center"><p className="text-xs text-gray-500">Recebido</p><p className="text-sm font-bold text-emerald-700">R$ {received.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
-                <div className="text-center"><p className="text-xs text-gray-500">A Receber</p><p className={`text-sm font-bold ${pending > 0 ? 'text-amber-700' : 'text-gray-500'}`}>R$ {pending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+              <div className="space-y-2 mb-2">
+                <div className="grid grid-cols-3 gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                  <div className="text-center"><p className="text-xs text-gray-500">Total Contratado</p><p className="text-sm font-bold text-gray-800">R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+                  <div className="text-center"><p className="text-xs text-gray-500">Recebido</p><p className="text-sm font-bold text-emerald-700">R$ {received.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+                  <div className="text-center"><p className="text-xs text-gray-500">A Receber</p><p className={`text-sm font-bold ${pending > 0 ? 'text-amber-700' : 'text-gray-500'}`}>R$ {pending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+                </div>
+                {total > 0 && (
+                  <div className="p-3 bg-white border border-gray-200 rounded-xl">
+                    <div className="flex justify-between items-center mb-2">
+                      <p className="text-sm font-semibold text-gray-700">Progresso de Recebimento</p>
+                      <span className="text-sm font-bold text-emerald-700">{Math.round(percentage)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-3">
+                      <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-3 rounded-full transition-all duration-500" style={{ width: `${percentage}%` }} />
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>R$ {received.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} recebidos</span>
+                      <span>R$ {pending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} pendentes</span>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })()}
@@ -649,10 +667,28 @@ export default function ClientCRMPanel({ property, onClose }) {
                       <p className="font-semibold text-sm text-gray-900 leading-snug">{service.name}</p>
                       {service.notes && <p className="text-xs text-gray-500 mt-0.5">{service.notes}</p>}
                       <div className="flex flex-wrap items-center gap-2 mt-1">
-                        {parseFloat(service.value) > 0 && <p className="text-sm font-bold text-emerald-700">R$ {parseFloat(service.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}{service.payment_type === 'parcelado' && service.installments && <span className="text-xs font-normal text-gray-500"> · {service.installments}x</span>}</p>}
+                        {parseFloat(service.value) > 0 && <p className="text-sm font-bold text-emerald-700">R$ {parseFloat(service.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}{service.payment_type === 'parcelado' && service.installments_data?.length > 0 && <span className="text-xs font-normal text-gray-500"> · {service.installments_data.length}x</span>}</p>}
                         {service.payment_method && <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded-md">{service.payment_method}</span>}
-                        {service.received ? <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded-md font-medium">✓ Recebido{service.received_at ? ` em ${format(new Date(service.received_at), 'dd/MM/yy')}` : ''}</span> : <span className="text-xs px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded-md">Aguardando</span>}
+                        {service.payment_type === 'parcelado' ? (
+                          <span className="text-xs px-1.5 py-0.5 bg-purple-50 text-purple-600 rounded-md font-medium">📊 Parcelado</span>
+                        ) : (
+                          service.received ? <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded-md font-medium">✓ Recebido{service.received_at ? ` em ${format(new Date(service.received_at), 'dd/MM/yy')}` : ''}</span> : <span className="text-xs px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded-md">Aguardando</span>
+                        )}
                       </div>
+                      {service.payment_type === 'parcelado' && Array.isArray(service.installments_data) && service.installments_data.length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          {service.installments_data.map((inst, pi) => (
+                            <div key={pi} className="text-xs px-2 py-1 bg-purple-50 text-purple-700 rounded-md flex items-center justify-between gap-2">
+                              <span>Parcela {inst.number}: {inst.due_date ? format(new Date(inst.due_date + 'T12:00:00'), 'dd/MM/yy') : '—'}</span>
+                              {inst.received ? (
+                                <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded font-medium">✓ {inst.received_date ? format(new Date(inst.received_date + 'T12:00:00'), 'dd/MM/yy') : 'Recebido'}</span>
+                              ) : (
+                                <span className="text-xs px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded">Aguardando</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusColor}`}>{service.status}</span>

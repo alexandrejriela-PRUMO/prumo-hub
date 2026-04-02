@@ -757,12 +757,20 @@ export default function ClientCRMPanel({ property, onClose }) {
                       {service.payment_type === 'parcelado' && Array.isArray(service.installments_data) && service.installments_data.length > 0 && (
                         <div className="mt-2 space-y-1">
                           {service.installments_data.map((inst, pi) => (
-                            <div key={`inst-${i}-${pi}`} className="text-xs px-2 py-1 bg-purple-50 text-purple-700 rounded-md flex items-center justify-between gap-2">
-                              <span>Parcela {inst.number}: {inst.due_date ? format(new Date(inst.due_date + 'T12:00:00'), 'dd/MM/yy') : '—'}</span>
-                              {inst.received ? (
-                                <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded font-medium">✓ {inst.received_date ? format(new Date(inst.received_date + 'T12:00:00'), 'dd/MM/yy') : 'Recebido'}</span>
-                              ) : (
-                                <span className="text-xs px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded">Aguardando</span>
+                            <div key={`inst-${i}-${pi}`} className="text-xs px-2 py-1 bg-purple-50 text-purple-700 rounded-md">
+                              <div className="flex items-center justify-between gap-2 mb-1">
+                                <span>Parcela {inst.number}: {inst.due_date ? format(new Date(inst.due_date + 'T12:00:00'), 'dd/MM/yy') : '—'}</span>
+                                {inst.received ? (
+                                  <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded font-medium">✓ {inst.received_date ? format(new Date(inst.received_date + 'T12:00:00'), 'dd/MM/yy') : 'Recebido'}</span>
+                                ) : (
+                                  <span className="text-xs px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded">Aguardando</span>
+                                )}
+                              </div>
+                              {inst.received && (inst.account_name || inst.payment_method) && (
+                                <div className="text-xs text-purple-600 ml-1 flex flex-wrap gap-1">
+                                  {inst.account_name && <span className="px-1.5 py-0.5 bg-white/50 rounded">🏦 {inst.account_name}</span>}
+                                  {inst.payment_method && <span className="px-1.5 py-0.5 bg-white/50 rounded">💳 {inst.payment_method}</span>}
+                                </div>
                               )}
                             </div>
                           ))}

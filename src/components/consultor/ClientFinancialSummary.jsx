@@ -51,6 +51,8 @@ export default function ClientFinancialSummary({ client }) {
   const [receivedDateInput, setReceivedDateInput] = React.useState({});
   const [editingIndex, setEditingIndex] = useState(null);
   const [editForm, setEditForm] = useState({});
+  const [showNewServiceForm, setShowNewServiceForm] = useState(false);
+  const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], received: false, received_at: '' });
 
   const startEdit = (service, index) => {
     setEditingIndex(index);
@@ -88,6 +90,23 @@ export default function ClientFinancialSummary({ client }) {
     upsertCRM.mutate({ services }, {
       onSuccess: () => toast.success('Serviço removido.'),
       onError: (e) => toast.error('Erro ao remover: ' + e.message),
+    });
+  };
+
+  const addNewService = () => {
+    if (!newService.name) { toast.error('Informe o nome do serviço.'); return; }
+    const serviceValue = parseFloat(newService.value) || 0;
+    const received_at = newService.received && newService.received_at
+      ? new Date(newService.received_at + 'T12:00:00').toISOString()
+      : (newService.received ? new Date().toISOString() : null);
+    const services = [...(crm?.services || []), { ...newService, value: serviceValue, received_at }];
+    upsertCRM.mutate({ services }, {
+      onSuccess: () => {
+        toast.success('Serviço adicionado!');
+        setShowNewServiceForm(false);
+        setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], received: false, received_at: '' });
+      },
+      onError: (e) => toast.error('Erro ao adicionar: ' + e.message),
     });
   };
 
@@ -208,14 +227,110 @@ export default function ClientFinancialSummary({ client }) {
       )}
 
       {/* Detalhamento por serviço */}
-      {services.length > 0 ? (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-              <CreditCard className="w-4 h-4 text-emerald-600" />
-              Detalhamento por Serviço
-            </CardTitle>
-          </CardHeader>
+       <Card>
+         <CardHeader className="pb-2 flex flex-row items-center justify-between">
+           <CardTitle className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+             <CreditCard className="w-4 h-4 text-emerald-600" />
+             Detalhamento por Serviço
+           </CardTitle>
+           <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowNewServiceForm(true)}>
+             + Novo Serviço
+           </Button>
+         </CardHeader>
+          {showNewServiceForm && (
+            <div className="border-b border-gray-100">
+              <div className="p-4 space-y-3 bg-emerald-50/30 border-b border-emerald-100">
+                <p className="text-sm font-semibold text-emerald-800">Novo Serviço</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="sm:col-span-2">
+                    <Label className="text-xs text-gray-600 mb-1 block">Nome do Serviço *</Label>
+                    <Input className="h-9 text-sm" value={newService.name} onChange={e => setNewService(p => ({ ...p, name: e.target.value }))} placeholder="Ex: Licença Ambiental LP" />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600 mb-1 block">Status</Label>
+                    <Select value={newService.status} onValueChange={v => setNewService(p => ({ ...p, status: v }))}>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                      <SelectContent>{['Em Proposta','Contratado','Em Andamento','Concluído','Cancelado'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600 mb-1 block">Valor Total (R$)</Label>
+                    <Input className="h-9 text-sm" type="number" value={newService.value} onChange={e => setNewService(p => ({ ...p, value: e.target.value }))} placeholder="0,00" />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600 mb-1 block">Tipo de Pagamento</Label>
+                    <Select value={newService.payment_type} onValueChange={v => setNewService(p => ({ ...p, payment_type: v, due_dates: [], installments: '' }))}>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="avista">À Vista</SelectItem>
+                        <SelectItem value="parcelado">Parcelado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600 mb-1 block">Forma de Pagamento</Label>
+                    <Select value={newService.payment_method} onValueChange={v => setNewService(p => ({ ...p, payment_method: v }))}>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                      <SelectContent>{['Pix','Transferência','Boleto','Cartão de Crédito','Cartão de Débito','Dinheiro','Cheque','Outro'].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  {newService.payment_type === 'avista' && (
+                    <div>
+                      <Label className="text-xs text-gray-600 mb-1 block">Data de Vencimento</Label>
+                      <Input className="h-9 text-sm" type="date" value={newService.start_date} onChange={e => setNewService(p => ({ ...p, start_date: e.target.value }))} />
+                    </div>
+                  )}
+                  {newService.payment_type === 'parcelado' && (
+                    <>
+                      <div>
+                        <Label className="text-xs text-gray-600 mb-1 block">Nº de Parcelas</Label>
+                        <Input className="h-9 text-sm" type="number" min="2" value={newService.installments} onChange={e => {
+                          const n = parseInt(e.target.value) || 0;
+                          const dates = Array.from({ length: n }, (_, i) => newService.due_dates?.[i] || '');
+                          setNewService(p => ({ ...p, installments: e.target.value, due_dates: dates }));
+                        }} placeholder="Ex: 3" />
+                      </div>
+                      {parseInt(newService.installments) > 0 && (
+                        <div className="sm:col-span-2 space-y-2">
+                          <Label className="text-xs text-gray-600 block">Datas de Vencimento das Parcelas</Label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {Array.from({ length: parseInt(newService.installments) }, (_, i) => (
+                              <div key={i}>
+                                <Label className="text-xs text-gray-400 mb-1 block">Parcela {i + 1}</Label>
+                                <Input className="h-8 text-xs" type="date" value={newService.due_dates?.[i] || ''} onChange={e => {
+                                  const dates = [...(newService.due_dates || [])];
+                                  dates[i] = e.target.value;
+                                  setNewService(p => ({ ...p, due_dates: dates }));
+                                }} />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  <div className="sm:col-span-2 flex items-center gap-2">
+                    <input type="checkbox" id="new-received" checked={newService.received} onChange={e => setNewService(p => ({ ...p, received: e.target.checked }))} className="w-4 h-4 accent-emerald-600" />
+                    <label htmlFor="new-received" className="text-sm text-gray-700 cursor-pointer">Valor já recebido</label>
+                  </div>
+                  {newService.received && (
+                    <div>
+                      <Label className="text-xs text-gray-600 mb-1 block">Data do Recebimento</Label>
+                      <Input className="h-9 text-sm" type="date" value={newService.received_at} onChange={e => setNewService(p => ({ ...p, received_at: e.target.value }))} />
+                    </div>
+                  )}
+                  <div className="sm:col-span-2">
+                    <Label className="text-xs text-gray-600 mb-1 block">Observações</Label>
+                    <Input className="h-9 text-sm" value={newService.notes} onChange={e => setNewService(p => ({ ...p, notes: e.target.value }))} placeholder="Detalhes do serviço" />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 pt-1">
+                  <Button size="sm" variant="outline" onClick={() => { setShowNewServiceForm(false); setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], received: false, received_at: '' }); }}>Cancelar</Button>
+                  <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={addNewService} disabled={upsertCRM.isPending}>Salvar</Button>
+                </div>
+              </div>
+            </div>
+          )}
           <CardContent className="p-0">
             <div className="divide-y divide-gray-100">
               {services.map((service, i) => {
@@ -400,10 +515,7 @@ export default function ClientFinancialSummary({ client }) {
                     })}
                     </div>
                     </CardContent>
-        </Card>
-      ) : (
-        <p className="text-sm text-gray-400 text-center py-6">Nenhum serviço cadastrado. Adicione serviços na aba CRM.</p>
-      )}
+                    </Card>
     </div>
   );
 }

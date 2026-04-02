@@ -216,12 +216,12 @@ export default function ClientCRMPanel({ property, onClose }) {
         value: serviceValue, 
         notes: newService.notes,
         payment_type: newService.payment_type,
-        payment_method: newService.payment_method,
+        payment_method: newService.payment_method || 'Pix',
         start_date: newService.payment_type === 'avista' ? newService.start_date : '',
         received: newService.received && newService.payment_type === 'avista',
-        received_at: newService.payment_type === 'avista' ? received_at : null,
-        account_id: newService.account_id,
-        account_name: newService.account_name,
+        received_at: (newService.received && newService.payment_type === 'avista') ? received_at : null,
+        account_id: (newService.received && newService.payment_type === 'avista') ? newService.account_id : '',
+        account_name: (newService.received && newService.payment_type === 'avista') ? newService.account_name : '',
         installments_data: []
       };
 

@@ -236,7 +236,12 @@ export default function ClientCRMPanel({ property, onClose }) {
    };
 
   const deleteService = (index) => {
-    updateCRM.mutate({ services: (activeCRM?.services || []).filter((_, i) => i !== index) }, {
+    const filtered = (activeCRM?.services || []).filter((_, i) => i !== index).map(s => ({
+      ...s,
+      installments: Array.isArray(s.installments) ? s.installments : [],
+      installments_data: Array.isArray(s.installments_data) ? s.installments_data : []
+    }));
+    updateCRM.mutate({ services: filtered }, {
       onSuccess: () => {
         toast.success('Serviço removido.');
       },

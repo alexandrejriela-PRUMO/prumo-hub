@@ -202,23 +202,38 @@ export default function ClientCRMPanel({ property, onClose }) {
   };
 
   // ── Serviços ─────────────────────────────────────────────────────────────
-  const addService = () => {
-    if (!newService.name) { toast.error('Informe o nome do serviço.'); return; }
-    const serviceValue = parseFloat(newService.value) || 0;
-    const received_at = newService.received && newService.received_at
-      ? new Date(newService.received_at + 'T12:00:00').toISOString()
-      : (newService.received ? new Date().toISOString() : null);
-    let services;
-    if (editingServiceIndex !== null) {
-      services = (activeCRM?.services || []).map((s, i) => i === editingServiceIndex ? { ...s, ...newService, value: serviceValue, received_at } : s);
-    } else {
-      services = [...(activeCRM?.services || []), { ...newService, value: serviceValue, received_at }];
-    }
-    updateCRM.mutate({ services });
-    setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], received: false, received_at: '', account_id: '', account_name: '' });
-    setShowServiceForm(false); setEditingServiceIndex(null);
-    toast.success(editingServiceIndex !== null ? 'Serviço atualizado!' : 'Serviço adicionado!');
-  };
+   const addService = () => {
+     if (!newService.name) { toast.error('Informe o nome do serviço.'); return; }
+     const serviceValue = parseFloat(newService.value) || 0;
+     const received_at = newService.received && newService.received_at
+       ? new Date(newService.received_at + 'T12:00:00').toISOString()
+       : (newService.received ? new Date().toISOString() : null);
+
+     // Estruturar dados parcelados corretamente
+     let serviceObj = { ...newService, value: serviceValue, received_at, installments_data: [] };
+     if (newService.payment_type === 'parcelado') {
+       const numInstallments = parseInt(newService.installments) || 1;
+       const installmentValue = serviceValue / numInstallments;
+       serviceObj.installments_data = Array.from({ length: numInstallments }, (_, i) => ({
+         number: i + 1,
+         amount: installmentValue,
+         due_date: newService.due_dates?.[i] || '',
+         received: false,
+         received_date: null,
+       }));
+     }
+
+     let services;
+     if (editingServiceIndex !== null) {
+       services = (activeCRM?.services || []).map((s, i) => i === editingServiceIndex ? serviceObj : s);
+     } else {
+       services = [...(activeCRM?.services || []), serviceObj];
+     }
+     updateCRM.mutate({ services });
+     setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], received: false, received_at: '', account_id: '', account_name: '' });
+     setShowServiceForm(false); setEditingServiceIndex(null);
+     toast.success(editingServiceIndex !== null ? 'Serviço atualizado!' : 'Serviço adicionado!');
+   };
 
   const deleteService = (index) => {
     updateCRM.mutate({ services: (activeCRM?.services || []).filter((_, i) => i !== index) });

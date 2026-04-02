@@ -160,6 +160,7 @@ export default function Mappings() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!selectedProperty) return;
     const formData = new FormData(e.target);
     const data = {
       property_id: selectedProperty.id,

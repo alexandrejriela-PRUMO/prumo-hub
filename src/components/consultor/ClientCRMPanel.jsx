@@ -666,10 +666,21 @@ export default function ClientCRMPanel({ property, onClose }) {
                       )}
                       </>
                       )}
-                  <div className="sm:col-span-2">
-                    <Label className="text-xs text-gray-600 mb-1 block">Observações</Label>
-                    <Input className="h-9 text-sm" value={newService.notes} onChange={e => setNewService(p => ({ ...p, notes: e.target.value }))} placeholder="Detalhes do serviço" />
-                  </div>
+
+                      <div>
+                      <Label className="text-xs text-gray-600 mb-1 block">Conta Financeira</Label>
+                      <Select value={newService.account_id || ''} onValueChange={v => { const acc = accounts.find(a => a.id === v); setNewService(p => ({ ...p, account_id: v || '', account_name: acc?.name || '' })); }}>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={null}>Sem conta (Padrão)</SelectItem>
+                        {accounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>)}
+                      </SelectContent>
+                      </Select>
+                      </div>
+                      <div className="sm:col-span-2">
+                      <Label className="text-xs text-gray-600 mb-1 block">Observações</Label>
+                      <Input className="h-9 text-sm" value={newService.notes} onChange={e => setNewService(p => ({ ...p, notes: e.target.value }))} placeholder="Detalhes do serviço" />
+                      </div>
                 </div>
                 <div className="flex justify-end gap-2 pt-1">
                   <Button size="sm" variant="outline" onClick={() => { setShowServiceForm(false); setEditingServiceIndex(null); }}>Cancelar</Button>

@@ -363,12 +363,20 @@ export default function ClientFinancialSummary({ client }) {
                               const inst = newService.installments_data?.[idx] || { due_date: newService.due_dates?.[idx] || '', received: false, received_at: '' };
                               return (
                                 <div key={idx} className="p-3 border border-gray-200 rounded-lg">
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
                                     <div>
-                                      <Label className="text-xs text-gray-500 mb-1 block">Parcela {idx + 1} - Vencimento</Label>
+                                      <Label className="text-xs text-gray-500 mb-1 block">Vencimento</Label>
                                       <Input className="h-8 text-xs" type="date" value={inst.due_date || ''} onChange={e => {
                                         const inst_data = [...(newService.installments_data || [])];
                                         inst_data[idx] = { ...inst_data[idx], due_date: e.target.value };
+                                        setNewService(p => ({ ...p, installments_data: inst_data }));
+                                      }} />
+                                    </div>
+                                    <div>
+                                      <Label className="text-xs text-gray-500 mb-1 block">Data Receb.</Label>
+                                      <Input className="h-8 text-xs" type="date" value={inst.received_at || ''} onChange={e => {
+                                        const inst_data = [...(newService.installments_data || [])];
+                                        inst_data[idx] = { ...inst_data[idx], received_at: e.target.value };
                                         setNewService(p => ({ ...p, installments_data: inst_data }));
                                       }} />
                                     </div>
@@ -381,16 +389,6 @@ export default function ClientFinancialSummary({ client }) {
                                       <label htmlFor={`new-inst-${idx}`} className="text-xs text-gray-600 cursor-pointer flex-1">Recebido</label>
                                     </div>
                                   </div>
-                                  {inst.received && (
-                                    <div>
-                                      <Label className="text-xs text-gray-500 mb-1 block">Data do Recebimento</Label>
-                                      <Input className="h-8 text-xs" type="date" value={inst.received_at || ''} onChange={e => {
-                                        const inst_data = [...(newService.installments_data || [])];
-                                        inst_data[idx] = { ...inst_data[idx], received_at: e.target.value };
-                                        setNewService(p => ({ ...p, installments_data: inst_data }));
-                                      }} />
-                                    </div>
-                                  )}
                                 </div>
                               );
                             })}
@@ -496,12 +494,20 @@ export default function ClientFinancialSummary({ client }) {
                                        const inst = editForm.installments_data?.[idx] || { due_date: editForm.due_dates?.[idx] || '', received: false, received_at: '' };
                                        return (
                                          <div key={idx} className="p-3 border border-gray-200 rounded-lg">
-                                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+                                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
                                              <div>
-                                               <Label className="text-xs text-gray-500 mb-1 block">Parcela {idx + 1} - Vencimento</Label>
+                                               <Label className="text-xs text-gray-500 mb-1 block">Vencimento</Label>
                                                <Input className="h-8 text-xs" type="date" value={inst.due_date || ''} onChange={e => {
                                                  const inst_data = [...(editForm.installments_data || [])];
                                                  inst_data[idx] = { ...inst_data[idx], due_date: e.target.value };
+                                                 setEditForm(p => ({ ...p, installments_data: inst_data }));
+                                               }} />
+                                             </div>
+                                             <div>
+                                               <Label className="text-xs text-gray-500 mb-1 block">Data Receb.</Label>
+                                               <Input className="h-8 text-xs" type="date" value={inst.received_at || ''} onChange={e => {
+                                                 const inst_data = [...(editForm.installments_data || [])];
+                                                 inst_data[idx] = { ...inst_data[idx], received_at: e.target.value };
                                                  setEditForm(p => ({ ...p, installments_data: inst_data }));
                                                }} />
                                              </div>
@@ -514,16 +520,6 @@ export default function ClientFinancialSummary({ client }) {
                                                <label htmlFor={`edit-inst-${idx}`} className="text-xs text-gray-600 cursor-pointer flex-1">Recebido</label>
                                              </div>
                                            </div>
-                                           {inst.received && (
-                                             <div>
-                                               <Label className="text-xs text-gray-500 mb-1 block">Data do Recebimento</Label>
-                                               <Input className="h-8 text-xs" type="date" value={inst.received_at || ''} onChange={e => {
-                                                 const inst_data = [...(editForm.installments_data || [])];
-                                                 inst_data[idx] = { ...inst_data[idx], received_at: e.target.value };
-                                                 setEditForm(p => ({ ...p, installments_data: inst_data }));
-                                               }} />
-                                             </div>
-                                           )}
                                          </div>
                                        );
                                      })}

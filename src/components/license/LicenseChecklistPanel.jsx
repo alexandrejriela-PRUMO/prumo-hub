@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -232,7 +232,7 @@ function ChecklistTaskItem({
     setShowFileInput(false);
   };
 
-  // Cria evento na agenda com campos corretos
+  // Cria evento na agenda + interação no CRM da propriedade vinculada
   const handleCreateAgendaEvent = async () => {
     if (!agendaDate) { toast.error('Defina uma data para criar o evento'); return; }
     setSavingAgenda(true);
@@ -240,10 +240,13 @@ function ChecklistTaskItem({
       const assignee = teamMembers.find(m => m.member_email === agendaAssignee);
       const startISO = `${agendaDate}T${agendaTime}:00`;
       const endISO   = `${agendaDate}T${agendaEndTime}:00`;
+      const eventDesc = `📋 Checklist — ${licenseLabel}\nResponsável: ${assignee?.member_name || agendaAssignee}${item.notes ? '\nObs: ' + item.notes : ''}`;
+
+      // 1. Cria na Agenda
       await base44.entities.AgendaEvent.create({
         consultor_email: consultorEmail,
-        title: `${item.title}`,
-        description: `📋 Checklist — ${licenseLabel}\nResponsável: ${assignee?.member_name || agendaAssignee}\n${item.notes ? 'Obs: ' + item.notes : ''}`,
+        title: item.title,
+        description: eventDesc,
         event_type: 'Tarefa',
         start_datetime: startISO,
         end_datetime: endISO,
@@ -255,16 +258,58 @@ function ChecklistTaskItem({
         priority: item.priority || 'Média',
         notes: item.notes || '',
       });
-      // Registra no histórico da tarefa
+
+      // 2. Cria interação no CRM da propriedade vinculada (se houver propertyId)
+      if (propertyId) {
+        try {
+          const crmList = await base44.entities.ClientCRM.filter({ consultor_email: consultorEmail });
+          // tenta achar o CRM pela property_id
+          const crmMatch = crmList.find(c => c.property_id === propertyId);
+          if (crmMatch) {
+            const newInteraction = {
+              id: Date.now().toString(),
+              date: new Date().toISOString(),
+              type: 'Reunião',
+              title: `📋 ${item.title} — Checklist: ${licenseLabel}`,
+              description: `Tarefa agendada via Checklist de Licença.\nData: ${format(new Date(startISO), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}\nDelegado para: ${assignee?.member_name || agendaAssignee}${item.notes ? '\nObs: ' + item.notes : ''}`,
+              next_action: item.title,
+              next_action_date: agendaDate,
+              responsible_email: agendaAssignee,
+              responsible_name: assignee?.member_name || agendaAssignee,
+              created_by: consultorEmail,
+              thread: [],
+            };
+            const updatedInteractions = [...(crmMatch.interactions || []), newInteraction];
+            await base44.entities.ClientCRM.update(crmMatch.id, { interactions: updatedInteractions });
+          }
+        } catch {
+          // silencioso — agenda já foi criada, CRM é opcional
+        }
+      }
+
+      // 3. Registra no histórico da tarefa
       onFieldChange('activity_history', [...(item.activity_history || []), {
         id: Date.now().toString(),
         action: 'edited',
         timestamp: new Date().toISOString(),
         user_email: user?.email,
         user_name: user?.full_name || user?.email,
-        details: `Evento criado na agenda para ${format(new Date(startISO), "dd/MM/yyyy 'às' HH:mm")} → ${assignee?.member_name || agendaAssignee}`,
+        details: `📅 Agendado para ${format(new Date(startISO), "dd/MM/yyyy 'às' HH:mm")} → ${assignee?.member_name || agendaAssignee} · registrado na Agenda e CRM`,
       }]);
-      toast.success('Evento criado na Agenda!');
+
+      // 4. Notifica o responsável delegado (se diferente do consultor)
+      if (agendaAssignee && agendaAssignee !== consultorEmail) {
+        base44.functions.invoke('notifyCRMAssignment', {
+          responsible_email: agendaAssignee,
+          assigner_name: user?.full_name || consultorEmail,
+          type: 'task',
+          title: `${item.title} (Checklist: ${licenseLabel})`,
+          client_name: licenseLabel,
+          property_id: propertyId || '',
+        }).catch(() => {});
+      }
+
+      toast.success('Evento criado na Agenda e registrado no CRM!');
       setShowAgendaForm(false);
     } catch (err) {
       toast.error('Erro ao criar evento: ' + err.message);
@@ -552,12 +597,14 @@ function InlineChecklistView({ checklist, user, consultorEmail, teamMembers, lic
   const [items, setItems] = useState(checklist.items || []);
   const [expandedItems, setExpandedItems] = useState({});
   const queryClient = useQueryClient();
+  // Ref para sempre ter acesso ao state mais recente sem re-render em closures
+  const itemsRef = React.useRef(items);
+  React.useEffect(() => { itemsRef.current = items; }, [items]);
 
   const updateMutation = useMutation({
     mutationFn: (data) => base44.entities.ProjectChecklist.update(checklist.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['licenseChecklist'] });
-      toast.success('Checklist salvo!');
     }
   });
 
@@ -601,8 +648,21 @@ function InlineChecklistView({ checklist, user, consultorEmail, teamMembers, lic
     ));
   };
 
-  const handleSaveThread = (itemId, updatedThread) => {
-    setItems(prev => prev.map(item => item.id === itemId ? { ...item, thread: updatedThread } : item));
+  const handleSaveThread = async (itemId, updatedThread) => {
+    // Atualiza state local imediatamente
+    const newItems = itemsRef.current.map(item => item.id === itemId ? { ...item, thread: updatedThread } : item);
+    setItems(newItems);
+    // Persiste no banco sem toast de "salvo" para não atrapalhar UX
+    const completed = newItems.filter(i => i.status === 'Concluído').length;
+    const pending   = newItems.filter(i => i.status === 'Pendente').length;
+    const delayed   = newItems.filter(i => i.status === 'Atrasado').length;
+    const total = newItems.length;
+    await updateMutation.mutateAsync({
+      items: newItems,
+      overall_progress: total > 0 ? Math.round((completed / total) * 100) : 0,
+      completed_tasks: completed, pending_tasks: pending, delayed_tasks: delayed,
+      last_updated: new Date().toISOString(),
+    });
   };
 
   const handleDeleteItem = (itemId) => {

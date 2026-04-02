@@ -32,6 +32,11 @@ Deno.serve(async (req) => {
       client_property_id: clientPropertyId,
     });
 
+    // Buscar contas financeiras para validar
+    const accounts = await base44.entities.FinancialAccount.filter({
+      consultor_email,
+    });
+
     for (const service of services) {
       const installments = service.installments_data || service.installments || [];
       console.log(`[syncInstallments] Processando serviço: ${service.name}, tipo: ${service.payment_type}, parcelas: ${installments.length}`);
@@ -40,7 +45,7 @@ Deno.serve(async (req) => {
           const inst = installments[idx];
           
           // Só criar transação se parcela foi recebida e tem data de recebimento
-          console.log(`[syncInstallments] Parcela ${inst.number}: received=${inst.received}, received_date=${inst.received_date}, amount=${inst.amount}`);
+          console.log(`[syncInstallments] Parcela ${inst.number}: received=${inst.received}, received_date=${inst.received_date}, amount=${inst.amount}, account_id=${inst.account_id}, account_name=${inst.account_name}`);
           if (inst.received && inst.received_date) {
             const dateStr = inst.received_date;
             const description = `${service.name} - Parcela ${inst.number}/${installments.length}`;
@@ -53,7 +58,17 @@ Deno.serve(async (req) => {
             );
 
             if (!exists) {
-              // Criar transação com dados específicos da parcela se disponível, senão usar dados do serviço
+              // Determinar account_name: usar da parcela, depois do serviço, depois validar pelo account_id
+              let accountName = inst.account_name || service.account_name || '';
+              let accountId = inst.account_id || service.account_id || '';
+              
+              // Se tem account_id mas não tem account_name, buscar o nome
+              if (accountId && !accountName) {
+                const acc = accounts.find(a => a.id === accountId);
+                accountName = acc?.name || '';
+              }
+              
+              // Criar transação com dados específicos da parcela
               const transaction = await base44.entities.Expense.create({
                 consultor_email,
                 description,
@@ -62,7 +77,8 @@ Deno.serve(async (req) => {
                 competencia: dateStr,
                 transaction_type: 'receita',
                 category: 'Cobran\u00e7a de Cliente (Manual)',
-                account_name: inst.account_name || service.account_name || '',
+                account_id: accountId,
+                account_name: accountName,
                 client_name: crm.client_name,
                 client_property_id: clientPropertyId,
                 status: 'Pago',

@@ -203,77 +203,83 @@ export default function ClientCRMPanel({ property, onClose }) {
 
   // ── Serviços ─────────────────────────────────────────────────────────────
    const addService = () => {
-     if (!newService.name) { toast.error('Informe o nome do serviço.'); return; }
-     const serviceValue = parseFloat(newService.value) || 0;
-     const received_at = newService.received && newService.received_at
-       ? new Date(newService.received_at + 'T12:00:00').toISOString()
-       : (newService.received ? new Date().toISOString() : null);
+      if (!newService.name) { toast.error('Informe o nome do serviço.'); return; }
+      const serviceValue = parseFloat(newService.value) || 0;
+      const received_at = newService.received && newService.received_at
+        ? new Date(newService.received_at + 'T12:00:00').toISOString()
+        : (newService.received ? new Date().toISOString() : null);
 
-     // Estruturar dados parcelados corretamente
-     let serviceObj = { 
-       name: newService.name, 
-       status: newService.status, 
-       value: serviceValue, 
-       notes: newService.notes,
-       payment_type: newService.payment_type,
-       payment_method: newService.payment_method,
-       start_date: newService.payment_type === 'avista' ? newService.start_date : '',
-       received: newService.received && newService.payment_type === 'avista',
-       received_at: newService.payment_type === 'avista' ? received_at : null,
-       account_id: newService.account_id,
-       account_name: newService.account_name,
-       installments_data: []
-     };
+      // Estruturar dados parcelados corretamente
+      let serviceObj = { 
+        name: newService.name, 
+        status: newService.status, 
+        value: serviceValue, 
+        notes: newService.notes,
+        payment_type: newService.payment_type,
+        payment_method: newService.payment_method,
+        start_date: newService.payment_type === 'avista' ? newService.start_date : '',
+        received: newService.received && newService.payment_type === 'avista',
+        received_at: newService.payment_type === 'avista' ? received_at : null,
+        account_id: newService.account_id,
+        account_name: newService.account_name,
+        installments_data: []
+      };
 
-     if (newService.payment_type === 'parcelado') {
-       const numInstallments = parseInt(newService.installments) || 1;
-       const installmentValue = serviceValue / numInstallments;
-       serviceObj.installments_data = (newService.installments_data || Array.from({ length: numInstallments }, (_, i) => ({
-         number: i + 1,
-         amount: installmentValue,
-         due_date: '',
-         received: false,
-         received_date: null,
-         account_id: '',
-         account_name: '',
-         payment_method: '',
-       }))).map((inst, i) => ({
-         number: inst.number || i + 1,
-         amount: inst.amount || installmentValue,
-         due_date: inst.due_date || newService.due_dates?.[i] || '',
-         received: inst.received || false,
-         received_date: inst.received_date || null,
-         account_id: inst.account_id || '',
-         account_name: inst.account_name || '',
-         payment_method: inst.payment_method || '',
-       }));
-     }
+      if (newService.payment_type === 'parcelado') {
+        const numInstallments = parseInt(newService.installments) || 1;
+        const installmentValue = serviceValue / numInstallments;
 
-     let services;
-     if (editingServiceIndex !== null) {
-       services = (activeCRM?.services || []).map((s, i) => i === editingServiceIndex ? serviceObj : s);
-     } else {
-       services = [...(activeCRM?.services || []), serviceObj];
-     }
-     updateCRM.mutate({ services }, {
-       onSuccess: async () => {
-         setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], installments_data: [], received: false, received_at: '', account_id: '', account_name: '' });
-         setShowServiceForm(false); setEditingServiceIndex(null);
-         toast.success(editingServiceIndex !== null ? 'Serviço atualizado!' : 'Serviço adicionado!');
-         // Sincronizar transações de parcelas recebidas
-         try {
-           const result = await base44.functions.invoke('syncInstallmentTransactions', { crmId, consultor_email: crmConsultorEmail });
-           if (result.data?.transactionsCreated > 0) {
-             toast.success(`${result.data.transactionsCreated} transação(ões) criada(s)!`);
-             queryClient.invalidateQueries({ queryKey: ['fin-accounts-crm', crmConsultorEmail] });
-           }
-         } catch (e) {
-           console.error('Erro ao sincronizar transações:', e.message);
-           toast.error('Erro ao sincronizar transações: ' + e.message);
-         }
-       }
-     });
-   };
+        // Garantir que installments_data existem e têm todos os campos
+        const baseInstallments = newService.installments_data && newService.installments_data.length > 0 
+          ? newService.installments_data 
+          : Array.from({ length: numInstallments }, (_, i) => ({
+              number: i + 1,
+              amount: installmentValue,
+              due_date: '',
+              received: false,
+              received_date: '',
+              account_id: '',
+              account_name: '',
+              payment_method: '',
+            }));
+
+        serviceObj.installments_data = baseInstallments.map((inst, i) => ({
+          number: inst.number !== undefined ? inst.number : i + 1,
+          amount: inst.amount || installmentValue,
+          due_date: inst.due_date || '',
+          received: inst.received === true,
+          received_date: inst.received_date || '',
+          account_id: inst.account_id || '',
+          account_name: inst.account_name || '',
+          payment_method: inst.payment_method || '',
+        }));
+      }
+
+      let services;
+      if (editingServiceIndex !== null) {
+        services = (activeCRM?.services || []).map((s, i) => i === editingServiceIndex ? serviceObj : s);
+      } else {
+        services = [...(activeCRM?.services || []), serviceObj];
+      }
+      updateCRM.mutate({ services }, {
+        onSuccess: async () => {
+          setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], installments_data: [], received: false, received_at: '', account_id: '', account_name: '' });
+          setShowServiceForm(false); setEditingServiceIndex(null);
+          toast.success(editingServiceIndex !== null ? 'Serviço atualizado!' : 'Serviço adicionado!');
+          // Sincronizar transações de parcelas recebidas
+          try {
+            const result = await base44.functions.invoke('syncInstallmentTransactions', { crmId, consultor_email: crmConsultorEmail });
+            if (result.data?.transactionsCreated > 0) {
+              toast.success(`${result.data.transactionsCreated} transação(ões) criada(s)!`);
+              queryClient.invalidateQueries({ queryKey: ['fin-accounts-crm', crmConsultorEmail] });
+            }
+          } catch (e) {
+            console.error('Erro ao sincronizar transações:', e.message);
+            toast.error('Erro ao sincronizar transações: ' + e.message);
+          }
+        }
+      });
+    };
 
   const deleteService = (index) => {
     const filtered = (activeCRM?.services || []).filter((_, i) => i !== index).map(s => ({

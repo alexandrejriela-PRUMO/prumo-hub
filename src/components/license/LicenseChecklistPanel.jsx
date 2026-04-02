@@ -194,7 +194,7 @@ function ChecklistThread({ thread = [], teamMembers, currentUser, onSaveThread, 
 
 // ── Item individual do checklist ──────────────────────────────────────────────
 function ChecklistTaskItem({
-  item, teamMembers, consultorEmail, licenseId, licenseLabel, propertyId,
+  item, teamMembers, consultorEmail, licenseId, licenseLabel, propertyId, licenseOwnerEmail,
   onFieldChange, onStatusChange, onDelete, onSaveThread,
   isExpanded, onToggleExpand, user
 }) {
@@ -262,9 +262,18 @@ function ChecklistTaskItem({
       // 2. Cria interação + tarefa no CRM da propriedade vinculada (se houver propertyId)
       if (propertyId) {
         try {
+          // Busca o owner_email da Property para poder cruzar com o ClientCRM
+          let ownerEmail = null;
+          try {
+            const propList = await base44.entities.Property.filter({ id: propertyId });
+            ownerEmail = propList?.[0]?.owner_email || null;
+          } catch {}
+
           const crmList = await base44.entities.ClientCRM.filter({ consultor_email: consultorEmail });
-          // busca por property_id direto ou por qualquer CRM que tenha essa property
-          const crmMatch = crmList.find(c => c.property_id === propertyId) || crmList.find(c => c.property_id === propertyId);
+          // Tenta: 1) property_id direto, 2) client_email == owner_email da propriedade, 3) client_email == owner_email da licença
+          const crmMatch = crmList.find(c => c.property_id === propertyId)
+            || (ownerEmail ? crmList.find(c => c.client_email === ownerEmail) : null)
+            || (licenseOwnerEmail ? crmList.find(c => c.client_email === licenseOwnerEmail) : null);
           if (crmMatch) {
             const taskId = Date.now().toString();
             const interactionId = (Date.now() + 1).toString();
@@ -620,7 +629,7 @@ function ChecklistTaskItem({
 }
 
 // ── View inline do checklist ──────────────────────────────────────────────────
-function InlineChecklistView({ checklist, user, consultorEmail, teamMembers, licenseId, licenseLabel, propertyId }) {
+function InlineChecklistView({ checklist, user, consultorEmail, teamMembers, licenseId, licenseLabel, propertyId, licenseOwnerEmail }) {
   const [items, setItems] = useState(checklist.items || []);
   const [expandedItems, setExpandedItems] = useState({});
   const queryClient = useQueryClient();
@@ -697,8 +706,18 @@ function InlineChecklistView({ checklist, user, consultorEmail, teamMembers, lic
       try {
         const changedItem = newItems.find(i => i.id === itemId);
         if (!changedItem) return;
+
+        // Resolve owner_email da Property para cruzar com ClientCRM
+        let ownerEmail = null;
+        try {
+          const propList = await base44.entities.Property.filter({ id: propertyId });
+          ownerEmail = propList?.[0]?.owner_email || null;
+        } catch {}
+
         const crmList = await base44.entities.ClientCRM.filter({ consultor_email: consultorEmail });
-        const crmMatch = crmList.find(c => c.property_id === propertyId);
+        const crmMatch = crmList.find(c => c.property_id === propertyId)
+          || (ownerEmail ? crmList.find(c => c.client_email === ownerEmail) : null)
+          || (licenseOwnerEmail ? crmList.find(c => c.client_email === licenseOwnerEmail) : null);
         if (crmMatch) {
           // Encontra a tarefa no CRM pelo título espelhado
           const crmTaskTitle = `📋 ${changedItem.title}`;
@@ -782,6 +801,7 @@ function InlineChecklistView({ checklist, user, consultorEmail, teamMembers, lic
             licenseId={licenseId}
             licenseLabel={licenseLabel}
             propertyId={propertyId}
+            licenseOwnerEmail={licenseOwnerEmail}
             onFieldChange={(field, value) => handleFieldChange(item.id, field, value)}
             onStatusChange={(status) => handleStatusChange(item.id, status)}
             onDelete={() => handleDeleteItem(item.id)}
@@ -940,6 +960,7 @@ export default function LicenseChecklistPanel({ license, user }) {
         licenseId={license.id}
         licenseLabel={licenseLabel}
         propertyId={license.property_id}
+        licenseOwnerEmail={license.owner_email}
       />
     </div>
   );

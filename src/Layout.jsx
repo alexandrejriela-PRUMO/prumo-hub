@@ -139,7 +139,7 @@ const produtorNavItems = [
   { name: 'Relatórios', page: 'Reports', icon: FileText },
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
   { name: 'Minha Equipe', page: 'MyTeam', icon: Users, separator: true },
-  { name: 'Modo Campo', page: 'CampMode', icon: Building2 },
+  { name: 'Modo Campo', page: 'CampMode', icon: Smartphone },
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
 ];
 
@@ -286,6 +286,7 @@ const navItems = [
   { name: 'Relatórios', page: 'Reports', icon: FileText },
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
+  { name: 'Modo Campo', page: 'CampMode', icon: Smartphone },
 ];
 
 export default function Layout({ children, currentPageName }) {

@@ -573,7 +573,7 @@ export default function ClientCRMPanel({ property, onClose }) {
                     <Label className="text-xs text-gray-600 mb-1 block">Valor Total (R$)</Label>
                     <Input className="h-9 text-sm" type="number" value={newService.value} onChange={e => setNewService(p => ({ ...p, value: e.target.value }))} placeholder="0,00" />
                   </div>
-                  <div>
+                  <div className="sm:col-span-2">
                     <Label className="text-xs text-gray-600 mb-1 block">Tipo de Pagamento</Label>
                     <Select value={newService.payment_type} onValueChange={v => setNewService(p => ({ ...p, payment_type: v, due_dates: [], installments: '' }))}>
                       <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
@@ -581,13 +581,6 @@ export default function ClientCRMPanel({ property, onClose }) {
                         <SelectItem value="avista">À Vista</SelectItem>
                         <SelectItem value="parcelado">Parcelado</SelectItem>
                       </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-gray-600 mb-1 block">Forma de Pagamento</Label>
-                    <Select value={newService.payment_method} onValueChange={v => setNewService(p => ({ ...p, payment_method: v }))}>
-                      <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                      <SelectContent>{['Pix','Transferência','Boleto','Cartão de Crédito','Cartão de Débito','Dinheiro','Cheque','Outro'].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   {newService.payment_type === 'avista' && (
@@ -697,16 +690,7 @@ export default function ClientCRMPanel({ property, onClose }) {
                       </>
                       )}
 
-                      <div>
-                      <Label className="text-xs text-gray-600 mb-1 block">Conta Financeira</Label>
-                      <Select value={newService.account_id || ''} onValueChange={v => { const acc = accounts.find(a => a.id === v); setNewService(p => ({ ...p, account_id: v || '', account_name: acc?.name || '' })); }}>
-                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={null}>Sem conta (Padrão)</SelectItem>
-                        {accounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>)}
-                      </SelectContent>
-                      </Select>
-                      </div>
+
                       <div className="sm:col-span-2">
                       <Label className="text-xs text-gray-600 mb-1 block">Observações</Label>
                       <Input className="h-9 text-sm" value={newService.notes} onChange={e => setNewService(p => ({ ...p, notes: e.target.value }))} placeholder="Detalhes do serviço" />

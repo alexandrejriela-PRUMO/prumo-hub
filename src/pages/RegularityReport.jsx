@@ -19,7 +19,9 @@ import {
   Calendar,
   User,
   MapPinned,
-  ChevronLeft
+  ChevronLeft,
+  TreePine,
+  Leaf
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import moment from 'moment';
@@ -160,6 +162,20 @@ export default function RegularityReport() {
     enabled: !!effectiveEmail && ((isConsultorFamily || isClientConsultor) ? effectiveProperties.length > 0 : true)
   });
 
+  const { data: prads = [] } = useQuery({
+    queryKey: ['prads', user?.email, propertyIds.join(',')],
+    queryFn: async () => {
+      if ((isConsultorFamily || isClientConsultor) && propertyIds.length > 0) {
+        const results = await Promise.all(
+          propertyIds.map(pid => base44.entities.PRAD.filter({ property_id: pid }))
+        );
+        return results.flat();
+      }
+      return base44.entities.PRAD.filter({ owner_email: effectiveEmail });
+    },
+    enabled: !!effectiveEmail && ((isConsultorFamily || isClientConsultor) ? effectiveProperties.length > 0 : true)
+  });
+
   useEffect(() => {
     if (effectiveProperties.length > 0 && !selectedPropertyId) {
       setSelectedPropertyId(effectiveProperties[0].id);
@@ -168,305 +184,185 @@ export default function RegularityReport() {
 
   const selectedProperty = effectiveProperties.find(p => p.id === selectedPropertyId);
   const propertyLicenses = licenses.filter(l => l.property_id === selectedPropertyId);
-  const propertyDocuments = documents.filter(d => 
+  const propertyDocuments = documents.filter(d =>
     d.property_id === selectedPropertyId || d.entity_id === selectedPropertyId
   );
   const propertyCarManagements = carManagements.filter(c => c.property_id === selectedPropertyId);
+  const propertyPrads = prads.filter(p => p.property_id === selectedPropertyId);
+  const propertyProcesses = (isConsultorFamily || isClientConsultor)
+    ? processes.filter(p => p.property_id === selectedPropertyId)
+    : processes;
+  const propertyGeo = georeferencing.filter(g => g.property_id === selectedPropertyId);
+  const propertyAlerts = environmentalAlerts.filter(a => a.property_id === selectedPropertyId);
 
-  // Cálculo de pontuação detalhado
+  // ── Pesos alinhados com o Termômetro ─────────────────────────────────────
+  // Licença: 40 | CAR: 20 | Docs(CCIR+ITR): 10 | Geo: 8 | Processos: 12 | PRAD: 10
   const calculateDetailedScore = () => {
     const categories = [];
     let totalScore = 0;
-    let maxScore = 100;
 
-    // Licenças (35 pontos)
-    const licenseAnalysis = analyzeLicenses(propertyLicenses);
-    categories.push({
-      name: 'Licenças Ambientais',
-      icon: FileCheck,
-      weight: 35,
-      score: licenseAnalysis.score,
-      status: licenseAnalysis.status,
-      details: licenseAnalysis.details
-    });
-    totalScore += licenseAnalysis.score;
-
-    // Documentos (25 pontos)
-    const docAnalysis = analyzeDocuments(propertyDocuments, propertyCarManagements);
-    categories.push({
-      name: 'Documentação Cadastral',
-      icon: FileText,
-      weight: 25,
-      score: docAnalysis.score,
-      status: docAnalysis.status,
-      details: docAnalysis.details
-    });
-    totalScore += docAnalysis.score;
-
-    // Georreferenciamento (15 pontos) — baseado apenas em registros com status Regular
-    const propertyGeo = georeferencing.filter(g => g.property_id === selectedPropertyId);
-    const geoAnalysis = analyzeGeoreferencing(null, propertyGeo);
-    categories.push({
-      name: 'Georreferenciamento',
-      icon: MapPin,
-      weight: 15,
-      score: geoAnalysis.score,
-      status: geoAnalysis.status,
-      details: geoAnalysis.details
-    });
-    totalScore += geoAnalysis.score;
-
-    // Processos (10 pontos)
-    const propertyProcesses = (isConsultorFamily || isClientConsultor)
-      ? processes.filter(p => p.property_id === selectedPropertyId)
-      : processes;
-    const processAnalysis = analyzeProcesses(propertyProcesses);
-    categories.push({
-      name: 'Situação Processual',
-      icon: Scale,
-      weight: 10,
-      score: processAnalysis.score,
-      status: processAnalysis.status,
-      details: processAnalysis.details
-    });
-    totalScore += processAnalysis.score;
-
-    // Alertas de Infrações (15 pontos)
-    const propertyAlerts = environmentalAlerts.filter(a => a.property_id === selectedPropertyId);
-    const alertAnalysis = analyzeAlerts(propertyAlerts);
-    categories.push({
-      name: 'Alertas de Infrações',
-      icon: ShieldAlert,
-      weight: 15,
-      score: alertAnalysis.score,
-      status: alertAnalysis.status,
-      details: alertAnalysis.details
-    });
-    totalScore += alertAnalysis.score;
-
-    const percentage = Math.round(totalScore);
-    return { percentage, categories };
-  };
-
-  const analyzeLicenses = (licenses) => {
-    // Verifica isenção: licença do tipo "Dispensa de Licenciamento" indica que a atividade está isenta
-    const isExempt = licenses.some(l => l.license_type === 'Dispensa de Licenciamento' && l.status === 'Vigente');
-    if (isExempt) {
-      return {
-        score: 35,
-        status: 'ok',
-        details: ['✓ Atividade isenta de licenciamento (Dispensa cadastrada e vigente)']
-      };
-    }
-
-    // Filtrar apenas licenças ambientais (LP, LI, LO, LAS, LAC, LAU) para avaliação obrigatória
-    const envLicenses = licenses.filter(l => [
-      'LP - Licença Prévia', 'LI - Licença de Instalação', 'LO - Licença de Operação',
-      'LAU - Licença de Autorização de Uso', 'LAS - Licença Ambiental Simplificada',
-      'LAC - Licença Ambiental Corretiva'
-    ].includes(l.license_type));
-
-    if (!licenses || licenses.length === 0) {
-      return {
-        score: 0,
-        status: 'critical',
-        details: ['Nenhuma licença cadastrada', '💡 Se a atividade for isenta, cadastre uma "Dispensa de Licenciamento"']
-      };
-    }
-
-    if (envLicenses.length === 0) {
-      // Tem outros documentos técnicos mas não licenças ambientais
-      return {
-        score: 20,
-        status: 'warning',
-        details: [
-          `⚠ Nenhuma licença ambiental (LP/LI/LO/LAS) cadastrada`,
-          `✓ ${licenses.length} documento(s) técnico(s) cadastrado(s)`,
-          '💡 Se isento, cadastre uma "Dispensa de Licenciamento" vigente'
-        ]
-      };
-    }
-
-    const now = new Date();
-    const valid = envLicenses.filter(l => l.expiry_date && new Date(l.expiry_date) > now);
-    const expired = envLicenses.filter(l => l.expiry_date && new Date(l.expiry_date) <= now && l.status !== 'Em Análise' && l.status !== 'Renovação');
-    const inRenewal = envLicenses.filter(l => l.status === 'Em Análise' || l.status === 'Renovação');
-    const expiringSoon = valid.filter(l => {
-      const days = Math.floor((new Date(l.expiry_date) - now) / (1000 * 60 * 60 * 24));
-      return days <= 30;
-    });
-
-    const details = [];
-    let score = 0;
-    let status = 'ok';
-
-    if (expired.length === 0 && expiringSoon.length === 0) {
-      score = 35;
-      status = 'ok';
-      details.push(`✓ Todas as ${envLicenses.length} licenças ambientais válidas`);
-    } else if (expired.length === 0 && inRenewal.length > 0) {
-      score = 25;
-      status = 'warning';
-      details.push(`⚠ ${inRenewal.length} licença(s) em renovação/análise — situação temporariamente regular`);
-      if (valid.length > 0) details.push(`✓ ${valid.length} licença(s) válidas`);
-    } else if (expired.length === 0) {
-      score = 22;
-      status = 'warning';
-      details.push(`⚠ ${expiringSoon.length} licença(s) vencendo em até 30 dias`);
-      details.push(`✓ ${valid.length - expiringSoon.length} licença(s) válidas`);
-    } else {
-      score = 10;
-      status = 'critical';
-      details.push(`✗ ${expired.length} licença(s) vencida(s)`);
-      if (valid.length > 0) details.push(`✓ ${valid.length} licença(s) válidas`);
-    }
-
-    return { score, status, details };
-  };
-
-  const analyzeDocuments = (documents, carMgmts = []) => {
-    // CAR: verificado via CARManagement (car_number preenchido)
-    const hasCAR = carMgmts.length > 0 && carMgmts.some(c => c.car_number && c.car_number.trim() !== '');
-    // CCIR: verificado nos documentos (sem georreferenciamento — tem categoria própria)
-    const hasCCIR = documents.some(d => d.document_type === 'CCIR');
-
-    const details = [];
-    let score = 0;
-    let status = 'ok';
-
-    if (hasCAR) {
-      const carRecord = carMgmts.find(c => c.car_number && c.car_number.trim() !== '');
-      score += 13;
-      details.push(`✓ CAR cadastrado em Gestão do CAR (${carRecord?.car_status || 'registrado'})`);
-    } else {
-      details.push('✗ CAR não cadastrado em Gestão do CAR');
-      status = 'warning';
-    }
-
-    if (hasCCIR) {
-      score += 12;
-      details.push('✓ CCIR cadastrado');
-    } else {
-      details.push('✗ CCIR não cadastrado');
-      if (status !== 'critical') status = 'warning';
-    }
-
-    if (score === 25) status = 'ok';
-    else if (score < 13) status = 'critical';
-
-    return { score, status, details };
-  };
-
-  const analyzeGeoreferencing = (property, geoRecords = []) => {
-    // Parâmetro: existência de georreferenciamento com status "Regular" em Central da Propriedade
-    const regularGeo = geoRecords.find(g => g.status === 'Regular');
-    const pendingGeo = geoRecords.find(g => g.status === 'Pendente' || g.status === 'Em Atualização');
-    const irregularGeo = geoRecords.find(g => g.status === 'Irregular');
-
-    if (regularGeo) {
-      return {
-        score: 15,
-        status: 'ok',
-        details: ['✓ Georreferenciamento com status Regular cadastrado']
-      };
-    }
-
-    if (pendingGeo) {
-      return {
-        score: 8,
-        status: 'warning',
-        details: [`⚠ Georreferenciamento cadastrado com status: ${pendingGeo.status}`]
-      };
-    }
-
-    if (irregularGeo) {
-      return {
-        score: 2,
-        status: 'critical',
-        details: ['✗ Georreferenciamento cadastrado como Irregular']
-      };
-    }
-
-    return {
-      score: 0,
-      status: 'warning',
-      details: ['✗ Nenhum georreferenciamento com status Regular cadastrado em Central da Propriedade']
-    };
-  };
-
-  const analyzeProcesses = (processes) => {
-    if (!processes || processes.length === 0) {
-      return {
-        score: 10,
-        status: 'ok',
-        details: ['✓ Sem processos registrados']
-      };
-    }
-
-    const RESOLVED_STATUSES = ['Suspenso', 'Arquivado', 'Finalizado', 'Concluído', 'Encerrado'];
-    const active = processes.filter(p => p.status === 'Em Andamento');
-    const temporarilyOk = processes.filter(p => RESOLVED_STATUSES.includes(p.status));
-    const criminalActive = active.filter(p => p.process_type === 'Criminal');
-    const adminCivilActive = active.filter(p => p.process_type !== 'Criminal');
-
-    if (active.length === 0) {
-      const details = [`✓ ${processes.length} processo(s) cadastrado(s)`];
-      if (temporarilyOk.length > 0) {
-        details.push(`✓ Todos suspensos/arquivados/finalizados — situação temporariamente regular`);
+    // ── 1. LICENÇAS (40pts) ───────────────────────────────────────────────
+    const isento = propertyLicenses.some(l =>
+      l.license_type === 'Dispensa de Licenciamento' ||
+      (l.license_type || '').toLowerCase().includes('dispensa') ||
+      (l.license_type || '').toLowerCase().includes('isento')
+    );
+    let licScore = 0; let licStatus = 'critical'; const licDetails = [];
+    if (isento) {
+      licScore = 30; licStatus = 'ok';
+      licDetails.push('✓ Imóvel isento de licenciamento — 30/40 pontos aplicados');
+    } else if (propertyLicenses.length > 0) {
+      const now = new Date();
+      const expired = propertyLicenses.filter(l => l.expiry_date && new Date(l.expiry_date) <= now && l.status !== 'Em Análise' && l.status !== 'Renovação');
+      const inRenewal = propertyLicenses.filter(l => l.status === 'Em Análise' || l.status === 'Renovação');
+      const expiringSoon = propertyLicenses.filter(l => {
+        if (!l.expiry_date) return false;
+        const days = Math.floor((new Date(l.expiry_date) - now) / (1000 * 60 * 60 * 24));
+        return days > 0 && days <= 60;
+      });
+      if (expired.length === 0 && expiringSoon.length === 0) {
+        licScore = 40; licStatus = 'ok';
+        licDetails.push(`✓ Todas as ${propertyLicenses.length} licença(s) vigentes`);
+      } else if (expired.length === 0 && inRenewal.length > 0) {
+        licScore = Math.round(40 * 0.7); licStatus = 'warning';
+        licDetails.push(`⚠ ${inRenewal.length} licença(s) em renovação/análise`);
+      } else if (expired.length === 0 && expiringSoon.length > 0) {
+        licScore = Math.round(40 * 0.65); licStatus = 'warning';
+        licDetails.push(`⚠ ${expiringSoon.length} licença(s) vencendo em até 60 dias`);
+      } else {
+        licScore = Math.round(40 * 0.2); licStatus = 'critical';
+        licDetails.push(`✗ ${expired.length} licença(s) vencida(s)`);
+        if (inRenewal.length > 0) licDetails.push(`⚠ ${inRenewal.length} em renovação`);
       }
-      return { score: 10, status: 'ok', details };
+    } else {
+      licDetails.push('✗ Nenhuma licença cadastrada');
+      licDetails.push('💡 Se isento, cadastre uma "Dispensa de Licenciamento"');
+    }
+    categories.push({ name: 'Licenças Ambientais', icon: FileCheck, weight: 40, score: licScore, status: licStatus, details: licDetails });
+    totalScore += licScore;
+
+    // ── 2. CAR (20pts) ────────────────────────────────────────────────────
+    const activeCARs = propertyCarManagements.filter(c => c.car_number && c.car_number.trim() !== '');
+    let carScore = 0; let carStatus = 'critical'; const carDetails = [];
+    if (activeCARs.length === 0) {
+      carDetails.push('✗ CAR não cadastrado no módulo Gestão do CAR');
+    } else {
+      const carNeedsRect = activeCARs.some(c => c.car_status === 'Necessita retificação' || c.car_status === 'Com inconsistências' || c.car_status === 'Cancelado');
+      const carFullyValid = activeCARs.every(c => c.car_status === 'Validado');
+      const carInAnalysis = activeCARs.every(c => ['Validado','Em análise pelo órgão ambiental','Pendente de análise'].includes(c.car_status));
+      if (carNeedsRect) {
+        carScore = Math.round(20 * 0.25); carStatus = 'critical';
+        carDetails.push(`✗ CAR necessita retificação/possui inconsistências`);
+        activeCARs.forEach(c => carDetails.push(`  • ${c.car_number} — ${c.car_status}`));
+      } else if (carFullyValid) {
+        carScore = 20; carStatus = 'ok';
+        carDetails.push(`✓ CAR validado pelo órgão ambiental (${activeCARs.length} CAR${activeCARs.length > 1 ? 's' : ''})`);
+        activeCARs.forEach(c => carDetails.push(`  • ${c.car_number} — ${c.car_status}`));
+      } else if (carInAnalysis) {
+        carScore = Math.round(20 * 0.8); carStatus = 'ok';
+        carDetails.push(`✓ CAR em análise/pendente — situação regular`);
+        activeCARs.forEach(c => carDetails.push(`  • ${c.car_number} — ${c.car_status}`));
+      } else {
+        carScore = Math.round(20 * 0.6); carStatus = 'warning';
+        carDetails.push(`⚠ CAR cadastrado — verifique o status`);
+        activeCARs.forEach(c => carDetails.push(`  • ${c.car_number} — ${c.car_status || 'status não definido'}`));
+      }
+    }
+    categories.push({ name: 'CAR — Cadastro Ambiental Rural', icon: TreePine, weight: 20, score: carScore, status: carStatus, details: carDetails });
+    totalScore += carScore;
+
+    // ── 3. DOCUMENTOS CCIR + ITR (10pts) ─────────────────────────────────
+    const hasCCIR = propertyDocuments.some(d => d.document_type === 'CCIR');
+    const hasITR = propertyDocuments.some(d => d.document_type === 'ITR');
+    let docScore = 0; const docDetails = [];
+    if (hasCCIR) { docScore += 6; docDetails.push('✓ CCIR cadastrado'); } else { docDetails.push('⚠ CCIR não cadastrado'); }
+    if (hasITR) { docScore += 4; docDetails.push('✓ ITR anual cadastrado'); } else { docDetails.push('⚠ ITR anual não cadastrado'); }
+    const docStatus = docScore === 10 ? 'ok' : docScore > 0 ? 'warning' : 'warning';
+    categories.push({ name: 'Documentos Cadastrais (CCIR/ITR)', icon: FileText, weight: 10, score: docScore, status: docStatus, details: docDetails });
+    totalScore += docScore;
+
+    // ── 4. GEORREFERENCIAMENTO (8pts) ─────────────────────────────────────
+    const regularGeo = propertyGeo.find(g => g.status === 'Regular');
+    const pendingGeo = propertyGeo.find(g => g.status === 'Pendente' || g.status === 'Em Atualização');
+    const irregularGeo = propertyGeo.find(g => g.status === 'Irregular');
+    let geoScore = 0; let geoStatus = 'warning'; let geoDetails = [];
+    if (regularGeo) { geoScore = 8; geoStatus = 'ok'; geoDetails = ['✓ Georreferenciamento regular']; }
+    else if (pendingGeo) { geoScore = 4; geoStatus = 'warning'; geoDetails = [`⚠ Georreferenciamento ${pendingGeo.status}`]; }
+    else if (irregularGeo) { geoScore = 1; geoStatus = 'warning'; geoDetails = ['⚠ Georreferenciamento irregular']; }
+    else { geoDetails = ['⚠ Nenhum georreferenciamento com status Regular cadastrado']; }
+    categories.push({ name: 'Georreferenciamento', icon: MapPin, weight: 8, score: geoScore, status: geoStatus, details: geoDetails });
+    totalScore += geoScore;
+
+    // ── 5. PROCESSOS (12pts) ──────────────────────────────────────────────
+    const RESOLVED = ['Suspenso', 'Arquivado', 'Finalizado'];
+    const CIVIL_RESOLVED = ['TAC firmado', 'Indenização paga', 'Acordo regular'];
+    const adminProcs = propertyProcesses.filter(p => p.process_type === 'Administrativo');
+    const civilInqs = propertyProcesses.filter(p => p.process_type === 'Civil' && p.is_civil_inquiry === true);
+    const adminActive = adminProcs.filter(p => p.status === 'Em Andamento');
+    const civilUnresolved = civilInqs.filter(p => p.civil_inquiry_resolution === 'Não resolvido' || !p.civil_inquiry_resolution);
+    const civilResolved = civilInqs.filter(p => CIVIL_RESOLVED.includes(p.civil_inquiry_resolution));
+    let procScore = 12; const procDetails = [];
+    if (propertyProcesses.filter(p => p.process_type !== 'Criminal').length === 0) {
+      procDetails.push('✓ Sem processos administrativos ou inquéritos civis');
+    } else {
+      const unpaid = adminActive.filter(p => !p.fine_paid);
+      if (unpaid.length > 0) {
+        procScore -= 12 * 0.5 * Math.min(unpaid.length / (adminProcs.length || 1), 1);
+        procDetails.push(`⚠ ${unpaid.length} proc. administrativo(s) em andamento`);
+      }
+      if (civilUnresolved.length > 0) {
+        procScore -= 12 * 0.4 * Math.min(civilUnresolved.length, 1);
+        procDetails.push(`✗ ${civilUnresolved.length} inquérito(s) civil(is) não resolvido(s)`);
+      }
+      if (civilResolved.length > 0) procDetails.push(`✓ ${civilResolved.length} inquérito(s) civil(is) resolvido(s)`);
+      const positiveAdmin = adminProcs.filter(p => RESOLVED.includes(p.status) || p.fine_paid);
+      if (positiveAdmin.length > 0) procDetails.push(`✓ ${positiveAdmin.length} administrativo(s) encerrado(s)/multa paga`);
+    }
+    procScore = Math.max(0, Math.round(procScore));
+    const procHasProblem = adminActive.some(p => !p.fine_paid) || civilUnresolved.length > 0;
+    const procStatus = procHasProblem ? (civilUnresolved.length > 0 ? 'critical' : 'warning') : 'ok';
+    categories.push({ name: 'Situação Processual', icon: Scale, weight: 12, score: procScore, status: procStatus, details: procDetails });
+    totalScore += procScore;
+
+    // ── 6. EMBARGO (penalidade) ───────────────────────────────────────────
+    const adminWithEmbargo = adminProcs.filter(p => p.has_embargo === true);
+    const embargoNotRespected = adminWithEmbargo.filter(p => p.embargo_respected === false);
+    if (embargoNotRespected.length > 0) {
+      const penalty = 10 * embargoNotRespected.length;
+      totalScore = Math.max(0, totalScore - penalty);
+      categories.push({ name: 'Embargo', icon: ShieldAlert, weight: 0, score: -penalty, status: 'critical', details: [`✗ ${embargoNotRespected.length} embargo(s) NÃO respeitado(s) — penalidade -${penalty} pts`, 'Risco grave de autuação adicional'] });
+    } else if (adminWithEmbargo.length > 0) {
+      categories.push({ name: 'Embargo', icon: ShieldAlert, weight: 0, score: 0, status: 'ok', details: [`✓ ${adminWithEmbargo.length} embargo(s) sendo respeitado(s)`] });
     }
 
-    if (criminalActive.length > 0) {
-      const details = [`✗ ${criminalActive.length} processo(s) criminal(is) em andamento`];
-      if (adminCivilActive.length > 0) details.push(`⚠ ${adminCivilActive.length} processo(s) administrativo(s)/civil(is) em andamento`);
-      if (temporarilyOk.length > 0) details.push(`✓ ${temporarilyOk.length} processo(s) suspenso(s)/finalizado(s)`);
-      return { score: 1, status: 'critical', details };
+    // ── 7. PRAD (10pts) ───────────────────────────────────────────────────
+    if (propertyPrads.length > 0) {
+      const allConcluded = propertyPrads.every(p => p.status === 'Concluído' || p.status === 'Aprovado');
+      const hasElaboration = propertyPrads.some(p => (p.status || '').toLowerCase().includes('elabor'));
+      const hasInProgress = propertyPrads.some(p => p.status === 'Em Execução');
+      const hasPending = propertyPrads.some(p => p.status === 'Pendente' || p.status === 'Não Iniciado');
+      let pradScore = 0; let pradStatus = 'critical'; const pradDetails = [];
+      if (allConcluded) {
+        pradScore = 10; pradStatus = 'ok';
+        pradDetails.push('✓ Todos os PRADs concluídos/aprovados');
+      } else if (hasElaboration) {
+        pradScore = Math.round(10 * 0.75); pradStatus = 'ok';
+        pradDetails.push('✓ PRAD em elaboração — situação proativa');
+      } else if (hasInProgress) {
+        pradScore = Math.round(10 * 0.6); pradStatus = 'warning';
+        pradDetails.push('⚠ PRAD em execução');
+      } else if (hasPending) {
+        pradScore = Math.round(10 * 0.2); pradStatus = 'critical';
+        pradDetails.push('✗ PRAD(s) pendente(s) ou não iniciado(s)');
+      }
+      propertyPrads.forEach(p => pradDetails.push(`  • ${p.title || 'PRAD'} — ${p.status}`));
+      categories.push({ name: 'PRAD — Recuperação de Área', icon: Leaf, weight: 10, score: pradScore, status: pradStatus, details: pradDetails });
+      totalScore += pradScore;
     }
 
-    const details = [`⚠ ${adminCivilActive.length} processo(s) administrativo(s)/civil(is) em andamento`];
-    if (temporarilyOk.length > 0) {
-      details.push(`✓ ${temporarilyOk.length} processo(s) suspenso(s)/finalizado(s) — temporariamente regular`);
-    }
-    return { score: 4, status: 'warning', details };
-  };
-
-  const analyzeAlerts = (alerts) => {
-    if (!alerts || alerts.length === 0) {
-      return {
-        score: 15,
-        status: 'ok',
-        details: ['✓ Sem alertas de infrações']
-      };
-    }
-
-    const open = alerts.filter(a => a.status === 'Aberto' || a.status === 'Em Análise');
-    const critical = open.filter(a => a.severity === 'Crítica' || a.severity === 'Alta');
-
-    if (open.length === 0) {
-      return {
-        score: 15,
-        status: 'ok',
-        details: [`✓ ${alerts.length} alerta(s) resolvido(s)`]
-      };
-    }
-
-    if (critical.length > 0) {
-      return {
-        score: 0,
-        status: 'critical',
-        details: [
-          `✗ ${critical.length} alerta(s) crítico(s)/alto(s) em aberto`,
-          `⚠ ${open.length - critical.length} outro(s) alerta(s) em aberto`
-        ]
-      };
-    }
-
-    return {
-      score: 8,
-      status: 'warning',
-      details: [`⚠ ${open.length} alerta(s) de infração em aberto`]
-    };
+    const maxScore = 40 + 20 + 10 + 8 + 12 + (propertyPrads.length > 0 ? 10 : 0);
+    const percentage = maxScore > 0 ? Math.min(100, Math.round((totalScore / maxScore) * 100)) : 0;
+    return { percentage, categories };
   };
 
   const scoreData = selectedProperty ? calculateDetailedScore() : { percentage: 0, categories: [] };
@@ -604,26 +500,29 @@ export default function RegularityReport() {
             { bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200' } :
             { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' };
 
+          const isPenalty = category.weight === 0;
           return (
             <Card key={idx} className={`border-2 ${categoryStatus.border}`}>
-              <CardHeader>
+              <CardHeader className="pb-2">
                 <CardTitle className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Icon className="w-5 h-5 text-gray-700" />
-                    {category.name}
+                    <span className="text-base">{category.name}</span>
                   </div>
-                  <div className="text-2xl font-bold text-gray-900">
-                    {category.score}/{category.weight}
+                  <div className={`text-xl font-bold ${isPenalty && category.score < 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                    {isPenalty ? (category.score < 0 ? `${category.score} pts` : '✓') : `${category.score}/${category.weight}`}
                   </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <Progress value={(category.score / category.weight) * 100} className="h-2" />
-                  <ul className="space-y-1 mt-4">
+                  {!isPenalty && (
+                    <Progress value={Math.max(0, (category.score / category.weight) * 100)} className="h-2" />
+                  )}
+                  <ul className="space-y-1 mt-2">
                     {category.details.map((detail, i) => (
-                      <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
-                        <span>{detail}</span>
+                      <li key={i} className="text-sm text-gray-700">
+                        {detail}
                       </li>
                     ))}
                   </ul>

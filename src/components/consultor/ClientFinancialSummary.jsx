@@ -609,27 +609,31 @@ export default function ClientFinancialSummary({ client }) {
                           ? <span className="text-xs px-2 py-0.5 bg-purple-50 text-purple-600 rounded-md font-medium">📊 {numParcelas}x Parcelado</span>
                           : <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md">À Vista</span>
                         }
-                        {service.received ? (
+                        {!isParcelado && (
                           <>
-                            <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-md font-medium">
-                              ✓ Recebido{service.received_at ? ` em ${new Date(service.received_at).toLocaleDateString('pt-BR')}` : ''}
-                            </span>
-                            <Button size="sm" variant="outline" className="h-6 text-xs px-2 border-green-300 text-green-700 hover:bg-green-50" onClick={() => toggleReceived(i)}>
-                              Desfazer
-                            </Button>
+                            {service.received ? (
+                              <>
+                                <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-md font-medium">
+                                  ✓ Recebido{service.received_at ? ` em ${new Date(service.received_at).toLocaleDateString('pt-BR')}` : ''}
+                                </span>
+                                <Button size="sm" variant="outline" className="h-6 text-xs px-2 border-green-300 text-green-700 hover:bg-green-50" onClick={() => toggleReceived(i)}>
+                                  Desfazer
+                                </Button>
+                              </>
+                            ) : (
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <input
+                                  type="date"
+                                  className="h-7 text-xs border border-gray-300 rounded px-1.5 text-gray-600"
+                                  value={receivedDateInput[i] || ''}
+                                  onChange={e => setReceivedDateInput(prev => ({ ...prev, [i]: e.target.value }))}
+                                />
+                                <Button size="sm" className="h-7 text-xs px-2 bg-amber-500 hover:bg-amber-600 text-white" onClick={() => toggleReceived(i)}>
+                                  Marcar Recebido
+                                </Button>
+                              </div>
+                            )}
                           </>
-                        ) : (
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <input
-                              type="date"
-                              className="h-7 text-xs border border-gray-300 rounded px-1.5 text-gray-600"
-                              value={receivedDateInput[i] || ''}
-                              onChange={e => setReceivedDateInput(prev => ({ ...prev, [i]: e.target.value }))}
-                            />
-                            <Button size="sm" className="h-7 text-xs px-2 bg-amber-500 hover:bg-amber-600 text-white" onClick={() => toggleReceived(i)}>
-                              Marcar Recebido
-                            </Button>
-                          </div>
                         )}
                       </div>
                     </div>

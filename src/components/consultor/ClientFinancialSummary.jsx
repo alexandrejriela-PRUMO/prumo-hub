@@ -56,21 +56,17 @@ export default function ClientFinancialSummary({ client }) {
 
   const startEdit = (service, index) => {
     setEditingIndex(index);
-    // Normalizar parcelas para novo formato
-    let installments_data = service.installments_data || [];
-    if (!installments_data.length && service.due_dates?.length) {
-      installments_data = service.due_dates.map((d) => ({
-        due_date: d,
-        received: false,
-        received_at: '',
+    
+    // Para parcelado: mapear do array installments
+    let installments_data = [];
+    if (service.payment_type === 'parcelado' && service.installments?.length > 0) {
+      installments_data = service.installments.map(inst => ({
+        due_date: inst.due_date || '',
+        received: inst.received || false,
+        received_at: inst.received_date ? inst.received_date : '',
       }));
     }
-    // Garantir que installments_data tenha o formato correto
-    installments_data = installments_data.map(inst => ({
-      due_date: inst.due_date || '',
-      received: inst.received || false,
-      received_at: inst.received_at ? (typeof inst.received_at === 'string' ? inst.received_at.split('T')[0] : inst.received_at) : '',
-    }));
+    
     setEditForm({
       name: service.name,
       status: service.status,
@@ -78,9 +74,8 @@ export default function ClientFinancialSummary({ client }) {
       notes: service.notes || '',
       payment_type: service.payment_type || 'avista',
       payment_method: service.payment_method || 'Pix',
-      installments: service.installments || '',
+      installments: service.installments?.length?.toString() || '',
       start_date: service.start_date || '',
-      due_dates: service.due_dates || [],
       installments_data,
       received: service.received || false,
       received_at: service.received_at ? service.received_at.split('T')[0] : '',
@@ -90,53 +85,56 @@ export default function ClientFinancialSummary({ client }) {
   const saveEdit = () => {
      const services = (crm?.services || []).map((s, i) => {
        if (i !== editingIndex) return s;
-       // Normalizar installments_data com as datas de vencimento
-       const installments_data = editForm.installments_data?.map(inst => ({
-         due_date: inst.due_date || '',
-         received: inst.received || false,
-         received_at: inst.received_at ? new Date(inst.received_at + 'T12:00:00').toISOString() : null,
-       })) || [];
 
-       // Para parcelado: usar data da última parcela recebida como received_at
-       let received = false;
-       let received_at = null;
+       // Para parcelado: estrutura com array installments
        if (editForm.payment_type === 'parcelado') {
-         received = installments_data.length > 0 && installments_data.every(inst => inst.received);
-         if (received) {
-           const lastReceivedDate = installments_data
-             .filter(inst => inst.received && inst.received_at)
-             .map(inst => new Date(inst.received_at).getTime())
-             .sort((a, b) => b - a)[0];
-           received_at = lastReceivedDate ? new Date(lastReceivedDate).toISOString() : new Date().toISOString();
-         }
-       } else {
-         received = editForm.received;
-         received_at = editForm.received && editForm.received_at
-           ? new Date(editForm.received_at + 'T12:00:00').toISOString()
-           : (editForm.received ? new Date().toISOString() : null);
-       }
+         const installmentValue = parseFloat(editForm.value) / parseInt(editForm.installments || 1);
+         const installments = editForm.installments_data?.map((inst, idx) => ({
+           number: idx + 1,
+           amount: installmentValue,
+           due_date: inst.due_date || '',
+           received: inst.received || false,
+           received_date: inst.received_at ? inst.received_at : null,
+         })) || [];
 
-       return { ...s, ...editForm, value: parseFloat(editForm.value) || 0, received, received_at, installments_data };
+         return {
+           ...editForm,
+           value: parseFloat(editForm.value) || 0,
+           installments,
+           received: false, // Parcelado nunca é "recebido" único
+           received_at: null,
+         };
+       } else {
+         // À vista: uso do modelo antigo
+         return {
+           ...editForm,
+           value: parseFloat(editForm.value) || 0,
+           received: editForm.received || false,
+           received_at: editForm.received && editForm.received_at
+             ? editForm.received_at
+             : null,
+         };
+       }
      });
-     upsertCRM.mutate({ services }, {
-       onSuccess: async () => {
-         // Sincronizar parcelas recebidas como transações
-         if (editForm.payment_type === 'parcelado') {
-           try {
-             await base44.functions.invoke('syncInstallmentTransactions', {
-               crmId: crmId,
-               consultor_email: crmConsultorEmail,
-             });
-           } catch (err) {
-             console.warn('Erro ao sincronizar transações:', err);
-           }
-         }
-         toast.success('Serviço atualizado!');
-         setEditingIndex(null);
-       },
-       onError: (e) => toast.error('Erro ao salvar: ' + e.message),
-     });
-   };
+
+      upsertCRM.mutate({ services }, {
+        onSuccess: async () => {
+          if (editForm.payment_type === 'parcelado') {
+            try {
+              await base44.functions.invoke('syncInstallmentTransactions', {
+                crmId: crmId,
+                consultor_email: crmConsultorEmail,
+              });
+            } catch (err) {
+              console.warn('Erro ao sincronizar transações:', err);
+            }
+          }
+          toast.success('Serviço atualizado!');
+          setEditingIndex(null);
+        },
+        onError: (e) => toast.error('Erro ao salvar: ' + e.message),
+      });
+    };
 
   const deleteService = (index) => {
     const services = (crm?.services || []).filter((_, i) => i !== index);
@@ -149,37 +147,29 @@ export default function ClientFinancialSummary({ client }) {
   const addNewService = () => {
     if (!newService.name) { toast.error('Informe o nome do serviço.'); return; }
     const serviceValue = parseFloat(newService.value) || 0;
-    // Normalizar installments_data com as datas de vencimento
-    const installments_data = newService.installments_data?.map(inst => ({
-      due_date: inst.due_date || '',
-      received: inst.received || false,
-      received_at: inst.received_at ? new Date(inst.received_at + 'T12:00:00').toISOString() : null,
-    })) || [];
 
-    // Para parcelado: usar data da última parcela recebida como received_at
-    let received = false;
-    let received_at = null;
+    // Para parcelado: estrutura com array installments
     if (newService.payment_type === 'parcelado') {
-      received = installments_data.length > 0 && installments_data.every(inst => inst.received);
-      if (received) {
-        const lastReceivedDate = installments_data
-          .filter(inst => inst.received && inst.received_at)
-          .map(inst => new Date(inst.received_at).getTime())
-          .sort((a, b) => b - a)[0];
-        received_at = lastReceivedDate ? new Date(lastReceivedDate).toISOString() : new Date().toISOString();
-      }
-    } else {
-      received = newService.received;
-      received_at = newService.received && newService.received_at
-        ? new Date(newService.received_at + 'T12:00:00').toISOString()
-        : (newService.received ? new Date().toISOString() : null);
-    }
+      const installmentValue = serviceValue / parseInt(newService.installments || 1);
+      const installments = newService.installments_data?.map((inst, idx) => ({
+        number: idx + 1,
+        amount: installmentValue,
+        due_date: inst.due_date || '',
+        received: inst.received || false,
+        received_date: inst.received_at ? inst.received_at : null,
+      })) || [];
 
-    const services = [...(crm?.services || []), { ...newService, value: serviceValue, received, received_at, installments_data }];
-    upsertCRM.mutate({ services }, {
-      onSuccess: async () => {
-        // Sincronizar parcelas recebidas como transações
-        if (newService.payment_type === 'parcelado') {
+      const newServiceObj = {
+        ...newService,
+        value: serviceValue,
+        installments,
+        received: false,
+        received_at: null,
+      };
+
+      const services = [...(crm?.services || []), newServiceObj];
+      upsertCRM.mutate({ services }, {
+        onSuccess: async () => {
           try {
             await base44.functions.invoke('syncInstallmentTransactions', {
               crmId: crmId,
@@ -188,13 +178,31 @@ export default function ClientFinancialSummary({ client }) {
           } catch (err) {
             console.warn('Erro ao sincronizar transações:', err);
           }
-        }
-        toast.success('Serviço adicionado!');
-        setShowNewServiceForm(false);
-        setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], installments_data: [], received: false, received_at: '' });
-      },
-      onError: (e) => toast.error('Erro ao adicionar: ' + e.message),
-    });
+          toast.success('Serviço adicionado!');
+          setShowNewServiceForm(false);
+          setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], installments_data: [], received: false, received_at: '' });
+        },
+        onError: (e) => toast.error('Erro ao adicionar: ' + e.message),
+      });
+    } else {
+      // À vista
+      const newServiceObj = {
+        ...newService,
+        value: serviceValue,
+        received: newService.received || false,
+        received_at: newService.received && newService.received_at ? newService.received_at : null,
+      };
+
+      const services = [...(crm?.services || []), newServiceObj];
+      upsertCRM.mutate({ services }, {
+        onSuccess: () => {
+          toast.success('Serviço adicionado!');
+          setShowNewServiceForm(false);
+          setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], installments_data: [], received: false, received_at: '' });
+        },
+        onError: (e) => toast.error('Erro ao adicionar: ' + e.message),
+      });
+    }
   };
 
   const toggleReceived = (index) => {
@@ -608,22 +616,22 @@ export default function ClientFinancialSummary({ client }) {
                           )}
                         </div>
                       </div>
-                      {isParcelado && (service.due_dates?.some(d => d) || service.installments_data?.some(inst => inst.due_date)) && (
+                      {isParcelado && service.installments?.length > 0 && (
                         <div className="mt-1.5 space-y-1.5">
-                          {(service.installments_data?.length > 0 ? service.installments_data : service.due_dates?.map(d => ({ due_date: d }))).map((inst, pi) => inst?.due_date || inst ? (
+                          {service.installments.map((inst, pi) => (
                             <div key={pi} className="text-xs px-2 py-1 bg-purple-50 text-purple-700 rounded-md flex items-center justify-between gap-2">
                               <span>
-                                {pi + 1}ª: {new Date((inst.due_date || inst) + 'T12:00:00').toLocaleDateString('pt-BR')}
+                                Parcela {inst.number}: {new Date(inst.due_date + 'T12:00:00').toLocaleDateString('pt-BR')}
                               </span>
                               {inst.received ? (
                                 <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded font-medium">
-                                  ✓ {inst.received_at ? new Date(inst.received_at).toLocaleDateString('pt-BR') : 'Recebido'}
+                                  ✓ {inst.received_date ? new Date(inst.received_date + 'T12:00:00').toLocaleDateString('pt-BR') : 'Recebido'}
                                 </span>
                               ) : (
                                 <span className="text-xs px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded">Aguardando</span>
                               )}
                             </div>
-                          ) : null)}
+                          ))}
                         </div>
                       )}
                       <div className="flex flex-wrap items-center gap-2 mt-2">

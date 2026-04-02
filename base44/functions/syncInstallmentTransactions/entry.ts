@@ -29,23 +29,20 @@ Deno.serve(async (req) => {
     });
 
     for (const service of services) {
-      if (service.payment_type === 'parcelado' && service.installments_data?.length > 0) {
-        const installmentValue = parseFloat(service.value) / (service.installments_data.length || 1);
-
-        for (let idx = 0; idx < service.installments_data.length; idx++) {
-          const inst = service.installments_data[idx];
+      if (service.payment_type === 'parcelado' && service.installments?.length > 0) {
+        for (let idx = 0; idx < service.installments.length; idx++) {
+          const inst = service.installments[idx];
           
-          // Só criar transação se a parcela foi recebida e tem data de recebimento
-          if (inst.received && inst.received_at) {
-            const transactionDate = new Date(inst.received_at);
-            const dateStr = transactionDate.toISOString().split('T')[0];
-            const description = `${service.name} - Parcela ${idx + 1}/${service.installments_data.length}`;
+          // Só criar transação se parcela foi recebida e tem data de recebimento
+          if (inst.received && inst.received_date) {
+            const dateStr = inst.received_date;
+            const description = `${service.name} - Parcela ${inst.number}/${service.installments.length}`;
 
             // Verificar se a transação já existe
             const exists = existingExpenses.some(exp => 
               exp.description === description && 
               exp.date === dateStr &&
-              Math.abs(parseFloat(exp.amount) - installmentValue) < 0.01
+              Math.abs(parseFloat(exp.amount) - inst.amount) < 0.01
             );
 
             if (!exists) {
@@ -53,7 +50,7 @@ Deno.serve(async (req) => {
               const transaction = await base44.entities.Expense.create({
                 consultor_email,
                 description,
-                amount: installmentValue,
+                amount: inst.amount,
                 date: dateStr,
                 competencia: dateStr,
                 transaction_type: 'receita',
@@ -63,7 +60,7 @@ Deno.serve(async (req) => {
                 client_property_id: crm.property_id,
                 status: 'Pago',
                 payment_method: service.payment_method || 'Pix',
-                notes: `Parcela ${idx + 1}/${service.installments_data.length} de "${service.name}"`,
+                notes: `Parcela ${inst.number}/${service.installments.length} de "${service.name}"`,
               });
               createdTransactions.push(transaction);
             }

@@ -86,9 +86,18 @@ export default function ClientCRMPanel({ property, onClose }) {
   });
 
   // ── Contas financeiras ──────────────────────────────────────────────────
+  // Busca por consultor_email do CRM (dono real das contas) e também pelo email efetivo do usuário
   const { data: accounts = [] } = useQuery({
     queryKey: ['fin-accounts-crm', crmConsultorEmail],
-    queryFn: () => base44.entities.FinancialAccount.filter({ consultor_email: crmConsultorEmail }),
+    queryFn: async () => {
+      const results = await base44.entities.FinancialAccount.filter({ consultor_email: crmConsultorEmail });
+      if (results.length > 0) return results;
+      // Fallback: tenta pelo email efetivo do hook (para usuários de equipe)
+      if (hookEffectiveEmail && hookEffectiveEmail !== crmConsultorEmail) {
+        return base44.entities.FinancialAccount.filter({ consultor_email: hookEffectiveEmail });
+      }
+      return [];
+    },
     enabled: !!crmConsultorEmail,
   });
 
@@ -620,7 +629,8 @@ export default function ClientCRMPanel({ property, onClose }) {
                               <SelectTrigger className="h-9 text-sm"><SelectValue placeholder={accounts.length === 0 ? "Nenhuma conta cadastrada" : "Selecione a conta"} /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value={null}>Sem conta</SelectItem>
-                                {accounts.length > 0 ? accounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>) : <SelectItem value={null}>Nenhuma conta disponível</SelectItem>}
+                                {accounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>)}
+                                {accounts.length === 0 && <SelectItem value={null} disabled>Nenhuma conta disponível</SelectItem>}
                               </SelectContent>
                             </Select>
                           </div>
@@ -692,9 +702,9 @@ export default function ClientCRMPanel({ property, onClose }) {
                                         }}>
                                           <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione" /></SelectTrigger>
                                           <SelectContent>
-                                            <SelectItem value={null}>Sem conta</SelectItem>
-                                            {accounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>)}
-                                          </SelectContent>
+                                              <SelectItem value={null}>Sem conta</SelectItem>
+                                              {accounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>)}
+                                            </SelectContent>
                                         </Select>
                                       </div>
                                       <div>

@@ -142,6 +142,7 @@ export default function CRMBoard() {
   const queryClient = useQueryClient();
   const { user, effectiveEmail, isEquipe, memberRole, isLoading: effectiveLoading } = useEffectiveUser();
   const canCreateLead = !isEquipe || memberRole === 'Administrador';
+  const canViewFinancial = !isEquipe || memberRole === 'Administrador';
 
   const { data: properties = [] } = useQuery({
     queryKey: ['crm-board-properties', effectiveEmail],
@@ -344,11 +345,11 @@ export default function CRMBoard() {
           </DialogHeader>
           {selectedCRM && (
             <Tabs defaultValue="crm">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className={`grid w-full ${canViewFinancial ? 'grid-cols-4' : 'grid-cols-2'}`}>
                 <TabsTrigger value="perfil">Perfil</TabsTrigger>
                 <TabsTrigger value="crm">CRM</TabsTrigger>
-                <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
-                <TabsTrigger value="cobranças">Cobranças</TabsTrigger>
+                {canViewFinancial && <TabsTrigger value="financeiro">Financeiro</TabsTrigger>}
+                {canViewFinancial && <TabsTrigger value="cobranças">Cobranças</TabsTrigger>}
               </TabsList>
               <TabsContent value="perfil" className="mt-4">
                 <ClientProfilePanel client={selectedClient} />
@@ -356,12 +357,16 @@ export default function CRMBoard() {
               <TabsContent value="crm" className="mt-4">
                 {selectedClient && <ClientCRMPanel property={selectedClient} onClose={() => setSelectedCRM(null)} />}
               </TabsContent>
-              <TabsContent value="financeiro" className="mt-4">
-                <ClientFinancialSummary client={selectedClient} />
-              </TabsContent>
-              <TabsContent value="cobranças" className="mt-4">
-                <ClientChargesPanel client={selectedClient} />
-              </TabsContent>
+              {canViewFinancial && (
+                <TabsContent value="financeiro" className="mt-4">
+                  <ClientFinancialSummary client={selectedClient} />
+                </TabsContent>
+              )}
+              {canViewFinancial && (
+                <TabsContent value="cobranças" className="mt-4">
+                  <ClientChargesPanel client={selectedClient} />
+                </TabsContent>
+              )}
             </Tabs>
           )}
         </DialogContent>

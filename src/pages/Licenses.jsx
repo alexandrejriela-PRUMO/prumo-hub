@@ -251,6 +251,7 @@ export default function Licenses() {
       license_type: license.license_type || '',
       other_license_description: license.other_license_description || '',
       license_number: license.license_number || '',
+      elaboration_stage: license.elaboration_stage || 'Em Elaboração',
       issue_date: license.issue_date || '',
       expiry_date: license.expiry_date || '',
       conditions: license.conditions || [],
@@ -444,6 +445,22 @@ export default function Licenses() {
                         {prop.property_name} - {prop.city || 'N/A'}
                       </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Fase *</Label>
+                <Select
+                  value={formData.elaboration_stage}
+                  onValueChange={(v) => setFormData({ ...formData, elaboration_stage: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a fase" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Em Elaboração">Em Elaboração</SelectItem>
+                    <SelectItem value="Emitida">Emitida</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -670,6 +687,9 @@ export default function Licenses() {
                       <div className="min-w-0">
                         <CardTitle className="text-base sm:text-lg truncate">{license.license_type}</CardTitle>
                         <p className="text-xs sm:text-sm text-gray-500 truncate">{license.license_number || 'Sem número'}</p>
+                        <span className={`inline-block mt-1 text-xs font-semibold px-2 py-0.5 rounded-full ${license.elaboration_stage === 'Emitida' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}`}>
+                          {license.elaboration_stage || 'Em Elaboração'}
+                        </span>
                       </div>
                     </div>
                     <Badge className={`${statusInfo.color} flex-shrink-0 border-2 border-current whitespace-nowrap`}>
@@ -821,6 +841,22 @@ export default function Licenses() {
                       {prop.property_name} - {prop.city || 'N/A'}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Fase *</Label>
+              <Select
+                value={formData.elaboration_stage}
+                onValueChange={(v) => setFormData({ ...formData, elaboration_stage: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a fase" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Em Elaboração">Em Elaboração</SelectItem>
+                  <SelectItem value="Emitida">Emitida</SelectItem>
                 </SelectContent>
               </Select>
             </div>

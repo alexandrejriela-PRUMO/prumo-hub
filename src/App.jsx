@@ -25,6 +25,7 @@ const NotificationAudit = React.lazy(() => import('./pages/NotificationAudit'));
 const NFeManagement = React.lazy(() => import('./pages/NFeManagement'));
 const ImportUsersStripe = React.lazy(() => import('./pages/ImportUsersStripe'));
 const TermsOfUsePage = React.lazy(() => import('./pages/TermsOfUsePage'));
+const TermsAdmin = React.lazy(() => import('./pages/TermsAdmin'));
 
 const CampMode = React.lazy(() => import('./pages/CampMode'));
 const PropertyCentral = React.lazy(() => import('./pages/PropertyCentral'));
@@ -162,6 +163,7 @@ const AuthenticatedApp = () => {
       <Route path="/ImportUsersStripe" element={<LayoutWrapper currentPageName="ImportUsersStripe"><Suspense fallback={<LoadingSpinner />}><ImportUsersStripe /></Suspense></LayoutWrapper>} />
       <Route path="/BudgetGenerator" element={<LayoutWrapper currentPageName="BudgetGenerator"><Suspense fallback={<LoadingSpinner />}><BudgetGenerator /></Suspense></LayoutWrapper>} />
       <Route path="/ContractGenerator" element={<LayoutWrapper currentPageName="ContractGenerator"><Suspense fallback={<LoadingSpinner />}><ContractGenerator /></Suspense></LayoutWrapper>} />
+      <Route path="/TermsAdmin" element={<LayoutWrapper currentPageName="TermsAdmin"><Suspense fallback={<LoadingSpinner />}><TermsAdmin /></Suspense></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
     </>

@@ -141,7 +141,8 @@ const produtorNavItems = [
   { name: 'Minha Equipe', page: 'MyTeam', icon: Users, separator: true },
   { name: 'Modo Campo', page: 'CampMode', icon: Smartphone },
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
-];
+  { name: 'Termos de Uso (Admin)', page: 'TermsAdmin', icon: ScrollText },
+  ];
 
 // Equipe do consultor: igual ao consultor, sem "Minha Equipe"
 const equipeNavItems = [

@@ -1,0 +1,33 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "user"
+      ],
+      "default": "user"
+    },
+    "user_type": {
+      "type": "string",
+      "enum": [
+        "consultor",
+        "produtor",
+        "equipe",
+        "client_consultor"
+      ],
+      "description": "Tipo de perfil do usu\u00e1rio"
+    },
+    "accepted_terms_version": {
+      "type": "number",
+      "description": "Vers\u00e3o do termo de uso que o usu\u00e1rio aceitou"
+    },
+    "accepted_terms_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data e hora em que o usu\u00e1rio aceitou os termos"
+    }
+  }
+}

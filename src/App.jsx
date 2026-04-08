@@ -24,6 +24,7 @@ const AcceptInvite = React.lazy(() => import('./pages/AcceptInvite'));
 const NotificationAudit = React.lazy(() => import('./pages/NotificationAudit'));
 const NFeManagement = React.lazy(() => import('./pages/NFeManagement'));
 const ImportUsersStripe = React.lazy(() => import('./pages/ImportUsersStripe'));
+const TermsOfUsePage = React.lazy(() => import('./pages/TermsOfUsePage'));
 
 const CampMode = React.lazy(() => import('./pages/CampMode'));
 const PropertyCentral = React.lazy(() => import('./pages/PropertyCentral'));
@@ -37,6 +38,7 @@ import OfflineIndicator from '@/components/offline/OfflineIndicator';
 import { useOfflineSync } from '@/components/offline/OfflineSyncHook';
 import { initializeOfflineDB } from '@/components/offline/OfflineStorageManager';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { base44 } from '@/api/base44Client';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -56,14 +58,40 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
   const { isOnline, syncInProgress, syncStats } = useOfflineSync();
+  const [termsChecked, setTermsChecked] = React.useState(false);
+  const [needsTerms, setNeedsTerms] = React.useState(false);
 
   // Inicializar offline DB
   useEffect(() => {
     initializeOfflineDB().catch(err => console.error('[App] Erro ao inicializar offline DB:', err));
   }, []);
 
+  // Verificar aceitação dos termos
+  useEffect(() => {
+    if (isLoadingAuth || isLoadingPublicSettings || authError) return;
+    const checkTerms = async () => {
+      try {
+        const user = await base44.auth.me();
+        if (!user) return;
+        const activeTerms = await base44.entities.TermsOfUse.filter({ is_active: true }, '-version', 1);
+        if (!activeTerms || activeTerms.length === 0) {
+          setTermsChecked(true);
+          return;
+        }
+        const latestVersion = activeTerms[0].version;
+        if (!user.accepted_terms_version || user.accepted_terms_version < latestVersion) {
+          setNeedsTerms(true);
+        }
+      } catch (e) {
+        console.error('[Terms] Erro ao verificar termos:', e);
+      }
+      setTermsChecked(true);
+    };
+    checkTerms();
+  }, [isLoadingAuth, isLoadingPublicSettings, authError]);
+
   // Show loading spinner while checking app public settings or auth
-  if (isLoadingPublicSettings || isLoadingAuth) {
+  if (isLoadingPublicSettings || isLoadingAuth || !termsChecked) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
@@ -80,6 +108,15 @@ const AuthenticatedApp = () => {
       navigateToLogin();
       return null;
     }
+  }
+
+  // Redirecionar para aceite de termos se necessário
+  if (needsTerms) {
+    return (
+      <Suspense fallback={<LoadingSpinner />}>
+        <TermsOfUsePage onAccepted={() => setNeedsTerms(false)} />
+      </Suspense>
+    );
   }
 
   // Render the main app

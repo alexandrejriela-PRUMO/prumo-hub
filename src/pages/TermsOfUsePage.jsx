@@ -30,10 +30,23 @@ export default function TermsOfUsePage({ onAccepted }) {
     if (!accepted || !terms) return;
     setSaving(true);
     try {
-      await base44.auth.updateMe({
-        accepted_terms_version: terms.version,
-        accepted_terms_date: new Date().toISOString(),
-      });
+      const user = await base44.auth.me();
+      const now = new Date().toISOString();
+
+      await Promise.all([
+        base44.auth.updateMe({
+          accepted_terms_version: terms.version,
+          accepted_terms_date: now,
+        }),
+        base44.entities.TermsAcceptanceLog.create({
+          user_email: user.email,
+          user_name: user.full_name || '',
+          terms_version: terms.version,
+          accepted_at: now,
+          user_agent: navigator.userAgent,
+        }),
+      ]);
+
       if (onAccepted) onAccepted();
     } catch (e) {
       console.error('Erro ao salvar aceite:', e);

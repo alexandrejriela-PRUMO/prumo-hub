@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CreditCard, TrendingUp, Loader2, CheckCircle2, Clock, DollarSign, AlertCircle, Edit3, Trash2 } from 'lucide-react';
+import { CreditCard, TrendingUp, Loader2, CheckCircle2, Clock, DollarSign, AlertCircle, Edit3, Trash2, Landmark } from 'lucide-react';
 import { toast } from 'sonner';
 
 const STATUS_COLOR = {
@@ -52,7 +52,13 @@ export default function ClientFinancialSummary({ client }) {
   const [editingIndex, setEditingIndex] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [showNewServiceForm, setShowNewServiceForm] = useState(false);
-  const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '' });
+  const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '', account_name: '' });
+
+  const { data: financialAccounts = [] } = useQuery({
+    queryKey: ['financial-accounts-crm', crmConsultorEmail],
+    queryFn: () => base44.entities.FinancialAccount.filter({ consultor_email: crmConsultorEmail, active: true }, 'name', 100),
+    enabled: !!crmConsultorEmail,
+  });
 
   const startEdit = (service, index) => {
     setEditingIndex(index);
@@ -79,6 +85,7 @@ export default function ClientFinancialSummary({ client }) {
       installments_data,
       received: service.received || false,
       received_at: service.received_at ? service.received_at.split('T')[0] : '',
+      account_name: service.account_name || '',
     });
   };
 
@@ -111,6 +118,7 @@ export default function ClientFinancialSummary({ client }) {
           installments,
           received: false,
           received_at: null,
+          account_name: editForm.account_name || '',
         };
       } else {
         // À vista
@@ -127,6 +135,7 @@ export default function ClientFinancialSummary({ client }) {
           received_at: editForm.received && editForm.received_at
             ? editForm.received_at
             : null,
+          account_name: editForm.account_name || '',
         };
       }
     });
@@ -185,6 +194,7 @@ export default function ClientFinancialSummary({ client }) {
         installments,
         received: false,
         received_at: null,
+        account_name: newService.account_name || '',
       };
 
       const services = [...(crm?.services || []), newServiceObj];
@@ -217,6 +227,7 @@ export default function ClientFinancialSummary({ client }) {
         installments: [],
         received: newService.received || false,
         received_at: newService.received && newService.received_at ? newService.received_at : null,
+        account_name: newService.account_name || '',
       };
 
       const services = [...(crm?.services || []), newServiceObj];
@@ -468,13 +479,23 @@ export default function ClientFinancialSummary({ client }) {
                       )}
                     </>
                   )}
+                  <div>
+                    <Label className="text-xs text-gray-600 mb-1 block flex items-center gap-1"><Landmark className="w-3 h-3"/>Conta Financeira</Label>
+                    <Select value={newService.account_name || ''} onValueChange={v => setNewService(p => ({ ...p, account_name: v }))}>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={null}>Sem conta específica</SelectItem>
+                        {financialAccounts.map(a => <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="sm:col-span-2">
                     <Label className="text-xs text-gray-600 mb-1 block">Observações</Label>
                     <Input className="h-9 text-sm" value={newService.notes} onChange={e => setNewService(p => ({ ...p, notes: e.target.value }))} placeholder="Detalhes do serviço" />
                   </div>
                 </div>
                 <div className="flex justify-end gap-2 pt-1">
-                  <Button size="sm" variant="outline" onClick={() => { setShowNewServiceForm(false); setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '' }); }}>Cancelar</Button>
+                  <Button size="sm" variant="outline" onClick={() => { setShowNewServiceForm(false); setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '', account_name: '' }); }}>Cancelar</Button>
                   <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={addNewService} disabled={upsertCRM.isPending}>Salvar</Button>
                 </div>
               </div>
@@ -609,12 +630,22 @@ export default function ClientFinancialSummary({ client }) {
                                ℹ️ Configure a data de recebimento de cada parcela acima
                              </div>
                            )}
+                           <div>
+                             <Label className="text-xs text-gray-600 mb-1 block flex items-center gap-1"><Landmark className="w-3 h-3"/>Conta Financeira</Label>
+                             <Select value={editForm.account_name || ''} onValueChange={v => setEditForm(p => ({ ...p, account_name: v }))}>
+                               <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
+                               <SelectContent>
+                                 <SelectItem value={null}>Sem conta específica</SelectItem>
+                                 {financialAccounts.map(a => <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>)}
+                               </SelectContent>
+                             </Select>
+                           </div>
                            <div className="sm:col-span-2">
                              <Label className="text-xs text-gray-600 mb-1 block">Observações</Label>
                              <Input className="h-9 text-sm" value={editForm.notes} onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))} />
                            </div>
-                         </div>
-                         <div className="flex justify-end gap-2 pt-1">
+                           </div>
+                           <div className="flex justify-end gap-2 pt-1">
                            <Button size="sm" variant="outline" onClick={() => setEditingIndex(null)}>Cancelar</Button>
                            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={saveEdit} disabled={upsertCRM.isPending}>Salvar</Button>
                          </div>
@@ -671,6 +702,9 @@ export default function ClientFinancialSummary({ client }) {
                         </Badge>
                         {service.payment_method && (
                           <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-md">{service.payment_method}</span>
+                        )}
+                        {service.account_name && (
+                          <span className="text-xs px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-md flex items-center gap-1"><Landmark className="w-3 h-3"/>{service.account_name}</span>
                         )}
                         {isParcelado
                           ? <span className="text-xs px-2 py-0.5 bg-purple-50 text-purple-600 rounded-md font-medium">📊 {numParcelas}x Parcelado</span>

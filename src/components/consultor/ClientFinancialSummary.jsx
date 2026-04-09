@@ -58,7 +58,7 @@ export default function ClientFinancialSummary({ client }) {
 
   const { data: financialAccounts = [] } = useQuery({
     queryKey: ['financial-accounts-crm', effectiveConsultorEmail],
-    queryFn: () => base44.entities.FinancialAccount.filter({ consultor_email: effectiveConsultorEmail, active: true }, 'name', 100),
+    queryFn: () => base44.entities.FinancialAccount.filter({ consultor_email: effectiveConsultorEmail }, 'name', 100),
     enabled: !!effectiveConsultorEmail,
   });
 

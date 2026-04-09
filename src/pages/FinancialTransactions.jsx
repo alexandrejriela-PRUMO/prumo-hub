@@ -203,7 +203,7 @@ export default function FinancialTransactions() {
 
     manualEntries.forEach(e => {
       const acc = e.account_id ? accountMap[e.account_id] : null;
-      const accountLabel = acc?.name || e.account_name || 'Caixa Manual';
+      const accountLabel = acc?.name || e.account_name || '—';
 
       if (e.client_property_id && e.transaction_type === 'receita') {
         // Entrada sincronizada do CRM — mostrar com a conta correta, não é editável

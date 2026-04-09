@@ -130,7 +130,6 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
   const handleSubmit = () => {
     if (!form.description || !form.amount || !form.date) { toast.error('Preencha descrição, valor e data.'); return; }
     if (isReceita && !form.client_property_id) { toast.error('Selecione um cliente para a receita.'); return; }
-    const acc = accounts.find(a => a.id === form.account_id && form.account_id !== '__caixa__');
     const clientProp = properties.find(p => p.id === form.client_property_id);
     const payload = {
       ...form,
@@ -138,8 +137,8 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
       consultor_email: consultorEmail,
       competencia: form.date.substring(0, 7),
       is_stripe: false,
-      account_name: acc?.name || 'Caixa Manual',
-      account_id: (form.account_id === '__caixa__' ? '' : form.account_id),
+      account_name: form.account_name || 'Caixa Manual',
+      account_id: form.account_id || '',
       client_name: clientProp?.client_name || form.client_name,
     };
     if (editing) updateMutation.mutate({ id: editing.id, data: payload });
@@ -248,7 +247,10 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
 
           <div>
             <Label>Conta Financeira</Label>
-            <Select value={form.account_id} onValueChange={v => setF('account_id', v)}>
+            <Select value={form.account_id || '__caixa__'} onValueChange={v => {
+              const acc = accounts.find(a => a.id === v);
+              setForm(p => ({ ...p, account_id: v === '__caixa__' ? '' : v, account_name: acc?.name || '' }));
+            }}>
               <SelectTrigger><SelectValue placeholder="Caixa Manual (padrão)" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__caixa__">Caixa Manual</SelectItem>

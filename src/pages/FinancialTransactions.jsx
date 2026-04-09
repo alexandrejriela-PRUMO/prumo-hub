@@ -118,8 +118,9 @@ export default function FinancialTransactions() {
       (crm.services || []).forEach(svc => {
         const totalValue = parseFloat(svc.value) || 0;
         const isParcelado = svc.payment_type === 'parcelado';
-        const accountLabel = (svc.account_id && accountMap[svc.account_id]?.name) || svc.account_name || '—';
-        const clientName = crm.client_name || crm.client_email?.split('@')[0] || '—';
+         const accountLabel = (svc.account_id && accountMap[svc.account_id]?.name) || svc.account_name || '—';
+         const accountId = svc.account_id || null;
+         const clientName = crm.client_name || crm.client_email?.split('@')[0] || '—';
         const source = svc.status === 'Contratado' || svc.status === 'Em Andamento' ? 'Serviço CRM' : 'Serviço (Proposta)';
 
         if (isParcelado && Array.isArray(svc.installments) && svc.installments.length > 0) {
@@ -132,20 +133,21 @@ export default function FinancialTransactions() {
             // Se já existe entrada de sync para esta parcela, não duplicar
             if (syncedDescriptions.has(descKey)) return;
             txns.push({
-              id: `service-${crm.id}-${svc.name}-p${parcelaNum}`,
-              type: 'receita',
-              source,
-              sourceIcon: 'crm-service',
-              description: `${svc.name || 'Serviço'} (${parcelaNum}/${numParcelas})`,
-              client: clientName,
-              amount: inst.amount || (totalValue / numParcelas),
-              date: parcelaDate,
-              competencia: parcelaDate?.substring(0, 7),
-              status: inst.received ? 'Pago' : (svc.status === 'Cancelado' ? 'Cancelado' : 'Pendente'),
-              payment_method: svc.payment_method,
-              accountLabel,
-              editable: false,
-            });
+               id: `service-${crm.id}-${svc.name}-p${parcelaNum}`,
+               type: 'receita',
+               source,
+               sourceIcon: 'crm-service',
+               description: `${svc.name || 'Serviço'} (${parcelaNum}/${numParcelas})`,
+               client: clientName,
+               amount: inst.amount || (totalValue / numParcelas),
+               date: parcelaDate,
+               competencia: parcelaDate?.substring(0, 7),
+               status: inst.received ? 'Pago' : (svc.status === 'Cancelado' ? 'Cancelado' : 'Pendente'),
+               payment_method: svc.payment_method,
+               accountLabel,
+               accountId,
+               editable: false,
+             });
           });
         } else {
           // À vista — se já sincronizado, não duplicar
@@ -164,6 +166,7 @@ export default function FinancialTransactions() {
             status: svc.received ? 'Pago' : (svc.status === 'Cancelado' ? 'Cancelado' : 'Pendente'),
             payment_method: svc.payment_method,
             accountLabel,
+            accountId,
             editable: false,
           });
         }
@@ -208,18 +211,19 @@ export default function FinancialTransactions() {
       if (e.client_property_id && e.transaction_type === 'receita') {
         // Entrada sincronizada do CRM — mostrar com a conta correta, não é editável
         txns.push({
-          id: `sync-${e.id}`, type: 'receita',
-          source: 'Serviço CRM',
-          sourceIcon: 'crm-service',
-          description: e.description,
-          client: e.client_name || null,
-          amount: e.amount || 0,
-          date: e.date, competencia: e.competencia || e.date?.substring(0, 7),
-          status: normalizeStatus(e.status),
-          payment_method: e.payment_method,
-          accountLabel,
-          editable: false, raw: e,
-        });
+           id: `sync-${e.id}`, type: 'receita',
+           source: 'Serviço CRM',
+           sourceIcon: 'crm-service',
+           description: e.description,
+           client: e.client_name || null,
+           amount: e.amount || 0,
+           date: e.date, competencia: e.competencia || e.date?.substring(0, 7),
+           status: normalizeStatus(e.status),
+           payment_method: e.payment_method,
+           accountLabel,
+           accountId: e.account_id || null,
+           editable: false, raw: e,
+         });
         return;
       }
 
@@ -251,17 +255,19 @@ export default function FinancialTransactions() {
 
   const clients  = useMemo(()=>{ const s=new Set(); allTransactions.forEach(t=>{if(t.client)s.add(t.client);}); return Array.from(s).sort(); },[allTransactions]);
   const accountOptions = useMemo(() => {
+    // Usar contas cadastradas + aquelas que aparecem nas transações
     const s = new Set();
-    allTransactions.forEach(t => { if(t.accountLabel) s.add(t.accountLabel); });
+    accounts.forEach(a => s.add(a.id)); // Adicionar IDs de todas as contas cadastradas
+    allTransactions.forEach(t => { if(t.accountId) s.add(t.accountId); }); // + IDs das transações
     return Array.from(s).sort();
-  }, [allTransactions]);
+  }, [accounts, allTransactions]);
 
   const filtered = useMemo(() => allTransactions.filter(t => {
     const matchMonth   = !filterMonth   || t.competencia===filterMonth  || (t.date&&t.date.startsWith(filterMonth));
     const matchType    = !filterType    || t.type===filterType;
     const matchClient  = !filterClient  || t.client===filterClient;
     const matchStatus  = !filterStatus  || t.status===filterStatus;
-    const matchAccount = !filterAccount || t.accountLabel===filterAccount;
+    const matchAccount = !filterAccount || t.accountId===filterAccount;
     const matchSearch  = !search || t.description?.toLowerCase().includes(search.toLowerCase()) || t.client?.toLowerCase().includes(search.toLowerCase());
     return matchMonth&&matchType&&matchClient&&matchStatus&&matchAccount&&matchSearch;
   }), [allTransactions,filterMonth,filterType,filterClient,filterStatus,filterAccount,search]);
@@ -336,9 +342,9 @@ export default function FinancialTransactions() {
               <SelectContent><SelectItem value="__all__">Todos</SelectItem><SelectItem value="receita">Receita</SelectItem><SelectItem value="despesa">Despesa</SelectItem></SelectContent>
             </Select></div>
           <div><Label className="text-xs">Conta</Label>
-            <Select value={filterAccount || '__all__'} onValueChange={v => setFilterAccount(v === '__all__' ? '' : v)}><SelectTrigger className="w-44"><SelectValue placeholder="Todas"/></SelectTrigger>
-              <SelectContent><SelectItem value="__all__">Todas</SelectItem>{accountOptions.map(a=><SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
-            </Select></div>
+             <Select value={filterAccount || '__all__'} onValueChange={v => setFilterAccount(v === '__all__' ? '' : v)}><SelectTrigger className="w-44"><SelectValue placeholder="Todas"/></SelectTrigger>
+               <SelectContent><SelectItem value="__all__">Todas</SelectItem>{accountOptions.map(accId=>{const acc=accountMap[accId]; return <SelectItem key={accId} value={accId}>{acc?.name||'—'}</SelectItem>;})}</SelectContent>
+             </Select></div>
           <div><Label className="text-xs">Cliente</Label>
             <Select value={filterClient || '__all__'} onValueChange={v => setFilterClient(v === '__all__' ? '' : v)}><SelectTrigger className="w-40"><SelectValue placeholder="Todos"/></SelectTrigger>
               <SelectContent><SelectItem value="__all__">Todos</SelectItem>{clients.map(c=><SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>

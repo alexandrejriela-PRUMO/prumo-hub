@@ -481,10 +481,10 @@ export default function ClientFinancialSummary({ client }) {
                   )}
                   <div>
                     <Label className="text-xs text-gray-600 mb-1 block flex items-center gap-1"><Landmark className="w-3 h-3"/>Conta Financeira</Label>
-                    <Select value={newService.account_name || ''} onValueChange={v => setNewService(p => ({ ...p, account_name: v }))}>
+                    <Select value={newService.account_name || '__none__'} onValueChange={v => setNewService(p => ({ ...p, account_name: v === '__none__' ? '' : v }))}>
                       <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value={null}>Sem conta específica</SelectItem>
+                        <SelectItem value="__none__">Sem conta específica</SelectItem>
                           {financialAccounts.map(a => <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
@@ -632,10 +632,10 @@ export default function ClientFinancialSummary({ client }) {
                            )}
                            <div>
                              <Label className="text-xs text-gray-600 mb-1 block flex items-center gap-1"><Landmark className="w-3 h-3"/>Conta Financeira</Label>
-                             <Select value={editForm.account_name || ''} onValueChange={v => setEditForm(p => ({ ...p, account_name: v }))}>
+                             <Select value={editForm.account_name || '__none__'} onValueChange={v => setEditForm(p => ({ ...p, account_name: v === '__none__' ? '' : v }))}>
                                <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
                                <SelectContent>
-                                 <SelectItem value={null}>Sem conta específica</SelectItem>
+                                 <SelectItem value="__none__">Sem conta específica</SelectItem>
                                  {financialAccounts.map(a => <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>)}
                                </SelectContent>
                              </Select>

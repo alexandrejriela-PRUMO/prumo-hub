@@ -155,8 +155,32 @@ export default function FinancialTransactions() {
       });
     });
     
-    // Transações manuais
+    // Conjunto de chaves de serviços CRM para deduplicação: clientNome|valor|mês
+    const crmKeys = new Set();
+    crmClients.forEach(crm => {
+      (crm.services || []).forEach(svc => {
+        const clientKey = (crm.client_name || '').toLowerCase().trim();
+        const valor = parseFloat(svc.value) || 0;
+        const mes = (svc.start_date || '').substring(0, 7);
+        if (clientKey && valor > 0) {
+          crmKeys.add(`${clientKey}|${valor}|${mes}`);
+          // Também indexar sem mês para casos onde a data não bate exatamente
+          crmKeys.add(`${clientKey}|${valor}`);
+        }
+      });
+    });
+
+    // Transações manuais — ignora receitas que são duplicatas de serviços CRM
     manualEntries.forEach(e => {
+      if (e.transaction_type === 'receita') {
+        const clientKey = (e.client_name || '').toLowerCase().trim();
+        const valor = parseFloat(e.amount) || 0;
+        const mes = (e.competencia || e.date?.substring(0, 7) || '');
+        if (crmKeys.has(`${clientKey}|${valor}|${mes}`) || crmKeys.has(`${clientKey}|${valor}`)) {
+          return; // pular duplicata
+        }
+      }
+
       const acc = e.account_id ? accountMap[e.account_id] : null;
       txns.push({
         id: `manual-${e.id}`, type: e.transaction_type||'despesa',

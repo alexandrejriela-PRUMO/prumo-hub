@@ -388,10 +388,9 @@ export default function ClientCRMPanel({ property, onClose }) {
       </div>
 
       <Tabs defaultValue="interactions">
-        <TabsList className="grid grid-cols-3 w-full">
+        <TabsList className="grid grid-cols-2 w-full">
           <TabsTrigger value="interactions" className="text-xs sm:text-sm">Interações</TabsTrigger>
           <TabsTrigger value="tasks" className="text-xs sm:text-sm">Tarefas</TabsTrigger>
-          <TabsTrigger value="services" className="text-xs sm:text-sm">Serviços</TabsTrigger>
         </TabsList>
 
         {/* ── Interações ── */}
@@ -568,8 +567,8 @@ export default function ClientCRMPanel({ property, onClose }) {
           </div>
         </TabsContent>
 
-        {/* ── Serviços ── */}
-        <TabsContent value="services" className="space-y-3 mt-4">
+        {/* ── Serviços removidos — gerenciar via aba Financeiro ── */}
+        {false && <TabsContent value="__removed_services__" className="space-y-3 mt-4">
           <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto" onClick={() => { setEditingServiceIndex(null); setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], installments_data: [], received: false, received_at: '', account_id: '', account_name: '' }); setShowServiceForm(true); }}>
             <Plus className="w-3 h-3 mr-1" /> Novo Serviço
           </Button>
@@ -803,7 +802,7 @@ export default function ClientCRMPanel({ property, onClose }) {
               })
             )}
           </div>
-        </TabsContent>
+        </TabsContent>}
       </Tabs>
     </div>
   );

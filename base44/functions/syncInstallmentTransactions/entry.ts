@@ -38,7 +38,9 @@ Deno.serve(async (req) => {
       if (service.payment_type === 'avista' && service.received && service.received_at) {
         validDescriptions.add(`${service.name}`);
       }
-      const installments = service.installments_data || service.installments || [];
+      const installments = (service.installments_data && service.installments_data.length > 0)
+        ? service.installments_data
+        : (service.installments || []);
       if (service.payment_type === 'parcelado' && installments.length > 0) {
         for (let idx = 0; idx < installments.length; idx++) {
           const inst = installments[idx];
@@ -101,8 +103,8 @@ Deno.serve(async (req) => {
             competencia: dateStr,
             transaction_type: 'receita',
             category: 'Cobrança de Cliente (Manual)',
-            account_id: accountId,
-            account_name: accountName,
+            account_id: accountId || null,
+            account_name: accountName || null,
             client_name: crm.client_name,
             client_property_id: clientPropertyId,
             status: 'Pago',
@@ -114,13 +116,15 @@ Deno.serve(async (req) => {
       }
       
       // Parcelado
-      const installments = service.installments_data || service.installments || [];
-      if (service.payment_type === 'parcelado' && installments.length > 0) {
-        for (let idx = 0; idx < installments.length; idx++) {
-          const inst = installments[idx];
+      const installments2 = (service.installments_data && service.installments_data.length > 0)
+        ? service.installments_data
+        : (service.installments || []);
+      if (service.payment_type === 'parcelado' && installments2.length > 0) {
+        for (let idx = 0; idx < installments2.length; idx++) {
+          const inst = installments2[idx];
           if (inst.received && inst.received_date) {
             const dateStr = inst.received_date;
-            const description = `${service.name} - Parcela ${inst.number}/${installments.length}`;
+            const description = `${service.name} - Parcela ${inst.number}/${installments2.length}`;
 
             const exists = remainingExpenses.some(exp => 
               exp.description === description && 
@@ -137,20 +141,20 @@ Deno.serve(async (req) => {
               }
 
               const transaction = await base44.entities.Expense.create({
-                consultor_email,
-                description,
-                amount: inst.amount,
-                date: dateStr,
-                competencia: dateStr,
-                transaction_type: 'receita',
-                category: 'Cobrança de Cliente (Manual)',
-                account_id: accountId,
-                account_name: accountName,
-                client_name: crm.client_name,
-                client_property_id: clientPropertyId,
-                status: 'Pago',
-                payment_method: inst.payment_method || service.payment_method || 'Pix',
-                notes: `Parcela ${inst.number}/${installments.length} de "${service.name}"`,
+              consultor_email,
+              description,
+              amount: inst.amount,
+              date: dateStr,
+              competencia: dateStr,
+              transaction_type: 'receita',
+              category: 'Cobrança de Cliente (Manual)',
+              account_id: accountId || null,
+              account_name: accountName || null,
+              client_name: crm.client_name,
+              client_property_id: clientPropertyId,
+              status: 'Pago',
+              payment_method: inst.payment_method || service.payment_method || 'Pix',
+              notes: `Parcela ${inst.number}/${installments2.length} de "${service.name}"`,
               });
               createdTransactions.push(transaction);
             }

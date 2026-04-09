@@ -52,8 +52,10 @@ Deno.serve(async (req) => {
     // --- STEP 2: Apagar Expenses órfãs (serviço foi deletado ou desmarcado como recebido) ---
     const toDelete = existingExpenses.filter(exp => {
       const desc = exp.description || '';
-      // Só apagar entradas sincronizadas (categoria específica)
-      if (exp.category !== 'Cobrança de Cliente (Manual)') return false;
+      // Só apagar entradas sincronizadas (categoria específica) - aceitar unicode e utf-8
+      const cat = exp.category || '';
+      const isSynced = cat === 'Cobrança de Cliente (Manual)' || cat === 'Cobran\u00e7a de Cliente (Manual)';
+      if (!isSynced) return false;
       // Apagar se a descrição não está mais no conjunto válido
       return !validDescriptions.has(desc);
     });

@@ -110,45 +110,47 @@ export default function FinancialTransactions() {
       (crm.services || []).forEach(svc => {
         const totalValue = parseFloat(svc.value) || 0;
         const isParcelado = svc.payment_type === 'parcelado';
-        const numParcelas = isParcelado ? parseInt(svc.installments) || 1 : 1;
-        const valuePerParcela = totalValue / numParcelas;
         const accountLabel = svc.account_name || 'Serviços CRM';
-        
-        // Se parcelado, criar uma transação por parcela
-        if (isParcelado && numParcelas > 1) {
-          for (let i = 0; i < numParcelas; i++) {
-            const parcelaNum = i + 1;
+        const clientName = crm.client_name || crm.client_email?.split('@')[0] || '—';
+        const source = svc.status === 'Contratado' || svc.status === 'Em Andamento' ? 'Serviço CRM' : 'Serviço (Proposta)';
+
+        if (isParcelado && Array.isArray(svc.installments) && svc.installments.length > 0) {
+          // Parcelado: uma transação por parcela usando o array de objetos
+          const numParcelas = svc.installments.length;
+          svc.installments.forEach((inst, i) => {
+            const parcelaNum = inst.number || (i + 1);
+            const parcelaDate = inst.due_date || svc.start_date;
             txns.push({
               id: `service-${crm.id}-${svc.name}-p${parcelaNum}`,
               type: 'receita',
-              source: svc.status === 'Contratado' || svc.status === 'Em Andamento' ? 'Serviço CRM' : 'Serviço (Proposta)',
+              source,
               sourceIcon: 'crm-service',
               description: `${svc.name || 'Serviço'} (${parcelaNum}/${numParcelas})`,
-              client: crm.client_name || crm.client_email?.split('@')[0] || '—',
-              amount: valuePerParcela,
-              date: svc.start_date,
-              competencia: svc.start_date?.substring(0, 7),
-              status: svc.received ? 'Pago' : (svc.status === 'Concluído' || svc.status === 'Contratado' ? 'Pendente' : 'Cancelado'),
+              client: clientName,
+              amount: inst.amount || (totalValue / numParcelas),
+              date: parcelaDate,
+              competencia: parcelaDate?.substring(0, 7),
+              status: inst.received ? 'Pago' : (svc.status === 'Cancelado' ? 'Cancelado' : 'Pendente'),
               payment_method: svc.payment_method,
-              accountLabel: accountLabel,
+              accountLabel,
               editable: false,
             });
-          }
+          });
         } else {
-          // Serviço à vista
+          // À vista
           txns.push({
             id: `service-${crm.id}-${svc.name}`,
             type: 'receita',
-            source: svc.status === 'Contratado' || svc.status === 'Em Andamento' ? 'Serviço CRM' : 'Serviço (Proposta)',
+            source,
             sourceIcon: 'crm-service',
             description: svc.name || 'Serviço sem nome',
-            client: crm.client_name || crm.client_email?.split('@')[0] || '—',
+            client: clientName,
             amount: totalValue,
             date: svc.start_date,
             competencia: svc.start_date?.substring(0, 7),
-            status: svc.received ? 'Pago' : (svc.status === 'Concluído' || svc.status === 'Contratado' ? 'Pendente' : 'Cancelado'),
+            status: svc.received ? 'Pago' : (svc.status === 'Cancelado' ? 'Cancelado' : 'Pendente'),
             payment_method: svc.payment_method,
-            accountLabel: accountLabel,
+            accountLabel,
             editable: false,
           });
         }

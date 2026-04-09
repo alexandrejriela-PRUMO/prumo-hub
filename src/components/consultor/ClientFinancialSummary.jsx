@@ -485,7 +485,7 @@ export default function ClientFinancialSummary({ client }) {
                       <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value={null}>Sem conta específica</SelectItem>
-                        {financialAccounts.map(a => <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>)}
+                          {financialAccounts.map(a => <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>

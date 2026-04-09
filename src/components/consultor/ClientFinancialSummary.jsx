@@ -142,15 +142,14 @@ export default function ClientFinancialSummary({ client }) {
 
     upsertCRM.mutate({ services }, {
       onSuccess: async () => {
-        if (editForm.payment_type === 'parcelado') {
-          try {
-            await base44.functions.invoke('syncInstallmentTransactions', {
-              crmId: crmId,
-              consultor_email: crmConsultorEmail,
-            });
-          } catch (err) {
-            console.warn('Erro ao sincronizar transações:', err);
-          }
+        try {
+          await base44.functions.invoke('syncInstallmentTransactions', {
+            crmId: crmId,
+            consultor_email: crmConsultorEmail,
+          });
+          queryClient.invalidateQueries({ queryKey: ['fin-manual'] });
+        } catch (err) {
+          console.warn('Erro ao sincronizar transações:', err);
         }
         toast.success('Serviço atualizado!');
         setEditingIndex(null);
@@ -159,10 +158,34 @@ export default function ClientFinancialSummary({ client }) {
     });
   };
 
-  const deleteService = (index) => {
+  const deleteService = async (index) => {
+    const svc = crm?.services?.[index];
     const services = (crm?.services || []).filter((_, i) => i !== index);
+
+    // Remover entradas Expense sincronizadas para este serviço
+    if (svc) {
+      try {
+        const clientPropertyId = crm.property_id || crm.id;
+        const existingExpenses = await base44.entities.Expense.filter({
+          consultor_email: crmConsultorEmail,
+          client_property_id: clientPropertyId,
+        });
+        // Encontrar entradas que pertencem a este serviço pela descrição
+        const toDelete = existingExpenses.filter(exp => {
+          const desc = exp.description || '';
+          return desc === svc.name || desc.startsWith(`${svc.name} - Parcela `);
+        });
+        await Promise.all(toDelete.map(exp => base44.entities.Expense.delete(exp.id)));
+        if (toDelete.length > 0) {
+          queryClient.invalidateQueries({ queryKey: ['fin-manual'] });
+        }
+      } catch (err) {
+        console.warn('Erro ao remover transações vinculadas:', err);
+      }
+    }
+
     upsertCRM.mutate({ services }, {
-      onSuccess: () => toast.success('Serviço removido.'),
+      onSuccess: () => toast.success('Serviço e transações vinculadas removidos.'),
       onError: (e) => toast.error('Erro ao remover: ' + e.message),
     });
   };
@@ -205,12 +228,13 @@ export default function ClientFinancialSummary({ client }) {
               crmId: crmId,
               consultor_email: crmConsultorEmail,
             });
+            queryClient.invalidateQueries({ queryKey: ['fin-manual'] });
           } catch (err) {
             console.warn('Erro ao sincronizar transações:', err);
           }
           toast.success('Serviço adicionado!');
           setShowNewServiceForm(false);
-          setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '' });
+          setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '', account_name: '' });
         },
         onError: (e) => toast.error('Erro ao adicionar: ' + e.message),
       });
@@ -232,10 +256,19 @@ export default function ClientFinancialSummary({ client }) {
 
       const services = [...(crm?.services || []), newServiceObj];
       upsertCRM.mutate({ services }, {
-        onSuccess: () => {
+        onSuccess: async () => {
+          try {
+            await base44.functions.invoke('syncInstallmentTransactions', {
+              crmId: crmId,
+              consultor_email: crmConsultorEmail,
+            });
+            queryClient.invalidateQueries({ queryKey: ['fin-manual'] });
+          } catch (err) {
+            console.warn('Erro ao sincronizar transações:', err);
+          }
           toast.success('Serviço adicionado!');
           setShowNewServiceForm(false);
-          setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '' });
+          setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '', account_name: '' });
         },
         onError: (e) => toast.error('Erro ao adicionar: ' + e.message),
       });
@@ -252,7 +285,16 @@ export default function ClientFinancialSummary({ client }) {
        i === index ? { ...s, received: nowReceived, received_at } : s
      );
      upsertCRM.mutate({ services }, {
-       onSuccess: () => {
+       onSuccess: async () => {
+         try {
+           await base44.functions.invoke('syncInstallmentTransactions', {
+             crmId: crmId,
+             consultor_email: crmConsultorEmail,
+           });
+           queryClient.invalidateQueries({ queryKey: ['fin-manual'] });
+         } catch (err) {
+           console.warn('Erro ao sincronizar:', err);
+         }
          toast.success('Status de recebimento atualizado!');
        },
        onError: (error) => {

@@ -52,7 +52,7 @@ export default function ClientFinancialSummary({ client }) {
   const [editingIndex, setEditingIndex] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [showNewServiceForm, setShowNewServiceForm] = useState(false);
-  const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '', account_id: '', account_name: '' });
+  const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '', account_id: null });
 
   const [loggedEmail, setLoggedEmail] = useState(null);
   useEffect(() => {
@@ -101,8 +101,7 @@ export default function ClientFinancialSummary({ client }) {
       installments_data,
       received: service.received || false,
       received_at: service.received_at ? service.received_at.split('T')[0] : '',
-      account_id: service.account_id || '',
-      account_name: service.account_name || '',
+      account_id: service.account_id || null,
     });
   };
 
@@ -135,8 +134,7 @@ export default function ClientFinancialSummary({ client }) {
           installments,
           received: false,
           received_at: null,
-          account_id: editForm.account_id || '',
-          account_name: editForm.account_name || '',
+          account_id: editForm.account_id || null,
         };
       } else {
         // À vista
@@ -153,8 +151,7 @@ export default function ClientFinancialSummary({ client }) {
           received_at: editForm.received && editForm.received_at
             ? editForm.received_at
             : null,
-          account_id: editForm.account_id || '',
-          account_name: editForm.account_name || '',
+          account_id: editForm.account_id || null,
         };
       }
     });
@@ -247,8 +244,7 @@ export default function ClientFinancialSummary({ client }) {
         installments,
         received: false,
         received_at: null,
-        account_id: newService.account_id || '',
-        account_name: newService.account_name || '',
+        account_id: newService.account_id || null,
       };
 
       const services = [...(crm?.services || []), newServiceObj];
@@ -265,7 +261,7 @@ export default function ClientFinancialSummary({ client }) {
           }
           toast.success('Serviço adicionado!');
           setShowNewServiceForm(false);
-          setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '', account_id: '', account_name: '' });
+          setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '', account_id: null });
         },
         onError: (e) => toast.error('Erro ao adicionar: ' + e.message),
       });
@@ -282,8 +278,7 @@ export default function ClientFinancialSummary({ client }) {
         installments: [],
         received: newService.received || false,
         received_at: newService.received && newService.received_at ? newService.received_at : null,
-        account_id: newService.account_id || '',
-        account_name: newService.account_name || '',
+        account_id: newService.account_id || null,
       };
 
       const services = [...(crm?.services || []), newServiceObj];
@@ -300,7 +295,7 @@ export default function ClientFinancialSummary({ client }) {
           }
           toast.success('Serviço adicionado!');
           setShowNewServiceForm(false);
-          setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '', account_id: '', account_name: '' });
+          setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '', account_id: null });
         },
         onError: (e) => toast.error('Erro ao adicionar: ' + e.message),
       });
@@ -556,9 +551,7 @@ export default function ClientFinancialSummary({ client }) {
                   <div>
                    <Label className="text-xs text-gray-600 mb-1 block flex items-center gap-1"><Landmark className="w-3 h-3"/>Conta Financeira</Label>
                    <Select value={newService.account_id || '__none__'} onValueChange={v => {
-                     const selectedId = v === '__none__' ? '' : v;
-                     const acc = financialAccounts.find(a => a.id === selectedId);
-                     setNewService(p => ({ ...p, account_id: selectedId, account_name: acc ? acc.name : '' }));
+                     setNewService(p => ({ ...p, account_id: v === '__none__' ? null : v }));
                    }}>
                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
                      <SelectContent>
@@ -573,7 +566,7 @@ export default function ClientFinancialSummary({ client }) {
                   </div>
                 </div>
                 <div className="flex justify-end gap-2 pt-1">
-                  <Button size="sm" variant="outline" onClick={() => { setShowNewServiceForm(false); setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '', account_name: '' }); }}>Cancelar</Button>
+                  <Button size="sm" variant="outline" onClick={() => { setShowNewServiceForm(false); setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '', account_id: null }); }}>Cancelar</Button>
                   <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={addNewService} disabled={upsertCRM.isPending}>Salvar</Button>
                 </div>
               </div>
@@ -711,16 +704,10 @@ export default function ClientFinancialSummary({ client }) {
                            <div>
                              <Label className="text-xs text-gray-600 mb-1 block flex items-center gap-1"><Landmark className="w-3 h-3"/>Conta Financeira</Label>
                              <Select value={editForm.account_id || '__none__'} onValueChange={v => {
-                               const selectedId = v === '__none__' ? '' : v;
-                               const acc = financialAccounts.find(a => a.id === selectedId);
-                               setEditForm(p => ({ ...p, account_id: selectedId, account_name: acc ? acc.name : '' }));
+                               setEditForm(p => ({ ...p, account_id: v === '__none__' ? null : v }));
                              }}>
                                <SelectTrigger className="h-9 text-sm">
-                                 <SelectValue placeholder="Selecione a conta">
-                                   {editForm.account_id
-                                     ? (financialAccounts.find(a => a.id === editForm.account_id)?.name || editForm.account_name || 'Carregando...')
-                                     : 'Sem conta específica'}
-                                 </SelectValue>
+                                 <SelectValue placeholder="Selecione a conta" />
                                </SelectTrigger>
                                <SelectContent>
                                  <SelectItem value="__none__">Sem conta específica</SelectItem>
@@ -791,8 +778,11 @@ export default function ClientFinancialSummary({ client }) {
                         {service.payment_method && (
                           <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-md">{service.payment_method}</span>
                         )}
-                        {service.account_name && (
-                          <span className="text-xs px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-md flex items-center gap-1"><Landmark className="w-3 h-3"/>{service.account_name}</span>
+                        {service.account_id && (
+                          <span className="text-xs px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-md flex items-center gap-1">
+                            <Landmark className="w-3 h-3"/>
+                            {financialAccounts.find(a => a.id === service.account_id)?.name || '...'}
+                          </span>
                         )}
                         {isParcelado
                           ? <span className="text-xs px-2 py-0.5 bg-purple-50 text-purple-600 rounded-md font-medium">📊 {numParcelas}x Parcelado</span>

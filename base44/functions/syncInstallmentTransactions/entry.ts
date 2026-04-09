@@ -29,9 +29,6 @@ Deno.serve(async (req) => {
       client_property_id: clientPropertyId,
     });
 
-    // Buscar contas financeiras
-    const accounts = await base44.entities.FinancialAccount.filter({ consultor_email });
-
     // --- STEP 1: Construir o conjunto de descrições válidas dos serviços atuais ---
     const validDescriptions = new Set();
     for (const service of services) {
@@ -88,13 +85,6 @@ Deno.serve(async (req) => {
         );
 
         if (!exists) {
-          let accountName = service.account_name || '';
-          let accountId = service.account_id || '';
-          if (accountId && !accountName) {
-            const acc = accounts.find(a => a.id === accountId);
-            accountName = acc?.name || '';
-          }
-
           const transaction = await base44.entities.Expense.create({
             consultor_email,
             description,
@@ -103,8 +93,7 @@ Deno.serve(async (req) => {
             competencia: dateStr,
             transaction_type: 'receita',
             category: 'Cobrança de Cliente (Manual)',
-            account_id: accountId || null,
-            account_name: accountName || null,
+            account_id: service.account_id || null,
             client_name: crm.client_name,
             client_property_id: clientPropertyId,
             status: 'Pago',
@@ -133,28 +122,20 @@ Deno.serve(async (req) => {
             );
 
             if (!exists) {
-              let accountName = inst.account_name || service.account_name || '';
-              let accountId = inst.account_id || service.account_id || '';
-              if (accountId && !accountName) {
-                const acc = accounts.find(a => a.id === accountId);
-                accountName = acc?.name || '';
-              }
-
               const transaction = await base44.entities.Expense.create({
-              consultor_email,
-              description,
-              amount: inst.amount,
-              date: dateStr,
-              competencia: dateStr,
-              transaction_type: 'receita',
-              category: 'Cobrança de Cliente (Manual)',
-              account_id: accountId || null,
-              account_name: accountName || null,
-              client_name: crm.client_name,
-              client_property_id: clientPropertyId,
-              status: 'Pago',
-              payment_method: inst.payment_method || service.payment_method || 'Pix',
-              notes: `Parcela ${inst.number}/${installments2.length} de "${service.name}"`,
+                consultor_email,
+                description,
+                amount: inst.amount,
+                date: dateStr,
+                competencia: dateStr,
+                transaction_type: 'receita',
+                category: 'Cobrança de Cliente (Manual)',
+                account_id: service.account_id || null,
+                client_name: crm.client_name,
+                client_property_id: clientPropertyId,
+                status: 'Pago',
+                payment_method: inst.payment_method || service.payment_method || 'Pix',
+                notes: `Parcela ${inst.number}/${installments2.length} de "${service.name}"`,
               });
               createdTransactions.push(transaction);
             }

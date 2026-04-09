@@ -118,7 +118,7 @@ export default function FinancialTransactions() {
       (crm.services || []).forEach(svc => {
         const totalValue = parseFloat(svc.value) || 0;
         const isParcelado = svc.payment_type === 'parcelado';
-        const accountLabel = svc.account_name || 'Serviços CRM';
+        const accountLabel = (svc.account_id && accountMap[svc.account_id]?.name) || svc.account_name || '—';
         const clientName = crm.client_name || crm.client_email?.split('@')[0] || '—';
         const source = svc.status === 'Contratado' || svc.status === 'Em Andamento' ? 'Serviço CRM' : 'Serviço (Proposta)';
 

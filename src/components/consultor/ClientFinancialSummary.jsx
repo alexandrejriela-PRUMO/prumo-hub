@@ -108,7 +108,7 @@ export default function ClientFinancialSummary({ client }) {
   const saveEdit = () => {
     console.log("STEP 1 - EDIT FORM STATE:", JSON.stringify(editForm, null, 2));
     const services = (crm?.services || []).map((s, i) => {
-      if (i !== editingIndex) return s;
+      if (i !== editingIndex) return { ...s, account_id: s.account_id || null };
 
       // Para parcelado: estrutura com array installments
       if (editForm.payment_type === 'parcelado') {

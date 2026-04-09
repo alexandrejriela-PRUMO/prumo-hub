@@ -59,12 +59,21 @@ export default function ClientFinancialSummary({ client }) {
     base44.auth.me().then(u => { if (u?.email) setLoggedEmail(u.email); }).catch(() => {});
   }, []);
 
-  const effectiveConsultorEmail = crmConsultorEmail || crmOwnerEmail || loggedEmail;
-
+  // Buscar contas usando todos os emails possíveis
   const { data: financialAccounts = [] } = useQuery({
-    queryKey: ['financial-accounts-crm', effectiveConsultorEmail],
-    queryFn: () => base44.entities.FinancialAccount.filter({ consultor_email: effectiveConsultorEmail }, 'name', 100),
-    enabled: !!effectiveConsultorEmail,
+    queryKey: ['financial-accounts-crm-all', loggedEmail],
+    queryFn: async () => {
+      // Busca por todos os emails possíveis em paralelo e unifica
+      const emails = [...new Set([crmConsultorEmail, crmOwnerEmail, loggedEmail].filter(Boolean))];
+      const results = await Promise.all(
+        emails.map(email => base44.entities.FinancialAccount.filter({ consultor_email: email }, 'name', 100).catch(() => []))
+      );
+      // Unificar removendo duplicatas por id
+      const map = new Map();
+      results.flat().forEach(a => map.set(a.id, a));
+      return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+    },
+    enabled: !!loggedEmail,
   });
 
   const startEdit = (service, index) => {

@@ -79,12 +79,18 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
   // Sync form when editing changes
   React.useEffect(() => {
     if (open) {
-      if (editing) setForm({ ...EMPTY, ...editing, amount: String(editing.amount), account_id: editing.account_id || '', account_name: editing.account_name || '', attachments: editing.attachments || [] });
-      else setForm({ ...EMPTY, date: format(new Date(), 'yyyy-MM-dd') });
+      if (editing) {
+        const accId = editing.account_id || '';
+        const accFromList = accId ? accounts.find(a => a.id === accId) : null;
+        const accName = accFromList?.name || editing.account_name || '';
+        setForm({ ...EMPTY, ...editing, amount: String(editing.amount), account_id: accId, account_name: accName, attachments: editing.attachments || [] });
+      } else {
+        setForm({ ...EMPTY, date: format(new Date(), 'yyyy-MM-dd') });
+      }
       setClientSearch('');
       setShowQuickAdd(false);
     }
-  }, [open, editing]);
+  }, [open, editing, accounts]);
 
   const { data: properties = [], refetch: refetchProperties } = useQuery({
     queryKey: ['txform-clients', consultorEmail],

@@ -203,7 +203,7 @@ export default function FinancialTransactions() {
 
     manualEntries.forEach(e => {
       const acc = e.account_id ? accountMap[e.account_id] : null;
-      const accountLabel = acc?.name || e.account_name || '';
+      const accountLabel = acc?.name || e.account_name || 'Caixa Manual';
 
       if (e.client_property_id && e.transaction_type === 'receita') {
         // Entrada sincronizada do CRM — mostrar com a conta correta, não é editável
@@ -332,20 +332,20 @@ export default function FinancialTransactions() {
         <div className="flex flex-wrap gap-3 items-end">
           <div className="flex flex-col gap-1"><Label className="text-xs">Competência</Label><Input type="month" value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} className="w-40 h-9"/></div>
           <div><Label className="text-xs">Tipo</Label>
-            <Select value={filterType} onValueChange={setFilterType}><SelectTrigger className="w-36"><SelectValue placeholder="Todos"/></SelectTrigger>
-              <SelectContent><SelectItem value={null}>Todos</SelectItem><SelectItem value="receita">Receita</SelectItem><SelectItem value="despesa">Despesa</SelectItem></SelectContent>
+            <Select value={filterType || '__all__'} onValueChange={v => setFilterType(v === '__all__' ? '' : v)}><SelectTrigger className="w-36"><SelectValue placeholder="Todos"/></SelectTrigger>
+              <SelectContent><SelectItem value="__all__">Todos</SelectItem><SelectItem value="receita">Receita</SelectItem><SelectItem value="despesa">Despesa</SelectItem></SelectContent>
             </Select></div>
           <div><Label className="text-xs">Conta</Label>
-            <Select value={filterAccount} onValueChange={setFilterAccount}><SelectTrigger className="w-44"><SelectValue placeholder="Todas"/></SelectTrigger>
-              <SelectContent><SelectItem value={null}>Todas</SelectItem>{accountOptions.map(a=><SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
+            <Select value={filterAccount || '__all__'} onValueChange={v => setFilterAccount(v === '__all__' ? '' : v)}><SelectTrigger className="w-44"><SelectValue placeholder="Todas"/></SelectTrigger>
+              <SelectContent><SelectItem value="__all__">Todas</SelectItem>{accountOptions.map(a=><SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
             </Select></div>
           <div><Label className="text-xs">Cliente</Label>
-            <Select value={filterClient} onValueChange={setFilterClient}><SelectTrigger className="w-40"><SelectValue placeholder="Todos"/></SelectTrigger>
-              <SelectContent><SelectItem value={null}>Todos</SelectItem>{clients.map(c=><SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+            <Select value={filterClient || '__all__'} onValueChange={v => setFilterClient(v === '__all__' ? '' : v)}><SelectTrigger className="w-40"><SelectValue placeholder="Todos"/></SelectTrigger>
+              <SelectContent><SelectItem value="__all__">Todos</SelectItem>{clients.map(c=><SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
             </Select></div>
           <div><Label className="text-xs">Status</Label>
-            <Select value={filterStatus} onValueChange={setFilterStatus}><SelectTrigger className="w-36"><SelectValue placeholder="Todos"/></SelectTrigger>
-              <SelectContent><SelectItem value={null}>Todos</SelectItem><SelectItem value="Pago">Pago</SelectItem><SelectItem value="Pendente">Pendente</SelectItem><SelectItem value="Vencido">Vencido</SelectItem><SelectItem value="Cancelado">Cancelado</SelectItem></SelectContent>
+            <Select value={filterStatus || '__all__'} onValueChange={v => setFilterStatus(v === '__all__' ? '' : v)}><SelectTrigger className="w-36"><SelectValue placeholder="Todos"/></SelectTrigger>
+              <SelectContent><SelectItem value="__all__">Todos</SelectItem><SelectItem value="Pago">Pago</SelectItem><SelectItem value="Pendente">Pendente</SelectItem><SelectItem value="Vencido">Vencido</SelectItem><SelectItem value="Cancelado">Cancelado</SelectItem></SelectContent>
             </Select></div>
           <div className="flex-1 min-w-40"><Label className="text-xs">Buscar</Label>
             <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"/>

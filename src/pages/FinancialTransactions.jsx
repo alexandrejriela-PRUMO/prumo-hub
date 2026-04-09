@@ -105,6 +105,14 @@ export default function FinancialTransactions() {
       });
     });
     
+    // Chaves de entradas sincronizadas já presentes no Expense (para não duplicar com linha CRM crua)
+    const syncedDescriptions = new Set();
+    manualEntries.forEach(e => {
+      if (e.client_property_id && e.transaction_type === 'receita') {
+        syncedDescriptions.add(e.description?.toLowerCase().trim());
+      }
+    });
+
     // Serviços do CRM
     crmClients.forEach(crm => {
       (crm.services || []).forEach(svc => {
@@ -120,6 +128,9 @@ export default function FinancialTransactions() {
           svc.installments.forEach((inst, i) => {
             const parcelaNum = inst.number || (i + 1);
             const parcelaDate = inst.due_date || svc.start_date;
+            const descKey = `${svc.name || 'Serviço'} - Parcela ${parcelaNum}/${numParcelas}`.toLowerCase().trim();
+            // Se já existe entrada de sync para esta parcela, não duplicar
+            if (syncedDescriptions.has(descKey)) return;
             txns.push({
               id: `service-${crm.id}-${svc.name}-p${parcelaNum}`,
               type: 'receita',
@@ -137,7 +148,9 @@ export default function FinancialTransactions() {
             });
           });
         } else {
-          // À vista
+          // À vista — se já sincronizado, não duplicar
+          const descKeyAvista = (svc.name || 'Serviço sem nome').toLowerCase().trim();
+          if (syncedDescriptions.has(descKeyAvista)) return;
           txns.push({
             id: `service-${crm.id}-${svc.name}`,
             type: 'receita',
@@ -157,7 +170,25 @@ export default function FinancialTransactions() {
       });
     });
     
-    // Conjunto de chaves de serviços CRM para deduplicação: clientNome|valor|mês
+    // Transações manuais
+    // Entradas com client_property_id são sincronizadas do CRM (sync de parcelas/recebimentos)
+    // Essas NÃO são editáveis e substituem a linha CRM correspondente na tabela.
+    // Entradas sem client_property_id são manuais puras.
+
+    // Conjunto de IDs de serviços CRM já adicionados que têm transação de sync correspondente
+    // (identificados por client_property_id + descrição similar)
+    const syncedServiceKeys = new Set();
+    manualEntries.forEach(e => {
+      if (e.client_property_id && e.transaction_type === 'receita') {
+        // Esta entrada foi criada pelo sync — marcar para remover a linha CRM duplicada
+        syncedServiceKeys.add(`${e.client_property_id}|${e.description}`);
+      }
+    });
+
+    // Remover da lista de txns CRM as que já têm entrada de sync (evitar duplicata)
+    // Não fazemos aqui, vamos filtrar ao adicionar as manuais:
+
+    // Conjunto de chaves CRM para deduplicar receitas manuais puras
     const crmKeys = new Set();
     crmClients.forEach(crm => {
       (crm.services || []).forEach(svc => {
@@ -166,32 +197,50 @@ export default function FinancialTransactions() {
         const mes = (svc.start_date || '').substring(0, 7);
         if (clientKey && valor > 0) {
           crmKeys.add(`${clientKey}|${valor}|${mes}`);
-          // Também indexar sem mês para casos onde a data não bate exatamente
-          crmKeys.add(`${clientKey}|${valor}`);
         }
       });
     });
 
-    // Transações manuais — ignora receitas que são duplicatas de serviços CRM
     manualEntries.forEach(e => {
+      const acc = e.account_id ? accountMap[e.account_id] : null;
+      const accountLabel = acc?.name || e.account_name || (e.transaction_type === 'receita' ? 'Receita Manual' : 'Caixa Manual');
+
+      if (e.client_property_id && e.transaction_type === 'receita') {
+        // Entrada sincronizada do CRM — mostrar com a conta correta, não é editável
+        txns.push({
+          id: `sync-${e.id}`, type: 'receita',
+          source: 'Serviço CRM',
+          sourceIcon: 'crm-service',
+          description: e.description,
+          client: e.client_name || null,
+          amount: e.amount || 0,
+          date: e.date, competencia: e.competencia || e.date?.substring(0, 7),
+          status: normalizeStatus(e.status),
+          payment_method: e.payment_method,
+          accountLabel,
+          editable: false, raw: e,
+        });
+        return;
+      }
+
+      // Receita manual pura — deduplicar contra CRM
       if (e.transaction_type === 'receita') {
         const clientKey = (e.client_name || '').toLowerCase().trim();
         const valor = parseFloat(e.amount) || 0;
         const mes = (e.competencia || e.date?.substring(0, 7) || '');
-        if (crmKeys.has(`${clientKey}|${valor}|${mes}`) || crmKeys.has(`${clientKey}|${valor}`)) {
+        if (crmKeys.has(`${clientKey}|${valor}|${mes}`)) {
           return; // pular duplicata
         }
       }
 
-      const acc = e.account_id ? accountMap[e.account_id] : null;
       txns.push({
-        id: `manual-${e.id}`, type: e.transaction_type||'despesa',
-        source: e.transaction_type==='receita' ? (e.category||'Receita Manual') : (e.category||'Despesa'),
+        id: `manual-${e.id}`, type: e.transaction_type || 'despesa',
+        source: e.transaction_type === 'receita' ? (e.category || 'Receita Manual') : (e.category || 'Despesa'),
         sourceIcon: 'manual', description: e.description,
-        client: e.client_name||null, amount: e.amount||0,
-        date: e.date, competencia: e.competencia||e.date?.substring(0,7),
+        client: e.client_name || null, amount: e.amount || 0,
+        date: e.date, competencia: e.competencia || e.date?.substring(0, 7),
         status: normalizeStatus(e.status), payment_method: e.payment_method,
-        accountLabel: acc?.name || e.account_name || 'Caixa Manual',
+        accountLabel,
         accountId: e.account_id || '__caixa',
         editable: true, raw: e,
       });

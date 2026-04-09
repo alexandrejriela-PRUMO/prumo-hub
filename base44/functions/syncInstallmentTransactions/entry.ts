@@ -80,14 +80,14 @@ Deno.serve(async (req) => {
         const dateStr = service.received_at.split('T')[0];
         const description = `${service.name}`;
 
-        const exists = remainingExpenses.some(exp => 
+        const existingMatch = remainingExpenses.find(exp => 
           exp.description === description && 
           exp.date === dateStr &&
           Math.abs(parseFloat(exp.amount) - service.value) < 0.01
         );
 
-        if (!exists) {
-          console.log("STEP 6 - TRANSACTION SEND (avista):", { account_id: service.account_id || null });
+        if (!existingMatch) {
+          console.log("STEP 6 - TRANSACTION CREATE (avista):", { account_id: service.account_id || null });
           const transaction = await base44.entities.Expense.create({
             consultor_email,
             description,
@@ -105,6 +105,13 @@ Deno.serve(async (req) => {
           });
           console.log("STEP 7 - TRANSACTION SALVA:", JSON.stringify(transaction, null, 2));
           createdTransactions.push(transaction);
+        } else if (existingMatch.account_id !== (service.account_id || null)) {
+          // Atualizar account_id se mudou
+          console.log("STEP 6 - TRANSACTION UPDATE account_id (avista):", { old: existingMatch.account_id, new: service.account_id || null });
+          await base44.entities.Expense.update(existingMatch.id, {
+            account_id: service.account_id || null,
+            payment_method: service.payment_method || 'Pix',
+          });
         }
       }
       
@@ -119,14 +126,14 @@ Deno.serve(async (req) => {
             const dateStr = inst.received_date;
             const description = `${service.name} - Parcela ${inst.number}/${installments2.length}`;
 
-            const exists = remainingExpenses.some(exp => 
+            const existingMatchP = remainingExpenses.find(exp => 
               exp.description === description && 
               exp.date === dateStr &&
               Math.abs(parseFloat(exp.amount) - inst.amount) < 0.01
             );
 
-            if (!exists) {
-              console.log("STEP 6 - TRANSACTION SEND (parcelado):", { account_id: service.account_id || null });
+            if (!existingMatchP) {
+              console.log("STEP 6 - TRANSACTION CREATE (parcelado):", { account_id: service.account_id || null });
               const transaction = await base44.entities.Expense.create({
                 consultor_email,
                 description,
@@ -144,6 +151,13 @@ Deno.serve(async (req) => {
               });
               console.log("STEP 7 - TRANSACTION SALVA:", JSON.stringify(transaction, null, 2));
               createdTransactions.push(transaction);
+            } else if (existingMatchP.account_id !== (service.account_id || null)) {
+              // Atualizar account_id se mudou
+              console.log("STEP 6 - TRANSACTION UPDATE account_id (parcelado):", { old: existingMatchP.account_id, new: service.account_id || null });
+              await base44.entities.Expense.update(existingMatchP.id, {
+                account_id: service.account_id || null,
+                payment_method: inst.payment_method || service.payment_method || 'Pix',
+              });
             }
           }
         }

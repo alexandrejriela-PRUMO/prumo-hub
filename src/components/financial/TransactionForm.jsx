@@ -253,17 +253,19 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
 
           <div>
             <Label>Conta Financeira</Label>
-            <Select value={form.account_id || '__caixa__'} onValueChange={v => {
-              if (v === '__caixa__') {
-                setForm(p => ({ ...p, account_id: '', account_name: '' }));
+            <Select value={form.account_id || ''} onValueChange={v => {
+              if (v === '') {
+                setF('account_id', '');
+                setF('account_name', '');
               } else {
                 const acc = accounts.find(a => a.id === v);
-                setForm(p => ({ ...p, account_id: v, account_name: acc ? acc.name : v }));
+                setF('account_id', v);
+                setF('account_name', acc?.name || v);
               }
             }}>
-              <SelectTrigger><SelectValue placeholder="Caixa Manual (padrão)" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Sem Conta Específica" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="__caixa__">Caixa Manual</SelectItem>
+                <SelectItem value={null}>Sem Conta Específica</SelectItem>
                 {accounts.filter(a => !a.is_stripe).map(a => <SelectItem key={a.id} value={a.id}>{a.name} · {a.account_type}</SelectItem>)}
               </SelectContent>
             </Select>

@@ -52,7 +52,7 @@ export default function ClientFinancialSummary({ client }) {
   const [editingIndex, setEditingIndex] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [showNewServiceForm, setShowNewServiceForm] = useState(false);
-  const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '', account_name: '' });
+  const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '', account_id: '', account_name: '' });
 
   const { data: financialAccounts = [] } = useQuery({
     queryKey: ['financial-accounts-crm', crmConsultorEmail],
@@ -85,6 +85,7 @@ export default function ClientFinancialSummary({ client }) {
       installments_data,
       received: service.received || false,
       received_at: service.received_at ? service.received_at.split('T')[0] : '',
+      account_id: service.account_id || '',
       account_name: service.account_name || '',
     });
   };
@@ -118,6 +119,7 @@ export default function ClientFinancialSummary({ client }) {
           installments,
           received: false,
           received_at: null,
+          account_id: editForm.account_id || '',
           account_name: editForm.account_name || '',
         };
       } else {
@@ -135,6 +137,7 @@ export default function ClientFinancialSummary({ client }) {
           received_at: editForm.received && editForm.received_at
             ? editForm.received_at
             : null,
+          account_id: editForm.account_id || '',
           account_name: editForm.account_name || '',
         };
       }
@@ -228,6 +231,7 @@ export default function ClientFinancialSummary({ client }) {
         installments,
         received: false,
         received_at: null,
+        account_id: newService.account_id || '',
         account_name: newService.account_name || '',
       };
 
@@ -245,7 +249,7 @@ export default function ClientFinancialSummary({ client }) {
           }
           toast.success('Serviço adicionado!');
           setShowNewServiceForm(false);
-          setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '', account_name: '' });
+          setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '', account_id: '', account_name: '' });
         },
         onError: (e) => toast.error('Erro ao adicionar: ' + e.message),
       });
@@ -262,6 +266,7 @@ export default function ClientFinancialSummary({ client }) {
         installments: [],
         received: newService.received || false,
         received_at: newService.received && newService.received_at ? newService.received_at : null,
+        account_id: newService.account_id || '',
         account_name: newService.account_name || '',
       };
 
@@ -279,7 +284,7 @@ export default function ClientFinancialSummary({ client }) {
           }
           toast.success('Serviço adicionado!');
           setShowNewServiceForm(false);
-          setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '', account_name: '' });
+          setNewService({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '', account_id: '', account_name: '' });
         },
         onError: (e) => toast.error('Erro ao adicionar: ' + e.message),
       });
@@ -533,14 +538,17 @@ export default function ClientFinancialSummary({ client }) {
                     </>
                   )}
                   <div>
-                    <Label className="text-xs text-gray-600 mb-1 block flex items-center gap-1"><Landmark className="w-3 h-3"/>Conta Financeira</Label>
-                    <Select value={newService.account_name || '__none__'} onValueChange={v => setNewService(p => ({ ...p, account_name: v === '__none__' ? '' : v }))}>
-                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__none__">Sem conta específica</SelectItem>
-                          {financialAccounts.map(a => <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                   <Label className="text-xs text-gray-600 mb-1 block flex items-center gap-1"><Landmark className="w-3 h-3"/>Conta Financeira</Label>
+                   <Select value={newService.account_id || '__none__'} onValueChange={v => {
+                     const acc = financialAccounts.find(a => a.id === v);
+                     setNewService(p => ({ ...p, account_id: v === '__none__' ? '' : v, account_name: acc?.name || '' }));
+                   }}>
+                     <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
+                     <SelectContent>
+                       <SelectItem value="__none__">Sem conta específica</SelectItem>
+                         {financialAccounts.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+                     </SelectContent>
+                   </Select>
                   </div>
                   <div className="sm:col-span-2">
                     <Label className="text-xs text-gray-600 mb-1 block">Observações</Label>
@@ -685,11 +693,14 @@ export default function ClientFinancialSummary({ client }) {
                            )}
                            <div>
                              <Label className="text-xs text-gray-600 mb-1 block flex items-center gap-1"><Landmark className="w-3 h-3"/>Conta Financeira</Label>
-                             <Select value={editForm.account_name || '__none__'} onValueChange={v => setEditForm(p => ({ ...p, account_name: v === '__none__' ? '' : v }))}>
+                             <Select value={editForm.account_id || '__none__'} onValueChange={v => {
+                               const acc = financialAccounts.find(a => a.id === v);
+                               setEditForm(p => ({ ...p, account_id: v === '__none__' ? '' : v, account_name: acc?.name || '' }));
+                             }}>
                                <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
                                <SelectContent>
                                  <SelectItem value="__none__">Sem conta específica</SelectItem>
-                                 {financialAccounts.map(a => <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>)}
+                                 {financialAccounts.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
                                </SelectContent>
                              </Select>
                            </div>

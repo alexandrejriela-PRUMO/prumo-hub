@@ -54,10 +54,12 @@ export default function ClientFinancialSummary({ client }) {
   const [showNewServiceForm, setShowNewServiceForm] = useState(false);
   const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '', account_id: '', account_name: '' });
 
+  const effectiveConsultorEmail = crmConsultorEmail || crmOwnerEmail;
+
   const { data: financialAccounts = [] } = useQuery({
-    queryKey: ['financial-accounts-crm', crmConsultorEmail],
-    queryFn: () => base44.entities.FinancialAccount.filter({ consultor_email: crmConsultorEmail, active: true }, 'name', 100),
-    enabled: !!crmConsultorEmail,
+    queryKey: ['financial-accounts-crm', effectiveConsultorEmail],
+    queryFn: () => base44.entities.FinancialAccount.filter({ consultor_email: effectiveConsultorEmail, active: true }, 'name', 100),
+    enabled: !!effectiveConsultorEmail,
   });
 
   const startEdit = (service, index) => {
@@ -540,8 +542,9 @@ export default function ClientFinancialSummary({ client }) {
                   <div>
                    <Label className="text-xs text-gray-600 mb-1 block flex items-center gap-1"><Landmark className="w-3 h-3"/>Conta Financeira</Label>
                    <Select value={newService.account_id || '__none__'} onValueChange={v => {
-                     const acc = financialAccounts.find(a => a.id === v);
-                     setNewService(p => ({ ...p, account_id: v === '__none__' ? '' : v, account_name: acc?.name || '' }));
+                     const selectedId = v === '__none__' ? '' : v;
+                     const acc = financialAccounts.find(a => a.id === selectedId);
+                     setNewService(p => ({ ...p, account_id: selectedId, account_name: acc ? acc.name : '' }));
                    }}>
                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
                      <SelectContent>
@@ -694,8 +697,9 @@ export default function ClientFinancialSummary({ client }) {
                            <div>
                              <Label className="text-xs text-gray-600 mb-1 block flex items-center gap-1"><Landmark className="w-3 h-3"/>Conta Financeira</Label>
                              <Select value={editForm.account_id || '__none__'} onValueChange={v => {
-                               const acc = financialAccounts.find(a => a.id === v);
-                               setEditForm(p => ({ ...p, account_id: v === '__none__' ? '' : v, account_name: acc?.name || '' }));
+                               const selectedId = v === '__none__' ? '' : v;
+                               const acc = financialAccounts.find(a => a.id === selectedId);
+                               setEditForm(p => ({ ...p, account_id: selectedId, account_name: acc ? acc.name : '' }));
                              }}>
                                <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
                                <SelectContent>

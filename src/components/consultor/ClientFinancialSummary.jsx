@@ -185,7 +185,18 @@ export default function ClientFinancialSummary({ client }) {
     }
 
     upsertCRM.mutate({ services }, {
-      onSuccess: () => toast.success('Serviço e transações vinculadas removidos.'),
+      onSuccess: async () => {
+        try {
+          await base44.functions.invoke('syncInstallmentTransactions', {
+            crmId: crmId,
+            consultor_email: crmConsultorEmail,
+          });
+          queryClient.invalidateQueries({ queryKey: ['fin-manual'] });
+        } catch (err) {
+          console.warn('Erro ao sincronizar após exclusão:', err);
+        }
+        toast.success('Serviço removido.');
+      },
       onError: (e) => toast.error('Erro ao remover: ' + e.message),
     });
   };

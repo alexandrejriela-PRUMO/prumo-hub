@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
 
     const { crmId, consultor_email } = await req.json();
 
-    // Buscar o ClientCRM
+    // Buscar o ClientCRM atualizado
     const crms = await base44.entities.ClientCRM.filter({ id: crmId });
     const crm = crms[0];
     
@@ -20,11 +20,8 @@ Deno.serve(async (req) => {
     }
 
     const services = crm.services || [];
-    const createdTransactions = [];
-
-    // Identificar o client_property_id correto
     const clientPropertyId = crm.property_id || crm.id;
-    console.log(`[syncInstallments] ClientCRM ID: ${crm.id}, property_id: ${crm.property_id}, usando: ${clientPropertyId}`);
+    console.log(`[syncInstallments] CRM ID: ${crm.id}, property_id: ${clientPropertyId}, serviços: ${services.length}`);
 
     // Buscar transações existentes para esta CRM
     const existingExpenses = await base44.entities.Expense.filter({
@@ -32,20 +29,55 @@ Deno.serve(async (req) => {
       client_property_id: clientPropertyId,
     });
 
-    // Buscar contas financeiras para validar
-    const accounts = await base44.entities.FinancialAccount.filter({
-      consultor_email,
+    // Buscar contas financeiras
+    const accounts = await base44.entities.FinancialAccount.filter({ consultor_email });
+
+    // --- STEP 1: Construir o conjunto de descrições válidas dos serviços atuais ---
+    const validDescriptions = new Set();
+    for (const service of services) {
+      if (service.payment_type === 'avista' && service.received && service.received_at) {
+        validDescriptions.add(`${service.name}`);
+      }
+      const installments = service.installments_data || service.installments || [];
+      if (service.payment_type === 'parcelado' && installments.length > 0) {
+        for (let idx = 0; idx < installments.length; idx++) {
+          const inst = installments[idx];
+          if (inst.received && inst.received_date) {
+            validDescriptions.add(`${service.name} - Parcela ${inst.number}/${installments.length}`);
+          }
+        }
+      }
+    }
+
+    // --- STEP 2: Apagar Expenses órfãs (serviço foi deletado ou desmarcado como recebido) ---
+    const toDelete = existingExpenses.filter(exp => {
+      const desc = exp.description || '';
+      // Só apagar entradas sincronizadas (categoria específica)
+      if (exp.category !== 'Cobrança de Cliente (Manual)') return false;
+      // Apagar se a descrição não está mais no conjunto válido
+      return !validDescriptions.has(desc);
     });
 
+    if (toDelete.length > 0) {
+      console.log(`[syncInstallments] Apagando ${toDelete.length} transações órfãs:`, toDelete.map(e => e.description));
+      await Promise.all(toDelete.map(exp => base44.entities.Expense.delete(exp.id)));
+    }
+
+    // --- STEP 3: Criar transações para serviços recebidos que ainda não têm Expense ---
+    const createdTransactions = [];
+
+    // Recarregar lista após deleções
+    const remainingExpenses = existingExpenses.filter(exp => !toDelete.find(d => d.id === exp.id));
+
     for (const service of services) {
-      console.log(`[syncInstallments] Processando serviço: ${service.name}, tipo: ${service.payment_type}, received: ${service.received}`);
+      console.log(`[syncInstallments] Processando: ${service.name}, tipo: ${service.payment_type}, received: ${service.received}`);
       
-      // Processar serviços à vista recebidos
+      // À vista
       if (service.payment_type === 'avista' && service.received && service.received_at) {
         const dateStr = service.received_at.split('T')[0];
         const description = `${service.name}`;
 
-        const exists = existingExpenses.some(exp => 
+        const exists = remainingExpenses.some(exp => 
           exp.description === description && 
           exp.date === dateStr &&
           Math.abs(parseFloat(exp.amount) - service.value) < 0.01
@@ -54,7 +86,6 @@ Deno.serve(async (req) => {
         if (!exists) {
           let accountName = service.account_name || '';
           let accountId = service.account_id || '';
-          
           if (accountId && !accountName) {
             const acc = accounts.find(a => a.id === accountId);
             accountName = acc?.name || '';
@@ -67,7 +98,7 @@ Deno.serve(async (req) => {
             date: dateStr,
             competencia: dateStr,
             transaction_type: 'receita',
-            category: 'Cobran\u00e7a de Cliente (Manual)',
+            category: 'Cobrança de Cliente (Manual)',
             account_id: accountId,
             account_name: accountName,
             client_name: crm.client_name,
@@ -80,37 +111,29 @@ Deno.serve(async (req) => {
         }
       }
       
-      // Processar serviços parcelados
+      // Parcelado
       const installments = service.installments_data || service.installments || [];
       if (service.payment_type === 'parcelado' && installments.length > 0) {
         for (let idx = 0; idx < installments.length; idx++) {
           const inst = installments[idx];
-          
-          // Só criar transação se parcela foi recebida e tem data de recebimento
-          console.log(`[syncInstallments] Parcela ${inst.number}: received=${inst.received}, received_date=${inst.received_date}, amount=${inst.amount}, account_id=${inst.account_id}, account_name=${inst.account_name}`);
           if (inst.received && inst.received_date) {
             const dateStr = inst.received_date;
             const description = `${service.name} - Parcela ${inst.number}/${installments.length}`;
 
-            // Verificar se a transação já existe
-            const exists = existingExpenses.some(exp => 
+            const exists = remainingExpenses.some(exp => 
               exp.description === description && 
               exp.date === dateStr &&
               Math.abs(parseFloat(exp.amount) - inst.amount) < 0.01
             );
 
             if (!exists) {
-              // Determinar account_name: usar da parcela, depois do serviço, depois validar pelo account_id
               let accountName = inst.account_name || service.account_name || '';
               let accountId = inst.account_id || service.account_id || '';
-              
-              // Se tem account_id mas não tem account_name, buscar o nome
               if (accountId && !accountName) {
                 const acc = accounts.find(a => a.id === accountId);
                 accountName = acc?.name || '';
               }
-              
-              // Criar transação com dados específicos da parcela
+
               const transaction = await base44.entities.Expense.create({
                 consultor_email,
                 description,
@@ -118,7 +141,7 @@ Deno.serve(async (req) => {
                 date: dateStr,
                 competencia: dateStr,
                 transaction_type: 'receita',
-                category: 'Cobran\u00e7a de Cliente (Manual)',
+                category: 'Cobrança de Cliente (Manual)',
                 account_id: accountId,
                 account_name: accountName,
                 client_name: crm.client_name,
@@ -136,8 +159,8 @@ Deno.serve(async (req) => {
 
     return Response.json({
       success: true,
+      deletedOrphans: toDelete.length,
       transactionsCreated: createdTransactions.length,
-      transactions: createdTransactions,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

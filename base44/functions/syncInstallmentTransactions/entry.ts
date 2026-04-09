@@ -71,6 +71,8 @@ Deno.serve(async (req) => {
     const remainingExpenses = existingExpenses.filter(exp => !toDelete.find(d => d.id === exp.id));
 
     for (const service of services) {
+      console.log("STEP 4 - SERVICE RECEBIDO:", JSON.stringify(service, null, 2));
+      console.log("STEP 5 - ACCOUNT_ID NO BACKEND:", service.account_id);
       console.log(`[syncInstallments] Processando: ${service.name}, tipo: ${service.payment_type}, received: ${service.received}`);
       
       // À vista
@@ -85,6 +87,7 @@ Deno.serve(async (req) => {
         );
 
         if (!exists) {
+          console.log("STEP 6 - TRANSACTION SEND (avista):", { account_id: service.account_id || null });
           const transaction = await base44.entities.Expense.create({
             consultor_email,
             description,
@@ -100,6 +103,7 @@ Deno.serve(async (req) => {
             payment_method: service.payment_method || 'Pix',
             notes: `Serviço "${service.name}"`,
           });
+          console.log("STEP 7 - TRANSACTION SALVA:", JSON.stringify(transaction, null, 2));
           createdTransactions.push(transaction);
         }
       }
@@ -122,6 +126,7 @@ Deno.serve(async (req) => {
             );
 
             if (!exists) {
+              console.log("STEP 6 - TRANSACTION SEND (parcelado):", { account_id: service.account_id || null });
               const transaction = await base44.entities.Expense.create({
                 consultor_email,
                 description,
@@ -137,6 +142,7 @@ Deno.serve(async (req) => {
                 payment_method: inst.payment_method || service.payment_method || 'Pix',
                 notes: `Parcela ${inst.number}/${installments2.length} de "${service.name}"`,
               });
+              console.log("STEP 7 - TRANSACTION SALVA:", JSON.stringify(transaction, null, 2));
               createdTransactions.push(transaction);
             }
           }

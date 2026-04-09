@@ -106,6 +106,7 @@ export default function ClientFinancialSummary({ client }) {
   };
 
   const saveEdit = () => {
+    console.log("STEP 1 - EDIT FORM STATE:", JSON.stringify(editForm, null, 2));
     const services = (crm?.services || []).map((s, i) => {
       if (i !== editingIndex) return s;
 
@@ -156,6 +157,7 @@ export default function ClientFinancialSummary({ client }) {
       }
     });
 
+    console.log("STEP 3 - PAYLOAD ENVIADO (saveEdit):", JSON.stringify({ services }, null, 2));
     upsertCRM.mutate({ services }, {
       onSuccess: async () => {
         try {
@@ -218,6 +220,7 @@ export default function ClientFinancialSummary({ client }) {
   };
 
   const addNewService = () => {
+    console.log("STEP 1 - NEW SERVICE STATE:", JSON.stringify(newService, null, 2));
     if (!newService.name) { toast.error('Informe o nome do serviço'); return; }
     const serviceValue = parseFloat(newService.value) || 0;
 
@@ -247,6 +250,7 @@ export default function ClientFinancialSummary({ client }) {
         account_id: newService.account_id || null,
       };
 
+      console.log("STEP 3 - PAYLOAD ENVIADO (addNewService parcelado):", JSON.stringify({ newServiceObj }, null, 2));
       const services = [...(crm?.services || []), newServiceObj];
       upsertCRM.mutate({ services }, {
         onSuccess: async () => {
@@ -281,6 +285,7 @@ export default function ClientFinancialSummary({ client }) {
         account_id: newService.account_id || null,
       };
 
+      console.log("STEP 3 - PAYLOAD ENVIADO (addNewService avista):", JSON.stringify({ newServiceObj }, null, 2));
       const services = [...(crm?.services || []), newServiceObj];
       upsertCRM.mutate({ services }, {
         onSuccess: async () => {
@@ -551,7 +556,8 @@ export default function ClientFinancialSummary({ client }) {
                   <div>
                    <Label className="text-xs text-gray-600 mb-1 block flex items-center gap-1"><Landmark className="w-3 h-3"/>Conta Financeira</Label>
                    <Select value={newService.account_id || '__none__'} onValueChange={v => {
-                     setNewService(p => ({ ...p, account_id: v === '__none__' ? null : v }));
+                    console.log("STEP 2 - NEW SELECT onValueChange:", v, "=> account_id:", v === '__none__' ? null : v);
+                    setNewService(p => ({ ...p, account_id: v === '__none__' ? null : v }));
                    }}>
                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
                      <SelectContent>
@@ -704,6 +710,7 @@ export default function ClientFinancialSummary({ client }) {
                            <div>
                              <Label className="text-xs text-gray-600 mb-1 block flex items-center gap-1"><Landmark className="w-3 h-3"/>Conta Financeira</Label>
                              <Select value={editForm.account_id || '__none__'} onValueChange={v => {
+                               console.log("STEP 2 - EDIT SELECT onValueChange:", v, "=> account_id:", v === '__none__' ? null : v);
                                setEditForm(p => ({ ...p, account_id: v === '__none__' ? null : v }));
                              }}>
                                <SelectTrigger className="h-9 text-sm">

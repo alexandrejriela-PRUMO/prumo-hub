@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,7 +54,12 @@ export default function ClientFinancialSummary({ client }) {
   const [showNewServiceForm, setShowNewServiceForm] = useState(false);
   const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', installments_data: [], received: false, received_at: '', account_id: '', account_name: '' });
 
-  const effectiveConsultorEmail = crmConsultorEmail || crmOwnerEmail;
+  const [loggedEmail, setLoggedEmail] = useState(null);
+  useEffect(() => {
+    base44.auth.me().then(u => { if (u?.email) setLoggedEmail(u.email); }).catch(() => {});
+  }, []);
+
+  const effectiveConsultorEmail = crmConsultorEmail || crmOwnerEmail || loggedEmail;
 
   const { data: financialAccounts = [] } = useQuery({
     queryKey: ['financial-accounts-crm', effectiveConsultorEmail],
@@ -701,7 +706,13 @@ export default function ClientFinancialSummary({ client }) {
                                const acc = financialAccounts.find(a => a.id === selectedId);
                                setEditForm(p => ({ ...p, account_id: selectedId, account_name: acc ? acc.name : '' }));
                              }}>
-                               <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
+                               <SelectTrigger className="h-9 text-sm">
+                                 <SelectValue placeholder="Selecione a conta">
+                                   {editForm.account_id
+                                     ? (financialAccounts.find(a => a.id === editForm.account_id)?.name || editForm.account_name || 'Carregando...')
+                                     : 'Sem conta específica'}
+                                 </SelectValue>
+                               </SelectTrigger>
                                <SelectContent>
                                  <SelectItem value="__none__">Sem conta específica</SelectItem>
                                  {financialAccounts.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}

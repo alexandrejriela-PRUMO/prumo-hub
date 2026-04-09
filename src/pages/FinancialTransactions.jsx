@@ -203,7 +203,7 @@ export default function FinancialTransactions() {
 
     manualEntries.forEach(e => {
       const acc = e.account_id ? accountMap[e.account_id] : null;
-      const accountLabel = acc?.name || e.account_name || (e.transaction_type === 'receita' ? 'Receita Manual' : 'Caixa Manual');
+      const accountLabel = acc?.name || e.account_name || '';
 
       if (e.client_property_id && e.transaction_type === 'receita') {
         // Entrada sincronizada do CRM — mostrar com a conta correta, não é editável
@@ -399,7 +399,7 @@ export default function FinancialTransactions() {
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-600 rounded-lg text-xs">
                       {t.sourceIcon==='stripe'?<Zap className="w-3 h-3 text-violet-500"/>:<Banknote className="w-3 h-3"/>}
-                      {t.accountLabel}
+                      {t.accountLabel || '—'}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-600">{t.client||<span className="text-gray-300">—</span>}</td>

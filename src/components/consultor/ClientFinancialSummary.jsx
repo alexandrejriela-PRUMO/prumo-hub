@@ -191,7 +191,7 @@ export default function ClientFinancialSummary({ client }) {
   };
 
   const addNewService = () => {
-    if (!newService.name) { toast.error('Informe o nome do serviço.'); return; }
+    if (!newService.name) { toast.error('Informe o nome do serviço'); return; }
     const serviceValue = parseFloat(newService.value) || 0;
 
     // Para parcelado: estrutura com array installments

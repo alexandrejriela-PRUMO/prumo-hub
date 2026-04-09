@@ -20,7 +20,7 @@ const PAYMENT_METHODS    = ['Boleto','PIX','Cartão de Crédito','Cartão de Dé
 
 const EMPTY = {
   transaction_type: 'despesa', description: '', amount: '', date: '',
-  category: 'Outros', account_id: '', client_name: '', client_property_id: '',
+  category: 'Outros', account_id: '', account_name: '', client_name: '', client_property_id: '',
   status: 'Pago', payment_method: 'PIX', notes: '', attachments: [],
 };
 
@@ -79,7 +79,7 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
   // Sync form when editing changes
   React.useEffect(() => {
     if (open) {
-      if (editing) setForm({ ...EMPTY, ...editing, amount: String(editing.amount), account_id: editing.account_id || '', attachments: editing.attachments || [] });
+      if (editing) setForm({ ...EMPTY, ...editing, amount: String(editing.amount), account_id: editing.account_id || '', account_name: editing.account_name || '', attachments: editing.attachments || [] });
       else setForm({ ...EMPTY, date: format(new Date(), 'yyyy-MM-dd') });
       setClientSearch('');
       setShowQuickAdd(false);
@@ -137,7 +137,7 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
       consultor_email: consultorEmail,
       competencia: form.date.substring(0, 7),
       is_stripe: false,
-      account_name: form.account_name || 'Caixa Manual',
+      account_name: form.account_name || '',
       account_id: form.account_id || '',
       client_name: clientProp?.client_name || form.client_name,
     };
@@ -248,8 +248,12 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
           <div>
             <Label>Conta Financeira</Label>
             <Select value={form.account_id || '__caixa__'} onValueChange={v => {
-              const acc = accounts.find(a => a.id === v);
-              setForm(p => ({ ...p, account_id: v === '__caixa__' ? '' : v, account_name: acc?.name || '' }));
+              if (v === '__caixa__') {
+                setForm(p => ({ ...p, account_id: '', account_name: '' }));
+              } else {
+                const acc = accounts.find(a => a.id === v);
+                setForm(p => ({ ...p, account_id: v, account_name: acc ? acc.name : v }));
+              }
             }}>
               <SelectTrigger><SelectValue placeholder="Caixa Manual (padrão)" /></SelectTrigger>
               <SelectContent>

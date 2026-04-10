@@ -86,71 +86,101 @@ export default function LandingPage() {
 
       {/* ESCOLHA DE PERFIL */}
       {!perfil && (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-900 px-4 pt-16">
-          {/* Blur decorativo */}
+        <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden px-4 pt-16" style={{background: 'linear-gradient(135deg, #0a1628 0%, #0d2b1f 40%, #1a3a2a 70%, #0f1f2e 100%)'}}>
+          {/* Animated background elements */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-20 left-10 w-72 h-72 bg-amber-400/10 rounded-full blur-3xl" />
-            <div className="absolute bottom-20 right-10 w-96 h-96 bg-emerald-400/10 rounded-full blur-3xl" />
+            <div className="absolute top-0 left-0 w-full h-full opacity-20" style={{backgroundImage: 'radial-gradient(circle at 20% 20%, #10b981 0%, transparent 50%), radial-gradient(circle at 80% 80%, #f59e0b 0%, transparent 50%), radial-gradient(circle at 50% 50%, #0ea5e9 0%, transparent 60%)'}} />
+            {/* Grid lines */}
+            <div className="absolute inset-0 opacity-5" style={{backgroundImage: 'linear-gradient(rgba(16,185,129,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(16,185,129,0.5) 1px, transparent 1px)', backgroundSize: '60px 60px'}} />
+            {/* Floating orbs */}
+            <div className="absolute top-1/4 left-10 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute bottom-1/4 right-10 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}} />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-teal-500/5 rounded-full blur-3xl" />
           </div>
 
-          <div className="relative text-center max-w-3xl mx-auto mb-12">
-            <img
-              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/9e64158f0_PRUMO1.png"
-              alt="PRUMO Hub"
-              className="h-16 w-auto object-contain mx-auto mb-8"
-            />
-            <h1 className="text-4xl sm:text-5xl font-bold text-white leading-tight mb-4">
-              Sua propriedade organizada.<br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-amber-500">
-                Sem riscos, sem surpresas.
-              </span>
-            </h1>
-            <p className="text-emerald-200 text-lg max-w-2xl mx-auto">
-              O PRUMO Hub é uma plataforma SaaS desenvolvida para produtores rurais, empresas e consultorias que precisam organizar, monitorar e reduzir riscos ambientais de forma simples, segura e contínua.
-            </p>
-          </div>
+          <div className="relative z-10 w-full max-w-5xl mx-auto">
+            {/* Logo + tagline */}
+            <div className="text-center mb-14">
+              <img
+                src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/9e64158f0_PRUMO1.png"
+                alt="PRUMO Hub"
+                className="h-16 w-auto object-contain mx-auto mb-6 drop-shadow-2xl"
+              />
+              <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-400/20 text-emerald-400 text-xs font-semibold uppercase tracking-widest px-5 py-2 rounded-full mb-5">
+                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
+                Plataforma Agroambiental Inteligente
+              </div>
+              <h1 className="text-4xl sm:text-6xl font-black text-white leading-tight mb-4">
+                Gestão ambiental que
+                <br />
+                <span className="text-transparent bg-clip-text" style={{backgroundImage: 'linear-gradient(90deg, #34d399, #fbbf24, #34d399)', backgroundSize: '200%'}}>
+                  protege quem produz.
+                </span>
+              </h1>
+              <p className="text-slate-400 text-lg max-w-xl mx-auto">
+                Escolha seu perfil e descubra como o PRUMO Hub transforma a gestão da sua propriedade ou consultoria.
+              </p>
+            </div>
 
-          <div className="relative w-full max-w-2xl mx-auto">
-            <p className="text-center text-emerald-300 text-sm font-medium uppercase tracking-widest mb-6">
-              Selecione seu perfil para continuar
-            </p>
-            <div className="grid sm:grid-cols-2 gap-5">
+            {/* Profile cards */}
+            <div className="grid sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
               {/* Produtor */}
               <button
                 onClick={() => setPerfil('produtor')}
-                className="group relative bg-white/5 hover:bg-white/10 border-2 border-white/10 hover:border-emerald-400 rounded-2xl p-8 text-left transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-emerald-900/50"
+                className="group relative text-left rounded-3xl overflow-hidden border border-white/10 hover:border-emerald-400/50 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-emerald-900/60"
+                style={{background: 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(16,185,129,0.03) 100%)'}}
               >
-                <div className="w-16 h-16 bg-emerald-500/20 border border-emerald-400/30 rounded-2xl flex items-center justify-center mb-5 group-hover:bg-emerald-500/30 transition-colors">
-                  <Wheat className="w-8 h-8 text-emerald-300" />
-                </div>
-                <h2 className="text-xl font-bold text-white mb-2">Sou Produtor Rural</h2>
-                <p className="text-emerald-300 text-sm leading-relaxed mb-4">
-                  Proprietário rural, fazendeiro, agricultor ou pecuarista que quer organizar, monitorar e proteger sua propriedade.
-                </p>
-                <div className="flex items-center gap-2 text-emerald-400 text-sm font-semibold">
-                  Ver soluções para produtores <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                {/* Top accent bar */}
+                <div className="h-1 w-full bg-gradient-to-r from-emerald-400 to-teal-500 group-hover:h-1.5 transition-all duration-300" />
+                <div className="p-8">
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="text-5xl">🌾</div>
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-emerald-500/20 text-emerald-300 text-xs font-bold px-3 py-1 rounded-full border border-emerald-400/30">
+                      Entrar →
+                    </div>
+                  </div>
+                  <h2 className="text-2xl font-black text-white mb-3">Produtor Rural</h2>
+                  <p className="text-slate-400 text-sm leading-relaxed mb-6">
+                    Proprietário, fazendeiro, agricultor ou pecuarista que quer organizar, monitorar e proteger sua propriedade.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {['CAR & PRAD', 'Alertas MapBiomas', 'Licenças', 'IA Rute'].map(tag => (
+                      <span key={tag} className="text-xs bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-full">{tag}</span>
+                    ))}
+                  </div>
                 </div>
               </button>
 
               {/* Consultor */}
               <button
                 onClick={() => setPerfil('consultor')}
-                className="group relative bg-white/5 hover:bg-white/10 border-2 border-white/10 hover:border-amber-400 rounded-2xl p-8 text-left transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-amber-900/30"
+                className="group relative text-left rounded-3xl overflow-hidden border border-white/10 hover:border-amber-400/50 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-amber-900/40"
+                style={{background: 'linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(245,158,11,0.03) 100%)'}}
               >
-                <div className="w-16 h-16 bg-amber-500/20 border border-amber-400/30 rounded-2xl flex items-center justify-center mb-5 group-hover:bg-amber-500/30 transition-colors">
-                  <Briefcase className="w-8 h-8 text-amber-300" />
-                </div>
-                <h2 className="text-xl font-bold text-white mb-2">Sou Consultor Ambiental</h2>
-                <p className="text-amber-200/70 text-sm leading-relaxed mb-4">
-                  Engenheiro ambiental, agrônomo, advogado ou técnico que presta consultoria para produtores e empresas.
-                </p>
-                <div className="flex items-center gap-2 text-amber-400 text-sm font-semibold">
-                  Ver soluções para consultores <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                {/* Top accent bar */}
+                <div className="h-1 w-full bg-gradient-to-r from-amber-400 to-orange-500 group-hover:h-1.5 transition-all duration-300" />
+                <div className="p-8">
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="text-5xl">🧑‍💼</div>
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-amber-500/20 text-amber-300 text-xs font-bold px-3 py-1 rounded-full border border-amber-400/30">
+                      Entrar →
+                    </div>
+                  </div>
+                  <h2 className="text-2xl font-black text-white mb-3">Consultor Ambiental</h2>
+                  <p className="text-slate-400 text-sm leading-relaxed mb-6">
+                    Engenheiro, agrônomo, advogado ou técnico que presta consultoria ambiental para produtores e empresas.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {['CRM Prumo', 'Contratos', 'Financeiro', 'Equipe'].map(tag => (
+                      <span key={tag} className="text-xs bg-amber-500/10 border border-amber-500/20 text-amber-300 px-2.5 py-1 rounded-full">{tag}</span>
+                    ))}
+                  </div>
                 </div>
               </button>
             </div>
 
-            <p className="text-center text-emerald-500 text-xs mt-8">
+            {/* Bottom hint */}
+            <p className="text-center text-slate-600 text-xs mt-8">
               Você pode trocar de perfil a qualquer momento pelo menu superior.
             </p>
           </div>

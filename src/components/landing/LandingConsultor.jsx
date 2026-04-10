@@ -4,7 +4,7 @@ import {
   BarChart3, MessageCircle, Briefcase, Building2,
   Smartphone, Globe, Lock, Award, Crown, Send, Mail, Phone, User,
   ClipboardList, ScrollText, Users, ReceiptText, Map, Leaf,
-  Sparkles, TrendingUp, Scale
+  Sparkles, TrendingUp, Scale, AlertTriangle, MapPin
 } from 'lucide-react';
 
 const diferenciais = [
@@ -63,6 +63,20 @@ const diferenciais = [
     title: 'Central da Propriedade do Cliente',
     desc: 'Acesse CAR, licenças, laudos, mapas, alertas e documentos de todos os seus clientes de um único painel.',
     color: 'from-teal-500 to-cyan-600',
+  },
+  {
+    icon: AlertTriangle,
+    title: 'Alertas de Infrações + Termômetro de Regularidade',
+    desc: 'Acompanhe alertas ambientais dos seus clientes em tempo real com termômetro de regularidade da propriedade — antecipe riscos e aja antes que virem problemas jurídicos.',
+    color: 'from-red-500 to-orange-500',
+    highlight: true,
+  },
+  {
+    icon: MapPin,
+    title: 'Integração MapBiomas + DOE-FEPAM/RS',
+    desc: 'API integrada com alertas de satélite do MapBiomas e monitoramento de notificações iniciais dos processos administrativos no DOE-FEPAM/RS para todos os seus clientes.',
+    color: 'from-blue-500 to-cyan-600',
+    highlight: true,
   },
   {
     icon: MessageCircle,

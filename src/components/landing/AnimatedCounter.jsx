@@ -7,44 +7,42 @@ const stats = [
   { value: 98, suffix: '%', label: 'Satisfação dos Clientes' },
 ];
 
-function animateCount(to, duration, onUpdate, onDone) {
-  const start = performance.now();
-  const tick = (now) => {
-    const elapsed = now - start;
-    const progress = Math.min(elapsed / duration, 1);
-    onUpdate(Math.floor(progress * to));
-    if (progress < 1) requestAnimationFrame(tick);
-    else onDone();
-  };
-  requestAnimationFrame(tick);
-}
-
 export default function AnimatedCounter() {
   const containerRef = useRef(null);
-  const [counts, setCounts] = useState(stats.map(() => 0));
-  const [started, setStarted] = useState(false);
+  const [counts, setCounts] = useState([0, 0, 0, 0]);
+  const startedRef = useRef(false);
 
   useEffect(() => {
     const obs = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !started) {
-          setStarted(true);
+        if (entry.isIntersecting && !startedRef.current) {
+          startedRef.current = true;
           obs.disconnect();
-          stats.forEach((s, i) => {
-            animateCount(
-              s.value,
-              1600,
-              (val) => setCounts(prev => { const next = [...prev]; next[i] = val; return next; }),
-              () => setCounts(prev => { const next = [...prev]; next[i] = s.value; return next; })
-            );
-          });
+
+          const duration = 1800;
+          const startTime = performance.now();
+
+          const tick = (now) => {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            // ease out
+            const eased = 1 - Math.pow(1 - progress, 3);
+
+            setCounts(stats.map(s => Math.floor(eased * s.value)));
+
+            if (progress < 1) requestAnimationFrame(tick);
+            else setCounts(stats.map(s => s.value));
+          };
+
+          requestAnimationFrame(tick);
         }
       },
       { threshold: 0.1 }
     );
+
     if (containerRef.current) obs.observe(containerRef.current);
     return () => obs.disconnect();
-  }, [started]);
+  }, []);
 
   return (
     <div ref={containerRef} className="w-full py-8 sm:py-12 px-4">

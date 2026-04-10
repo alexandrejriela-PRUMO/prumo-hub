@@ -194,6 +194,39 @@ export default function LandingProdutor({ onLogin }) {
   const [billing, setBilling] = useState('monthly');
   return (
     <div className="pt-16">
+      {/* HERO */}
+      <section className="py-20 bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-900 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-10 right-10 w-96 h-96 bg-emerald-400 rounded-full blur-3xl" />
+          <div className="absolute bottom-10 left-10 w-80 h-80 bg-amber-400 rounded-full blur-3xl" />
+        </div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-semibold uppercase tracking-wider px-4 py-2 rounded-full mb-6">
+              <Wheat className="w-3.5 h-3.5" />
+              Para Produtores Rurais
+            </div>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
+              Sua propriedade organizada.<br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-400">
+                Sem riscos, sem surpresas.
+              </span>
+            </h1>
+            <p className="text-lg text-emerald-100/80 mb-8 leading-relaxed">
+              O PRUMO Hub reúne <strong className="text-white">gestão ambiental, documentos, licenças, CAR, mapas e alertas</strong> em uma única plataforma — para o produtor rural que quer segurança jurídica e controle total da propriedade.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button onClick={onLogin} className="flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold px-8 py-4 rounded-2xl shadow-xl transition-all hover:scale-105">
+                Começar gratuitamente <ArrowRight className="w-5 h-5" />
+              </button>
+              <a href="#contato" className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white font-semibold px-8 py-4 rounded-2xl border border-white/20 transition-all">
+                Falar com especialista
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="diferenciais" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">

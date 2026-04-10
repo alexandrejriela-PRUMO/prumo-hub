@@ -1,0 +1,146 @@
+{
+  "name": "Expense",
+  "type": "object",
+  "properties": {
+    "consultor_email": {
+      "type": "string"
+    },
+    "transaction_type": {
+      "type": "string",
+      "enum": [
+        "receita",
+        "despesa"
+      ],
+      "default": "despesa"
+    },
+    "description": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "number"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "competencia": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Cobran\u00e7a de Cliente (Manual)",
+        "Outros Servi\u00e7os Prestados",
+        "Aluguel / Escrit\u00f3rio",
+        "Sal\u00e1rios / Pr\u00f3-labore",
+        "Marketing / Publicidade",
+        "Tecnologia / Software",
+        "Deslocamento / Combust\u00edvel",
+        "Equipamentos",
+        "Impostos / Taxas",
+        "Servi\u00e7os de Terceiros",
+        "Materiais de Escrit\u00f3rio",
+        "Treinamento / Cursos",
+        "Outros"
+      ],
+      "default": "Outros"
+    },
+    "account_id": {
+      "type": "string"
+    },
+    "account_name": {
+      "type": "string"
+    },
+    "client_name": {
+      "type": "string"
+    },
+    "client_property_id": {
+      "type": "string",
+      "description": "ID da Property vinculada ao cliente"
+    },
+    "is_stripe": {
+      "type": "boolean",
+      "default": false
+    },
+    "stripe_charge_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Pago",
+        "Pendente",
+        "Cancelado"
+      ],
+      "default": "Pago"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "Boleto",
+        "PIX",
+        "Cart\u00e3o de Cr\u00e9dito",
+        "Cart\u00e3o de D\u00e9bito",
+        "Transfer\u00eancia",
+        "Dinheiro",
+        "Outro"
+      ],
+      "default": "PIX"
+    },
+    "payment_type": {
+      "type": "string",
+      "enum": [
+        "avista",
+        "parcelado"
+      ],
+      "default": "avista"
+    },
+    "installment_number": {
+      "type": "number",
+      "description": "N\u00famero desta parcela (1-based)"
+    },
+    "installment_total": {
+      "type": "number",
+      "description": "Total de parcelas do servi\u00e7o"
+    },
+    "installment_due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de vencimento desta parcela"
+    },
+    "installment_received_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data em que esta parcela foi recebida"
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "default": [],
+      "description": "Anexos (fotos, comprovantes, documentos)"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "consultor_email",
+    "description",
+    "amount",
+    "date",
+    "transaction_type"
+  ]
+}

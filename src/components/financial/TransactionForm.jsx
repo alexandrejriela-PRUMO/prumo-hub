@@ -8,23 +8,46 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import {
-  TrendingUp, TrendingDown, Zap, Upload, X, FileText,
-  Image as ImageIcon, Plus, Search, UserPlus, Loader2
+  TrendingUp, TrendingDown, Upload, X, FileText,
+  Image as ImageIcon, Plus, Search, UserPlus, Loader2, Layers, Calendar
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, addMonths, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 
 const EXPENSE_CATEGORIES = ['Aluguel / Escritório','Salários / Pró-labore','Marketing / Publicidade','Tecnologia / Software','Deslocamento / Combustível','Equipamentos','Impostos / Taxas','Serviços de Terceiros','Materiais de Escritório','Treinamento / Cursos','Outros'];
 const INCOME_CATEGORIES  = ['Cobrança de Cliente (Manual)','Outros Serviços Prestados','Outros'];
 const PAYMENT_METHODS    = ['Boleto','PIX','Cartão de Crédito','Cartão de Débito','Transferência','Dinheiro','Outro'];
 
-const EMPTY = {
-  transaction_type: 'despesa', description: '', amount: '', date: '',
-  category: 'Outros', account_id: '', account_name: '', client_name: '', client_property_id: '',
-  status: 'Pago', payment_method: 'PIX', notes: '', attachments: [],
+const EMPTY_BASE = {
+  transaction_type: 'receita', description: '', date: '',
+  category: 'Cobrança de Cliente (Manual)', account_id: '', account_name: '',
+  client_name: '', client_property_id: '',
+  payment_type: 'avista', // 'avista' | 'parcelado'
+  // à vista
+  amount: '', status: 'Pendente', payment_method: 'PIX', notes: '', attachments: [],
+  // parcelado
+  num_installments: 2,
+  installments: [], // array of { number, amount, due_date, received, received_date, payment_method, account_id, account_name, status, notes }
 };
 
-// Quick add client form (minimal)
+function buildInstallments(total, count, firstDate, defaultAccountId, defaultAccountName, defaultMethod) {
+  const amt = parseFloat(total) || 0;
+  const perParcela = count > 0 ? parseFloat((amt / count).toFixed(2)) : 0;
+  const base = firstDate ? parseISO(firstDate) : new Date();
+  return Array.from({ length: count }, (_, i) => ({
+    number: i + 1,
+    amount: perParcela,
+    due_date: format(addMonths(base, i), 'yyyy-MM-dd'),
+    received: false,
+    received_date: '',
+    payment_method: defaultMethod || 'PIX',
+    account_id: defaultAccountId || '',
+    account_name: defaultAccountName || '',
+    status: 'Pendente',
+    notes: '',
+  }));
+}
+
 function QuickAddClient({ consultorEmail, onCreated, onCancel }) {
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');
@@ -41,12 +64,6 @@ function QuickAddClient({ consultorEmail, onCreated, onCancel }) {
       client_name: name,
       client_contact: contact,
     });
-    await base44.entities.ClientCRM.create({
-      property_id: prop.id,
-      consultor_email: consultorEmail,
-      client_email: '',
-      status: 'Ativo',
-    });
     setLoading(false);
     toast.success('Cliente cadastrado!');
     onCreated({ id: prop.id, client_name: name });
@@ -62,7 +79,7 @@ function QuickAddClient({ consultorEmail, onCreated, onCancel }) {
       <div className="flex gap-2 justify-end">
         <Button variant="outline" size="sm" onClick={onCancel}>Cancelar</Button>
         <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={handleCreate} disabled={loading}>
-          {loading?<Loader2 className="w-3.5 h-3.5 animate-spin"/>:'Criar Cliente'}
+          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin"/> : 'Criar Cliente'}
         </Button>
       </div>
     </div>
@@ -70,22 +87,25 @@ function QuickAddClient({ consultorEmail, onCreated, onCancel }) {
 }
 
 export default function TransactionForm({ open, onClose, editing, consultorEmail, accounts = [] }) {
-  const [form, setForm] = useState(EMPTY);
+  const [form, setForm] = useState(EMPTY_BASE);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [clientSearch, setClientSearch] = useState('');
   const [uploadingIdx, setUploadingIdx] = useState(null);
+  const [saving, setSaving] = useState(false);
   const qc = useQueryClient();
 
-  // Sync form when editing changes
-  React.useEffect(() => {
+  const isReceita = form.transaction_type === 'receita';
+  const isParcelado = form.payment_type === 'parcelado' && isReceita;
+
+  useEffect(() => {
     if (open) {
       if (editing) {
         const accId = editing.account_id || '';
         const accFromList = accId ? accounts.find(a => a.id === accId) : null;
         const accName = accFromList?.name || editing.account_name || '';
-        setForm({ ...EMPTY, ...editing, amount: String(editing.amount), account_id: accId, account_name: accName, attachments: editing.attachments || [] });
+        setForm({ ...EMPTY_BASE, ...editing, amount: String(editing.amount), account_id: accId, account_name: accName, attachments: editing.attachments || [], payment_type: 'avista', installments: [] });
       } else {
-        setForm({ ...EMPTY, date: format(new Date(), 'yyyy-MM-dd') });
+        setForm({ ...EMPTY_BASE, date: format(new Date(), 'yyyy-MM-dd') });
       }
       setClientSearch('');
       setShowQuickAdd(false);
@@ -98,25 +118,47 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
     enabled: !!consultorEmail,
   });
 
-  const createMutation = useMutation({
-    mutationFn: (d) => base44.entities.Expense.create(d),
-    onSuccess: () => { qc.invalidateQueries(['fin-manual']); onClose(); toast.success('Transação adicionada!'); },
-  });
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Expense.update(id, data),
-    onSuccess: () => { qc.invalidateQueries(['fin-manual']); onClose(); toast.success('Transação atualizada!'); },
-  });
-
   const setF = (key, val) => setForm(p => ({ ...p, [key]: val }));
-
-  const isReceita = form.transaction_type === 'receita';
 
   const filteredClients = useMemo(() => {
     const q = clientSearch.toLowerCase();
     return properties.filter(p => p.client_name?.toLowerCase().includes(q) || p.property_name?.toLowerCase().includes(q)).slice(0, 20);
   }, [properties, clientSearch]);
 
-  // File upload
+  // Rebuild installments when count/total/date change (parcelado mode)
+  const rebuildInstallments = (overrides = {}) => {
+    const f = { ...form, ...overrides };
+    const count = parseInt(f.num_installments) || 2;
+    const insts = buildInstallments(f.amount, count, f.date, f.account_id, f.account_name, f.payment_method);
+    setForm(p => ({ ...p, ...overrides, installments: insts }));
+  };
+
+  const setInstallment = (idx, key, val) => {
+    setForm(p => {
+      const insts = [...(p.installments || [])];
+      insts[idx] = { ...insts[idx], [key]: val };
+      // If received toggled on and no received_date, set today
+      if (key === 'received' && val && !insts[idx].received_date) {
+        insts[idx].received_date = format(new Date(), 'yyyy-MM-dd');
+        insts[idx].status = 'Pago';
+      }
+      if (key === 'received' && !val) {
+        insts[idx].status = 'Pendente';
+      }
+      return { ...p, installments: insts };
+    });
+  };
+
+  const setInstallmentAccount = (idx, accId) => {
+    const acc = accounts.find(a => a.id === accId);
+    setForm(p => {
+      const insts = [...(p.installments || [])];
+      insts[idx] = { ...insts[idx], account_id: accId || '', account_name: acc?.name || '' };
+      return { ...p, installments: insts };
+    });
+  };
+
+  // File upload (for à vista only)
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
@@ -124,66 +166,83 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
       const idx = form.attachments.length;
       setUploadingIdx(idx);
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const att = { name: file.name, url: file_url, type: file.type };
-      setForm(p => ({ ...p, attachments: [...p.attachments, att] }));
+      setForm(p => ({ ...p, attachments: [...p.attachments, { name: file.name, url: file_url, type: file.type }] }));
       setUploadingIdx(null);
     }
     e.target.value = '';
   };
-
   const removeAttachment = (idx) => setForm(p => ({ ...p, attachments: p.attachments.filter((_, i) => i !== idx) }));
 
   const handleSubmit = async () => {
-    if (!form.description || !form.amount || !form.date) { toast.error('Preencha descrição, valor e data.'); return; }
-    if (isReceita && !form.client_property_id) { toast.error('Selecione um cliente para a receita.'); return; }
-    const clientProp = properties.find(p => p.id === form.client_property_id);
-    const payload = {
-      ...form,
-      amount: parseFloat(form.amount),
-      consultor_email: consultorEmail,
-      competencia: form.date.substring(0, 7),
-      is_stripe: false,
-      account_name: form.account_name || '',
-      account_id: form.account_id || '',
-      client_name: clientProp?.client_name || form.client_name,
-    };
+    if (!form.description) { toast.error('Informe a descrição do serviço/transação.'); return; }
+    if (!form.date) { toast.error('Informe a data.'); return; }
+    if (isReceita && !form.client_property_id) { toast.error('Selecione um cliente.'); return; }
 
-    if (editing) {
-      updateMutation.mutate({ id: editing.id, data: payload });
-    } else {
-      createMutation.mutate(payload, {
-        onSuccess: async () => {
-          // Se for receita vinculada a um cliente, adicionar também como serviço no CRM
-          if (isReceita && form.client_property_id) {
-            try {
-              const crmList = await base44.entities.ClientCRM.filter({ consultor_email: consultorEmail });
-              const crm = crmList.find(c => c.property_id === form.client_property_id);
-              if (crm) {
-                const newService = {
-                  name: form.description,
-                  status: 'Contratado',
-                  value: parseFloat(form.amount),
-                  notes: form.notes || '',
-                  payment_type: 'avista',
-                  payment_method: form.payment_method || 'PIX',
-                  start_date: form.date,
-                  installments: [],
-                  received: form.status === 'Pago',
-                  received_at: form.status === 'Pago' ? new Date(form.date + 'T12:00:00').toISOString() : null,
-                  account_id: form.account_id || null,
-                };
-                const updatedServices = [...(crm.services || []), newService];
-                await base44.entities.ClientCRM.update(crm.id, { services: updatedServices });
-                qc.invalidateQueries(['client-crm-financial', crm.id]);
-                qc.invalidateQueries(['consultor-crm-clients']);
-                qc.invalidateQueries(['crm-board-list']);
-              }
-            } catch (err) {
-              console.warn('Não foi possível vincular ao CRM:', err);
-            }
-          }
-        },
-      });
+    const clientProp = properties.find(p => p.id === form.client_property_id);
+    const clientName = clientProp?.client_name || form.client_name || '';
+
+    setSaving(true);
+    try {
+      if (isParcelado) {
+        if (!form.amount || parseFloat(form.amount) <= 0) { toast.error('Informe o valor total.'); setSaving(false); return; }
+        const count = parseInt(form.num_installments) || 2;
+        const insts = form.installments.length === count ? form.installments : buildInstallments(form.amount, count, form.date, form.account_id, form.account_name, form.payment_method);
+        // Create one Expense per installment
+        const records = insts.map(inst => ({
+          consultor_email: consultorEmail,
+          transaction_type: 'receita',
+          description: `${form.description} (${inst.number}/${count})`,
+          amount: parseFloat(inst.amount) || 0,
+          date: inst.received && inst.received_date ? inst.received_date : inst.due_date,
+          competencia: inst.due_date?.substring(0, 7),
+          category: form.category || 'Cobrança de Cliente (Manual)',
+          account_id: inst.account_id || '',
+          account_name: inst.account_name || '',
+          client_name: clientName,
+          client_property_id: form.client_property_id || '',
+          is_stripe: false,
+          status: inst.received ? 'Pago' : 'Pendente',
+          payment_method: inst.payment_method || 'PIX',
+          notes: inst.notes || form.notes || '',
+          attachments: [],
+          // Store installment metadata
+          installment_number: inst.number,
+          installment_total: count,
+          installment_due_date: inst.due_date,
+          installment_received_date: inst.received_date || null,
+        }));
+        await Promise.all(records.map(r => base44.entities.Expense.create(r)));
+        toast.success(`${count} parcelas registradas!`);
+      } else {
+        if (!form.amount || parseFloat(form.amount) <= 0) { toast.error('Informe o valor.'); setSaving(false); return; }
+        const payload = {
+          ...form,
+          amount: parseFloat(form.amount),
+          consultor_email: consultorEmail,
+          competencia: form.date.substring(0, 7),
+          is_stripe: false,
+          account_name: form.account_name || '',
+          account_id: form.account_id || '',
+          client_name: clientName,
+          installment_number: null,
+          installment_total: null,
+          installment_due_date: null,
+          installment_received_date: null,
+        };
+        if (editing) {
+          await base44.entities.Expense.update(editing.id, payload);
+          toast.success('Transação atualizada!');
+        } else {
+          await base44.entities.Expense.create(payload);
+          toast.success('Transação registrada!');
+        }
+      }
+      qc.invalidateQueries(['fin-manual']);
+      onClose();
+    } catch (err) {
+      toast.error('Erro ao salvar: ' + err.message);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -192,7 +251,7 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-emerald-800">{editing ? 'Editar Transação' : 'Nova Transação Manual'}</DialogTitle>
         </DialogHeader>
@@ -201,7 +260,7 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
         <div className="flex gap-2">
           <button onClick={() => setF('transaction_type', 'receita')}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${isReceita ? 'bg-emerald-50 border-emerald-500 text-emerald-700' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'}`}>
-            <TrendingUp className="w-4 h-4" />Receita
+            <TrendingUp className="w-4 h-4" />Receita / Serviço
           </button>
           <button onClick={() => setF('transaction_type', 'despesa')}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${!isReceita ? 'bg-red-50 border-red-400 text-red-700' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'}`}>
@@ -209,32 +268,17 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
           </button>
         </div>
 
-        {isReceita && (
-          <div className="flex items-center gap-2 p-3 bg-violet-50 rounded-lg border border-violet-100 text-xs text-violet-700">
-            <Zap className="w-4 h-4 flex-shrink-0" />
-            <span>Receitas via <strong>Stripe</strong> aparecem automaticamente. Use aqui para receitas <strong>não vinculadas ao Stripe</strong>.</span>
-          </div>
-        )}
-
         <div className="space-y-4">
-          {/* Client selector — obrigatório para receita */}
+          {/* Client selector */}
           {isReceita && (
             <div>
-              <Label className="flex items-center gap-1">
-                Cliente <span className="text-red-500">*</span>
-                <span className="text-xs text-gray-400 font-normal ml-1">(obrigatório para receitas)</span>
-              </Label>
+              <Label className="flex items-center gap-1">Cliente <span className="text-red-500">*</span></Label>
               {selectedClient ? (
                 <div className="flex items-center gap-2 mt-1 p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl">
                   <div className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
                     {selectedClient.client_name?.[0]?.toUpperCase() || '?'}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-emerald-800 truncate">{selectedClient.client_name}</p>
-                    {selectedClient.property_name && !selectedClient.is_client_only && (
-                      <p className="text-xs text-emerald-600 truncate">{selectedClient.property_name}</p>
-                    )}
-                  </div>
+                  <p className="text-sm font-semibold text-emerald-800 flex-1 truncate">{selectedClient.client_name}</p>
                   <button onClick={() => setF('client_property_id', '')} className="p-1 hover:bg-emerald-100 rounded-lg">
                     <X className="w-3.5 h-3.5 text-emerald-600" />
                   </button>
@@ -243,8 +287,7 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
                 <div className="mt-1 space-y-2">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input value={clientSearch} onChange={e => setClientSearch(e.target.value)}
-                      placeholder="Buscar cliente cadastrado..." className="pl-9" />
+                    <Input value={clientSearch} onChange={e => setClientSearch(e.target.value)} placeholder="Buscar cliente..." className="pl-9" />
                   </div>
                   {clientSearch && (
                     <div className="border border-gray-200 rounded-xl overflow-hidden max-h-44 overflow-y-auto">
@@ -256,10 +299,7 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
                           <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
                             {p.client_name?.[0]?.toUpperCase() || '?'}
                           </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-gray-800 truncate">{p.client_name || p.property_name}</p>
-                            {!p.is_client_only && p.property_name && <p className="text-xs text-gray-400 truncate">{p.property_name}</p>}
-                          </div>
+                          <p className="text-sm font-medium text-gray-800 truncate">{p.client_name || p.property_name}</p>
                         </button>
                       ))}
                     </div>
@@ -278,33 +318,8 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
           )}
 
           <div>
-            <Label>Descrição *</Label>
-            <Input value={form.description} onChange={e => setF('description', e.target.value)} placeholder="Ex: Consultoria ambiental" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div><Label>Valor (R$) *</Label><Input type="number" step="0.01" value={form.amount} onChange={e => setF('amount', e.target.value)} placeholder="0,00" /></div>
-            <div><Label>Data *</Label><Input type="date" value={form.date} onChange={e => setF('date', e.target.value)} /></div>
-          </div>
-
-          <div>
-            <Label>Conta Financeira</Label>
-            <Select value={form.account_id || ''} onValueChange={v => {
-              if (v === '') {
-                setF('account_id', '');
-                setF('account_name', '');
-              } else {
-                const acc = accounts.find(a => a.id === v);
-                setF('account_id', v);
-                setF('account_name', acc?.name || v);
-              }
-            }}>
-              <SelectTrigger><SelectValue placeholder="Sem Conta Específica" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value={null}>Sem Conta Específica</SelectItem>
-                {accounts.filter(a => !a.is_stripe).map(a => <SelectItem key={a.id} value={a.id}>{a.name} · {a.account_type}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <Label>Descrição / Serviço *</Label>
+            <Input value={form.description} onChange={e => setF('description', e.target.value)} placeholder="Ex: Consultoria ambiental — Fazenda Boa Vista" />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -316,56 +331,213 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
               </Select>
             </div>
             <div>
-              <Label>Status</Label>
-              <Select value={form.status} onValueChange={v => setF('status', v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Pago">Pago</SelectItem>
-                  <SelectItem value="Pendente">Pendente</SelectItem>
-                  <SelectItem value="Cancelado">Cancelado</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>{isParcelado ? 'Data da 1ª Parcela' : 'Data *'}</Label>
+              <Input type="date" value={form.date} onChange={e => setF('date', e.target.value)} />
             </div>
           </div>
 
-          <div>
-            <Label>Forma de Pagamento</Label>
-            <Select value={form.payment_method} onValueChange={v => setF('payment_method', v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{PAYMENT_METHODS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
+          {/* Payment type toggle — only for receita and new records */}
+          {isReceita && !editing && (
+            <div>
+              <Label className="mb-2 block">Tipo de Pagamento</Label>
+              <div className="flex gap-2">
+                <button onClick={() => setF('payment_type', 'avista')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium border-2 transition-all ${!isParcelado ? 'bg-blue-50 border-blue-400 text-blue-700' : 'bg-white border-gray-200 text-gray-500'}`}>
+                  À Vista
+                </button>
+                <button onClick={() => { rebuildInstallments({ payment_type: 'parcelado' }); }}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium border-2 transition-all ${isParcelado ? 'bg-amber-50 border-amber-400 text-amber-700' : 'bg-white border-gray-200 text-gray-500'}`}>
+                  <Layers className="w-4 h-4" />Parcelado
+                </button>
+              </div>
+            </div>
+          )}
 
-          {/* Attachments */}
-          <div>
-            <Label className="flex items-center gap-2 mb-2">
-              <Upload className="w-3.5 h-3.5" />Comprovantes / Documentos
-            </Label>
-            {form.attachments.length > 0 && (
-              <div className="space-y-1.5 mb-2">
-                {form.attachments.map((att, i) => (
-                  <div key={i} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
-                    {att.type?.startsWith('image/') ? <ImageIcon className="w-4 h-4 text-blue-500 flex-shrink-0" /> : <FileText className="w-4 h-4 text-gray-500 flex-shrink-0" />}
-                    <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline flex-1 truncate">{att.name}</a>
-                    <button onClick={() => removeAttachment(i)} className="p-0.5 hover:bg-gray-200 rounded"><X className="w-3 h-3 text-gray-400" /></button>
+          {/* Parcelado config */}
+          {isParcelado && (
+            <div className="border border-amber-200 bg-amber-50/40 rounded-xl p-4 space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label className="text-xs">Valor Total (R$) *</Label>
+                  <Input type="number" step="0.01" value={form.amount}
+                    onChange={e => rebuildInstallments({ amount: e.target.value })}
+                    placeholder="0,00" />
+                </div>
+                <div>
+                  <Label className="text-xs">Nº de Parcelas</Label>
+                  <Input type="number" min={2} max={60} value={form.num_installments}
+                    onChange={e => rebuildInstallments({ num_installments: parseInt(e.target.value) || 2 })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Forma Padrão</Label>
+                  <Select value={form.payment_method} onValueChange={v => rebuildInstallments({ payment_method: v })}>
+                    <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>{PAYMENT_METHODS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Default account */}
+              <div>
+                <Label className="text-xs">Conta Padrão</Label>
+                <Select value={form.account_id || ''} onValueChange={v => {
+                  const acc = accounts.find(a => a.id === v);
+                  rebuildInstallments({ account_id: v || '', account_name: acc?.name || '' });
+                }}>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecionar conta" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={null}>Sem conta específica</SelectItem>
+                    {accounts.filter(a => !a.is_stripe).map(a => <SelectItem key={a.id} value={a.id}>{a.name} · {a.account_type}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Installments table */}
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-amber-800 flex items-center gap-1"><Calendar className="w-3.5 h-3.5"/>Parcelas</p>
+                {(form.installments || []).map((inst, idx) => (
+                  <div key={idx} className={`rounded-lg border p-3 space-y-2 ${inst.received ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-gray-200'}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-gray-700">Parcela {inst.number}/{form.num_installments}</span>
+                      <Badge className={`text-xs border-0 ${inst.received ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                        {inst.received ? 'Recebido' : 'Pendente'}
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-xs text-gray-500">Valor (R$)</Label>
+                        <Input type="number" step="0.01" className="h-8 text-sm"
+                          value={inst.amount}
+                          onChange={e => setInstallment(idx, 'amount', parseFloat(e.target.value) || 0)} />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-500">Vencimento</Label>
+                        <Input type="date" className="h-8 text-sm"
+                          value={inst.due_date}
+                          onChange={e => setInstallment(idx, 'due_date', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-500">Forma de Pagamento</Label>
+                        <Select value={inst.payment_method} onValueChange={v => setInstallment(idx, 'payment_method', v)}>
+                          <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                          <SelectContent>{PAYMENT_METHODS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-500">Conta (Banco)</Label>
+                        <Select value={inst.account_id || ''} onValueChange={v => setInstallmentAccount(idx, v)}>
+                          <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="—" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={null}>—</SelectItem>
+                            {accounts.filter(a => !a.is_stripe).map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={!!inst.received}
+                          onChange={e => setInstallment(idx, 'received', e.target.checked)}
+                          className="rounded" />
+                        <span className="text-xs text-gray-600 font-medium">Recebido</span>
+                      </label>
+                      {inst.received && (
+                        <div className="flex items-center gap-1.5">
+                          <Label className="text-xs text-gray-500">em</Label>
+                          <Input type="date" className="h-7 text-xs w-36"
+                            value={inst.received_date || ''}
+                            onChange={e => setInstallment(idx, 'received_date', e.target.value)} />
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-500">Observação da parcela</Label>
+                      <Input className="h-8 text-sm" value={inst.notes || ''}
+                        onChange={e => setInstallment(idx, 'notes', e.target.value)}
+                        placeholder="Opcional" />
+                    </div>
                   </div>
                 ))}
               </div>
-            )}
-            <label className={`flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-emerald-400 hover:bg-emerald-50 transition-colors text-sm text-gray-500 ${uploadingIdx !== null ? 'opacity-50 pointer-events-none' : ''}`}>
-              {uploadingIdx !== null ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-              {uploadingIdx !== null ? 'Enviando...' : 'Clique para anexar foto ou documento'}
-              <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" className="hidden" onChange={handleFileUpload} />
-            </label>
-          </div>
+            </div>
+          )}
 
-          <div><Label>Observações</Label><Input value={form.notes} onChange={e => setF('notes', e.target.value)} placeholder="Notas adicionais" /></div>
+          {/* À vista fields */}
+          {!isParcelado && (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Valor (R$) *</Label><Input type="number" step="0.01" value={form.amount} onChange={e => setF('amount', e.target.value)} placeholder="0,00" /></div>
+                <div>
+                  <Label>Status</Label>
+                  <Select value={form.status} onValueChange={v => setF('status', v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Pago">Pago</SelectItem>
+                      <SelectItem value="Pendente">Pendente</SelectItem>
+                      <SelectItem value="Cancelado">Cancelado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Conta Financeira</Label>
+                  <Select value={form.account_id || ''} onValueChange={v => {
+                    const acc = accounts.find(a => a.id === v);
+                    setF('account_id', v || '');
+                    setF('account_name', acc?.name || '');
+                  }}>
+                    <SelectTrigger><SelectValue placeholder="Sem Conta Específica" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={null}>Sem Conta Específica</SelectItem>
+                      {accounts.filter(a => !a.is_stripe).map(a => <SelectItem key={a.id} value={a.id}>{a.name} · {a.account_type}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Forma de Pagamento</Label>
+                  <Select value={form.payment_method} onValueChange={v => setF('payment_method', v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{PAYMENT_METHODS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Attachments */}
+              <div>
+                <Label className="flex items-center gap-2 mb-2"><Upload className="w-3.5 h-3.5"/>Comprovantes</Label>
+                {form.attachments.length > 0 && (
+                  <div className="space-y-1.5 mb-2">
+                    {form.attachments.map((att, i) => (
+                      <div key={i} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                        {att.type?.startsWith('image/') ? <ImageIcon className="w-4 h-4 text-blue-500 flex-shrink-0"/> : <FileText className="w-4 h-4 text-gray-500 flex-shrink-0"/>}
+                        <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline flex-1 truncate">{att.name}</a>
+                        <button onClick={() => removeAttachment(i)}><X className="w-3 h-3 text-gray-400"/></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <label className={`flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-emerald-400 hover:bg-emerald-50 transition-colors text-sm text-gray-500 ${uploadingIdx !== null ? 'opacity-50 pointer-events-none' : ''}`}>
+                  {uploadingIdx !== null ? <Loader2 className="w-4 h-4 animate-spin"/> : <Upload className="w-4 h-4"/>}
+                  {uploadingIdx !== null ? 'Enviando...' : 'Anexar comprovante'}
+                  <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" className="hidden" onChange={handleFileUpload}/>
+                </label>
+              </div>
+
+              <div><Label>Observações</Label><Input value={form.notes} onChange={e => setF('notes', e.target.value)} placeholder="Notas adicionais"/></div>
+            </>
+          )}
+
+          {/* Notes for parcelado */}
+          {isParcelado && (
+            <div><Label>Observações gerais</Label><Input value={form.notes} onChange={e => setF('notes', e.target.value)} placeholder="Notas do serviço"/></div>
+          )}
 
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={handleSubmit}
-              disabled={createMutation.isPending || updateMutation.isPending}>
-              {createMutation.isPending || updateMutation.isPending ? 'Salvando...' : 'Salvar'}
+            <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={handleSubmit} disabled={saving}>
+              {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-1"/>Salvando...</> : isParcelado ? `Registrar ${form.num_installments} Parcelas` : 'Salvar'}
             </Button>
           </div>
         </div>

@@ -121,7 +121,7 @@ export default function FinancialTransactions() {
         payment_method: e.payment_method,
         accountLabel,
         accountId: e.account_id || null,
-        editable: !isInstallment, // parcelas individuais editadas pelo form parcelado
+        editable: true,
         raw: e,
         isInstallment,
       });

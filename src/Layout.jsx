@@ -83,8 +83,8 @@ const consultorNavItems = [
     children: [
       { name: 'Painel Financeiro', page: 'FinancialDashboard', icon: BarChart3 },
       { name: 'Transações Consolidadas', page: 'FinancialTransactions', icon: ReceiptText },
-      { name: 'Config. de Pagamento', page: 'PaymentSettings', icon: CreditCard },
-      { name: 'Notas Fiscais (NF-e)', page: 'NFeManagement', icon: ReceiptText },
+      { name: 'Config. de Pagamento', page: 'PaymentSettings', icon: CreditCard, badge: 'Em breve' },
+      { name: 'Notas Fiscais (NF-e)', page: 'NFeManagement', icon: ReceiptText, badge: 'Em breve' },
     ]
   },
 ];
@@ -647,6 +647,7 @@ export default function Layout({ children, currentPageName }) {
                               >
                                 <ChildIcon className={cn("w-3.5 h-3.5 flex-shrink-0", isActive ? "text-amber-400" : "text-emerald-500 group-hover:text-emerald-300")} />
                                 <span className={cn("text-xs leading-tight", isActive ? "font-semibold" : "font-normal")}>{child.name}</span>
+                                {child.badge && <span className="ml-auto text-[9px] font-bold bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded px-1.5 py-0.5 leading-none">{child.badge}</span>}
                                 {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />}
                               </Link>
                             );

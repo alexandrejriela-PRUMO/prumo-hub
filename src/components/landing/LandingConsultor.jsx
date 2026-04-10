@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { base44 } from '@/api/base44Client';
 import {
   CheckCircle2, Star, ArrowRight, Zap, FileCheck,
   BarChart3, MessageCircle, Briefcase, Building2,
@@ -160,7 +161,17 @@ function LeadForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSending(true);
-    await new Promise(r => setTimeout(r, 900));
+    await base44.entities.LeadFormSubmission.create({
+      perfil: 'consultor',
+      nome: form.nome,
+      email: form.email,
+      telefone: form.telefone,
+      especialidade: form.especialidade,
+      tamanho: form.tamanho,
+      estado: form.estado,
+      parceiro: form.parceiro,
+      submitted_at: new Date().toISOString(),
+    });
     setSent(true);
     setSending(false);
   };
@@ -207,6 +218,14 @@ function LeadForm() {
         <label className="block text-sm font-medium text-gray-700 mb-1">Área de atuação</label>
         <select required value={form.especialidade} onChange={e => setForm(p => ({ ...p, especialidade: e.target.value }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white">
           <option value="">Selecione...</option>
+          <option>Engenheiro Florestal</option>
+          <option>Engenheiro Ambiental</option>
+          <option>Engenheiro Agrônomo</option>
+          <option>Engenheiro de Minas</option>
+          <option>Geólogo</option>
+          <option>Biólogo</option>
+          <option>Gestor Ambiental</option>
+          <option>Advogado</option>
           <option>Licenciamento Ambiental</option>
           <option>Gestão de CAR e PRAD</option>
           <option>Georreferenciamento</option>

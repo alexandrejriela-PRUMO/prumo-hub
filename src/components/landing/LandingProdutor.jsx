@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { base44 } from '@/api/base44Client';
 import {
   CheckCircle2, Star, ArrowRight, Zap, MapPin, FileCheck,
   BarChart3, MessageCircle, Leaf, Wheat, Building2, Sprout,
@@ -113,7 +114,18 @@ function LeadForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSending(true);
-    await new Promise(r => setTimeout(r, 900));
+    await base44.entities.LeadFormSubmission.create({
+      perfil: 'produtor',
+      nome: form.nome,
+      email: form.email,
+      telefone: form.telefone,
+      tamanho: form.tamanho,
+      especialidade: form.culturas,
+      culturas: form.culturas,
+      estado: form.estado,
+      parceiro: form.parceiro,
+      submitted_at: new Date().toISOString(),
+    });
     setSent(true);
     setSending(false);
   };

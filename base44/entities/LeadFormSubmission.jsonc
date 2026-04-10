@@ -1,0 +1,57 @@
+{
+  "name": "LeadFormSubmission",
+  "type": "object",
+  "properties": {
+    "perfil": {
+      "type": "string",
+      "enum": [
+        "consultor",
+        "produtor"
+      ],
+      "description": "Perfil do lead"
+    },
+    "nome": {
+      "type": "string",
+      "description": "Nome completo"
+    },
+    "email": {
+      "type": "string",
+      "description": "E-mail"
+    },
+    "telefone": {
+      "type": "string",
+      "description": "WhatsApp / Telefone"
+    },
+    "especialidade": {
+      "type": "string",
+      "description": "\u00c1rea de atua\u00e7\u00e3o (consultor) ou atividade principal (produtor)"
+    },
+    "tamanho": {
+      "type": "string",
+      "description": "Quantidade de clientes (consultor) ou tamanho da propriedade (produtor)"
+    },
+    "estado": {
+      "type": "string",
+      "description": "Estado (UF)"
+    },
+    "parceiro": {
+      "type": "string",
+      "description": "Parceiro Fundador / Indicador"
+    },
+    "culturas": {
+      "type": "string",
+      "description": "Principal cultura (produtor)"
+    },
+    "submitted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data e hora do envio"
+    }
+  },
+  "required": [
+    "perfil",
+    "nome",
+    "email",
+    "telefone"
+  ]
+}

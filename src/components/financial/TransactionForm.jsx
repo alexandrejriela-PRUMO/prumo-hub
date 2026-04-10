@@ -22,6 +22,7 @@ const EMPTY_BASE = {
   transaction_type: 'receita', description: '', date: '',
   category: 'Cobrança de Cliente (Manual)', account_id: '', account_name: '',
   client_name: '', client_property_id: '',
+  property_id: '', property_name: '',
   payment_type: 'avista', // 'avista' | 'parcelado'
   // à vista
   amount: '', status: 'Pendente', payment_method: 'PIX', notes: '', attachments: [],
@@ -118,6 +119,15 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
     enabled: !!consultorEmail,
   });
 
+  // Properties belonging to the selected client
+  const clientProperties = useMemo(() => {
+    if (!form.client_property_id) return [];
+    const selectedProp = properties.find(p => p.id === form.client_property_id);
+    if (!selectedProp) return [];
+    const clientName = selectedProp.client_name || '';
+    return properties.filter(p => p.client_name === clientName && !p.is_client_only);
+  }, [properties, form.client_property_id]);
+
   const setF = (key, val) => setForm(p => ({ ...p, [key]: val }));
 
   const filteredClients = useMemo(() => {
@@ -200,12 +210,13 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
           account_name: inst.account_name || '',
           client_name: clientName,
           client_property_id: form.client_property_id || '',
+          property_id: form.property_id || '',
+          property_name: form.property_name || '',
           is_stripe: false,
           status: inst.received ? 'Pago' : 'Pendente',
           payment_method: inst.payment_method || 'PIX',
           notes: inst.notes || form.notes || '',
           attachments: [],
-          // Store installment metadata
           installment_number: inst.number,
           installment_total: count,
           installment_due_date: inst.due_date,
@@ -224,6 +235,8 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
           account_name: form.account_name || '',
           account_id: form.account_id || '',
           client_name: clientName,
+          property_id: form.property_id || '',
+          property_name: form.property_name || '',
           installment_number: null,
           installment_total: null,
           installment_due_date: null,
@@ -279,7 +292,7 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
                     {selectedClient.client_name?.[0]?.toUpperCase() || '?'}
                   </div>
                   <p className="text-sm font-semibold text-emerald-800 flex-1 truncate">{selectedClient.client_name}</p>
-                  <button onClick={() => setF('client_property_id', '')} className="p-1 hover:bg-emerald-100 rounded-lg">
+                  <button onClick={() => { setF('client_property_id', ''); setF('property_id', ''); setF('property_name', ''); }} className="p-1 hover:bg-emerald-100 rounded-lg">
                     <X className="w-3.5 h-3.5 text-emerald-600" />
                   </button>
                 </div>
@@ -314,6 +327,26 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
                   )}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Propriedade / Empreendimento — aparece após selecionar cliente */}
+          {isReceita && form.client_property_id && clientProperties.length > 0 && (
+            <div>
+              <Label>Propriedade / Empreendimento <span className="text-xs text-gray-400 font-normal">(opcional)</span></Label>
+              <Select value={form.property_id || ''} onValueChange={v => {
+                const prop = properties.find(p => p.id === v);
+                setF('property_id', v || '');
+                setF('property_name', prop?.property_name || '');
+              }}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Selecionar propriedade / empreendimento" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={null}>— Nenhuma específica —</SelectItem>
+                  {clientProperties.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.property_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
 

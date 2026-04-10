@@ -58,6 +58,14 @@
       "type": "string",
       "description": "ID da Property vinculada ao cliente"
     },
+    "property_id": {
+      "type": "string",
+      "description": "ID da propriedade/empreendimento espec\u00edfico"
+    },
+    "property_name": {
+      "type": "string",
+      "description": "Nome da propriedade/empreendimento"
+    },
     "is_stripe": {
       "type": "boolean",
       "default": false
@@ -96,22 +104,18 @@
       "default": "avista"
     },
     "installment_number": {
-      "type": "number",
-      "description": "N\u00famero desta parcela (1-based)"
+      "type": "number"
     },
     "installment_total": {
-      "type": "number",
-      "description": "Total de parcelas do servi\u00e7o"
+      "type": "number"
     },
     "installment_due_date": {
       "type": "string",
-      "format": "date",
-      "description": "Data de vencimento desta parcela"
+      "format": "date"
     },
     "installment_received_date": {
       "type": "string",
-      "format": "date",
-      "description": "Data em que esta parcela foi recebida"
+      "format": "date"
     },
     "attachments": {
       "type": "array",
@@ -129,8 +133,7 @@
           }
         }
       },
-      "default": [],
-      "description": "Anexos (fotos, comprovantes, documentos)"
+      "default": []
     },
     "notes": {
       "type": "string"

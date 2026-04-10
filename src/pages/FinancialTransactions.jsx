@@ -36,6 +36,7 @@ export default function FinancialTransactions() {
   const [filterClient, setFilterClient] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterAccount,setFilterAccount]= useState('');
+  const [filterProperty,setFilterProperty]= useState('');
   const [search,       setSearch]       = useState('');
   const [sortField,    setSortField]    = useState('date');
   const [sortDir,      setSortDir]      = useState('desc');
@@ -121,6 +122,8 @@ export default function FinancialTransactions() {
         payment_method: e.payment_method,
         accountLabel,
         accountId: e.account_id || null,
+        propertyId: e.property_id || null,
+        propertyName: e.property_name || null,
         editable: true,
         raw: e,
         isInstallment,
@@ -131,6 +134,7 @@ export default function FinancialTransactions() {
   }, [charges, manualEntries, propertyMap, accountMap]);
 
   const clients  = useMemo(()=>{ const s=new Set(); allTransactions.forEach(t=>{if(t.client)s.add(t.client);}); return Array.from(s).sort(); },[allTransactions]);
+  const propertyOptions = useMemo(() => { const s=new Set(); allTransactions.forEach(t=>{if(t.propertyId && t.propertyName) s.add(JSON.stringify({id:t.propertyId,name:t.propertyName}));}); return Array.from(s).map(j=>JSON.parse(j)); },[allTransactions]);
   const accountOptions = useMemo(() => {
     // Usar contas cadastradas + aquelas que aparecem nas transações
     const s = new Set();
@@ -145,9 +149,10 @@ export default function FinancialTransactions() {
     const matchClient  = !filterClient  || t.client===filterClient;
     const matchStatus  = !filterStatus  || t.status===filterStatus;
     const matchAccount = !filterAccount || t.accountId===filterAccount;
-    const matchSearch  = !search || t.description?.toLowerCase().includes(search.toLowerCase()) || t.client?.toLowerCase().includes(search.toLowerCase());
-    return matchMonth&&matchType&&matchClient&&matchStatus&&matchAccount&&matchSearch;
-  }), [allTransactions,filterMonth,filterType,filterClient,filterStatus,filterAccount,search]);
+    const matchProperty = !filterProperty || t.propertyId===filterProperty;
+    const matchSearch = !search || t.description?.toLowerCase().includes(search.toLowerCase()) || t.client?.toLowerCase().includes(search.toLowerCase());
+    return matchMonth&&matchType&&matchClient&&matchStatus&&matchAccount&&matchProperty&&matchSearch;
+  }), [allTransactions,filterMonth,filterType,filterClient,filterStatus,filterAccount,filterProperty,search]);
 
   const sorted = useMemo(()=>[...filtered].sort((a,b)=>{
     let va=a[sortField],vb=b[sortField];
@@ -230,12 +235,16 @@ export default function FinancialTransactions() {
             <Select value={filterStatus || '__all__'} onValueChange={v => setFilterStatus(v === '__all__' ? '' : v)}><SelectTrigger className="w-36"><SelectValue placeholder="Todos"/></SelectTrigger>
               <SelectContent><SelectItem value="__all__">Todos</SelectItem><SelectItem value="Pago">Pago</SelectItem><SelectItem value="Pendente">Pendente</SelectItem><SelectItem value="Vencido">Vencido</SelectItem><SelectItem value="Cancelado">Cancelado</SelectItem></SelectContent>
             </Select></div>
+          <div><Label className="text-xs">Propriedade / Empreendimento</Label>
+            <Select value={filterProperty || '__all__'} onValueChange={v => setFilterProperty(v === '__all__' ? '' : v)}><SelectTrigger className="w-52"><SelectValue placeholder="Todas"/></SelectTrigger>
+              <SelectContent><SelectItem value="__all__">Todas</SelectItem>{propertyOptions.map(p=><SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+            </Select></div>
           <div className="flex-1 min-w-40"><Label className="text-xs">Buscar</Label>
             <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"/>
               <Input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Descrição ou cliente..." className="pl-9"/>
             </div></div>
-          {(filterType||filterClient||filterStatus||filterAccount||search) && (
-            <Button variant="outline" size="sm" onClick={()=>{setFilterType('');setFilterClient('');setFilterStatus('');setFilterAccount('');setSearch('');}}>Limpar</Button>
+          {(filterType||filterClient||filterStatus||filterAccount||filterProperty||search) && (
+            <Button variant="outline" size="sm" onClick={()=>{setFilterType('');setFilterClient('');setFilterStatus('');setFilterAccount('');setFilterProperty('');setSearch('');}}>Limpar</Button>
           )}
         </div>
         <p className="text-xs text-gray-400 mt-2">{sorted.length} transaç{sorted.length!==1?'ões':'ão'} encontrada{sorted.length!==1?'s':''}</p>

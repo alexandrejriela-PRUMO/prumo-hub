@@ -133,7 +133,7 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
 
   const removeAttachment = (idx) => setForm(p => ({ ...p, attachments: p.attachments.filter((_, i) => i !== idx) }));
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.description || !form.amount || !form.date) { toast.error('Preencha descrição, valor e data.'); return; }
     if (isReceita && !form.client_property_id) { toast.error('Selecione um cliente para a receita.'); return; }
     const clientProp = properties.find(p => p.id === form.client_property_id);
@@ -147,8 +147,44 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
       account_id: form.account_id || '',
       client_name: clientProp?.client_name || form.client_name,
     };
-    if (editing) updateMutation.mutate({ id: editing.id, data: payload });
-    else createMutation.mutate(payload);
+
+    if (editing) {
+      updateMutation.mutate({ id: editing.id, data: payload });
+    } else {
+      createMutation.mutate(payload, {
+        onSuccess: async () => {
+          // Se for receita vinculada a um cliente, adicionar também como serviço no CRM
+          if (isReceita && form.client_property_id) {
+            try {
+              const crmList = await base44.entities.ClientCRM.filter({ consultor_email: consultorEmail });
+              const crm = crmList.find(c => c.property_id === form.client_property_id);
+              if (crm) {
+                const newService = {
+                  name: form.description,
+                  status: 'Contratado',
+                  value: parseFloat(form.amount),
+                  notes: form.notes || '',
+                  payment_type: 'avista',
+                  payment_method: form.payment_method || 'PIX',
+                  start_date: form.date,
+                  installments: [],
+                  received: form.status === 'Pago',
+                  received_at: form.status === 'Pago' ? new Date(form.date + 'T12:00:00').toISOString() : null,
+                  account_id: form.account_id || null,
+                };
+                const updatedServices = [...(crm.services || []), newService];
+                await base44.entities.ClientCRM.update(crm.id, { services: updatedServices });
+                qc.invalidateQueries(['client-crm-financial', crm.id]);
+                qc.invalidateQueries(['consultor-crm-clients']);
+                qc.invalidateQueries(['crm-board-list']);
+              }
+            } catch (err) {
+              console.warn('Não foi possível vincular ao CRM:', err);
+            }
+          }
+        },
+      });
+    }
   };
 
   const selectedClient = properties.find(p => p.id === form.client_property_id);

@@ -27,7 +27,6 @@ const ImportUsersStripe = React.lazy(() => import('./pages/ImportUsersStripe'));
 const TermsOfUsePage = React.lazy(() => import('./pages/TermsOfUsePage'));
 const TermsAdmin = React.lazy(() => import('./pages/TermsAdmin'));
 const LandingPage = React.lazy(() => import('./pages/LandingPage'));
-
 const CampMode = React.lazy(() => import('./pages/CampMode'));
 const PropertyCentral = React.lazy(() => import('./pages/PropertyCentral'));
 const EnvironmentalAssets = React.lazy(() => import('./pages/EnvironmentalAssets'));
@@ -36,6 +35,7 @@ const LicenseChecklist = React.lazy(() => import('./pages/LicenseChecklist'));
 const Licenses = React.lazy(() => import('./pages/Licenses'));
 const BudgetGenerator = React.lazy(() => import('./pages/BudgetGenerator'));
 const ContractGenerator = React.lazy(() => import('./pages/ContractGenerator'));
+
 import OfflineIndicator from '@/components/offline/OfflineIndicator';
 import { useOfflineSync } from '@/components/offline/OfflineSyncHook';
 import { initializeOfflineDB } from '@/components/offline/OfflineStorageManager';
@@ -106,7 +106,6 @@ const AuthenticatedApp = () => {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
       navigateToLogin();
       return null;
     }
@@ -126,55 +125,52 @@ const AuthenticatedApp = () => {
     <>
       <OfflineIndicator isOnline={isOnline} syncInProgress={syncInProgress} syncStats={syncStats} />
       <Routes>
-      <Route path="/" element={
-        <LayoutWrapper currentPageName={mainPageKey}>
-          <MainPage />
-        </LayoutWrapper>
-      } />
-      {Object.entries(Pages).map(([path, Page]) => (
-        <Route
-          key={path}
-          path={`/${path}`}
-          element={
-            <LayoutWrapper currentPageName={path}>
-              <Page />
-            </LayoutWrapper>
-          }
-        />
-      ))}
-      <Route path="/CARModule" element={<LayoutWrapper currentPageName="CARModule"><Suspense fallback={<LoadingSpinner />}><CARModule /></Suspense></LayoutWrapper>} />
-      <Route path="/PropertyMapView" element={<LayoutWrapper currentPageName="PropertyMapView"><Suspense fallback={<LoadingSpinner />}><PropertyMapView /></Suspense></LayoutWrapper>} />
-      <Route path="/Agenda" element={<LayoutWrapper currentPageName="Agenda"><Suspense fallback={<LoadingSpinner />}><Agenda /></Suspense></LayoutWrapper>} />
-      <Route path="/CRMBoard" element={<LayoutWrapper currentPageName="CRMBoard"><Suspense fallback={<LoadingSpinner />}><CRMBoard /></Suspense></LayoutWrapper>} />
-      <Route path="/PaymentSettings" element={<LayoutWrapper currentPageName="PaymentSettings"><Suspense fallback={<LoadingSpinner />}><PaymentSettings /></Suspense></LayoutWrapper>} />
-      <Route path="/FinancialTransactions" element={<LayoutWrapper currentPageName="FinancialTransactions"><Suspense fallback={<LoadingSpinner />}><FinancialTransactions /></Suspense></LayoutWrapper>} />
-      <Route path="/FinancialDashboard" element={<LayoutWrapper currentPageName="FinancialDashboard"><Suspense fallback={<LoadingSpinner />}><FinancialDashboard /></Suspense></LayoutWrapper>} />
-      <Route path="/RuralCredit" element={<LayoutWrapper currentPageName="RuralCredit"><Suspense fallback={<LoadingSpinner />}><RuralCredit /></Suspense></LayoutWrapper>} />
-      <Route path="/HarvestLoss" element={<LayoutWrapper currentPageName="HarvestLoss"><Suspense fallback={<LoadingSpinner />}><HarvestLoss /></Suspense></LayoutWrapper>} />
-
-      <Route path="/CampMode" element={<LayoutWrapper currentPageName="CampMode"><Suspense fallback={<LoadingSpinner />}><CampMode /></Suspense></LayoutWrapper>} />
-      <Route path="/PropertyCentral" element={<LayoutWrapper currentPageName="PropertyCentral"><Suspense fallback={<LoadingSpinner />}><PropertyCentral /></Suspense></LayoutWrapper>} />
-      <Route path="/EnvironmentalAssets" element={<LayoutWrapper currentPageName="EnvironmentalAssets"><Suspense fallback={<LoadingSpinner />}><EnvironmentalAssets /></Suspense></LayoutWrapper>} />
-      <Route path="/ChecklistTemplates" element={<LayoutWrapper currentPageName="ChecklistTemplates"><Suspense fallback={<LoadingSpinner />}><ChecklistTemplates /></Suspense></LayoutWrapper>} />
-      <Route path="/LicenseChecklist" element={<LayoutWrapper currentPageName="LicenseChecklist"><Suspense fallback={<LoadingSpinner />}><LicenseChecklist /></Suspense></LayoutWrapper>} />
-      <Route path="/Licenses" element={<LayoutWrapper currentPageName="Licenses"><Suspense fallback={<LoadingSpinner />}><Licenses /></Suspense></LayoutWrapper>} />
-      <Route path="/AcceptInvite" element={<Suspense fallback={<LoadingSpinner />}><AcceptInvite /></Suspense>} />
-      <Route path="/NotificationAudit" element={<LayoutWrapper currentPageName="NotificationAudit"><Suspense fallback={<LoadingSpinner />}><NotificationAudit /></Suspense></LayoutWrapper>} />
-      <Route path="/NFeManagement" element={<LayoutWrapper currentPageName="NFeManagement"><Suspense fallback={<LoadingSpinner />}><NFeManagement /></Suspense></LayoutWrapper>} />
-      <Route path="/ImportUsersStripe" element={<LayoutWrapper currentPageName="ImportUsersStripe"><Suspense fallback={<LoadingSpinner />}><ImportUsersStripe /></Suspense></LayoutWrapper>} />
-      <Route path="/BudgetGenerator" element={<LayoutWrapper currentPageName="BudgetGenerator"><Suspense fallback={<LoadingSpinner />}><BudgetGenerator /></Suspense></LayoutWrapper>} />
-      <Route path="/ContractGenerator" element={<LayoutWrapper currentPageName="ContractGenerator"><Suspense fallback={<LoadingSpinner />}><ContractGenerator /></Suspense></LayoutWrapper>} />
-      <Route path="/TermsAdmin" element={<LayoutWrapper currentPageName="TermsAdmin"><Suspense fallback={<LoadingSpinner />}><TermsAdmin /></Suspense></LayoutWrapper>} />
-      <Route path="/landing" element={<Suspense fallback={<LoadingSpinner />}><LandingPage /></Suspense>} />
-      <Route path="*" element={<PageNotFound />} />
-    </Routes>
+        <Route path="/" element={
+          <LayoutWrapper currentPageName={mainPageKey}>
+            <MainPage />
+          </LayoutWrapper>
+        } />
+        {Object.entries(Pages).map(([path, Page]) => (
+          <Route
+            key={path}
+            path={`/${path}`}
+            element={
+              <LayoutWrapper currentPageName={path}>
+                <Page />
+              </LayoutWrapper>
+            }
+          />
+        ))}
+        <Route path="/CARModule" element={<LayoutWrapper currentPageName="CARModule"><Suspense fallback={<LoadingSpinner />}><CARModule /></Suspense></LayoutWrapper>} />
+        <Route path="/PropertyMapView" element={<LayoutWrapper currentPageName="PropertyMapView"><Suspense fallback={<LoadingSpinner />}><PropertyMapView /></Suspense></LayoutWrapper>} />
+        <Route path="/Agenda" element={<LayoutWrapper currentPageName="Agenda"><Suspense fallback={<LoadingSpinner />}><Agenda /></Suspense></LayoutWrapper>} />
+        <Route path="/CRMBoard" element={<LayoutWrapper currentPageName="CRMBoard"><Suspense fallback={<LoadingSpinner />}><CRMBoard /></Suspense></LayoutWrapper>} />
+        <Route path="/PaymentSettings" element={<LayoutWrapper currentPageName="PaymentSettings"><Suspense fallback={<LoadingSpinner />}><PaymentSettings /></Suspense></LayoutWrapper>} />
+        <Route path="/FinancialTransactions" element={<LayoutWrapper currentPageName="FinancialTransactions"><Suspense fallback={<LoadingSpinner />}><FinancialTransactions /></Suspense></LayoutWrapper>} />
+        <Route path="/FinancialDashboard" element={<LayoutWrapper currentPageName="FinancialDashboard"><Suspense fallback={<LoadingSpinner />}><FinancialDashboard /></Suspense></LayoutWrapper>} />
+        <Route path="/RuralCredit" element={<LayoutWrapper currentPageName="RuralCredit"><Suspense fallback={<LoadingSpinner />}><RuralCredit /></Suspense></LayoutWrapper>} />
+        <Route path="/HarvestLoss" element={<LayoutWrapper currentPageName="HarvestLoss"><Suspense fallback={<LoadingSpinner />}><HarvestLoss /></Suspense></LayoutWrapper>} />
+        <Route path="/CampMode" element={<LayoutWrapper currentPageName="CampMode"><Suspense fallback={<LoadingSpinner />}><CampMode /></Suspense></LayoutWrapper>} />
+        <Route path="/PropertyCentral" element={<LayoutWrapper currentPageName="PropertyCentral"><Suspense fallback={<LoadingSpinner />}><PropertyCentral /></Suspense></LayoutWrapper>} />
+        <Route path="/EnvironmentalAssets" element={<LayoutWrapper currentPageName="EnvironmentalAssets"><Suspense fallback={<LoadingSpinner />}><EnvironmentalAssets /></Suspense></LayoutWrapper>} />
+        <Route path="/ChecklistTemplates" element={<LayoutWrapper currentPageName="ChecklistTemplates"><Suspense fallback={<LoadingSpinner />}><ChecklistTemplates /></Suspense></LayoutWrapper>} />
+        <Route path="/LicenseChecklist" element={<LayoutWrapper currentPageName="LicenseChecklist"><Suspense fallback={<LoadingSpinner />}><LicenseChecklist /></Suspense></LayoutWrapper>} />
+        <Route path="/Licenses" element={<LayoutWrapper currentPageName="Licenses"><Suspense fallback={<LoadingSpinner />}><Licenses /></Suspense></LayoutWrapper>} />
+        <Route path="/AcceptInvite" element={<Suspense fallback={<LoadingSpinner />}><AcceptInvite /></Suspense>} />
+        <Route path="/NotificationAudit" element={<LayoutWrapper currentPageName="NotificationAudit"><Suspense fallback={<LoadingSpinner />}><NotificationAudit /></Suspense></LayoutWrapper>} />
+        <Route path="/NFeManagement" element={<LayoutWrapper currentPageName="NFeManagement"><Suspense fallback={<LoadingSpinner />}><NFeManagement /></Suspense></LayoutWrapper>} />
+        <Route path="/ImportUsersStripe" element={<LayoutWrapper currentPageName="ImportUsersStripe"><Suspense fallback={<LoadingSpinner />}><ImportUsersStripe /></Suspense></LayoutWrapper>} />
+        <Route path="/BudgetGenerator" element={<LayoutWrapper currentPageName="BudgetGenerator"><Suspense fallback={<LoadingSpinner />}><BudgetGenerator /></Suspense></LayoutWrapper>} />
+        <Route path="/ContractGenerator" element={<LayoutWrapper currentPageName="ContractGenerator"><Suspense fallback={<LoadingSpinner />}><ContractGenerator /></Suspense></LayoutWrapper>} />
+        <Route path="/TermsAdmin" element={<LayoutWrapper currentPageName="TermsAdmin"><Suspense fallback={<LoadingSpinner />}><TermsAdmin /></Suspense></LayoutWrapper>} />
+        <Route path="*" element={<PageNotFound />} />
+      </Routes>
     </>
   );
 };
 
 
 function App() {
-
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
@@ -182,7 +178,10 @@ function App() {
           <NavigationTracker />
           <PWAUpdateNotification />
           <OnlineStatusIndicator />
-          <AuthenticatedApp />
+          <Routes>
+            <Route path="/landing" element={<Suspense fallback={<LoadingSpinner />}><LandingPage /></Suspense>} />
+            <Route path="*" element={<AuthenticatedApp />} />
+          </Routes>
         </Router>
         <Toaster />
       </QueryClientProvider>

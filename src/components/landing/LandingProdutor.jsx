@@ -68,8 +68,8 @@ const planos = [
   {
     name: 'Plano Único Completo',
     monthlyPrice: 697,
-    annualPrice: 6273,
-    annualMonthly: 522.75,
+    annualPrice: 6970,
+    annualMonthly: 580.83,
     desc: 'Produtor Rural — Serviço Integrado. Tudo que sua propriedade precisa em uma única assinatura.',
     color: 'border-emerald-400',
     badge: '⭐ Plano Único',
@@ -310,7 +310,7 @@ export default function LandingProdutor({ onLogin }) {
             {/* Billing toggle */}
             <div className="inline-flex bg-gray-100 rounded-full p-1 gap-1">
               <button onClick={() => setBilling('monthly')} className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${billing === 'monthly' ? 'bg-emerald-600 text-white shadow' : 'text-gray-600'}`}>Mensal</button>
-              <button onClick={() => setBilling('annual')} className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${billing === 'annual' ? 'bg-emerald-600 text-white shadow' : 'text-gray-600'}`}>Anual 🎉 <span className="text-xs">(3 meses grátis)</span></button>
+              <button onClick={() => setBilling('annual')} className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${billing === 'annual' ? 'bg-emerald-600 text-white shadow' : 'text-gray-600'}`}>Anual 🎉 <span className="text-xs">(2 meses grátis)</span></button>
             </div>
           </div>
 
@@ -319,7 +319,7 @@ export default function LandingProdutor({ onLogin }) {
             return (
               <div key={plan.name} className="relative rounded-2xl border-2 border-emerald-400 bg-white shadow-xl ring-2 ring-emerald-300 ring-offset-2 overflow-hidden">
                 <div className="absolute top-0 right-0 bg-emerald-600 text-white text-xs px-4 py-1.5 rounded-bl-xl font-bold">
-                  {billing === 'annual' ? '🎉 3 meses grátis' : 'Plano Único'}
+                  {billing === 'annual' ? '🎉 2 meses grátis' : 'Plano Único'}
                 </div>
                 <div className="p-8">
                   <div className="flex items-center gap-3 mb-5">
@@ -337,7 +337,7 @@ export default function LandingProdutor({ onLogin }) {
                       <span className="text-gray-400 text-sm mb-1">/mês por propriedade</span>
                     </div>
                     {billing === 'annual' && (
-                      <p className="text-sm text-emerald-600 font-medium mt-1">R$ {plan.annualPrice.toLocaleString('pt-BR')}/ano por propriedade</p>
+                      <p className="text-sm text-emerald-600 font-medium mt-1">R$ {plan.annualPrice.toLocaleString('pt-BR')}/ano por propriedade — 2 meses grátis</p>
                     )}
                   </div>
                   <div className="grid sm:grid-cols-2 gap-6">

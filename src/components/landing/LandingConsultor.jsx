@@ -27,6 +27,20 @@ const diferenciais = [
     color: 'from-blue-500 to-cyan-600',
   },
   {
+    icon: FileCheck,
+    title: 'Gestão de Licenças e Projetos Técnicos',
+    desc: 'Centralize licenças ambientais, laudos técnicos, ARTs e projetos de engenharia de todos os seus clientes — com controle de vencimentos, checklists e histórico completo de andamentos.',
+    color: 'from-purple-500 to-indigo-600',
+    highlight: true,
+  },
+  {
+    icon: Scale,
+    title: 'Acompanhamento de Processos Jurídicos',
+    desc: 'Gerencie processos administrativos, civis e criminais dos seus clientes: andamentos, embargos, multas e prazos — tudo registrado e monitorado em um único painel.',
+    color: 'from-rose-500 to-red-600',
+    highlight: true,
+  },
+  {
     icon: ReceiptText,
     title: 'Emissão de NF-e Automatizada',
     desc: 'Integração com Focus NFe para emissão automática de notas fiscais após recebimento de cobranças.',
@@ -279,11 +293,20 @@ export default function LandingConsultor({ onLogin }) {
             {diferenciais.map((f) => {
               const Icon = f.icon;
               return (
-                <div key={f.title} className="group p-6 rounded-2xl border border-gray-100 hover:border-amber-200 hover:shadow-lg transition-all bg-white">
+                <div key={f.title} className={`group p-6 rounded-2xl border-2 transition-all ${
+                  f.highlight
+                    ? 'border-purple-300 bg-purple-50/40 hover:border-purple-400 hover:shadow-xl shadow-md ring-1 ring-purple-200'
+                    : 'border-gray-100 bg-white hover:border-amber-200 hover:shadow-lg'
+                }`}>
+                  {f.highlight && (
+                    <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-700 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full mb-3">
+                      ⭐ Destaque
+                    </span>
+                  )}
                   <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${f.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
                     <Icon className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="font-bold text-gray-900 mb-2">{f.title}</h3>
+                  <h3 className={`font-bold mb-2 ${f.highlight ? 'text-purple-900' : 'text-gray-900'}`}>{f.title}</h3>
                   <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
                 </div>
               );

@@ -60,58 +60,60 @@ const diferenciais = [
 
 const planos = [
   {
-    name: 'Starter',
-    price: 'R$ 149',
-    period: '/mês',
-    desc: 'Ideal para consultores autônomos que estão começando.',
-    color: 'border-gray-200',
+    name: 'Start',
+    monthlyPrice: 129,
+    annualPrice: 1290,
+    annualMonthly: 107.5,
+    desc: '1 usuário consultor • Até 5 propriedades/clientes.',
+    color: 'border-emerald-200',
     badge: null,
     items: [
-      'Até 10 propriedades de clientes',
-      'CRM com pipeline básico',
-      'Gerador de contratos e orçamentos',
-      'Agenda integrada',
-      'IA Rute (50 consultas/mês)',
-      'Suporte por e-mail',
+      '1 usuário consultor',
+      'Até 5 propriedades/clientes',
+      'Notificação pessoal para o consultor',
+      'Materiais de autoatendimento',
+      'Fidelidade de 12 meses',
     ],
   },
   {
-    name: 'Profissional',
-    price: 'R$ 349',
-    period: '/mês',
-    desc: 'Para consultores em crescimento com carteira ativa de clientes.',
-    color: 'border-amber-400',
-    badge: 'Mais popular',
-    badgeColor: 'bg-amber-500',
+    name: 'Pro',
+    monthlyPrice: 249,
+    annualPrice: 2490,
+    annualMonthly: 207.5,
+    desc: 'Até 2 usuários (consultor + equipe) • Até 10 propriedades.',
+    color: 'border-blue-300',
+    badge: null,
     items: [
-      'Propriedades ilimitadas',
-      'CRM completo com automações',
-      'Emissão de NF-e automatizada',
-      'Controle financeiro + Stripe',
-      'IA Rute ilimitada + WhatsApp',
-      'Assinatura digital (Clicksign)',
-      'Gestão de equipe (até 3 membros)',
-      'Central da propriedade do cliente',
-      'Suporte prioritário',
+      'Até 2 usuários (consultor + equipe)',
+      'Até 10 propriedades/clientes',
+      'Notificação para o consultor e equipe',
+      'Autoatendimento + Webinars periódicos',
+      'Fidelidade de 12 meses',
     ],
   },
   {
     name: 'Enterprise',
-    price: 'Sob consulta',
-    period: '',
-    desc: 'Para escritórios e empresas de consultoria ambiental de grande porte.',
-    color: 'border-emerald-400',
-    badge: 'Personalizado',
-    badgeColor: 'bg-emerald-600',
+    monthlyPrice: 497,
+    annualPrice: 4970,
+    annualMonthly: 414.17,
+    desc: 'Até 3 usuários • Até 200 propriedades/clientes. Plano mais completo.',
+    color: 'border-amber-400',
+    badge: 'Mais Popular',
+    badgeColor: 'bg-amber-500',
+    highlight: true,
     items: [
-      'Tudo do Profissional',
-      'Equipe ilimitada',
-      'Multi-empresas / CNPJ',
-      'API e integrações customizadas',
-      'Relatórios personalizados',
-      'Treinamento e onboarding',
-      'Gerente de conta dedicado',
-      'SLA garantido',
+      'Até 3 usuários (consultor + equipe)',
+      'Até 200 propriedades/clientes',
+      'CRM Prumo — gestão de relacionamentos',
+      'Agenda integrada com Google Calendar',
+      'ERP Controle Financeiro completo',
+      'Alerta MapBiomas (monitoramento de infrações)',
+      'Monitoramento DOE-RS / FEPAM',
+      'Notificação para consultor, equipe e clientes',
+      'Portal do cliente (visualizar e baixar documentos)',
+      'Relatórios de gestão para clientes',
+      'Autoatendimento + Webinars + Treinamentos personalizados',
+      'Fidelidade de 12 meses',
     ],
   },
 ];
@@ -213,9 +215,9 @@ function LeadForm() {
 }
 
 export default function LandingConsultor({ onLogin }) {
+  const [billing, setBilling] = useState('monthly');
   return (
     <div className="pt-16">
-      {/* HERO */}
       <section className="py-20 bg-gradient-to-br from-amber-950 via-amber-900 to-orange-900 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-10 left-10 w-96 h-96 bg-amber-400 rounded-full blur-3xl" />
@@ -280,45 +282,100 @@ export default function LandingConsultor({ onLogin }) {
       {/* PLANOS */}
       <section id="planos" className="py-20 bg-gradient-to-b from-stone-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
+          <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-700 text-xs font-semibold uppercase tracking-wider px-4 py-2 rounded-full mb-4">
               <Crown className="w-3.5 h-3.5" />
               Planos para Consultores
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Escolha o plano ideal</h2>
+            <div className="inline-flex bg-gray-100 rounded-full p-1 gap-1 mt-2">
+              <button onClick={() => setBilling('monthly')} className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${billing === 'monthly' ? 'bg-amber-500 text-white shadow' : 'text-gray-600'}`}>Mensal</button>
+              <button onClick={() => setBilling('annual')} className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${billing === 'annual' ? 'bg-amber-500 text-white shadow' : 'text-gray-600'}`}>Anual 🎉 <span className="text-xs">(2 meses grátis)</span></button>
+            </div>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {planos.map((plan) => (
-              <div key={plan.name} className={`relative rounded-2xl border-2 ${plan.color} bg-white p-8 flex flex-col shadow-sm hover:shadow-lg transition-shadow`}>
-                {plan.badge && (
-                  <div className={`absolute -top-3 left-1/2 -translate-x-1/2 ${plan.badgeColor} text-white text-xs font-bold px-4 py-1 rounded-full`}>
-                    {plan.badge}
-                  </div>
-                )}
-                <div className="mb-5">
+          <div className="grid md:grid-cols-3 gap-6 items-start">
+            {planos.map((plan) => {
+              const price = billing === 'annual' ? plan.annualMonthly : plan.monthlyPrice;
+              const borderColor = plan.name === 'Start' ? 'border-emerald-200' : plan.name === 'Pro' ? 'border-blue-300' : 'border-amber-400';
+              const checkColor = plan.name === 'Start' ? 'text-emerald-600' : plan.name === 'Pro' ? 'text-blue-600' : 'text-amber-500';
+              const btnColor = plan.highlight ? 'bg-amber-500 text-white hover:bg-amber-600' : plan.name === 'Pro' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-emerald-600 text-white hover:bg-emerald-700';
+              return (
+                <div key={plan.name} className={`relative rounded-2xl border-2 ${borderColor} bg-white p-8 flex flex-col shadow-sm hover:shadow-lg transition-shadow ${plan.highlight ? 'scale-105 shadow-xl' : ''}`}>
+                  {plan.badge && (
+                    <div className={`absolute -top-3 left-1/2 -translate-x-1/2 ${plan.badgeColor} text-white text-xs font-bold px-4 py-1 rounded-full`}>
+                      {plan.badge}
+                    </div>
+                  )}
                   <h3 className="text-lg font-bold text-gray-900 mb-1">{plan.name}</h3>
                   <p className="text-sm text-gray-500 mb-4">{plan.desc}</p>
-                  <div className="flex items-end gap-1">
-                    <span className="text-3xl font-extrabold text-gray-900">{plan.price}</span>
-                    {plan.period && <span className="text-gray-400 text-sm mb-1">{plan.period}</span>}
+                  <div className="flex items-end gap-1 mb-2">
+                    <span className="text-3xl font-extrabold text-gray-900">R$ {price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                    <span className="text-gray-400 text-sm mb-1">/mês</span>
                   </div>
+                  {billing === 'annual' && (
+                    <p className="text-xs text-amber-600 font-medium mb-4">R$ {plan.annualPrice.toLocaleString('pt-BR')}/ano — 2 meses grátis + Fidelidade 12 meses</p>
+                  )}
+                  <ul className="space-y-2.5 flex-1 mb-6">
+                    {plan.items.map((item) => (
+                      <li key={item} className="flex items-start gap-2 text-sm text-gray-700">
+                        <CheckCircle2 className={`w-4 h-4 ${checkColor} flex-shrink-0 mt-0.5`} />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                  <button onClick={onLogin} className={`w-full py-3 rounded-xl font-semibold text-sm transition-colors ${btnColor}`}>
+                    Assinar →
+                  </button>
                 </div>
-                <ul className="space-y-2.5 flex-1 mb-6">
-                  {plan.items.map((item) => (
-                    <li key={item} className="flex items-start gap-2 text-sm text-gray-700">
-                      <CheckCircle2 className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-                <button onClick={onLogin} className={`w-full py-3 rounded-xl font-semibold text-sm transition-colors ${plan.badge === 'Mais popular' ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}>
-                  {plan.price === 'Sob consulta' ? 'Falar com equipe →' : 'Começar agora →'}
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
+
+          {/* Tabela comparativa */}
+          <div className="mt-10 bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+            <div className="px-6 py-4 border-b border-gray-100">
+              <h3 className="font-bold text-gray-900">Comparativo de Planos</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    <th className="text-left p-3 font-semibold text-gray-700">Recurso</th>
+                    <th className="text-center p-3 font-semibold text-emerald-700">Start</th>
+                    <th className="text-center p-3 font-semibold text-blue-700">Pro</th>
+                    <th className="text-center p-3 font-semibold text-amber-700">Enterprise</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {[
+                    ['Usuários', '1', 'Até 2', 'Até 3'],
+                    ['Propriedades/Clientes', 'Até 5', 'Até 10', 'Até 200'],
+                    ['CRM Prumo', '—', '—', '✅'],
+                    ['Agenda', '—', '—', '✅'],
+                    ['ERP Financeiro', '—', '—', '✅'],
+                    ['Alerta MapBiomas', '—', '—', '✅'],
+                    ['Monitoramento DOE-RS/FEPAM', '—', '—', '✅'],
+                    ['Notificação Consultor', '✅', '✅', '✅'],
+                    ['Notificação Equipe', '—', '✅', '✅'],
+                    ['Notificação Cliente', '—', '—', '✅'],
+                    ['Portal do Cliente', '—', '—', '✅'],
+                    ['Webinars Periódicos', '—', '✅', '✅'],
+                    ['Treinamentos Personalizados', '—', '—', '✅'],
+                  ].map(([feature, start, pro, enterprise]) => (
+                    <tr key={feature} className="hover:bg-gray-50">
+                      <td className="p-3 text-gray-700">{feature}</td>
+                      <td className="p-3 text-center text-emerald-700 font-medium">{start}</td>
+                      <td className="p-3 text-center text-blue-700 font-medium">{pro}</td>
+                      <td className="p-3 text-center text-amber-700 font-medium">{enterprise}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           <p className="text-center text-xs text-gray-400 mt-6">
-            * Todos os planos incluem acesso mobile, suporte e atualizações. Cancele quando quiser.
+            * Fidelidade de 12 meses. Aceitamos cartão de crédito, PIX e boleto bancário.
           </p>
         </div>
       </section>

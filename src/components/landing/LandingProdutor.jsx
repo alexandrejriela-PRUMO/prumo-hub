@@ -66,61 +66,35 @@ const diferenciais = [
 
 const planos = [
   {
-    name: 'Básico',
-    price: 'R$ 99',
-    period: '/mês',
-    desc: 'Para pequenos produtores que querem organizar sua propriedade.',
-    color: 'border-gray-200',
-    badge: null,
-    items: [
-      '1 propriedade',
-      'Dashboard central da propriedade',
-      'Gestão de documentos',
-      'CAR e licenças básicas',
-      'Mapa interativo',
-      'IA Rute (30 consultas/mês)',
-    ],
-  },
-  {
-    name: 'Produtor Plus',
-    price: 'R$ 229',
-    period: '/mês',
-    desc: 'Monitoramento completo e ativos ambientais para produtores ativos.',
+    name: 'Plano Único Completo',
+    monthlyPrice: 497,
+    annualPrice: 4473,
+    annualMonthly: 372.75,
+    desc: 'Produtor Rural — Serviço Integrado. Tudo que sua propriedade precisa em uma única assinatura.',
     color: 'border-emerald-400',
-    badge: 'Recomendado',
+    badge: '⭐ Plano Único',
     badgeColor: 'bg-emerald-600',
-    items: [
-      'Até 3 propriedades',
-      'Monitoramento NDVI por satélite',
-      'Alertas MapBiomas em tempo real',
-      'Ativos ambientais (carbono, CRA)',
-      'Crédito rural e frustração de safra',
-      'Análise climática e commodities',
-      'IA Rute ilimitada + WhatsApp',
-      'Termômetro de regularidade',
-      'PRAD interativo',
-    ],
-  },
-  {
-    name: 'Enterprise',
-    price: 'Sob consulta',
-    period: '',
-    desc: 'Para grandes produtores, cooperativas e grupos rurais.',
-    color: 'border-amber-400',
-    badge: '⭐ Cliente Fundador',
-    badgeColor: 'bg-amber-500',
     highlight: true,
     items: [
-      'Propriedades ilimitadas',
-      'Implantação Assistida Gratuita*',
+      'Gestão completa de propriedades e empreendimentos',
+      'Licenças ambientais, documentos e processos',
+      'Alertas de infrações e PRAD interativo',
+      'Agricultura de precisão (mapeamentos, clima, commodities)',
+      'Ativos ambientais (carbono, PSA, servidão, ESG)',
+      'Georreferenciamento e relatórios detalhados',
+      'Chat IA Rute para assistência inteligente',
+      'Notificações ilimitadas e personalizadas',
+      'Acesso a materiais de autoatendimento',
+    ],
+    enterprise: [
+      'Implantação Assistida Gratuita (tempo limitado)*',
       'Diagnóstico Inicial incluso',
       'Integração da plataforma',
       'Treinamento personalizado',
-      'Consultoria Jurídica e Ambiental mensal',
+      'Consultoria Jurídica e Ambiental mensal — Santa Rute',
       'Orientações, consultas e acompanhamento estratégico',
       'Orçamentos individuais diferenciados',
       'Suporte prioritário + gerente dedicado',
-      'SLA garantido',
     ],
   },
 ];
@@ -217,53 +191,9 @@ function LeadForm() {
 }
 
 export default function LandingProdutor({ onLogin }) {
+  const [billing, setBilling] = useState('monthly');
   return (
     <div className="pt-16">
-      {/* HERO */}
-      <section className="py-20 bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-900 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 left-10 w-96 h-96 bg-amber-400 rounded-full blur-3xl" />
-          <div className="absolute bottom-10 right-10 w-80 h-80 bg-emerald-400 rounded-full blur-3xl" />
-        </div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-semibold uppercase tracking-wider px-4 py-2 rounded-full mb-6">
-              <Wheat className="w-3.5 h-3.5" />
-              Para Produtores Rurais
-            </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
-              Sua propriedade organizada.<br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-amber-500">
-                Sem riscos, sem surpresas.
-              </span>
-            </h1>
-            <p className="text-lg text-emerald-200 mb-6 leading-relaxed">
-              O PRUMO Hub é uma plataforma SaaS desenvolvida para produtores rurais que precisam <strong className="text-white">organizar, monitorar e reduzir riscos ambientais</strong> de forma simples, segura e contínua — tudo em um único ambiente digital acessível de qualquer lugar.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 mb-10">
-              <button onClick={onLogin} className="flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold px-8 py-4 rounded-2xl shadow-xl transition-all hover:scale-105">
-                Começar gratuitamente <ArrowRight className="w-5 h-5" />
-              </button>
-              <a href="#contato" className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white font-semibold px-8 py-4 rounded-2xl border border-white/20 transition-all">
-                Falar com especialista
-              </a>
-            </div>
-
-            {/* Destaque Cliente Fundador */}
-            <div className="bg-amber-500/10 border border-amber-400/30 rounded-2xl px-6 py-4 flex items-start gap-3">
-              <span className="text-2xl">⭐</span>
-              <div>
-                <p className="text-amber-300 font-bold text-sm">Clientes Fundadores — Plano Enterprise</p>
-                <p className="text-amber-200/80 text-xs mt-1">
-                  Implantação Assistida Gratuita por tempo limitado: Diagnóstico Inicial, Integração da Plataforma e Treinamento personalizado.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* DIFERENCIAIS */}
       <section id="diferenciais" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
@@ -336,46 +266,85 @@ export default function LandingProdutor({ onLogin }) {
 
       {/* PLANOS */}
       <section id="planos" className="py-20 bg-gradient-to-b from-stone-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 text-xs font-semibold uppercase tracking-wider px-4 py-2 rounded-full mb-4">
               <Crown className="w-3.5 h-3.5" />
-              Planos para Produtores Rurais
+              Plano para Produtores Rurais
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Escolha o plano ideal</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Plano Único Completo</h2>
+            <p className="text-gray-500 max-w-xl mx-auto mb-6">Tudo que sua propriedade precisa em uma única assinatura — sem surpresas.</p>
+            {/* Billing toggle */}
+            <div className="inline-flex bg-gray-100 rounded-full p-1 gap-1">
+              <button onClick={() => setBilling('monthly')} className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${billing === 'monthly' ? 'bg-emerald-600 text-white shadow' : 'text-gray-600'}`}>Mensal</button>
+              <button onClick={() => setBilling('annual')} className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${billing === 'annual' ? 'bg-emerald-600 text-white shadow' : 'text-gray-600'}`}>Anual 🎉 <span className="text-xs">(3 meses grátis)</span></button>
+            </div>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {planos.map((plan) => (
-              <div key={plan.name} className={`relative rounded-2xl border-2 ${plan.color} bg-white p-8 flex flex-col shadow-sm hover:shadow-lg transition-shadow ${plan.highlight ? 'ring-2 ring-amber-400 ring-offset-2' : ''}`}>
-                {plan.badge && (
-                  <div className={`absolute -top-3 left-1/2 -translate-x-1/2 ${plan.badgeColor} text-white text-xs font-bold px-4 py-1 rounded-full whitespace-nowrap`}>
-                    {plan.badge}
+
+          {planos.map((plan) => {
+            const price = billing === 'annual' ? plan.annualMonthly : plan.monthlyPrice;
+            return (
+              <div key={plan.name} className="relative rounded-2xl border-2 border-emerald-400 bg-white shadow-xl ring-2 ring-emerald-300 ring-offset-2 overflow-hidden">
+                <div className="absolute top-0 right-0 bg-emerald-600 text-white text-xs px-4 py-1.5 rounded-bl-xl font-bold">
+                  {billing === 'annual' ? '🎉 3 meses grátis' : 'Plano Único'}
+                </div>
+                <div className="p-8">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center">
+                      <Wheat className="w-6 h-6 text-emerald-700" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
+                      <p className="text-sm text-gray-500">Produtor Rural — Serviço Integrado</p>
+                    </div>
                   </div>
-                )}
-                <div className="mb-5">
-                  <h3 className="text-lg font-bold text-gray-900 mb-1">{plan.name}</h3>
-                  <p className="text-sm text-gray-500 mb-4">{plan.desc}</p>
-                  <div className="flex items-end gap-1">
-                    <span className="text-3xl font-extrabold text-gray-900">{plan.price}</span>
-                    {plan.period && <span className="text-gray-400 text-sm mb-1">{plan.period}</span>}
+                  <div className="mb-6">
+                    <div className="flex items-end gap-1">
+                      <span className="text-4xl font-extrabold text-gray-900">R$ {price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      <span className="text-gray-400 text-sm mb-1">/mês por propriedade</span>
+                    </div>
+                    {billing === 'annual' && (
+                      <p className="text-sm text-emerald-600 font-medium mt-1">R$ {plan.annualPrice.toLocaleString('pt-BR')}/ano por propriedade</p>
+                    )}
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-6">
+                    <div>
+                      <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Incluso no plano</p>
+                      <ul className="space-y-2">
+                        {plan.items.map((item) => (
+                          <li key={item} className="flex items-start gap-2 text-sm text-gray-700">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
+                      <p className="text-xs font-bold text-amber-700 uppercase tracking-wider mb-3">⭐ Cliente Fundador — Enterprise</p>
+                      <ul className="space-y-2">
+                        {plan.enterprise.map((item) => (
+                          <li key={item} className="flex items-start gap-2 text-sm text-amber-800">
+                            <CheckCircle2 className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                  <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                    <button onClick={onLogin} className="flex-1 py-3 rounded-xl font-bold text-sm bg-emerald-700 text-white hover:bg-emerald-800 transition-colors">
+                      Assinar Agora →
+                    </button>
+                    <a href="#contato" className="flex-1 py-3 rounded-xl font-semibold text-sm bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors text-center">
+                      Quero ser Cliente Fundador
+                    </a>
                   </div>
                 </div>
-                <ul className="space-y-2.5 flex-1 mb-6">
-                  {plan.items.map((item) => (
-                    <li key={item} className="flex items-start gap-2 text-sm text-gray-700">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-                <button onClick={onLogin} className={`w-full py-3 rounded-xl font-semibold text-sm transition-colors ${plan.highlight ? 'bg-amber-500 text-white hover:bg-amber-600' : plan.badge === 'Recomendado' ? 'bg-emerald-700 text-white hover:bg-emerald-800' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}>
-                  {plan.price === 'Sob consulta' ? 'Falar com equipe →' : 'Começar agora →'}
-                </button>
               </div>
-            ))}
-          </div>
-          <p className="text-center text-xs text-gray-400 mt-6">
-            * Implantação Assistida Gratuita por tempo limitado para Clientes Fundadores no Plano Enterprise.
+            );
+          })}
+          <p className="text-center text-xs text-gray-400 mt-4">
+            * Implantação Assistida Gratuita por tempo limitado para Clientes Fundadores no Plano Enterprise. Aceitamos cartão, PIX e boleto.
           </p>
         </div>
       </section>

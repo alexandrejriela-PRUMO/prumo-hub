@@ -54,11 +54,8 @@ export default function LandingPage() {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            <button onClick={handleLogin} className="text-sm font-semibold text-emerald-700 hover:text-emerald-900 transition-colors px-4 py-2">
-              Entrar
-            </button>
             <button onClick={handleLogin} className="text-sm font-semibold bg-emerald-700 text-white px-5 py-2 rounded-xl hover:bg-emerald-800 transition-colors shadow-md">
-              Começar grátis
+              Área do Cliente
             </button>
           </div>
 
@@ -81,7 +78,7 @@ export default function LandingPage() {
               <a href="#contato" className="block text-sm text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>Contato</a>
             </>}
             <button onClick={handleLogin} className="w-full text-sm font-semibold bg-emerald-700 text-white px-5 py-3 rounded-xl">
-              Entrar / Começar grátis
+              Área do Cliente
             </button>
           </div>
         )}

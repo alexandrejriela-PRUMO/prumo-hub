@@ -216,12 +216,12 @@ export default function LandingProdutor({ onLogin }) {
               O PRUMO Hub reúne <strong className="text-white">gestão ambiental, documentos, licenças, CAR, mapas e alertas</strong> em uma única plataforma — para o produtor rural que quer segurança jurídica e controle total da propriedade.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <button onClick={onLogin} className="flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold px-8 py-4 rounded-2xl shadow-xl transition-all hover:scale-105">
-                Começar gratuitamente <ArrowRight className="w-5 h-5" />
-              </button>
-              <a href="#contato" className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white font-semibold px-8 py-4 rounded-2xl border border-white/20 transition-all">
-                Falar com especialista
+              <a href="#contato" className="flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold px-8 py-4 rounded-2xl shadow-xl transition-all hover:scale-105">
+                Falar com especialista <ArrowRight className="w-5 h-5" />
               </a>
+              <button onClick={onLogin} className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white font-semibold px-8 py-4 rounded-2xl border border-white/20 transition-all">
+                Área do Cliente
+              </button>
             </div>
           </div>
         </div>
@@ -365,9 +365,9 @@ export default function LandingProdutor({ onLogin }) {
                     </div>
                   </div>
                   <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                    <button onClick={onLogin} className="flex-1 py-3 rounded-xl font-bold text-sm bg-emerald-700 text-white hover:bg-emerald-800 transition-colors">
-                      Assinar Agora →
-                    </button>
+                    <a href="#contato" className="flex-1 py-3 rounded-xl font-bold text-sm bg-emerald-700 text-white hover:bg-emerald-800 transition-colors text-center">
+                                 Falar com especialista →
+                               </a>
                     <a href="#contato" className="flex-1 py-3 rounded-xl font-semibold text-sm bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors text-center">
                       Quero ser Cliente Fundador
                     </a>
@@ -433,10 +433,10 @@ export default function LandingProdutor({ onLogin }) {
       <section className="py-16 bg-gradient-to-br from-emerald-900 to-teal-900">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">Pronto para transformar sua gestão ambiental?</h2>
-          <p className="text-emerald-200 mb-8">Junte-se a centenas de produtores que já usam o PRUMO Hub.</p>
-          <button onClick={onLogin} className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold text-lg px-10 py-4 rounded-2xl shadow-xl transition-all hover:scale-105">
-            Começar agora — é grátis <ArrowRight className="w-5 h-5" />
-          </button>
+          <p className="text-emerald-200 mb-8">Fale com nosso time e descubra como o PRUMO Hub pode ajudar sua propriedade.</p>
+          <a href="#contato" className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold text-lg px-10 py-4 rounded-2xl shadow-xl transition-all hover:scale-105">
+            Falar com especialista <ArrowRight className="w-5 h-5" />
+          </a>
         </div>
       </section>
 

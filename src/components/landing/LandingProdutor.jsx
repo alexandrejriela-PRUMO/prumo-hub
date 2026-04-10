@@ -67,9 +67,9 @@ const diferenciais = [
 const planos = [
   {
     name: 'Plano Único Completo',
-    monthlyPrice: 497,
-    annualPrice: 4473,
-    annualMonthly: 372.75,
+    monthlyPrice: 697,
+    annualPrice: 6273,
+    annualMonthly: 522.75,
     desc: 'Produtor Rural — Serviço Integrado. Tudo que sua propriedade precisa em uma única assinatura.',
     color: 'border-emerald-400',
     badge: '⭐ Plano Único',

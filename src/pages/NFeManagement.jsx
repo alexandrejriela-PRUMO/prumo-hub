@@ -43,21 +43,31 @@ export default function NFeManagement() {
   }, []);
 
   const isAdmin = user?.role === 'admin';
+  const isConsultor = user?.user_type === 'consultor' || user?.user_type === 'equipe';
 
-  // Admin vê todas as faturas; usuário comum vê só as suas
-  const { data: invoices = [], isLoading } = useQuery({
-    queryKey: ['nfe-invoices', user?.email, isAdmin],
+  // Consultor vê suas cobranças (ConsultorCharge); admin vê faturas da plataforma
+  const { data: consultorCharges = [], isLoading: loadingCharges } = useQuery({
+    queryKey: ['nfe-charges', user?.email],
+    queryFn: () => base44.entities.ConsultorCharge.filter({ consultor_email: user.email }, '-created_date', 200),
+    enabled: !!user?.email && isConsultor,
+  });
+
+  const { data: platformInvoices = [], isLoading: loadingInvoices } = useQuery({
+    queryKey: ['nfe-invoices', user?.email],
     queryFn: () => isAdmin
       ? base44.entities.Invoice.list('-created_date', 200)
       : base44.entities.Invoice.filter({ client_email: user.email }, '-created_date', 100),
-    enabled: !!user,
+    enabled: !!user && !isConsultor,
   });
+
+  const isLoading = isConsultor ? loadingCharges : loadingInvoices;
+  const invoices = isConsultor ? consultorCharges : platformInvoices;
 
   const filtered = invoices.filter(inv => {
     const matchesFilter = filter === 'Todos' || (inv.nfe_status || 'Não emitida') === filter;
     const matchesSearch = !search ||
       inv.description?.toLowerCase().includes(search.toLowerCase()) ||
-      inv.client_email?.toLowerCase().includes(search.toLowerCase()) ||
+      (inv.client_email || inv.client_name)?.toLowerCase().includes(search.toLowerCase()) ||
       inv.nfe_number?.toLowerCase().includes(search.toLowerCase());
     return matchesFilter && matchesSearch;
   });
@@ -69,17 +79,27 @@ export default function NFeManagement() {
     return acc;
   }, {});
 
-  const handleReemitir = async (invoice) => {
+  const handleEmitir = async (invoice) => {
     setReemitindo(prev => ({ ...prev, [invoice.id]: true }));
     try {
-      await base44.functions.invoke('emitirNFePlataforma', { invoice_id: invoice.id });
-      queryClient.invalidateQueries(['nfe-invoices']);
+      if (isConsultor) {
+        // Para consultores: emite NF-e usando dados fiscais do próprio consultor
+        await base44.functions.invoke('emitirNFe', { charge_id: invoice.id });
+        queryClient.invalidateQueries(['nfe-charges']);
+      } else {
+        // Para plataforma/admin
+        await base44.functions.invoke('emitirNFePlataforma', { invoice_id: invoice.id });
+        queryClient.invalidateQueries(['nfe-invoices']);
+      }
     } catch (err) {
-      console.error('Erro ao reemitir NF-e:', err);
+      console.error('Erro ao emitir NF-e:', err);
     } finally {
       setReemitindo(prev => ({ ...prev, [invoice.id]: false }));
     }
   };
+
+  // Verificar se o consultor tem dados fiscais configurados
+  const hasFiscalData = user?.nfe_cnpj && user?.nfe_inscricao_municipal && user?.nfe_codigo_municipio;
 
   const NFeCard = ({ invoice }) => {
     const nfeStatus = invoice.nfe_status || 'Não emitida';
@@ -142,17 +162,17 @@ export default function NFeManagement() {
                 )}
 
                 {/* Reemitir */}
-                {(isAdmin || canReemit) && canReemit && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={isEmitindo}
-                    onClick={() => handleReemitir(invoice)}
-                    className="flex items-center gap-1 text-amber-700 border-amber-200 hover:bg-amber-50"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isEmitindo ? 'animate-spin' : ''}`} />
-                    {isEmitindo ? 'Emitindo...' : 'Reemitir'}
-                  </Button>
+                {canReemit && (
+                 <Button
+                   size="sm"
+                   variant="outline"
+                   disabled={isEmitindo}
+                   onClick={() => handleEmitir(invoice)}
+                   className="flex items-center gap-1 text-amber-700 border-amber-200 hover:bg-amber-50"
+                 >
+                   <RefreshCw className={`w-3.5 h-3.5 ${isEmitindo ? 'animate-spin' : ''}`} />
+                   {isEmitindo ? 'Emitindo...' : (nfeStatus === 'Erro' ? 'Reemitir' : 'Emitir NF-e')}
+                 </Button>
                 )}
               </div>
             </div>
@@ -170,27 +190,24 @@ export default function NFeManagement() {
           <FileText className="w-8 h-8 text-emerald-600" />
           Notas Fiscais (NF-e)
         </h1>
-        <p className="text-gray-500 mt-1">Visualize, baixe e reemita notas fiscais das faturas da plataforma</p>
+        <p className="text-gray-500 mt-1">
+        {isConsultor ? 'Emita e gerencie NF-e das suas cobranças de clientes' : 'Visualize, baixe e reemita notas fiscais das faturas da plataforma'}
+      </p>
       </div>
+
+      {/* Aviso de dados fiscais não configurados */}
+      {isConsultor && !hasFiscalData && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-amber-800">Dados fiscais não configurados</p>
+            <p className="text-xs text-amber-700 mt-1">Para emitir NF-e, configure seu CNPJ, Inscrição Municipal e Código IBGE em <strong>Config. de Pagamento → Dados Fiscais</strong>.</p>
+          </div>
+        </div>
+      )}
 
       {/* Contadores */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: 'Total', key: 'Todos', color: 'text-gray-700', bg: 'bg-gray-50 border-gray-200' },
-          { label: 'Emitidas', key: 'Emitida', color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
-          { label: 'Com Erro', key: 'Erro', color: 'text-red-700', bg: 'bg-red-50 border-red-200' },
-          { label: 'Não Emitidas', key: 'Não emitida', color: 'text-gray-500', bg: 'bg-gray-50 border-gray-200' },
-        ].map(({ label, key, color, bg }) => (
-          <Card key={key} className={`border ${bg} cursor-pointer transition-all ${filter === key ? 'ring-2 ring-emerald-400' : ''}`} onClick={() => setFilter(key)}>
-            <CardContent className="p-4 text-center">
-              <p className={`text-2xl font-bold ${color}`}>{counts[key] ?? 0}</p>
-              <p className="text-xs text-gray-500 mt-1">{label}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
 
-      {/* Filtros e busca */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />

@@ -9,10 +9,12 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { charge_id, tomador } = await req.json();
+    const body = await req.json();
+    const { charge_id } = body;
+    const tomador = body.tomador || {};
 
     // Busca a cobrança
-    const charges = await base44.entities.ConsultorCharge.filter({ id: charge_id });
+    const charges = await base44.asServiceRole.entities.ConsultorCharge.filter({ id: charge_id });
     const charge = charges[0];
     if (!charge) return Response.json({ error: 'Cobrança não encontrada' }, { status: 404 });
     if (charge.consultor_email !== user.email) return Response.json({ error: 'Sem permissão' }, { status: 403 });
@@ -38,7 +40,7 @@ Deno.serve(async (req) => {
       tomador: {
         cpf: tomador.cpf ? tomador.cpf.replace(/\D/g, '') : undefined,
         cnpj: tomador.cnpj ? tomador.cnpj.replace(/\D/g, '') : undefined,
-        razao_social: tomador.razao_social,
+        razao_social: tomador.razao_social || charge.client_name || charge.client_email?.split('@')[0] || 'Tomador',
         email: tomador.email || charge.client_email,
         telefone: tomador.telefone || '',
         endereco: {

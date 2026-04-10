@@ -1,0 +1,103 @@
+{
+  "name": "ConsultorCharge",
+  "type": "object",
+  "properties": {
+    "consultor_email": {
+      "type": "string",
+      "description": "Email do consultor que emitiu a cobran\u00e7a"
+    },
+    "client_email": {
+      "type": "string",
+      "description": "Email do cliente cobrado"
+    },
+    "client_name": {
+      "type": "string",
+      "description": "Nome do cliente cobrado"
+    },
+    "property_id": {
+      "type": "string",
+      "description": "ID da propriedade vinculada"
+    },
+    "description": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o do servi\u00e7o cobrado"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Valor em R$"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de vencimento"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Pendente",
+        "Pago",
+        "Vencido",
+        "Cancelado"
+      ],
+      "default": "Pendente",
+      "description": "Status da cobran\u00e7a"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "boleto",
+        "pix",
+        "cartao"
+      ],
+      "default": "boleto",
+      "description": "Forma de pagamento"
+    },
+    "stripe_payment_intent_id": {
+      "type": "string",
+      "description": "ID do PaymentIntent no Stripe"
+    },
+    "stripe_payment_url": {
+      "type": "string",
+      "description": "Link de pagamento gerado pelo Stripe"
+    },
+    "paid_at": {
+      "type": "string",
+      "format": "date",
+      "description": "Data em que o pagamento foi confirmado"
+    },
+    "nfe_status": {
+      "type": "string",
+      "enum": [
+        "N\u00e3o emitida",
+        "Emitindo",
+        "Emitida",
+        "Erro"
+      ],
+      "default": "N\u00e3o emitida",
+      "description": "Status da NF-e no Focus NFe"
+    },
+    "nfe_number": {
+      "type": "string",
+      "description": "N\u00famero da NF-e emitida"
+    },
+    "nfe_url": {
+      "type": "string",
+      "description": "URL do XML/DANFE da NF-e"
+    },
+    "nfe_reference": {
+      "type": "string",
+      "description": "Refer\u00eancia usada no Focus NFe"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es da cobran\u00e7a"
+    }
+  },
+  "required": [
+    "consultor_email",
+    "client_email",
+    "amount",
+    "due_date",
+    "description"
+  ]
+}

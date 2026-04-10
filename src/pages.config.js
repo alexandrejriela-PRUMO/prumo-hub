@@ -100,6 +100,7 @@ import RuralCredit from './pages/RuralCredit';
 import Support from './pages/Support';
 import TaxIncentives from './pages/TaxIncentives';
 import AcceptInvite from './pages/AcceptInvite';
+import LandingPage from './pages/LandingPage';
 import __Layout from './Layout.jsx';
 
 
@@ -156,6 +157,7 @@ export const PAGES = {
     "RuralCredit": RuralCredit,
     "Support": Support,
     "TaxIncentives": TaxIncentives,
+    "LandingPage": LandingPage,
 }
 
 export const pagesConfig = {

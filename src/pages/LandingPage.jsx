@@ -1,12 +1,30 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Wheat, Briefcase, ArrowRight, Menu, X, ChevronRight, MessageCircle } from 'lucide-react';
+import ParticleBackground from '../components/landing/ParticleBackground';
+import AnimatedCounter from '../components/landing/AnimatedCounter';
 import LandingProdutor from '../components/landing/LandingProdutor';
 import LandingConsultor from '../components/landing/LandingConsultor';
+
+function useScrollFade(threshold = 0.12) {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect(); } },
+      { threshold }
+    );
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+  return [ref, visible];
+}
 
 export default function LandingPage() {
   const [perfil, setPerfil] = useState(null); // null | 'produtor' | 'consultor'
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [heroRef, heroVisible] = useScrollFade(0.01);
+  const [cardRef, cardVisible] = useScrollFade(0.1);
 
   const handleLogin = () => base44.auth.redirectToLogin('/');
 
@@ -87,6 +105,8 @@ export default function LandingPage() {
       {/* ESCOLHA DE PERFIL */}
       {!perfil && (
         <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden px-4 pt-16" style={{background: 'linear-gradient(135deg, #0a1628 0%, #0d2b1f 40%, #1a3a2a 70%, #0f1f2e 100%)'}}>
+          {/* Particle background */}
+          <ParticleBackground />
           {/* Animated background elements */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute top-0 left-0 w-full h-full opacity-20" style={{backgroundImage: 'radial-gradient(circle at 20% 20%, #10b981 0%, transparent 50%), radial-gradient(circle at 80% 80%, #f59e0b 0%, transparent 50%), radial-gradient(circle at 50% 50%, #0ea5e9 0%, transparent 60%)'}} />
@@ -100,7 +120,11 @@ export default function LandingPage() {
 
           <div className="relative z-10 w-full max-w-5xl mx-auto">
             {/* Logo + tagline */}
-            <div className="text-center mb-14">
+            <div
+              ref={heroRef}
+              className="text-center mb-14 transition-all duration-1000"
+              style={{ opacity: heroVisible ? 1 : 0, transform: heroVisible ? 'translateY(0)' : 'translateY(40px)' }}
+            >
               <img
                 src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/9e64158f0_PRUMO1.png"
                 alt="PRUMO Hub"
@@ -122,15 +146,21 @@ export default function LandingPage() {
               </p>
             </div>
 
+            {/* Animated Counter */}
+            <AnimatedCounter />
+
             {/* Profile cards */}
-            <div className="grid sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
+            <div
+              ref={cardRef}
+              className="grid sm:grid-cols-2 gap-6 max-w-3xl mx-auto transition-all duration-1000 delay-300"
+              style={{ opacity: cardVisible ? 1 : 0, transform: cardVisible ? 'translateY(0)' : 'translateY(50px)' }}
+            >
               {/* Produtor */}
               <button
                 onClick={() => setPerfil('produtor')}
                 className="group relative text-left rounded-3xl overflow-hidden border border-white/10 hover:border-emerald-400/50 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-emerald-900/60"
                 style={{background: 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(16,185,129,0.03) 100%)'}}
               >
-                {/* Top accent bar */}
                 <div className="h-1 w-full bg-gradient-to-r from-emerald-400 to-teal-500 group-hover:h-1.5 transition-all duration-300" />
                 <div className="p-8">
                   <div className="flex items-start justify-between mb-6">
@@ -157,7 +187,6 @@ export default function LandingPage() {
                 className="group relative text-left rounded-3xl overflow-hidden border border-white/10 hover:border-amber-400/50 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-amber-900/40"
                 style={{background: 'linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(245,158,11,0.03) 100%)'}}
               >
-                {/* Top accent bar */}
                 <div className="h-1 w-full bg-gradient-to-r from-amber-400 to-orange-500 group-hover:h-1.5 transition-all duration-300" />
                 <div className="p-8">
                   <div className="flex items-start justify-between mb-6">

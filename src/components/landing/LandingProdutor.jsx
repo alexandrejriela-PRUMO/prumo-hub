@@ -1,5 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
+
+function FadeIn({ children, delay = 0, className = '' }) {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect(); } },
+      { threshold: 0.1 }
+    );
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+  return (
+    <div
+      ref={ref}
+      className={className}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(30px)',
+        transition: `opacity 0.7s ease ${delay}ms, transform 0.7s ease ${delay}ms`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 import {
   CheckCircle2, Star, ArrowRight, Zap, MapPin, FileCheck,
   BarChart3, MessageCircle, Leaf, Wheat, Building2, Sprout,
@@ -267,16 +293,18 @@ export default function LandingProdutor({ onLogin }) {
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {diferenciais.map((f) => {
+            {diferenciais.map((f, i) => {
               const Icon = f.icon;
               return (
-                <div key={f.title} className="group p-6 rounded-2xl border border-gray-100 hover:border-emerald-200 hover:shadow-lg transition-all bg-white">
+                <FadeIn key={f.title} delay={i * 60}>
+                <div className="group p-6 rounded-2xl border border-gray-100 hover:border-emerald-200 hover:shadow-lg transition-all bg-white">
                   <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${f.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
                     <Icon className="w-6 h-6 text-white" />
                   </div>
                   <h3 className="font-bold text-gray-900 mb-2">{f.title}</h3>
                   <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
                 </div>
+                </FadeIn>
               );
             })}
           </div>

@@ -106,7 +106,7 @@ const testimonials = [
 ];
 
 function LeadForm() {
-  const [form, setForm] = useState({ nome: '', email: '', telefone: '', tamanho: '', culturas: '', estado: '' });
+  const [form, setForm] = useState({ nome: '', email: '', telefone: '', tamanho: '', culturas: '', estado: '', parceiro: '' });
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
 
@@ -180,6 +180,19 @@ function LeadForm() {
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Estado (UF)</label>
         <input type="text" maxLength={2} placeholder="Ex: RS, MT, GO..." value={form.estado} onChange={e => setForm(p => ({ ...p, estado: e.target.value.toUpperCase() }))} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Parceiro Fundador / Indicador <span className="text-gray-400 font-normal text-xs">(opcional)</span>
+        </label>
+        <input
+          type="text"
+          placeholder="Nome de quem indicou, se houver"
+          value={form.parceiro}
+          onChange={e => setForm(p => ({ ...p, parceiro: e.target.value }))}
+          className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+        />
       </div>
 
       <button type="submit" disabled={sending} className="w-full flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-60">

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Wheat, Briefcase, ArrowRight, Menu, X, ChevronRight } from 'lucide-react';
+import { Wheat, Briefcase, ArrowRight, Menu, X, ChevronRight, MessageCircle } from 'lucide-react';
 import LandingProdutor from '../components/landing/LandingProdutor';
 import LandingConsultor from '../components/landing/LandingConsultor';
 
@@ -190,6 +190,17 @@ export default function LandingPage() {
       {/* CONTEÚDO POR PERFIL */}
       {perfil === 'produtor' && <LandingProdutor onLogin={handleLogin} />}
       {perfil === 'consultor' && <LandingConsultor onLogin={handleLogin} />}
+
+      {/* Floating WhatsApp Button */}
+      <a
+        href="https://wa.me/5555999480489"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-full shadow-xl transition-all hover:scale-105"
+      >
+        <MessageCircle className="w-6 h-6" />
+        <span className="text-sm font-semibold">WhatsApp</span>
+      </a>
     </div>
   );
 }

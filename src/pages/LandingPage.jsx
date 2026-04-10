@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import {
   Leaf, MapPin, FileCheck, BarChart3, Users, Shield,
-  ChevronRight, CheckCircle2, Star, Menu, X, Smartphone,
-  Building2, TrendingUp, ScrollText, Briefcase, MessageCircle,
-  Map, Cloud, Droplets, Sprout, Wheat, ArrowRight, Globe,
-  Lock, Zap, Award, Factory, Truck, ClipboardList, AlertTriangle,
-  TreePine, Recycle, BarChart2, FileText
+  CheckCircle2, Star, Menu, X, Smartphone,
+  Building2, Briefcase, MessageCircle,
+  Sprout, Wheat, ArrowRight, Globe,
+  Lock, Zap, Award, Factory,
+  Recycle, BarChart2, FileText, AlertTriangle, ClipboardList,
+  Crown, Sparkles, ChevronDown, ChevronRight, Mail, Phone, User, Send
 } from 'lucide-react';
+
+// ─── DADOS POR SETOR ────────────────────────────────────────────────────────
 
 const sectors = [
   {
@@ -28,29 +31,6 @@ const sectors = [
       { icon: MessageCircle, title: 'IA Rute', desc: 'Assistente inteligente especializada em meio ambiente, agronegócio e legislação rural. Disponível 24h via WhatsApp.', color: 'from-pink-500 to-rose-600' },
       { icon: Sprout, title: 'Crédito e Safra', desc: 'Gestão de crédito rural e frustração de safra integrados ao perfil da propriedade e histórico do produtor.', color: 'from-lime-500 to-green-600' },
       { icon: Briefcase, title: 'Escritório do Consultor', desc: 'CRM, agenda, contratos, orçamentos e NF-e — tudo que o consultor ambiental precisa para operar.', color: 'from-slate-500 to-gray-600' },
-    ],
-    profiles: [
-      {
-        title: 'Consultor Ambiental',
-        icon: Briefcase,
-        color: 'border-amber-400 bg-amber-50',
-        iconColor: 'text-amber-600 bg-amber-100',
-        items: ['Escritório digital completo', 'CRM e pipeline de clientes', 'Gerador de contratos e orçamentos', 'Emissão de NF-e automatizada', 'Gestão de equipe', 'IA Rute para suporte técnico'],
-      },
-      {
-        title: 'Produtor Rural',
-        icon: Wheat,
-        color: 'border-emerald-400 bg-emerald-50',
-        iconColor: 'text-emerald-600 bg-emerald-100',
-        items: ['Central da propriedade', 'Gestão do CAR e licenças', 'Monitoramento por satélite', 'Ativos e créditos ambientais', 'Análise climática e NDVI', 'Termômetro de regularidade'],
-      },
-      {
-        title: 'Cliente Enterprise',
-        icon: Building2,
-        color: 'border-blue-400 bg-blue-50',
-        iconColor: 'text-blue-600 bg-blue-100',
-        items: ['Portal exclusivo da propriedade', 'Acesso a documentos e laudos', 'Acompanhamento de processos', 'Comunicação com consultor', 'Relatórios consolidados', 'Acesso mobile'],
-      },
     ],
     stats: [
       { value: '5.000+', label: 'Propriedades monitoradas' },
@@ -85,29 +65,6 @@ const sectors = [
       { icon: Users, title: 'Gestão de Consultores', desc: 'Conecte sua empresa aos consultores ambientais responsáveis e acompanhe projetos em tempo real.', color: 'from-slate-500 to-gray-600' },
       { icon: MessageCircle, title: 'IA Rute Industrial', desc: 'Assistente especializada em legislação ambiental industrial, CONAMA, normas ABNT e licenciamento.', color: 'from-pink-500 to-rose-600' },
     ],
-    profiles: [
-      {
-        title: 'Gestores Ambientais',
-        icon: Factory,
-        color: 'border-blue-400 bg-blue-50',
-        iconColor: 'text-blue-600 bg-blue-100',
-        items: ['Painel de conformidade em tempo real', 'Controle de licenças e vencimentos', 'Gestão de passivos e multas', 'Checklists de auditoria', 'Relatórios de desempenho ESG', 'Indicadores de sustentabilidade'],
-      },
-      {
-        title: 'Consultores Industriais',
-        icon: Briefcase,
-        color: 'border-amber-400 bg-amber-50',
-        iconColor: 'text-amber-600 bg-amber-100',
-        items: ['Escritório digital completo', 'CRM de clientes industriais', 'Gerador de laudos e relatórios', 'Assinatura digital integrada', 'Emissão de NF-e', 'IA Rute para suporte técnico'],
-      },
-      {
-        title: 'Empresas Enterprise',
-        icon: Building2,
-        color: 'border-emerald-400 bg-emerald-50',
-        iconColor: 'text-emerald-600 bg-emerald-100',
-        items: ['Multi-unidades / plantas industriais', 'Dashboard consolidado ESG', 'Acesso de múltiplos usuários', 'Integração com consultores externos', 'Histórico de conformidade', 'Relatórios para acionistas'],
-      },
-    ],
     stats: [
       { value: '100+', label: 'Empresas industriais' },
       { value: '500+', label: 'Licenças controladas' },
@@ -124,9 +81,305 @@ const sectors = [
   },
 ];
 
+// ─── PLANOS ──────────────────────────────────────────────────────────────────
+
+const consultorPlanos = [
+  {
+    name: 'Starter',
+    price: 'R$ 149',
+    period: '/mês',
+    desc: 'Ideal para consultores autônomos que estão começando.',
+    color: 'border-gray-200',
+    badge: null,
+    items: [
+      'Até 10 propriedades de clientes',
+      'CRM com pipeline básico',
+      'Gerador de contratos e orçamentos',
+      'Agenda integrada',
+      'IA Rute (50 consultas/mês)',
+      'Suporte por e-mail',
+    ],
+  },
+  {
+    name: 'Profissional',
+    price: 'R$ 349',
+    period: '/mês',
+    desc: 'Para consultores em crescimento com carteira ativa de clientes.',
+    color: 'border-amber-400',
+    badge: 'Mais popular',
+    badgeColor: 'bg-amber-500',
+    items: [
+      'Propriedades ilimitadas',
+      'CRM completo com automações',
+      'Emissão de NF-e automatizada',
+      'Controle financeiro e Stripe',
+      'IA Rute ilimitada + WhatsApp',
+      'Assinatura digital (Clicksign)',
+      'Gestão de equipe (até 3 membros)',
+      'Suporte prioritário',
+    ],
+  },
+  {
+    name: 'Enterprise',
+    price: 'Sob consulta',
+    period: '',
+    desc: 'Para escritórios e empresas de consultoria ambiental de grande porte.',
+    color: 'border-emerald-400',
+    badge: 'Personalizado',
+    badgeColor: 'bg-emerald-600',
+    items: [
+      'Tudo do Profissional',
+      'Equipe ilimitada',
+      'Multi-empresas / CNPJ',
+      'API e integrações customizadas',
+      'Relatórios personalizados',
+      'Treinamento e onboarding',
+      'Gerente de conta dedicado',
+      'SLA garantido',
+    ],
+  },
+];
+
+const produtorPlanos = [
+  {
+    name: 'Básico',
+    price: 'R$ 99',
+    period: '/mês',
+    desc: 'Para pequenos produtores que querem organizar sua propriedade.',
+    color: 'border-gray-200',
+    badge: null,
+    items: [
+      '1 propriedade',
+      'Central da propriedade',
+      'Gestão de documentos',
+      'CAR e licenças básicas',
+      'Mapa interativo',
+      'IA Rute (30 consultas/mês)',
+    ],
+  },
+  {
+    name: 'Produtor Plus',
+    price: 'R$ 229',
+    period: '/mês',
+    desc: 'Para produtores que buscam monitoramento completo e ativos ambientais.',
+    color: 'border-emerald-400',
+    badge: 'Recomendado',
+    badgeColor: 'bg-emerald-600',
+    items: [
+      'Até 3 propriedades',
+      'Monitoramento NDVI por satélite',
+      'Alertas MapBiomas em tempo real',
+      'Ativos ambientais (carbono, CRA)',
+      'Crédito rural e safra',
+      'Análise climática',
+      'IA Rute ilimitada + WhatsApp',
+      'Relatórios de regularidade',
+    ],
+  },
+  {
+    name: 'Agro Enterprise',
+    price: 'Sob consulta',
+    period: '',
+    desc: 'Para grandes produtores, cooperativas e grupos rurais.',
+    color: 'border-amber-400',
+    badge: 'Personalizado',
+    badgeColor: 'bg-amber-500',
+    items: [
+      'Propriedades ilimitadas',
+      'Multi-propriedades consolidadas',
+      'Usuários e equipe ilimitados',
+      'Integrações customizadas',
+      'Georreferenciamento avançado',
+      'Suporte técnico especializado',
+      'Onboarding assistido',
+      'SLA garantido',
+    ],
+  },
+];
+
+// ─── FORMULÁRIO ──────────────────────────────────────────────────────────────
+
+const consultorFormFields = [
+  { id: 'nome', label: 'Nome completo', type: 'text', placeholder: 'Seu nome', icon: User },
+  { id: 'email', label: 'E-mail profissional', type: 'email', placeholder: 'consultor@email.com', icon: Mail },
+  { id: 'telefone', label: 'WhatsApp / Telefone', type: 'tel', placeholder: '(00) 9 0000-0000', icon: Phone },
+];
+
+const produtorFormFields = [
+  { id: 'nome', label: 'Nome completo', type: 'text', placeholder: 'Seu nome', icon: User },
+  { id: 'email', label: 'E-mail', type: 'email', placeholder: 'produtor@email.com', icon: Mail },
+  { id: 'telefone', label: 'WhatsApp / Telefone', type: 'tel', placeholder: '(00) 9 0000-0000', icon: Phone },
+];
+
+function LeadForm({ type }) {
+  const isConsultor = type === 'consultor';
+  const [form, setForm] = useState({ nome: '', email: '', telefone: '', especialidade: '', estado: '', tamanho: '', culturas: '' });
+  const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSending(true);
+    await new Promise(r => setTimeout(r, 900));
+    setSent(true);
+    setSending(false);
+  };
+
+  if (sent) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
+          <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+        </div>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">Solicitação enviada!</h3>
+        <p className="text-gray-500 text-sm">Nossa equipe entrará em contato em até 24 horas.</p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Campos comuns */}
+      {(isConsultor ? consultorFormFields : produtorFormFields).map((f) => {
+        const Icon = f.icon;
+        return (
+          <div key={f.id}>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{f.label}</label>
+            <div className="relative">
+              <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type={f.type}
+                required
+                placeholder={f.placeholder}
+                value={form[f.id]}
+                onChange={e => setForm(p => ({ ...p, [f.id]: e.target.value }))}
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent"
+              />
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Campo específico: Consultor */}
+      {isConsultor && (
+        <>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Área de atuação</label>
+            <select
+              required
+              value={form.especialidade}
+              onChange={e => setForm(p => ({ ...p, especialidade: e.target.value }))}
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white"
+            >
+              <option value="">Selecione...</option>
+              <option>Licenciamento Ambiental</option>
+              <option>Gestão de CAR e PRAD</option>
+              <option>Georreferenciamento</option>
+              <option>Ativos Ambientais / Carbono</option>
+              <option>Consultoria Agronômica</option>
+              <option>Consultoria Jurídica Ambiental</option>
+              <option>Outro</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Quantidade de clientes ativos</label>
+            <select
+              value={form.tamanho}
+              onChange={e => setForm(p => ({ ...p, tamanho: e.target.value }))}
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white"
+            >
+              <option value="">Selecione...</option>
+              <option>Ainda não tenho clientes</option>
+              <option>1 a 5 clientes</option>
+              <option>6 a 20 clientes</option>
+              <option>21 a 50 clientes</option>
+              <option>Mais de 50 clientes</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Estado (UF)</label>
+            <input
+              type="text"
+              maxLength={2}
+              placeholder="Ex: MT, SP, GO..."
+              value={form.estado}
+              onChange={e => setForm(p => ({ ...p, estado: e.target.value.toUpperCase() }))}
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            />
+          </div>
+        </>
+      )}
+
+      {/* Campo específico: Produtor */}
+      {!isConsultor && (
+        <>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tamanho da propriedade</label>
+            <select
+              required
+              value={form.tamanho}
+              onChange={e => setForm(p => ({ ...p, tamanho: e.target.value }))}
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white"
+            >
+              <option value="">Selecione...</option>
+              <option>Até 100 hectares</option>
+              <option>100 a 500 hectares</option>
+              <option>500 a 2.000 hectares</option>
+              <option>2.000 a 10.000 hectares</option>
+              <option>Mais de 10.000 hectares</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Principal atividade / cultura</label>
+            <select
+              value={form.culturas}
+              onChange={e => setForm(p => ({ ...p, culturas: e.target.value }))}
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white"
+            >
+              <option value="">Selecione...</option>
+              <option>Soja</option>
+              <option>Milho</option>
+              <option>Pecuária</option>
+              <option>Cana-de-açúcar</option>
+              <option>Café</option>
+              <option>Algodão</option>
+              <option>Horticultura / Fruticultura</option>
+              <option>Misto</option>
+              <option>Outro</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Estado (UF)</label>
+            <input
+              type="text"
+              maxLength={2}
+              placeholder="Ex: MT, GO, MS..."
+              value={form.estado}
+              onChange={e => setForm(p => ({ ...p, estado: e.target.value.toUpperCase() }))}
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            />
+          </div>
+        </>
+      )}
+
+      <button
+        type="submit"
+        disabled={sending}
+        className="w-full flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-60 mt-2"
+      >
+        {sending ? 'Enviando...' : <>Quero conhecer o PRUMO Hub <Send className="w-4 h-4" /></>}
+      </button>
+      <p className="text-xs text-gray-400 text-center">Seus dados estão seguros. Sem spam.</p>
+    </form>
+  );
+}
+
+// ─── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────────
+
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSector, setActiveSector] = useState('agro');
+  const [formType, setFormType] = useState('consultor');
 
   const sector = sectors.find((s) => s.id === activeSector);
 
@@ -144,10 +397,11 @@ export default function LandingPage() {
             alt="PRUMO Hub"
             className="h-10 w-auto object-contain"
           />
-          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
+          <div className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
             <a href="#funcionalidades" className="hover:text-emerald-700 transition-colors">Funcionalidades</a>
-            <a href="#perfis" className="hover:text-emerald-700 transition-colors">Para quem é</a>
+            <a href="#planos" className="hover:text-emerald-700 transition-colors">Planos</a>
             <a href="#depoimentos" className="hover:text-emerald-700 transition-colors">Depoimentos</a>
+            <a href="#contato" className="hover:text-emerald-700 transition-colors">Contato</a>
           </div>
           <div className="hidden md:flex items-center gap-3">
             <button onClick={handleLogin} className="text-sm font-semibold text-emerald-700 hover:text-emerald-900 transition-colors px-4 py-2">
@@ -164,8 +418,9 @@ export default function LandingPage() {
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-t border-emerald-100 px-4 py-4 space-y-3">
             <a href="#funcionalidades" className="block text-sm font-medium text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>Funcionalidades</a>
-            <a href="#perfis" className="block text-sm font-medium text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>Para quem é</a>
+            <a href="#planos" className="block text-sm font-medium text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>Planos</a>
             <a href="#depoimentos" className="block text-sm font-medium text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>Depoimentos</a>
+            <a href="#contato" className="block text-sm font-medium text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>Contato</a>
             <button onClick={handleLogin} className="w-full text-sm font-semibold bg-emerald-700 text-white px-5 py-3 rounded-xl hover:bg-emerald-800 transition-colors">
               Entrar / Começar grátis
             </button>
@@ -226,10 +481,10 @@ export default function LandingPage() {
               <ArrowRight className="w-5 h-5" />
             </button>
             <a
-              href="#funcionalidades"
+              href="#planos"
               className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white font-semibold text-base px-8 py-4 rounded-2xl border border-white/20 transition-all"
             >
-              Ver funcionalidades
+              Ver planos e preços
             </a>
           </div>
           <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto">
@@ -252,13 +507,8 @@ export default function LandingPage() {
               Tudo em um lugar
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Funcionalidades completas para {activeSector === 'agro' ? 'quem trabalha com o campo' : 'o setor industrial'}
+              Funcionalidades para {activeSector === 'agro' ? 'quem trabalha com o campo' : 'o setor industrial'}
             </h2>
-            <p className="text-gray-500 max-w-2xl mx-auto">
-              {activeSector === 'agro'
-                ? 'Mais de 30 módulos integrados para cobrir todo o ciclo de gestão ambiental, financeira e técnica da propriedade rural.'
-                : 'Solução completa de compliance ambiental, ESG e gestão de licenças para operações industriais de qualquer porte.'}
-            </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {sector.features.map((f) => {
@@ -277,52 +527,85 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* PERFIS */}
-      <section id="perfis" className="py-20 bg-gradient-to-b from-stone-50 to-white">
+      {/* PLANOS E ASSINATURAS */}
+      <section id="planos" className="py-20 bg-gradient-to-b from-stone-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
+          <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 text-xs font-semibold uppercase tracking-wider px-4 py-2 rounded-full mb-4">
-              <Users className="w-3.5 h-3.5" />
-              Para cada perfil
+              <Crown className="w-3.5 h-3.5" />
+              Planos e Assinaturas
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Uma plataforma, múltiplos perfis
+              Escolha o plano ideal para você
             </h2>
-            <p className="text-gray-500 max-w-xl mx-auto">
-              O PRUMO Hub se adapta ao seu perfil — entregando as ferramentas certas para cada necessidade.
+            <p className="text-gray-500 max-w-xl mx-auto mb-8">
+              Planos pensados para cada perfil — do consultor autônomo ao grande produtor rural.
             </p>
+            {/* Toggle perfil de planos */}
+            <div className="inline-flex bg-gray-100 rounded-xl p-1 gap-1">
+              <button
+                onClick={() => setFormType('consultor')}
+                className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all ${formType === 'consultor' ? 'bg-amber-500 text-white shadow' : 'text-gray-600 hover:text-gray-900'}`}
+              >
+                🧑‍💼 Planos Consultor
+              </button>
+              <button
+                onClick={() => setFormType('produtor')}
+                className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all ${formType === 'produtor' ? 'bg-emerald-600 text-white shadow' : 'text-gray-600 hover:text-gray-900'}`}
+              >
+                🌾 Planos Produtor Rural
+              </button>
+            </div>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {sector.profiles.map((p) => {
-              const Icon = p.icon;
-              return (
-                <div key={p.title} className={`rounded-2xl border-2 ${p.color} p-8 flex flex-col`}>
-                  <div className={`w-14 h-14 rounded-2xl ${p.iconColor} flex items-center justify-center mb-5`}>
-                    <Icon className="w-7 h-7" />
+
+          <div className="grid md:grid-cols-3 gap-6 mt-4">
+            {(formType === 'consultor' ? consultorPlanos : produtorPlanos).map((plan) => (
+              <div
+                key={plan.name}
+                className={`relative rounded-2xl border-2 ${plan.color} bg-white p-8 flex flex-col shadow-sm hover:shadow-lg transition-shadow`}
+              >
+                {plan.badge && (
+                  <div className={`absolute -top-3 left-1/2 -translate-x-1/2 ${plan.badgeColor} text-white text-xs font-bold px-4 py-1 rounded-full`}>
+                    {plan.badge}
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-5">{p.title}</h3>
-                  <ul className="space-y-3 flex-1">
-                    {p.items.map((item) => (
-                      <li key={item} className="flex items-center gap-2.5 text-sm text-gray-700">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                  <button
-                    onClick={handleLogin}
-                    className="mt-8 w-full py-3 rounded-xl font-semibold text-sm bg-emerald-700 text-white hover:bg-emerald-800 transition-colors"
-                  >
-                    Começar agora →
-                  </button>
+                )}
+                <div className="mb-5">
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">{plan.name}</h3>
+                  <p className="text-sm text-gray-500 mb-4">{plan.desc}</p>
+                  <div className="flex items-end gap-1">
+                    <span className="text-3xl font-extrabold text-gray-900">{plan.price}</span>
+                    {plan.period && <span className="text-gray-400 text-sm mb-1">{plan.period}</span>}
+                  </div>
                 </div>
-              );
-            })}
+                <ul className="space-y-2.5 flex-1 mb-6">
+                  {plan.items.map((item) => (
+                    <li key={item} className="flex items-start gap-2 text-sm text-gray-700">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  onClick={handleLogin}
+                  className={`w-full py-3 rounded-xl font-semibold text-sm transition-colors ${
+                    plan.badge === 'Mais popular' || plan.badge === 'Recomendado'
+                      ? 'bg-emerald-700 text-white hover:bg-emerald-800'
+                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                  }`}
+                >
+                  {plan.price === 'Sob consulta' ? 'Falar com equipe →' : 'Começar agora →'}
+                </button>
+              </div>
+            ))}
           </div>
+
+          <p className="text-center text-xs text-gray-400 mt-8">
+            * Todos os planos incluem acesso mobile, suporte e atualizações. Cancele quando quiser.
+          </p>
         </div>
       </section>
 
-      {/* IA RUTE DESTAQUE */}
+      {/* IA RUTE */}
       <section className="py-20 bg-gradient-to-br from-emerald-950 to-teal-900 relative overflow-hidden">
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-0 right-0 w-96 h-96 bg-amber-400 rounded-full blur-3xl" />
@@ -334,12 +617,12 @@ export default function LandingPage() {
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-5">
             Conheça a Rute, sua IA especialista<br />
-            {activeSector === 'agro' ? 'em meio ambiente e agronegócio' : 'em compliance e legislação ambiental industrial'}
+            {activeSector === 'agro' ? 'em meio ambiente e agronegócio' : 'em compliance e legislação industrial'}
           </h2>
           <p className="text-emerald-200 text-lg max-w-2xl mx-auto mb-8">
             {activeSector === 'agro'
-              ? 'A Rute é uma assistente de IA treinada para responder dúvidas de legislação ambiental, CAR, PRAD, crédito de carbono e muito mais — integrada ao seu WhatsApp.'
-              : 'A Rute responde dúvidas sobre licenciamento industrial, normas CONAMA, ABNT, passivos ambientais, auditorias e ESG corporativo — disponível 24h.'}
+              ? 'Dúvidas de legislação ambiental, CAR, PRAD, crédito de carbono e mais — integrada ao seu WhatsApp.'
+              : 'Licenciamento industrial, normas CONAMA, ABNT, passivos ambientais e ESG corporativo — disponível 24h.'}
           </p>
           <div className="grid sm:grid-cols-3 gap-4 max-w-3xl mx-auto mb-10">
             {(activeSector === 'agro'
@@ -366,9 +649,7 @@ export default function LandingPage() {
               <Star className="w-3.5 h-3.5" />
               Depoimentos
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Quem usa, recomenda
-            </h2>
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Quem usa, recomenda</h2>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {sector.testimonials.map((t) => (
@@ -389,19 +670,87 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* DIFERENCIAIS */}
-      <section className="py-20 bg-stone-50">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-3">Por que o PRUMO Hub?</h2>
-            <p className="text-gray-500">Construído por quem entende o campo, a indústria e a consultoria ambiental.</p>
+      {/* FORMULÁRIO DE INTERESSE */}
+      <section id="contato" className="py-20 bg-gradient-to-br from-stone-50 to-emerald-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 text-xs font-semibold uppercase tracking-wider px-4 py-2 rounded-full mb-4">
+              <Sparkles className="w-3.5 h-3.5" />
+              Quero conhecer o PRUMO Hub
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+              Fale com nossa equipe
+            </h2>
+            <p className="text-gray-500 max-w-xl mx-auto">
+              Preencha o formulário e um especialista entrará em contato para apresentar a plataforma e tirar suas dúvidas.
+            </p>
           </div>
+
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* Card Consultor */}
+            <div
+              className={`rounded-2xl border-2 transition-all cursor-pointer ${
+                formType === 'consultor'
+                  ? 'border-amber-400 shadow-xl shadow-amber-100'
+                  : 'border-gray-200 hover:border-amber-200 opacity-80'
+              } bg-white overflow-hidden`}
+              onClick={() => setFormType('consultor')}
+            >
+              <div className={`px-6 py-4 flex items-center gap-3 ${formType === 'consultor' ? 'bg-amber-50 border-b border-amber-100' : 'bg-gray-50 border-b border-gray-100'}`}>
+                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+                  <Briefcase className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-sm">Sou Consultor Ambiental</h3>
+                  <p className="text-xs text-gray-500">Engenheiro, agrônomo, advogado ou técnico ambiental</p>
+                </div>
+                {formType === 'consultor' && <CheckCircle2 className="w-5 h-5 text-amber-500 ml-auto" />}
+              </div>
+              {formType === 'consultor' && (
+                <div className="px-6 py-5">
+                  <LeadForm type="consultor" />
+                </div>
+              )}
+            </div>
+
+            {/* Card Produtor */}
+            <div
+              className={`rounded-2xl border-2 transition-all cursor-pointer ${
+                formType === 'produtor'
+                  ? 'border-emerald-400 shadow-xl shadow-emerald-100'
+                  : 'border-gray-200 hover:border-emerald-200 opacity-80'
+              } bg-white overflow-hidden`}
+              onClick={() => setFormType('produtor')}
+            >
+              <div className={`px-6 py-4 flex items-center gap-3 ${formType === 'produtor' ? 'bg-emerald-50 border-b border-emerald-100' : 'bg-gray-50 border-b border-gray-100'}`}>
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                  <Wheat className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-sm">Sou Produtor Rural</h3>
+                  <p className="text-xs text-gray-500">Proprietário rural, fazendeiro, agricultor ou pecuarista</p>
+                </div>
+                {formType === 'produtor' && <CheckCircle2 className="w-5 h-5 text-emerald-500 ml-auto" />}
+              </div>
+              {formType === 'produtor' && (
+                <div className="px-6 py-5">
+                  <LeadForm type="produtor" />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* DIFERENCIAIS */}
+      <section className="py-16 bg-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               { icon: Globe, title: 'Tudo integrado', desc: 'Da propriedade ao financeiro, sem sair da plataforma.' },
               { icon: Lock, title: 'Seguro e confiável', desc: 'Dados criptografados e backup automático.' },
-              { icon: Smartphone, title: 'Mobile first', desc: 'Funciona perfeitamente no celular, mesmo no campo ou na planta.' },
-              { icon: Award, title: 'Especializado', desc: 'Feito exclusivamente para o agronegócio, indústria e meio ambiente.' },
+              { icon: Smartphone, title: 'Mobile first', desc: 'Funciona perfeitamente no celular, mesmo no campo.' },
+              { icon: Award, title: 'Especializado', desc: 'Feito exclusivamente para o agronegócio e meio ambiente.' },
             ].map((item) => {
               const Icon = item.icon;
               return (
@@ -421,12 +770,8 @@ export default function LandingPage() {
       {/* CTA FINAL */}
       <section className="py-20 bg-gradient-to-br from-emerald-900 to-teal-900">
         <div className="max-w-3xl mx-auto px-4 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-5">
-            {sector.cta}
-          </h2>
-          <p className="text-emerald-200 text-lg mb-8">
-            {sector.ctaDesc}
-          </p>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-5">{sector.cta}</h2>
+          <p className="text-emerald-200 text-lg mb-8">{sector.ctaDesc}</p>
           <button
             onClick={handleLogin}
             className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold text-lg px-10 py-4 rounded-2xl shadow-xl shadow-amber-500/30 transition-all hover:scale-105"

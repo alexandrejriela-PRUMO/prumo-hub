@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Wheat, Briefcase, ArrowRight, Menu, X, ChevronRight, MessageCircle } from 'lucide-react';
 import ParticleBackground from '../components/landing/ParticleBackground';
-import AnimatedCounter from '../components/landing/AnimatedCounter';
 import LandingProdutor from '../components/landing/LandingProdutor';
 import LandingConsultor from '../components/landing/LandingConsultor';
 
@@ -146,8 +145,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            {/* Animated Counter */}
-            <AnimatedCounter />
+
 
             {/* Profile cards */}
             <div

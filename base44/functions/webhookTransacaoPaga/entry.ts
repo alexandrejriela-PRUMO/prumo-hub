@@ -38,6 +38,10 @@ function extractBuyer(body) {
 }
 
 Deno.serve(async (req) => {
+  if (req.method === 'GET') {
+    return Response.json({ status: 'ok', webhook: 'webhookTransacaoPaga' }, { status: 200 });
+  }
+
   if (req.method !== 'POST') {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
   }

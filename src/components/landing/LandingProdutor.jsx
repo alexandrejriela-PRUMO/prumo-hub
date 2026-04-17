@@ -94,9 +94,7 @@ const diferenciais = [
 const planos = [
   {
     name: 'Plano Único Completo',
-    monthlyPrice: 697,
-    annualPrice: 6970,
-    annualMonthly: 580.83,
+    price: 697,
     desc: 'Produtor Rural — Serviço Integrado. Tudo que sua propriedade precisa em uma única assinatura.',
     color: 'border-emerald-400',
     badge: '⭐ Plano Único',
@@ -242,7 +240,6 @@ function LeadForm() {
 }
 
 export default function LandingProdutor({ onLogin }) {
-  const [billing, setBilling] = useState('monthly');
   return (
     <div className="pt-16">
       {/* HERO */}
@@ -360,19 +357,13 @@ export default function LandingProdutor({ onLogin }) {
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Plano Único Completo</h2>
             <p className="text-gray-500 max-w-xl mx-auto mb-6">Tudo que sua propriedade precisa em uma única assinatura — sem surpresas.</p>
-            {/* Billing toggle */}
-            <div className="inline-flex bg-gray-100 rounded-full p-1 gap-1">
-              <button onClick={() => setBilling('monthly')} className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${billing === 'monthly' ? 'bg-emerald-600 text-white shadow' : 'text-gray-600'}`}>Mensal</button>
-              <button onClick={() => setBilling('annual')} className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${billing === 'annual' ? 'bg-emerald-600 text-white shadow' : 'text-gray-600'}`}>Anual 🎉 <span className="text-xs">(2 meses grátis)</span></button>
-            </div>
           </div>
 
           {planos.map((plan) => {
-            const price = billing === 'annual' ? plan.annualMonthly : plan.monthlyPrice;
             return (
               <div key={plan.name} className="relative rounded-2xl border-2 border-emerald-400 bg-white shadow-xl ring-2 ring-emerald-300 ring-offset-2 overflow-hidden">
                 <div className="absolute top-0 right-0 bg-emerald-600 text-white text-xs px-4 py-1.5 rounded-bl-xl font-bold">
-                  {billing === 'annual' ? '🎉 2 meses grátis' : 'Plano Único'}
+                  Plano Único
                 </div>
                 <div className="p-8">
                   <div className="flex items-center gap-3 mb-5">
@@ -386,12 +377,9 @@ export default function LandingProdutor({ onLogin }) {
                   </div>
                   <div className="mb-6">
                     <div className="flex items-end gap-1">
-                      <span className="text-4xl font-extrabold text-gray-900">R$ {price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      <span className="text-4xl font-extrabold text-gray-900">R$ {plan.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                       <span className="text-gray-400 text-sm mb-1">/mês por propriedade</span>
                     </div>
-                    {billing === 'annual' && (
-                      <p className="text-sm text-emerald-600 font-medium mt-1">R$ {plan.annualPrice.toLocaleString('pt-BR')}/ano por propriedade — 2 meses grátis</p>
-                    )}
                   </div>
                   <div className="grid sm:grid-cols-2 gap-6">
                     <div>

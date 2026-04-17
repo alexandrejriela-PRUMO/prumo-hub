@@ -116,9 +116,7 @@ const diferenciais = [
 const planos = [
   {
     name: 'Start',
-    monthlyPrice: 129,
-    annualPrice: 1290,
-    annualMonthly: 107.5,
+    price: 129,
     desc: '1 usuário consultor • Até 5 propriedades/clientes.',
     color: 'border-emerald-200',
     badge: null,
@@ -133,9 +131,7 @@ const planos = [
   },
   {
     name: 'Pro',
-    monthlyPrice: 249,
-    annualPrice: 2490,
-    annualMonthly: 207.5,
+    price: 249,
     desc: 'Até 2 usuários (consultor + equipe) • Até 10 propriedades.',
     color: 'border-blue-300',
     badge: null,
@@ -150,9 +146,7 @@ const planos = [
   },
   {
     name: 'Enterprise',
-    monthlyPrice: 497,
-    annualPrice: 4970,
-    annualMonthly: 414.17,
+    price: 497,
     desc: 'Até 3 usuários • Até 200 propriedades/clientes. Plano mais completo.',
     color: 'border-amber-400',
     badge: 'Mais Popular',
@@ -304,7 +298,6 @@ function LeadForm() {
 }
 
 export default function LandingConsultor({ onLogin }) {
-  const [billing, setBilling] = useState('monthly');
   return (
     <div className="pt-16">
       <section className="py-20 bg-gradient-to-br from-amber-950 via-amber-900 to-orange-900 relative overflow-hidden">
@@ -388,14 +381,9 @@ export default function LandingConsultor({ onLogin }) {
               Planos para Consultores
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Escolha o plano ideal</h2>
-            <div className="inline-flex bg-gray-100 rounded-full p-1 gap-1 mt-2">
-              <button onClick={() => setBilling('monthly')} className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${billing === 'monthly' ? 'bg-amber-500 text-white shadow' : 'text-gray-600'}`}>Mensal</button>
-              <button onClick={() => setBilling('annual')} className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${billing === 'annual' ? 'bg-amber-500 text-white shadow' : 'text-gray-600'}`}>Anual 🎉 <span className="text-xs">(2 meses grátis)</span></button>
-            </div>
           </div>
           <div className="grid md:grid-cols-3 gap-6 items-start">
             {planos.map((plan) => {
-              const price = billing === 'annual' ? plan.annualMonthly : plan.monthlyPrice;
               const borderColor = plan.name === 'Start' ? 'border-emerald-200' : plan.name === 'Pro' ? 'border-blue-300' : 'border-amber-400';
               const checkColor = plan.name === 'Start' ? 'text-emerald-600' : plan.name === 'Pro' ? 'text-blue-600' : 'text-amber-500';
               const btnColor = plan.highlight ? 'bg-amber-500 text-white hover:bg-amber-600' : plan.name === 'Pro' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-emerald-600 text-white hover:bg-emerald-700';
@@ -408,13 +396,10 @@ export default function LandingConsultor({ onLogin }) {
                   )}
                   <h3 className="text-lg font-bold text-gray-900 mb-1">{plan.name}</h3>
                   <p className="text-sm text-gray-500 mb-4">{plan.desc}</p>
-                  <div className="flex items-end gap-1 mb-2">
-                    <span className="text-3xl font-extrabold text-gray-900">R$ {price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  <div className="flex items-end gap-1 mb-4">
+                    <span className="text-3xl font-extrabold text-gray-900">R$ {plan.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                     <span className="text-gray-400 text-sm mb-1">/mês</span>
                   </div>
-                  {billing === 'annual' && (
-                    <p className="text-xs text-amber-600 font-medium mb-4">R$ {plan.annualPrice.toLocaleString('pt-BR')}/ano — 2 meses grátis + Fidelidade 12 meses</p>
-                  )}
                   <ul className="space-y-2.5 flex-1 mb-6">
                     {plan.items.map((item) => (
                       <li key={item} className="flex items-start gap-2 text-sm text-gray-700">

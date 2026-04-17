@@ -77,27 +77,26 @@ Deno.serve(async (req) => {
       return Response.json({ received: true, message: 'Usuário já cadastrado.', email }, { status: 200 });
     }
 
-    await base44.users.inviteUser(email, 'user');
-    console.log(`[webhookTransacaoPaga] Convite enviado para: ${email}`);
-
-    // Aguardar um momento para o usuário ser criado
-    await new Promise(r => setTimeout(r, 2000));
-
-    const users = await base44.asServiceRole.entities.User.filter({ email });
-    if (users && users.length > 0) {
-      await base44.asServiceRole.entities.User.update(users[0].id, {
-        full_name: fullName || email,
-        user_type: 'produtor',
-        document: cleanDoc,
-        hashed_temp_password: hashedPassword,
-        must_change_password: true,
-        webhook_source: 'transacao_paga',
-        created_via_webhook: true,
-        status: 'active',
-      });
+    // Verificar se já existe registro pendente
+    const existing2 = await base44.asServiceRole.entities.LeadFormSubmission.filter({ email });
+    if (existing2 && existing2.length > 0) {
+      console.log(`[webhookTransacaoPaga] Lead já registrado: ${email}`);
+      return Response.json({ received: true, message: 'Lead já registrado.', email }, { status: 200 });
     }
 
-    return Response.json({ received: true, message: 'Usuário criado com sucesso.', email }, { status: 201 });
+    // Salvar como lead pendente de ativação
+    await base44.asServiceRole.entities.LeadFormSubmission.create({
+      perfil: 'produtor',
+      nome: fullName || email,
+      email,
+      telefone: '',
+      submitted_at: new Date().toISOString(),
+      parceiro: 'nexano_webhook',
+    });
+
+    console.log(`[webhookTransacaoPaga] Lead salvo para: ${email}`);
+
+    return Response.json({ received: true, message: 'Lead registrado com sucesso. Acesse o dashboard para convidar o usuário.', email }, { status: 201 });
   } catch (error) {
     console.error('[webhookTransacaoPaga] Erro:', error.message);
     return Response.json({ error: error.message }, { status: 500 });

@@ -58,6 +58,7 @@ import {
               Trash2
                     } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useEffectiveUserPermissions } from '@/hooks/useEffectiveUserPermissions';
 
 // ── Menus por perfil ────────────────────────────────────────────────────────
 
@@ -301,6 +302,7 @@ export default function Layout({ children, currentPageName }) {
   const [deleting, setDeleting] = useState(false);
   const location = useLocation();
   const queryClient = useQueryClient();
+  const { hasPermission, canAccessModule } = useEffectiveUserPermissions(user);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -598,7 +600,61 @@ export default function Layout({ children, currentPageName }) {
                 menuItems = produtorNavItems;
               }
 
-              return menuItems.map((item, index) => {
+              // Função para mapear page name para module key
+              const getModuleKey = (pageName) => {
+                if (!pageName) return null;
+                // Mapeamento de páginas para módulos
+                const pageToModule = {
+                  'Home': 'office',
+                  'Agenda': 'office',
+                  'CRMBoard': 'office',
+                  'ConsultorClients': 'office',
+                  'Properties': 'office',
+                  'Contracts': 'office',
+                  'ContractGenerator': 'office',
+                  'BudgetGenerator': 'office',
+                  'MyTeam': 'team_management',
+                  'PropertyCentral': 'property_center',
+                  'DocumentsHub': 'property_center',
+                  'Licenses': 'property_center',
+                  'CARModule': 'property_center',
+                  'PropertyMapView': 'property_center',
+                  'Processes': 'property_center',
+                  'EnvironmentalAlerts': 'property_center',
+                  'RegularityReport': 'property_center',
+                  'PRAD': 'property_center',
+                  'Georeferencing': 'property_center',
+                  'Mappings': 'advanced_modules',
+                  'ClimateMonitoring': 'advanced_modules',
+                  'CommodityAnalysis': 'advanced_modules',
+                  'CarbonCredits': 'advanced_modules',
+                  'PSAContracts': 'advanced_modules',
+                  'EnvironmentalAssets': 'advanced_modules',
+                  'EnvironmentalEasements': 'advanced_modules',
+                  'ESGAgro': 'advanced_modules',
+                  'RuralCredit': 'advanced_modules',
+                  'HarvestLoss': 'advanced_modules',
+                  'Reports': 'reports',
+                  'ChatRute': 'ai_chat',
+                  'FinancialDashboard': 'financial',
+                  'FinancialTransactions': 'financial',
+                  'PaymentSettings': 'financial',
+                  'NFeManagement': 'financial',
+                };
+                return pageToModule[pageName];
+              };
+
+              // Filtra itens baseado em permissões se for equipe
+              const filteredItems = user?.user_type === 'equipe' 
+                ? menuItems.filter(item => {
+                    if (!item.page && !item.children) return true;
+                    const moduleKey = getModuleKey(item.page);
+                    if (!moduleKey) return true; // Sem mapeamento = exibir
+                    return canAccessModule(moduleKey);
+                  })
+                : menuItems;
+
+              return filteredItems.map((item, index) => {
                 const itemKey = item.page || `${item.name}-${index}`;
                 if (item.children) {
                   const isExpanded = expandedMenus[item.name];
@@ -632,7 +688,12 @@ export default function Layout({ children, currentPageName }) {
                       </button>
                       {isExpanded && (
                         <div className="mt-1 ml-3 pl-3 border-l-2 border-emerald-700/50 space-y-0.5 py-1">
-                          {item.children.map((child) => {
+                          {item.children.filter(child => {
+                            if (user?.user_type !== 'equipe') return true;
+                            const moduleKey = getModuleKey(child.page);
+                            if (!moduleKey) return true;
+                            return canAccessModule(moduleKey);
+                          }).map((child) => {
                             const isActive = currentPageName === child.page;
                             const ChildIcon = child.icon;
                             return (

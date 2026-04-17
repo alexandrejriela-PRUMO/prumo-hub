@@ -122,6 +122,7 @@ const planos = [
     desc: '1 usuário consultor • Até 5 propriedades/clientes.',
     color: 'border-emerald-200',
     badge: null,
+    checkoutUrl: 'https://checkout.nexano.com.br/checkout/cmo2vmthl06bp1yms3aaa35wv?offer=GYXWU5X',
     items: [
       '1 usuário consultor',
       'Até 5 propriedades/clientes',
@@ -138,6 +139,7 @@ const planos = [
     desc: 'Até 2 usuários (consultor + equipe) • Até 10 propriedades.',
     color: 'border-blue-300',
     badge: null,
+    checkoutUrl: 'https://checkout.nexano.com.br/checkout/cmo2vmthl06bp1yms3aaa35wv?offer=8QA4VR2',
     items: [
       'Até 2 usuários (consultor + equipe)',
       'Até 10 propriedades/clientes',
@@ -156,6 +158,7 @@ const planos = [
     badge: 'Mais Popular',
     badgeColor: 'bg-amber-500',
     highlight: true,
+    checkoutUrl: 'https://checkout.nexano.com.br/checkout/cmo2vmthl06bp1yms3aaa35wv?offer=EQL1OTT',
     items: [
       'Até 3 usuários (consultor + equipe)',
       'Até 200 propriedades/clientes',
@@ -420,8 +423,8 @@ export default function LandingConsultor({ onLogin }) {
                       </li>
                     ))}
                   </ul>
-                  <a href="#contato" className={`w-full py-3 rounded-xl font-semibold text-sm transition-colors text-center ${btnColor}`}>
-                    Falar com especialista →
+                  <a href={plan.checkoutUrl} target="_blank" rel="noopener noreferrer" className={`w-full py-3 rounded-xl font-semibold text-sm transition-colors text-center ${btnColor}`}>
+                    Contratar agora →
                   </a>
                 </div>
               );

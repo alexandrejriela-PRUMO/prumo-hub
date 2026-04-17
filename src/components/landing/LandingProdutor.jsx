@@ -418,10 +418,10 @@ export default function LandingProdutor({ onLogin }) {
                     </div>
                   </div>
                   <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                    <a href="#contato" className="flex-1 py-3 rounded-xl font-bold text-sm bg-emerald-700 text-white hover:bg-emerald-800 transition-colors text-center">
-                                 Falar com especialista →
-                               </a>
-                    <a href="#contato" className="flex-1 py-3 rounded-xl font-semibold text-sm bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors text-center">
+                    <a href="https://checkout.nexano.com.br/checkout/cmo2vyei507261yldn9ynobbt?offer=GNJXUCE" target="_blank" rel="noopener noreferrer" className="flex-1 py-3 rounded-xl font-bold text-sm bg-emerald-700 text-white hover:bg-emerald-800 transition-colors text-center">
+                      Contratar agora →
+                    </a>
+                    <a href="https://checkout.nexano.com.br/checkout/cmo2vyei507261yldn9ynobbt?offer=GNJXUCE" target="_blank" rel="noopener noreferrer" className="flex-1 py-3 rounded-xl font-semibold text-sm bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors text-center">
                       Quero ser Cliente Fundador
                     </a>
                   </div>

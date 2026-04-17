@@ -21,13 +21,6 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
   }
 
-  // TOKEN DE VALIDAÇÃO — será ativado após receber o token da plataforma
-  // const token = req.headers.get('Authorization') || req.headers.get('X-Webhook-Token') || '';
-  // const expectedToken = Deno.env.get('WEBHOOK_TOKEN_ESTORNADO');
-  // if (expectedToken && token !== expectedToken && token !== `Bearer ${expectedToken}`) {
-  //   return Response.json({ error: 'Unauthorized' }, { status: 401 });
-  // }
-
   let body;
   try {
     body = await req.json();

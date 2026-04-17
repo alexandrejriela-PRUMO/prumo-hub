@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import NotificationPreferences from '../components/notifications/NotificationPreferences';
-import GoogleCalendarConnect from '@/components/integrations/GoogleCalendarConnect';
 
 export default function NotificationSettings() {
   const [user, setUser] = useState(null);
@@ -28,13 +27,6 @@ export default function NotificationSettings() {
           Personalize como e quando você deseja receber notificações sobre suas propriedades e solicitações
         </p>
       </div>
-
-      {/* Google Calendar Integration */}
-      {user && (
-        <>
-          <GoogleCalendarConnect user={user} />
-        </>
-      )}
 
       {/* Conteúdo Principal */}
       {user ? (

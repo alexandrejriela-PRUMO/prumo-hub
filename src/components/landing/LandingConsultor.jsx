@@ -163,7 +163,7 @@ const planos = [
       'Até 3 usuários (consultor + equipe)',
       'Até 200 propriedades/clientes',
       'CRM Prumo — gestão de relacionamentos',
-      'Agenda integrada com Google Calendar',
+      'Agenda integrada',
       'ERP Controle Financeiro completo',
       'Alerta MapBiomas (monitoramento de infrações)',
       'Monitoramento DOE-RS / FEPAM',

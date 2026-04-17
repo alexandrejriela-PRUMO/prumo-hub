@@ -76,18 +76,6 @@ export default function AccountsManager({ consultorEmail }) {
         </Button>
       </div>
 
-      {/* Stripe account (system) */}
-      <div className="rounded-xl border border-violet-200 bg-violet-50/50 p-3 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center">
-          <Zap className="w-4 h-4 text-violet-600" />
-        </div>
-        <div className="flex-1">
-          <p className="text-sm font-semibold text-violet-800">Conta Stripe</p>
-          <p className="text-xs text-violet-600">Integrada automaticamente — recebe cobranças pagas via Stripe</p>
-        </div>
-        <Badge className="bg-violet-100 text-violet-700 border-0 text-xs">Sistema</Badge>
-      </div>
-
       {/* Caixa Manual (system default) */}
       <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-3 flex items-center gap-3">
         <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center">

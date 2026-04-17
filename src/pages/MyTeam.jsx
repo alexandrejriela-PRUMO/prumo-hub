@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import {
   UserPlus, Trash2, Users, Mail, Briefcase, Settings,
-  CheckCircle, Shield, Info
+  CheckCircle, Shield, Info, Send
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -48,13 +48,16 @@ function defaultPermissions(role) {
 export default function MyTeam() {
   const [user, setUser] = useState(null);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [showPermDialog, setShowPermDialog] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [linkForm, setLinkForm] = useState({ member_email: '', member_name: '', member_role: '', primary_user_email: '' });
+  const [inviteForm, setInviteForm] = useState({ email: '', name: '', member_role: '', target_user_type: 'equipe' });
   const [editPerms, setEditPerms] = useState(null);
   const queryClient = useQueryClient();
 
   const isAdmin = user?.role === 'admin';
+  const isConsultor = user?.user_type === 'consultor';
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -92,6 +95,53 @@ export default function MyTeam() {
       setLinkForm({ member_email: '', member_name: '', member_role: '', primary_user_email: '' });
     },
     onError: (err) => toast.error(err?.message || 'Erro ao vincular membro.'),
+  });
+
+  // Envia convite de novo usuário
+  const inviteMutation = useMutation({
+    mutationFn: async (form) => {
+      if (!isConsultor && !isAdmin) {
+        throw new Error('Você não tem permissão para enviar convites');
+      }
+
+      // Criar registro TeamMember com status pendente
+      const teamMemberData = {
+        primary_user_email: user.email,
+        consultor_email: user.email,
+        member_email: form.email,
+        member_name: form.name,
+        member_role: form.member_role,
+        status: 'Pendente',
+        pending_user_type: form.target_user_type,
+        user_type_applied: false,
+        permissions: defaultPermissions(form.member_role),
+        invite_token: Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
+        invited_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      };
+
+      const teamMember = await base44.entities.TeamMember.create(teamMemberData);
+
+      // Enviar email de convite
+      const invite_link = `${window.location.origin}/AcceptInvite?token=${teamMember.invite_token}`;
+      
+      await base44.functions.invoke('sendTeamInvite', {
+        email: form.email,
+        name: form.name,
+        member_role: form.member_role,
+        target_user_type: form.target_user_type,
+        invite_link: invite_link
+      });
+
+      return teamMember;
+    },
+    onSuccess: () => {
+      toast.success('Convite enviado com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['allTeamMembers'] });
+      setShowInviteDialog(false);
+      setInviteForm({ email: '', name: '', member_role: '', target_user_type: 'equipe' });
+    },
+    onError: (err) => toast.error(err?.message || 'Erro ao enviar convite.'),
   });
 
   // Remove membro
@@ -135,15 +185,23 @@ export default function MyTeam() {
         <div>
           <h1 className="text-2xl font-bold text-emerald-900">Minha Equipe</h1>
           <p className="text-sm text-emerald-600 mt-1">
-            Gerencie os membros e configure o que cada um visualiza no sistema.
+            Convide novos membros ou gerencie os que já fazem parte da sua equipe.
           </p>
         </div>
-        {isAdmin && (
-          <Button onClick={() => setShowLinkDialog(true)} className="bg-emerald-700 hover:bg-emerald-800">
-            <UserPlus className="w-4 h-4 mr-2" />
-            Vincular Membro
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {(isConsultor || isAdmin) && (
+            <Button onClick={() => setShowInviteDialog(true)} className="bg-emerald-700 hover:bg-emerald-800">
+              <Send className="w-4 h-4 mr-2" />
+              Convidar Membro
+            </Button>
+          )}
+          {isAdmin && (
+            <Button onClick={() => setShowLinkDialog(true)} className="bg-blue-700 hover:bg-blue-800">
+              <UserPlus className="w-4 h-4 mr-2" />
+              Vincular Membro
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Aviso informativo */}
@@ -151,7 +209,7 @@ export default function MyTeam() {
         <Info className="w-5 h-5 flex-shrink-0 text-blue-500 mt-0.5" />
         <div>
           <p className="font-medium mb-1">Como funciona o acesso da equipe?</p>
-          <p>Os convites de acesso ao sistema são enviados pelo <strong>Painel Base44</strong>. Após o usuário criar sua conta, vincule-o aqui para definir sua função e as permissões de visualização no layout do sistema.</p>
+          <p>Você pode <strong>convidar novos membros</strong> diretamente enviando um link de convite por email. Após aceitar, você pode definir suas funções e permissões de acesso ao sistema.</p>
         </div>
       </div>
 
@@ -181,7 +239,7 @@ export default function MyTeam() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base text-emerald-900 flex items-center gap-2">
-            <Users className="w-4 h-4" /> Membros Vinculados
+            <Users className="w-4 h-4" /> Membros da Equipe
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -191,7 +249,7 @@ export default function MyTeam() {
             <div className="text-center py-14">
               <Users className="w-12 h-12 text-gray-200 mx-auto mb-3" />
               <p className="text-gray-500 font-medium">Nenhum membro vinculado ainda.</p>
-              <p className="text-sm text-gray-400 mt-1">Convide usuários pelo Painel Base44 e depois vincule-os aqui.</p>
+              <p className="text-sm text-gray-400 mt-1">Convide novos membros clicando no botão acima.</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -213,9 +271,9 @@ export default function MyTeam() {
                             <Briefcase className="w-3 h-3 text-blue-600 flex-shrink-0" />
                             <span className="text-xs font-medium text-blue-700">{member.member_role || '—'}</span>
                           </div>
-                          <Badge className="bg-green-100 text-green-800 text-xs">
+                          <Badge className={member.status === 'Ativo' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}>
                             <CheckCircle className="w-3 h-3 mr-1" />
-                            Ativo
+                            {member.status}
                           </Badge>
                           {isAdmin && member.primary_user_email && (
                             <span className="text-xs text-gray-400 hidden sm:block">
@@ -235,7 +293,7 @@ export default function MyTeam() {
                         <Settings className="w-3 h-3 mr-1" />
                         Permissões
                       </Button>
-                      {isAdmin && (
+                      {(isAdmin || (isConsultor && member.primary_user_email === user.email)) && (
                         <Button
                           variant="ghost" size="icon"
                           className="text-red-400 hover:text-red-600 hover:bg-red-50"
@@ -253,6 +311,69 @@ export default function MyTeam() {
         </CardContent>
       </Card>
 
+      {/* Dialog: Convidar Novo Membro */}
+      <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Convidar Novo Membro</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-xs text-green-800">
+              ✓ O convite será enviado por email. O usuário criará sua conta ao aceitar.
+            </div>
+            <div>
+              <Label>E-mail do usuário *</Label>
+              <input
+                type="email"
+                className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                placeholder="email@exemplo.com"
+                value={inviteForm.email}
+                onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Nome *</Label>
+              <input
+                type="text"
+                className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                placeholder="Nome completo"
+                value={inviteForm.name}
+                onChange={(e) => setInviteForm({ ...inviteForm, name: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Tipo de Acesso *</Label>
+              <Select value={inviteForm.target_user_type} onValueChange={(v) => setInviteForm({ ...inviteForm, target_user_type: v })}>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="equipe">Membro da Equipe</SelectItem>
+                  <SelectItem value="client_consultor">Visualizador de Propriedade</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Função *</Label>
+              <Select value={inviteForm.member_role} onValueChange={(v) => setInviteForm({ ...inviteForm, member_role: v })}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione a função" /></SelectTrigger>
+                <SelectContent>
+                  {ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowInviteDialog(false)}>Cancelar</Button>
+            <Button
+              className="bg-emerald-700 hover:bg-emerald-800"
+              onClick={() => inviteMutation.mutate(inviteForm)}
+              disabled={inviteMutation.isPending || !inviteForm.email || !inviteForm.name || !inviteForm.member_role}
+            >
+              {inviteMutation.isPending ? 'Enviando...' : 'Enviar Convite'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Dialog: Vincular Membro */}
       {isAdmin && (
         <Dialog open={showLinkDialog} onOpenChange={setShowLinkDialog}>
@@ -262,7 +383,7 @@ export default function MyTeam() {
             </DialogHeader>
             <div className="space-y-4 py-2">
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
-                ⚠️ O usuário precisa já ter sido convidado e ter criado sua conta no sistema pelo <strong>Painel Base44</strong> antes de ser vinculado aqui.
+                ⚠️ O usuário precisa já ter sido convidado e ter criado sua conta no sistema antes de ser vinculado aqui.
               </div>
               <div>
                 <Label>E-mail do usuário *</Label>

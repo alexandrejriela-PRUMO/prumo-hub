@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,7 +24,7 @@ export default function PropertyUsers({ property, currentUser, onSave, onCancel 
     role: isConsultor ? 'Visualizador' : 'Proprietário'
   });
 
-  const addUser = () => {
+  const addUser = async () => {
     if (!newUser.email || !newUser.name) {
       alert('Preencha email e nome do usuário');
       return;
@@ -42,6 +43,20 @@ export default function PropertyUsers({ property, currentUser, onSave, onCancel 
     };
 
     setUsers([...users, userToAdd]);
+
+    // Enviar email para o visualizador
+    try {
+      await base44.functions.invoke('sendPropertyViewerInvite', {
+        property_name: property?.property_name || 'Propriedade',
+        viewer_email: newUser.email,
+        viewer_name: newUser.name,
+        property_id: property?.id
+      });
+    } catch (err) {
+      console.error('Erro ao enviar email:', err);
+      // Não bloqueia a adição, apenas registra o erro
+    }
+
     setNewUser({ email: '', name: '', role: 'Visualizador' });
   };
 

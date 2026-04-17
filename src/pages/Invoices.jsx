@@ -1,24 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Link } from 'react-router-dom';
 import { 
   CreditCard, 
   CheckCircle, 
   Clock, 
   AlertTriangle,
-  ExternalLink,
   Download,
   Calendar,
-  Receipt
+  Receipt,
+  Headphones,
+  ExternalLink
 } from 'lucide-react';
 import { format, parseISO, isPast } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
-import SubscriptionStatus from '../components/subscriptions/SubscriptionStatus';
 
 const statusConfig = {
   'Pendente': { color: 'bg-amber-100 text-amber-700 border-amber-200', icon: Clock },
@@ -29,28 +29,6 @@ const statusConfig = {
 
 export default function Invoices() {
   const [user, setUser] = useState(null);
-  const [loadingPortal, setLoadingPortal] = useState(false);
-
-  const handleManageSubscription = async () => {
-    setLoadingPortal(true);
-    try {
-      const response = await base44.functions.invoke('createStripePortal', {});
-      if (response.data?.url) {
-        window.open(response.data.url, '_blank');
-      } else {
-        alert(response.data?.error || 'Não foi possível abrir o portal.');
-      }
-    } catch (error) {
-      const msg = error?.response?.data?.error || error.message || '';
-      if (msg.includes('Nenhuma assinatura')) {
-        alert('Você ainda não possui uma assinatura ativa no Stripe. Assine um plano abaixo para começar.');
-      } else {
-        alert('Erro ao abrir o portal de assinatura. Tente novamente.');
-      }
-    } finally {
-      setLoadingPortal(false);
-    }
-  };
 
   useEffect(() => {
     const loadUser = async () => {
@@ -64,7 +42,7 @@ export default function Invoices() {
     loadUser();
   }, []);
 
-  const { data: invoices, isLoading } = useQuery({
+  const { data: invoices = [], isLoading } = useQuery({
     queryKey: ['invoices', user?.email],
     queryFn: () => base44.entities.Invoice.filter({ client_email: user.email }, '-due_date'),
     enabled: !!user?.email,
@@ -149,23 +127,45 @@ export default function Invoices() {
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Assinatura e Boletos</h1>
-          <p className="text-gray-500 mt-1">Gerencie sua assinatura, planos e pagamentos</p>
+          <p className="text-gray-500 mt-1">Gerencie sua assinatura e acompanhe seus pagamentos</p>
         </div>
-        <Button
-          onClick={handleManageSubscription}
-          disabled={loadingPortal}
-          className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white shrink-0"
-        >
-          <CreditCard className="w-4 h-4" />
-          {loadingPortal ? 'Carregando...' : 'Gerenciar no Stripe'}
-        </Button>
+        <Link to="/Support">
+          <Button className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white shrink-0">
+            <Headphones className="w-4 h-4" />
+            Fale com um Especialista
+          </Button>
+        </Link>
       </div>
 
-      {/* Subscription Status */}
-      <SubscriptionStatus />
+      {/* Info Card Nexano */}
+      <Card className="border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50">
+        <CardContent className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+              <CreditCard className="w-7 h-7 text-emerald-700" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-emerald-900 text-lg">Gerencie sua assinatura no PRUMO Hub</h3>
+              <p className="text-emerald-700 text-sm mt-1">
+                Assine ou gerencie seu plano diretamente em nosso portal de pagamentos. Escolha o plano ideal para o seu perfil.
+              </p>
+            </div>
+            <a
+              href="https://hub.prumo.site/landing"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button variant="outline" className="border-emerald-600 text-emerald-700 hover:bg-emerald-50 shrink-0 flex items-center gap-2">
+                <ExternalLink className="w-4 h-4" />
+                Acessar Portal
+              </Button>
+            </a>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Histórico de Faturas */}
       <div>
@@ -174,7 +174,6 @@ export default function Invoices() {
           Histórico de Faturas
         </h2>
 
-        {/* Summary */}
         {pendingInvoices.length > 0 && (
           <Card className="bg-gradient-to-r from-amber-500 to-orange-500 border-0 text-white mb-6">
             <CardContent className="p-6">
@@ -199,63 +198,62 @@ export default function Invoices() {
           </Card>
         )}
 
-        {/* Tabs */}
         <Tabs defaultValue="pending" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="pending" className="flex items-center gap-2">
-            <Clock className="w-4 h-4" />
-            Pendentes ({pendingInvoices.length})
-          </TabsTrigger>
-          <TabsTrigger value="paid" className="flex items-center gap-2">
-            <CheckCircle className="w-4 h-4" />
-            Pagos ({paidInvoices.length})
-          </TabsTrigger>
-        </TabsList>
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="pending" className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Pendentes ({pendingInvoices.length})
+            </TabsTrigger>
+            <TabsTrigger value="paid" className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4" />
+              Pagos ({paidInvoices.length})
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="pending" className="mt-6">
-          {isLoading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => <Skeleton key={i} className="h-40 rounded-xl" />)}
-            </div>
-          ) : pendingInvoices.length === 0 ? (
-            <Card className="border-dashed border-2 border-emerald-200">
-              <CardContent className="py-16 text-center">
-                <CheckCircle className="w-16 h-16 mx-auto text-emerald-300 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900">Tudo em dia! 🎉</h3>
-                <p className="text-gray-500 mt-2">Você não tem pagamentos pendentes</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {pendingInvoices.map((invoice) => (
-                <InvoiceCard key={invoice.id} invoice={invoice} />
-              ))}
-            </div>
-          )}
-        </TabsContent>
+          <TabsContent value="pending" className="mt-6">
+            {isLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => <Skeleton key={i} className="h-40 rounded-xl" />)}
+              </div>
+            ) : pendingInvoices.length === 0 ? (
+              <Card className="border-dashed border-2 border-emerald-200">
+                <CardContent className="py-16 text-center">
+                  <CheckCircle className="w-16 h-16 mx-auto text-emerald-300 mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900">Tudo em dia! 🎉</h3>
+                  <p className="text-gray-500 mt-2">Você não tem pagamentos pendentes</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {pendingInvoices.map((invoice) => (
+                  <InvoiceCard key={invoice.id} invoice={invoice} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
 
-        <TabsContent value="paid" className="mt-6">
-          {isLoading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => <Skeleton key={i} className="h-32 rounded-xl" />)}
-            </div>
-          ) : paidInvoices.length === 0 ? (
-            <Card className="border-dashed border-2 border-gray-200">
-              <CardContent className="py-16 text-center">
-                <CreditCard className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900">Nenhum pagamento registrado</h3>
-                <p className="text-gray-500 mt-2">Seus pagamentos aparecerão aqui</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {paidInvoices.map((invoice) => (
-                <InvoiceCard key={invoice.id} invoice={invoice} />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="paid" className="mt-6">
+            {isLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => <Skeleton key={i} className="h-32 rounded-xl" />)}
+              </div>
+            ) : paidInvoices.length === 0 ? (
+              <Card className="border-dashed border-2 border-gray-200">
+                <CardContent className="py-16 text-center">
+                  <CreditCard className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900">Nenhum pagamento registrado</h3>
+                  <p className="text-gray-500 mt-2">Seus pagamentos aparecerão aqui</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {paidInvoices.map((invoice) => (
+                  <InvoiceCard key={invoice.id} invoice={invoice} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

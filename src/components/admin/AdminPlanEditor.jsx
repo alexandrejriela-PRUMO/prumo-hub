@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, Save } from 'lucide-react';
+import { X, Save, Trash2, MapPin, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import AdminPropertyAccess from './AdminPropertyAccess';
 
 const PLANOS = [
   { value: 'start', label: 'Consultor Start', user_type: 'consultor', max_properties: 5, max_users: 1 },
@@ -17,6 +18,8 @@ const STATUSES = ['active', 'inactive', 'pending_invite'];
 
 export default function AdminPlanEditor({ user, onClose }) {
   const queryClient = useQueryClient();
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [showPropertyAccess, setShowPropertyAccess] = useState(false);
 
   const getPlanoDefaults = (planValue) => {
     const plan = PLANOS.find(p => p.value === planValue);
@@ -46,6 +49,17 @@ export default function AdminPlanEditor({ user, onClose }) {
       onClose();
     },
     onError: (err) => toast.error(`Erro: ${err.message}`),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => base44.functions.invoke('adminDeleteUser', { userId: user.id }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['admin-all-users']);
+      queryClient.invalidateQueries(['admin-users-stats']);
+      toast.success('Usuário deletado com sucesso!');
+      onClose();
+    },
+    onError: (err) => toast.error(`Erro ao deletar: ${err.message}`),
   });
 
   const handlePlanChange = (planValue) => {
@@ -156,10 +170,29 @@ export default function AdminPlanEditor({ user, onClose }) {
           </div>
         </div>
 
-        <div className="flex gap-3 p-6 border-t border-gray-100">
+        {user.user_type === 'client_consultor' && (
+          <div className="p-6 border-t border-gray-100 bg-blue-50">
+            <button
+              onClick={() => setShowPropertyAccess(true)}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-blue-200 text-blue-700 text-sm font-medium hover:bg-blue-100 transition-colors"
+            >
+              <MapPin className="w-4 h-4" />
+              Gerenciar Propriedades Autorizadas
+            </button>
+          </div>
+        )}
+
+        <div className="flex gap-3 p-6 border-t border-gray-100 bg-gray-50">
+          <button
+            onClick={() => setDeleteConfirmOpen(true)}
+            className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm font-medium hover:bg-red-100 transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+            Deletar
+          </button>
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
           >
             Cancelar
           </button>
@@ -172,6 +205,43 @@ export default function AdminPlanEditor({ user, onClose }) {
             {mutation.isPending ? 'Salvando...' : 'Salvar'}
           </button>
         </div>
+
+        {deleteConfirmOpen && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4">
+              <div className="flex items-center gap-3 text-red-600">
+                <AlertCircle className="w-6 h-6" />
+                <h3 className="text-lg font-bold">Deletar Usuário</h3>
+              </div>
+              <p className="text-gray-700 text-sm">
+                Tem certeza que deseja deletar o usuário <strong>{user.full_name || user.email}</strong>? Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex gap-3 justify-end pt-2">
+                <button
+                  onClick={() => setDeleteConfirmOpen(false)}
+                  disabled={deleteMutation.isPending}
+                  className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors text-sm font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => deleteMutation.mutate()}
+                  disabled={deleteMutation.isPending}
+                  className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors text-sm font-medium disabled:opacity-50"
+                >
+                  {deleteMutation.isPending ? 'Deletando...' : 'Deletar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showPropertyAccess && (
+          <AdminPropertyAccess
+            user={user}
+            onClose={() => setShowPropertyAccess(false)}
+          />
+        )}
       </div>
     </div>
   );

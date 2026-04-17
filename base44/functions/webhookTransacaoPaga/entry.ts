@@ -173,13 +173,32 @@ Deno.serve(async (req) => {
 
     console.log(`[webhookTransacaoPaga] Novo lead criado: ${email} | Plano: ${planInfo.plano} | Tipo: ${planInfo.user_type}`);
 
-    return Response.json({
-      received: true,
-      message: 'Lead registrado com sucesso. Pronto para convite.',
-      email,
-      plano: planInfo.plano,
-      perfil: planInfo.perfil,
-    }, { status: 201 });
+    // Enviar convite automático
+    try {
+      const role = planInfo.user_type === 'consultor' ? 'user' : 'user'; // ambos recebem role 'user' por padrão
+      await base44.users.inviteUser(email, role);
+      console.log(`[webhookTransacaoPaga] Convite enviado automaticamente para: ${email}`);
+      
+      return Response.json({
+        received: true,
+        message: 'Lead registrado e convite enviado automaticamente.',
+        email,
+        plano: planInfo.plano,
+        perfil: planInfo.perfil,
+        convite_enviado: true,
+      }, { status: 201 });
+    } catch (inviteError) {
+      console.error(`[webhookTransacaoPaga] Erro ao enviar convite para ${email}:`, inviteError.message);
+      return Response.json({
+        received: true,
+        message: 'Lead registrado, mas houve erro ao enviar convite.',
+        email,
+        plano: planInfo.plano,
+        perfil: planInfo.perfil,
+        convite_enviado: false,
+        erro_convite: inviteError.message,
+      }, { status: 201 });
+    }
 
   } catch (error) {
     console.error('[webhookTransacaoPaga] Erro:', error.message);

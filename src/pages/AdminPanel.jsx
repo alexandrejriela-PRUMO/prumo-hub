@@ -3,12 +3,14 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminUserTable from '@/components/admin/AdminUserTable';
 import AdminLeadsTable from '@/components/admin/AdminLeadsTable';
+import AdminClientPropertyLink from '@/components/admin/AdminClientPropertyLink';
 import AdminPlanEditor from '@/components/admin/AdminPlanEditor';
-import { Shield, Users, Inbox, Settings, BarChart3, RefreshCw } from 'lucide-react';
+import { Shield, Users, Inbox, Settings, BarChart3, RefreshCw, Link as LinkIcon } from 'lucide-react';
 
 const TABS = [
   { key: 'users', label: 'Usuários', icon: Users },
   { key: 'leads', label: 'Leads / Pendentes', icon: Inbox },
+  { key: 'clients', label: 'Clientes-Propriedades', icon: LinkIcon },
   { key: 'stats', label: 'Resumo', icon: BarChart3 },
 ];
 
@@ -79,6 +81,9 @@ export default function AdminPanel() {
       )}
       {activeTab === 'leads' && (
         <AdminLeadsTable />
+      )}
+      {activeTab === 'clients' && (
+        <AdminClientPropertyLink />
       )}
       {activeTab === 'stats' && (
         <AdminStatsPanel />

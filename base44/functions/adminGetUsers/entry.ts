@@ -21,6 +21,12 @@ Deno.serve(async (req) => {
       return Response.json({ leads });
     }
 
+    if (type === 'clients') {
+      const users = await base44.asServiceRole.entities.User.list('-created_date', 200);
+      const clients = users.filter(u => u.user_type === 'client_consultor');
+      return Response.json({ clients });
+    }
+
     // Busca usuários
     const users = await base44.asServiceRole.entities.User.list('-created_date', 200);
 

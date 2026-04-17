@@ -46,15 +46,13 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
   }
 
+  // LOG de diagnóstico — capturar token e headers da Nexano
   const url = new URL(req.url);
   const queryToken = url.searchParams.get('token') || url.searchParams.get('access_token') || '';
   const headerToken = req.headers.get('Authorization') || req.headers.get('X-Webhook-Token') || req.headers.get('x-token') || '';
-  const token = queryToken || headerToken;
-  const expectedToken = Deno.env.get('WEBHOOK_TOKEN_PAGO');
-  if (expectedToken && token !== expectedToken && token !== `Bearer ${expectedToken}`) {
-    console.log('[webhookTransacaoPaga] Token recebido:', token, '| Headers:', JSON.stringify(Object.fromEntries(req.headers.entries())));
-    return Response.json({ error: 'Unauthorized', received_token: token || 'nenhum' }, { status: 401 });
-  }
+  const allHeaders = Object.fromEntries(req.headers.entries());
+  console.log('[DIAGNÓSTICO] query token:', queryToken, '| header token:', headerToken, '| headers:', JSON.stringify(allHeaders));
+  console.log('[DIAGNÓSTICO] URL completa:', req.url);
 
   let body;
   try {

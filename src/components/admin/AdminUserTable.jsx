@@ -17,6 +17,13 @@ const TYPE_LABELS = {
   client_consultor: 'bg-blue-100 text-blue-800',
 };
 
+const TYPE_NAMES = {
+  consultor: 'Consultor',
+  produtor: 'Produtor',
+  equipe: 'Equipe',
+  client_consultor: 'Cliente',
+};
+
 export default function AdminUserTable({ onEdit }) {
   const [search, setSearch] = useState('');
 
@@ -64,6 +71,7 @@ export default function AdminUserTable({ onEdit }) {
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Usuário</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Tipo</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Plano</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Consultor Principal</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Role</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Status</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Ações</th>
@@ -71,7 +79,10 @@ export default function AdminUserTable({ onEdit }) {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filtered.map((u) => {
-                const planInfo = PLAN_LABELS[u.plano];
+                // Plano: equipe e client_consultor herdam do consultor principal
+                const isSecondary = u.user_type === 'equipe' || u.user_type === 'client_consultor';
+                const planKey = isSecondary ? (u.plano_display || u.plano) : u.plano;
+                const planInfo = PLAN_LABELS[planKey];
                 const typeColor = TYPE_LABELS[u.user_type] || 'bg-gray-100 text-gray-700';
                 return (
                   <tr key={u.id} className="hover:bg-gray-50 transition-colors">
@@ -82,16 +93,29 @@ export default function AdminUserTable({ onEdit }) {
                     <td className="px-4 py-3">
                       {u.user_type ? (
                         <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${typeColor}`}>
-                          {u.user_type}
+                          {TYPE_NAMES[u.user_type] || u.user_type}
                         </span>
                       ) : <span className="text-gray-400 text-xs">—</span>}
                     </td>
                     <td className="px-4 py-3">
                       {planInfo ? (
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${planInfo.color}`}>
-                          {planInfo.label}
-                        </span>
-                      ) : <span className="text-gray-400 text-xs">{u.plano || '—'}</span>}
+                        <div>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${planInfo.color}`}>
+                            {planInfo.label}
+                          </span>
+                          {isSecondary && <p className="text-[10px] text-gray-400 mt-0.5">herdado</p>}
+                        </div>
+                      ) : <span className="text-gray-400 text-xs">{planKey || '—'}</span>}
+                    </td>
+                    <td className="px-4 py-3">
+                      {isSecondary && u.primary_consultor_email ? (
+                        <div>
+                          <p className="text-xs font-medium text-gray-700">{u.primary_consultor_name || u.primary_consultor_email}</p>
+                          <p className="text-[10px] text-gray-400">{u.primary_consultor_email}</p>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 text-xs">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${u.role === 'admin' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}>
@@ -117,7 +141,7 @@ export default function AdminUserTable({ onEdit }) {
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="text-center py-10 text-gray-400 text-sm">Nenhum usuário encontrado.</td>
+                  <td colSpan={7} className="text-center py-10 text-gray-400 text-sm">Nenhum usuário encontrado.</td>
                 </tr>
               )}
             </tbody>

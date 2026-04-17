@@ -18,14 +18,24 @@ const STATUSES = ['active', 'inactive', 'pending_invite'];
 export default function AdminPlanEditor({ user, onClose }) {
   const queryClient = useQueryClient();
 
-  const [form, setForm] = useState({
-    plano: user.plano || '',
-    user_type: user.user_type || '',
-    role: user.role || 'user',
-    max_properties: user.max_properties || 1,
-    max_users: user.max_users || 1,
-    subscription_status: user.subscription_status || 'active',
-  });
+  const getPlanoDefaults = (planValue) => {
+    const plan = PLANOS.find(p => p.value === planValue);
+    return plan ? { max_properties: plan.max_properties, max_users: plan.max_users } : { max_properties: 1, max_users: 1 };
+  };
+
+  const initializeForm = () => {
+    const planoDefaults = user.plano ? getPlanoDefaults(user.plano) : { max_properties: 1, max_users: 1 };
+    return {
+      plano: user.plano || '',
+      user_type: user.user_type || '',
+      role: user.role || 'user',
+      max_properties: user.max_properties || planoDefaults.max_properties,
+      max_users: user.max_users || planoDefaults.max_users,
+      subscription_status: user.subscription_status || 'active',
+    };
+  };
+
+  const [form, setForm] = useState(initializeForm());
 
   const mutation = useMutation({
     mutationFn: (data) => base44.functions.invoke('adminUpdateUser', { userId: user.id, data }),

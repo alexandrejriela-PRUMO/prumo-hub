@@ -142,6 +142,7 @@ const produtorNavItems = [
   { name: 'Modo Campo', page: 'CampMode', icon: Smartphone },
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
   { name: 'Termos de Uso (Admin)', page: 'TermsAdmin', icon: ScrollText },
+  { name: 'Painel de Admin', page: 'AdminPanel', icon: Shield },
   ];
 
 // Equipe do consultor: igual ao consultor, sem "Minha Equipe"

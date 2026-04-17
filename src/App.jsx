@@ -26,6 +26,7 @@ const NFeManagement = React.lazy(() => import('./pages/NFeManagement'));
 const ImportUsersStripe = React.lazy(() => import('./pages/ImportUsersStripe'));
 const TermsOfUsePage = React.lazy(() => import('./pages/TermsOfUsePage'));
 const TermsAdmin = React.lazy(() => import('./pages/TermsAdmin'));
+const AdminPanel = React.lazy(() => import('./pages/AdminPanel'));
 const LandingPage = React.lazy(() => import('./pages/LandingPage'));
 const CampMode = React.lazy(() => import('./pages/CampMode'));
 const PropertyCentral = React.lazy(() => import('./pages/PropertyCentral'));
@@ -163,6 +164,7 @@ const AuthenticatedApp = () => {
         <Route path="/BudgetGenerator" element={<LayoutWrapper currentPageName="BudgetGenerator"><Suspense fallback={<LoadingSpinner />}><BudgetGenerator /></Suspense></LayoutWrapper>} />
         <Route path="/ContractGenerator" element={<LayoutWrapper currentPageName="ContractGenerator"><Suspense fallback={<LoadingSpinner />}><ContractGenerator /></Suspense></LayoutWrapper>} />
         <Route path="/TermsAdmin" element={<LayoutWrapper currentPageName="TermsAdmin"><Suspense fallback={<LoadingSpinner />}><TermsAdmin /></Suspense></LayoutWrapper>} />
+        <Route path="/AdminPanel" element={<LayoutWrapper currentPageName="AdminPanel"><Suspense fallback={<LoadingSpinner />}><AdminPanel /></Suspense></LayoutWrapper>} />
         <Route path="*" element={<PageNotFound />} />
       </Routes>
     </>

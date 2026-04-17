@@ -38,6 +38,7 @@ function extractBuyer(body) {
 }
 
 Deno.serve(async (req) => {
+  // Aceita GET para validação de URL
   if (req.method === 'GET') {
     return Response.json({ status: 'ok', webhook: 'webhookTransacaoPaga' }, { status: 200 });
   }
@@ -46,14 +47,6 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
   }
 
-  // LOG de diagnóstico — capturar token e headers da Nexano
-  const url = new URL(req.url);
-  const queryToken = url.searchParams.get('token') || url.searchParams.get('access_token') || '';
-  const headerToken = req.headers.get('Authorization') || req.headers.get('X-Webhook-Token') || req.headers.get('x-token') || '';
-  const allHeaders = Object.fromEntries(req.headers.entries());
-  console.log('[DIAGNÓSTICO] query token:', queryToken, '| header token:', headerToken, '| headers:', JSON.stringify(allHeaders));
-  console.log('[DIAGNÓSTICO] URL completa:', req.url);
-
   let body;
   try {
     body = await req.json();
@@ -61,14 +54,13 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  console.log('[webhookTransacaoPaga] HEADERS:', JSON.stringify(Object.fromEntries(req.headers.entries()), null, 2));
-  console.log('[webhookTransacaoPaga] PAYLOAD:', JSON.stringify(body, null, 2));
+  console.log('[webhookTransacaoPaga] PAYLOAD RECEBIDO:', JSON.stringify(body, null, 2));
 
   const { email, fullName, document } = extractBuyer(body);
 
   if (!email) {
-    console.warn('[webhookTransacaoPaga] Email não encontrado no payload.');
-    return Response.json({ received: true, message: 'Email não encontrado. Payload logado para análise.', payload_keys: Object.keys(body) }, { status: 200 });
+    console.warn('[webhookTransacaoPaga] Email não encontrado. Keys:', Object.keys(body));
+    return Response.json({ received: true, message: 'Email não encontrado no payload.', payload_keys: Object.keys(body) }, { status: 200 });
   }
 
   const cleanDoc = cleanDocument(document || '');
@@ -78,18 +70,15 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // Idempotência
     const existing = await base44.asServiceRole.entities.User.filter({ email });
     if (existing && existing.length > 0) {
       console.log(`[webhookTransacaoPaga] Usuário já existe: ${email}`);
       return Response.json({ received: true, message: 'Usuário já cadastrado.', email }, { status: 200 });
     }
 
-    // Criar usuário
     await base44.users.inviteUser(email, 'user');
     console.log(`[webhookTransacaoPaga] Usuário convidado: ${email}`);
 
-    // Atualizar dados extras
     const users = await base44.asServiceRole.entities.User.filter({ email });
     if (users && users.length > 0) {
       await base44.asServiceRole.entities.User.update(users[0].id, {

@@ -68,6 +68,7 @@ Deno.serve(async (req) => {
   const hashedPassword = await hashPassword(tempPassword);
 
   try {
+    // Usar asServiceRole pois é chamado externamente sem usuário autenticado
     const base44 = createClientFromRequest(req);
 
     const existing = await base44.asServiceRole.entities.User.filter({ email });
@@ -77,7 +78,10 @@ Deno.serve(async (req) => {
     }
 
     await base44.users.inviteUser(email, 'user');
-    console.log(`[webhookTransacaoPaga] Usuário convidado: ${email}`);
+    console.log(`[webhookTransacaoPaga] Convite enviado para: ${email}`);
+
+    // Aguardar um momento para o usuário ser criado
+    await new Promise(r => setTimeout(r, 2000));
 
     const users = await base44.asServiceRole.entities.User.filter({ email });
     if (users && users.length > 0) {

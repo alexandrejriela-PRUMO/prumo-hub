@@ -26,7 +26,10 @@ export default function AdminLeadsTable() {
 
   const { data: leads = [], isLoading, refetch } = useQuery({
     queryKey: ['admin-leads'],
-    queryFn: () => base44.entities.LeadFormSubmission.list('-submitted_at', 200),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('adminGetUsers', { type: 'leads' });
+      return res.data.leads || [];
+    },
   });
 
   const filtered = leads.filter(l =>
@@ -37,15 +40,11 @@ export default function AdminLeadsTable() {
   const handleInvite = async (lead) => {
     setInviting(lead.id);
     try {
-      const role = lead.plano === 'admin' ? 'admin' : 'user';
-      await base44.users.inviteUser(lead.email, role);
-
-      // Marcar lead como convidado
-      await base44.entities.LeadFormSubmission.update(lead.id, {
-        subscription_status: 'invited',
-        invited_at: new Date().toISOString(),
+      await base44.functions.invoke('adminUpdateLead', {
+        leadId: lead.id,
+        inviteEmail: lead.email,
+        inviteRole: 'user',
       });
-
       queryClient.invalidateQueries(['admin-leads']);
       toast.success(`Convite enviado para ${lead.email}`);
     } catch (err) {

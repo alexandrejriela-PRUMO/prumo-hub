@@ -98,12 +98,18 @@ export default function AdminPanel() {
 function AdminStatsPanel() {
   const { data: users = [] } = useQuery({
     queryKey: ['admin-users-stats'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('adminGetUsers', { type: 'users' });
+      return res.data.users || [];
+    },
   });
 
   const { data: leads = [] } = useQuery({
     queryKey: ['admin-leads-stats'],
-    queryFn: () => base44.entities.LeadFormSubmission.list(),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('adminGetUsers', { type: 'leads' });
+      return res.data.leads || [];
+    },
   });
 
   const byType = users.reduce((acc, u) => {

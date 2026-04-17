@@ -22,7 +22,10 @@ export default function AdminUserTable({ onEdit }) {
 
   const { data: users = [], isLoading, refetch } = useQuery({
     queryKey: ['admin-all-users'],
-    queryFn: () => base44.entities.User.list('-created_date', 200),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('adminGetUsers', { type: 'users' });
+      return res.data.users || [];
+    },
   });
 
   const filtered = users.filter(u =>

@@ -28,7 +28,7 @@ export default function AdminPlanEditor({ user, onClose }) {
   });
 
   const mutation = useMutation({
-    mutationFn: (data) => base44.entities.User.update(user.id, data),
+    mutationFn: (data) => base44.functions.invoke('adminUpdateUser', { userId: user.id, data }),
     onSuccess: () => {
       queryClient.invalidateQueries(['admin-all-users']);
       queryClient.invalidateQueries(['admin-users-stats']);

@@ -46,6 +46,12 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
   }
 
+  const token = req.headers.get('Authorization') || req.headers.get('X-Webhook-Token') || '';
+  const expectedToken = Deno.env.get('WEBHOOK_TOKEN_PAGO');
+  if (expectedToken && token !== expectedToken && token !== `Bearer ${expectedToken}`) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   let body;
   try {
     body = await req.json();

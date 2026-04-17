@@ -8,6 +8,7 @@ import OnlineStatusIndicator from '@/components/OnlineStatusIndicator'
 import { pagesConfig } from './pages.config'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
+import RouteProtector from '@/components/RouteProtector';
 
 // Lazy load pages
 const CARModule = React.lazy(() => import('./pages/CARModule'));

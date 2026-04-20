@@ -152,6 +152,25 @@ export default function SaasContractPage({ onAccepted }) {
         contractor_phone: contractor.phone,
         contractor_email: contractor.email,
       });
+
+      // Generate and download PDF proof
+      try {
+        const pdfResponse = await base44.functions.invoke('generateAcceptanceProofPDF', {
+          type: 'saas_contract',
+          contractorData: contractor,
+        });
+        if (pdfResponse.data && typeof pdfResponse.data === 'string') {
+          const link = document.createElement('a');
+          link.href = `data:application/pdf;base64,${btoa(pdfResponse.data)}`;
+          link.download = `Contrato_SaaS_${contractor.document}_${new Date().getTime()}.pdf`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+      } catch (pdfError) {
+        console.warn('Aviso: PDF não gerado, mas contrato foi registrado:', pdfError);
+      }
+
       if (onAccepted) onAccepted();
     } catch (e) {
       console.error('Erro ao salvar aceite do contrato:', e);

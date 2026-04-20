@@ -47,6 +47,23 @@ export default function TermsOfUsePage({ onAccepted }) {
         }),
       ]);
 
+      // Generate and download PDF proof
+      try {
+        const pdfResponse = await base44.functions.invoke('generateAcceptanceProofPDF', {
+          type: 'terms',
+        });
+        if (pdfResponse.data && typeof pdfResponse.data === 'string') {
+          const link = document.createElement('a');
+          link.href = `data:application/pdf;base64,${btoa(pdfResponse.data)}`;
+          link.download = `Comprovante_Termos_${user.email}_${new Date().getTime()}.pdf`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+      } catch (pdfError) {
+        console.warn('Aviso: PDF não gerado, mas aceite foi registrado:', pdfError);
+      }
+
       if (onAccepted) onAccepted();
     } catch (e) {
       console.error('Erro ao salvar aceite:', e);

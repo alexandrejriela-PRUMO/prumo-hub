@@ -438,7 +438,7 @@ export default function Layout({ children, currentPageName }) {
                 </Link>
                 <Link to={createPageUrl('Invoices')} className="flex items-center gap-3 px-4 py-2 hover:bg-emerald-50 transition-colors text-sm text-emerald-900">
                     <CreditCard className="w-4 h-4" />
-                    Assinatura e Boletos
+                    Assinatura
                   </Link>
                   <button
                     onClick={() => setDeleteConfirmOpen(true)}
@@ -491,7 +491,7 @@ export default function Layout({ children, currentPageName }) {
               </Link>
               <Link to={createPageUrl('Invoices')} className="flex items-center gap-3 px-4 py-2 hover:bg-emerald-50 transition-colors text-sm text-emerald-900">
                 <CreditCard className="w-4 h-4" />
-                Assinatura e Boletos
+                Assinatura
               </Link>
               <button
                 onClick={() => setDeleteConfirmOpen(true)}

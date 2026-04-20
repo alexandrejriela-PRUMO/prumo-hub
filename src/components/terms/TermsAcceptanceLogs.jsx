@@ -15,7 +15,11 @@ export default function TermsAcceptanceLogs() {
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ['termsAcceptanceLogs'],
-    queryFn: () => base44.entities.TermsAcceptanceLog.list('-accepted_at', 500),
+    queryFn: async () => {
+      const all = await base44.entities.TermsAcceptanceLog.list('-accepted_at', 500);
+      // Filtrar apenas logs de Termos de Uso (version < 1001)
+      return all.filter(l => !l.terms_version || l.terms_version < 1001);
+    },
   });
 
   const versions = [...new Set(logs.map(l => l.terms_version))].sort((a, b) => b - a);

@@ -76,6 +76,8 @@ export default function AdminClientPropertyLink() {
         added_by: 'admin'
       };
 
+      // Remove if exists, then add (permite atualizar)
+      authorizedUsers = authorizedUsers.filter(u => u.email !== form.client_email);
       authorizedUsers.push(newUser);
 
       await base44.entities.Property.update(form.property_id, {
@@ -144,10 +146,6 @@ export default function AdminClientPropertyLink() {
     p.owner_email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const unlinkedClients = clients.filter(c =>
-    !properties.some(p => getPropertyClients(p).some(u => u.email === c.email))
-  );
-
   const isLoading = clientsLoading || propertiesLoading || consultorsLoading;
 
   return (
@@ -162,7 +160,7 @@ export default function AdminClientPropertyLink() {
         </div>
         <Button 
           onClick={() => setShowLinkDialog(true)}
-          disabled={isLoading || unlinkedClients.length === 0}
+          disabled={isLoading || clients.length === 0}
           className="bg-emerald-700 hover:bg-emerald-800"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -253,11 +251,11 @@ export default function AdminClientPropertyLink() {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div>
-              <Label>Cliente (sem propriedade) *</Label>
+              <Label>Cliente *</Label>
               <Select value={linkForm.client_email} onValueChange={(v) => setLinkForm({ ...linkForm, client_email: v })}>
                 <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione um cliente" /></SelectTrigger>
                 <SelectContent>
-                  {unlinkedClients.map(c => (
+                  {clients.map(c => (
                     <SelectItem key={c.email} value={c.email}>
                       {c.full_name || c.email}
                     </SelectItem>

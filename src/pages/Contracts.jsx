@@ -61,6 +61,9 @@ export default function Contracts() {
   const [newParty, setNewParty] = useState({ name: '', role: 'Contratante', document: '', address: '' });
   const [partySearch, setPartySearch] = useState('');
   const [showPartySuggestions, setShowPartySuggestions] = useState(false);
+  const [savedContratado, setSavedContratado] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('prumo_contratado_data')) || null; } catch { return null; }
+  });
 
   const filteredPartyClients = partySearch.length >= 1
     ? crmClients.filter(c =>
@@ -209,6 +212,12 @@ export default function Contracts() {
 
   const addParty = () => {
     if (!newParty.name) return;
+    // Salva dados do Contratado no localStorage para reutilizar
+    if (newParty.role === 'Contratado') {
+      const saved = { name: newParty.name, document: newParty.document, address: newParty.address };
+      localStorage.setItem('prumo_contratado_data', JSON.stringify(saved));
+      setSavedContratado(saved);
+    }
     setFormData(prev => ({ ...prev, parties: [...(prev.parties || []), { ...newParty }] }));
     setNewParty({ name: '', role: 'Contratante', document: '', address: '' });
     setPartySearch('');
@@ -570,7 +579,20 @@ export default function Contracts() {
                   </div>
                 )}
                 <div className="p-3 border border-dashed border-emerald-300 rounded-lg bg-emerald-50/30 space-y-2">
-                  <p className="text-xs font-medium text-emerald-700">Adicionar parte</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-emerald-700">Adicionar parte</p>
+                    {savedContratado && newParty.role === 'Contratado' && (
+                      <button type="button"
+                        onClick={() => {
+                          setNewParty(p => ({ ...p, name: savedContratado.name, document: savedContratado.document || '', address: savedContratado.address || '' }));
+                          setPartySearch(savedContratado.name);
+                        }}
+                        className="text-xs text-emerald-700 bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 rounded px-2 py-0.5 transition-colors"
+                      >
+                        ↩ Usar dados salvos: <span className="font-semibold">{savedContratado.name}</span>
+                      </button>
+                    )}
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="relative">
                       <Input className="h-8 text-sm" placeholder="Nome completo *" value={partySearch}

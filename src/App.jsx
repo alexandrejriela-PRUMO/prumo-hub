@@ -26,6 +26,7 @@ const NotificationAudit = React.lazy(() => import('./pages/NotificationAudit'));
 const NFeManagement = React.lazy(() => import('./pages/NFeManagement'));
 const ImportUsersStripe = React.lazy(() => import('./pages/ImportUsersStripe'));
 const TermsOfUsePage = React.lazy(() => import('./pages/TermsOfUsePage'));
+const SaasContractPage = React.lazy(() => import('./pages/SaasContractPage'));
 const TermsAdmin = React.lazy(() => import('./pages/TermsAdmin'));
 const AdminPanel = React.lazy(() => import('./pages/AdminPanel'));
 const LandingPage = React.lazy(() => import('./pages/LandingPage'));
@@ -66,6 +67,7 @@ const AuthenticatedApp = () => {
   const { isOnline, syncInProgress, syncStats } = useOfflineSync();
   const [termsChecked, setTermsChecked] = React.useState(false);
   const [needsTerms, setNeedsTerms] = React.useState(false);
+  const [needsContract, setNeedsContract] = React.useState(false);
 
   // Inicializar offline DB
   useEffect(() => {
@@ -87,6 +89,11 @@ const AuthenticatedApp = () => {
         const latestVersion = activeTerms[0].version;
         if (!user.accepted_terms_version || user.accepted_terms_version < latestVersion) {
           setNeedsTerms(true);
+        } else {
+          // Termos ok — verificar contrato SaaS
+          if (!user.accepted_saas_contract_version) {
+            setNeedsContract(true);
+          }
         }
       } catch (e) {
         console.error('[Terms] Erro ao verificar termos:', e);
@@ -119,7 +126,16 @@ const AuthenticatedApp = () => {
   if (needsTerms) {
     return (
       <Suspense fallback={<LoadingSpinner />}>
-        <TermsOfUsePage onAccepted={() => setNeedsTerms(false)} />
+        <TermsOfUsePage onAccepted={() => { setNeedsTerms(false); setNeedsContract(true); }} />
+      </Suspense>
+    );
+  }
+
+  // Redirecionar para aceite do contrato SaaS se necessário
+  if (needsContract) {
+    return (
+      <Suspense fallback={<LoadingSpinner />}>
+        <SaasContractPage onAccepted={() => setNeedsContract(false)} />
       </Suspense>
     );
   }

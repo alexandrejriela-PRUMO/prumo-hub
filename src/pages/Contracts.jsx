@@ -68,7 +68,6 @@ export default function Contracts() {
   const [newService, setNewService] = useState({ name: '', value: '', status: 'Em Andamento' });
   const [uploading, setUploading] = useState(false);
   const queryClient = useQueryClient();
-
   const isConsultor = isConsultorHook || isEquipe;
 
   // Buscar clientes do CRM do consultor

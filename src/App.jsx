@@ -184,8 +184,8 @@ const AuthenticatedApp = () => {
         <Route path="/ImportUsersStripe" element={<LayoutWrapper currentPageName="ImportUsersStripe"><Suspense fallback={<LoadingSpinner />}><ImportUsersStripe /></Suspense></LayoutWrapper>} />
         <Route path="/BudgetGenerator" element={<LayoutWrapper currentPageName="BudgetGenerator"><Suspense fallback={<LoadingSpinner />}><BudgetGenerator /></Suspense></LayoutWrapper>} />
         <Route path="/ContractGenerator" element={<LayoutWrapper currentPageName="ContractGenerator"><Suspense fallback={<LoadingSpinner />}><ContractGenerator /></Suspense></LayoutWrapper>} />
-        <Route path="/TermsAdmin" element={<RouteProtector requiredRole="admin"><LayoutWrapper currentPageName="TermsAdmin"><Suspense fallback={<LoadingSpinner />}><TermsAdmin /></Suspense></LayoutWrapper></RouteProtector>} />
-        <Route path="/AdminPanel" element={<RouteProtector requiredRole="admin"><LayoutWrapper currentPageName="AdminPanel"><Suspense fallback={<LoadingSpinner />}><AdminPanel /></Suspense></LayoutWrapper></RouteProtector>} />
+        <Route path="/TermsAdmin" element={<LayoutWrapper currentPageName="TermsAdmin"><Suspense fallback={<LoadingSpinner />}><TermsAdmin /></Suspense></LayoutWrapper>} />
+        <Route path="/AdminPanel" element={<LayoutWrapper currentPageName="AdminPanel"><Suspense fallback={<LoadingSpinner />}><AdminPanel /></Suspense></LayoutWrapper>} />
         <Route path="/AccessBlocked" element={<Suspense fallback={<LoadingSpinner />}><AccessBlocked /></Suspense>} />
         <Route path="*" element={<PageNotFound />} />
       </Routes>

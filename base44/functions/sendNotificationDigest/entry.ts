@@ -1,0 +1,180 @@
+/**
+ * sendNotificationDigest — Envia resumo diário/semanal de notificações por email.
+ * Chamado por automação agendada (diária às 08h ou semanal às seg 08h).
+ *
+ * Lógica:
+ * - Para cada usuário com notificações não lidas nas últimas 24h (diário) ou 7 dias (semanal),
+ *   agrupa por categoria e envia um email de resumo.
+ * - Respeita preferências do usuário (email_enabled por event_type).
+ * - Não envia se o usuário não tiver nenhuma notificação nova.
+ */
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+
+Deno.serve(async (req) => {
+  try {
+    const base44 = createClientFromRequest(req);
+
+    // Modo: 'daily' (padrão) ou 'weekly'
+    const body = await req.json().catch(() => ({}));
+    const mode = body.mode || 'daily';
+    const hoursBack = mode === 'weekly' ? 168 : 24;
+
+    const since = new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString();
+
+    // Busca notificações não lidas recentes
+    const allNotifs = await base44.asServiceRole.entities.InAppNotification.filter(
+      { read: false }
+    );
+
+    // Filtra pelo período
+    const recent = allNotifs.filter(n => n.created_date >= since);
+    if (recent.length === 0) {
+      console.log('[Digest] Nenhuma notificação recente para enviar');
+      return Response.json({ success: true, sent: 0, message: 'Nenhuma notificação recente' });
+    }
+
+    // Agrupa por usuário
+    const byUser = {};
+    for (const notif of recent) {
+      if (!notif.user_email) continue;
+      if (!byUser[notif.user_email]) byUser[notif.user_email] = [];
+      byUser[notif.user_email].push(notif);
+    }
+
+    // Categorias para o email
+    const CATEGORY_LABELS = {
+      licencas:   '📋 Licenças e Documentos',
+      processos:  '⚖️ Processos',
+      tarefas:    '✅ Tarefas',
+      crm:        '👥 CRM e Clientes',
+      contratos:  '📝 Contratos',
+      agenda:     '📅 Agenda',
+      financeiro: '💳 Financeiro',
+      sistema:    '⚙️ Sistema / Alertas',
+    };
+
+    const EVENT_TO_CAT = {
+      nova_licenca: 'licencas', atualizacao_licenca: 'licencas',
+      licenca_vencendo: 'licencas', licenca_vencida: 'licencas', documento_vencendo: 'licencas',
+      novo_processo: 'processos', atualizacao_processo: 'processos',
+      task_overdue: 'tarefas', task_due_soon: 'tarefas',
+      atualizacao_cliente_crm: 'crm', novo_cliente_crm: 'crm',
+      novo_requerimento: 'crm', resposta_requerimento: 'crm',
+      novo_contrato: 'contratos', atualizacao_contrato: 'contratos',
+      nova_fatura: 'financeiro', fatura_vencendo: 'financeiro',
+      novo_alerta_ambiental: 'sistema', alerta_resolvido: 'sistema', outro: 'sistema',
+    };
+
+    const SEVERITY_EMOJI = { error: '🔴', warning: '🟡', success: '🟢', info: '⚪' };
+
+    let emailsSent = 0;
+    const periodLabel = mode === 'weekly' ? 'semanal' : 'diário';
+
+    for (const [userEmail, notifs] of Object.entries(byUser)) {
+      // Verifica preferências do usuário
+      let prefs = {};
+      try {
+        const userPrefs = await base44.asServiceRole.entities.NotificationPreference.filter({ user_email: userEmail });
+        userPrefs.forEach(p => { prefs[p.event_type] = p; });
+      } catch (e) { /* sem preferências = usa padrão (enviar) */ }
+
+      // Verifica se o usuário quer receber digest por email
+      // Usa a pref 'outro' como fallback global; se não existir, envia
+      const globalPref = prefs['todos'] || prefs['outro'];
+      if (globalPref && globalPref.email_enabled === false) continue;
+
+      // Agrupa por categoria
+      const grouped = {};
+      for (const n of notifs) {
+        const cat = EVENT_TO_CAT[n.event_type] || 'sistema';
+        if (!grouped[cat]) grouped[cat] = [];
+        grouped[cat].push(n);
+      }
+
+      // Separa urgentes
+      const urgentes = notifs.filter(n => n.severity === 'error');
+
+      // Monta o corpo do email
+      const modeTitle = mode === 'weekly' ? 'Resumo Semanal' : 'Resumo Diário';
+      const totalCount = notifs.length;
+
+      let urgentBlock = '';
+      if (urgentes.length > 0) {
+        urgentBlock = `
+          <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin-bottom:20px;">
+            <h3 style="margin:0 0 10px;color:#dc2626;font-size:15px;">🔴 ${urgentes.length} Alerta${urgentes.length > 1 ? 's' : ''} Urgente${urgentes.length > 1 ? 's' : ''}</h3>
+            <ul style="margin:0;padding-left:20px;">
+              ${urgentes.map(n => `<li style="margin-bottom:4px;color:#7f1d1d;font-size:13px;"><strong>${n.title}</strong> — ${n.message?.substring(0, 100) || ''}</li>`).join('')}
+            </ul>
+          </div>
+        `;
+      }
+
+      let categoryBlocks = '';
+      for (const [cat, catNotifs] of Object.entries(grouped)) {
+        const label = CATEGORY_LABELS[cat] || cat;
+        categoryBlocks += `
+          <div style="margin-bottom:16px;border-left:3px solid #059669;padding-left:12px;">
+            <h4 style="margin:0 0 8px;color:#064e3b;font-size:13px;font-weight:600;">${label} (${catNotifs.length})</h4>
+            <ul style="margin:0;padding-left:16px;">
+              ${catNotifs.slice(0, 5).map(n => `
+                <li style="margin-bottom:4px;font-size:12px;color:#374151;">
+                  ${SEVERITY_EMOJI[n.severity] || '⚪'} <strong>${n.title}</strong>
+                  ${n.message ? `<br><span style="color:#6b7280;font-size:11px;">${n.message.substring(0, 100)}${n.message.length > 100 ? '...' : ''}</span>` : ''}
+                </li>
+              `).join('')}
+              ${catNotifs.length > 5 ? `<li style="font-size:11px;color:#6b7280;">+ ${catNotifs.length - 5} mais...</li>` : ''}
+            </ul>
+          </div>
+        `;
+      }
+
+      const emailBody = `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;">
+          <div style="background:linear-gradient(135deg,#064e3b,#065f46);padding:24px;border-radius:8px 8px 0 0;">
+            <h1 style="color:#fff;margin:0;font-size:20px;">PRUMO Hub — ${modeTitle}</h1>
+            <p style="color:#a7f3d0;margin:4px 0 0;font-size:13px;">
+              ${new Date().toLocaleDateString('pt-BR', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
+            </p>
+          </div>
+          <div style="padding:24px;background:#f9fafb;border-radius:0 0 8px 8px;">
+            <p style="color:#374151;font-size:14px;margin:0 0 16px;">
+              Você tem <strong>${totalCount} notificação${totalCount > 1 ? 'ões' : ''}</strong> não lida${totalCount > 1 ? 's' : ''} acumulada${totalCount > 1 ? 's' : ''}.
+            </p>
+            ${urgentBlock}
+            ${categoryBlocks}
+            <div style="margin-top:20px;padding-top:16px;border-top:1px solid #e5e7eb;text-align:center;">
+              <a href="https://prumo.base44.app" style="background:#059669;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px;">
+                Acessar PRUMO Hub
+              </a>
+            </div>
+            <p style="color:#9ca3af;font-size:11px;text-align:center;margin-top:16px;">
+              Você pode gerenciar suas preferências de notificação em <strong>Configurar Notificações</strong> dentro da plataforma.<br>
+              Para cancelar este resumo, desative "Email" nas suas preferências.
+            </p>
+          </div>
+        </div>
+      `;
+
+      try {
+        await base44.asServiceRole.integrations.Core.SendEmail({
+          from_name: 'PRUMO Hub',
+          to: userEmail,
+          subject: `[PRUMO Hub] ${modeTitle} — ${totalCount} notificação${totalCount > 1 ? 'ões' : ''} pendente${totalCount > 1 ? 's' : ''}`,
+          body: emailBody
+        });
+        emailsSent++;
+        console.log(`[Digest] Email ${periodLabel} → ${userEmail} (${totalCount} notifs)`);
+      } catch (e) {
+        console.error(`[Digest] Erro ao enviar para ${userEmail}:`, e.message);
+      }
+    }
+
+    console.log(`[Digest] Concluído. Emails enviados: ${emailsSent}`);
+    return Response.json({ success: true, sent: emailsSent, mode, period_hours: hoursBack });
+
+  } catch (error) {
+    console.error('[Digest] Erro:', error.message);
+    return Response.json({ success: false, error: error.message }, { status: 500 });
+  }
+});

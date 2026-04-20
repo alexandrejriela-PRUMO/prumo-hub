@@ -52,7 +52,7 @@ export default function NotificationSettings() {
             <strong>🔔 Push:</strong> Notificações imediatas no aplicativo quando algo importante acontece
           </p>
           <p>
-            <strong>📱 SMS:</strong> Alertas críticos por mensagem de texto (exige número de telefone)
+            <strong>📱 SMS:</strong> Canal em desenvolvimento — disponível em breve.
           </p>
           <p>
             <strong>⏰ Datas de Vencimento:</strong> Você receberá avisos com 30 dias de antecedência

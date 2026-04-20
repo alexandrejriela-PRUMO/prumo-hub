@@ -4,8 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import PropertyCard from '../components/dashboard/PropertyCard';
 import QuickActions from '../components/dashboard/QuickActions';
 import LicenseAlerts from '../components/dashboard/LicenseAlerts';
-import InvoicesSummary from '../components/dashboard/InvoicesSummary';
-import ClientFinancialSummary from '../components/consultor/ClientFinancialSummary';
+
 import BlogPreview from '../components/dashboard/BlogPreview';
 import RegularityThermometer from '../components/dashboard/RegularityThermometer';
 import EnvironmentalAlerts from '../components/dashboard/EnvironmentalAlerts';
@@ -399,15 +398,6 @@ export default function Home() {
               prads={prads}
               carManagements={carManagements}
             />
-          )}
-
-          {/* Financeiro */}
-          {isLoading ? (
-            <Skeleton className="h-80 rounded-xl" />
-          ) : isConsultor ? (
-            <ClientFinancialSummary client={{ id: selectedProperty?.id, properties: [selectedProperty] }} />
-          ) : (
-            <InvoicesSummary invoices={invoices} />
           )}
 
           {/* Blog Preview */}

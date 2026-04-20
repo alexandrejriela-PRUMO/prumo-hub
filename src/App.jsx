@@ -195,19 +195,27 @@ const AuthenticatedApp = () => {
 };
 
 
+function AppContent() {
+  return (
+    <>
+      <NavigationTracker />
+      <PWAUpdateNotification />
+      <OnlineStatusIndicator />
+      <Routes>
+        <Route path="/landing" element={<Suspense fallback={<LoadingSpinner />}><LandingPage /></Suspense>} />
+        <Route path="/LandingPage" element={<Suspense fallback={<LoadingSpinner />}><LandingPage /></Suspense>} />
+        <Route path="*" element={<AuthenticatedApp />} />
+      </Routes>
+    </>
+  );
+}
+
 function App() {
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
-          <NavigationTracker />
-          <PWAUpdateNotification />
-          <OnlineStatusIndicator />
-          <Routes>
-            <Route path="/landing" element={<Suspense fallback={<LoadingSpinner />}><LandingPage /></Suspense>} />
-            <Route path="/LandingPage" element={<Suspense fallback={<LoadingSpinner />}><LandingPage /></Suspense>} />
-            <Route path="*" element={<AuthenticatedApp />} />
-          </Routes>
+          <AppContent />
         </Router>
         <Toaster />
       </QueryClientProvider>

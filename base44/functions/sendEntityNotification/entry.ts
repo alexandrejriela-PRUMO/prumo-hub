@@ -1,42 +1,36 @@
 /**
  * sendEntityNotification — Função principal de notificações por entidade.
- * Consolida push (in-app) + email. SMS não implementado (ignorado silenciosamente).
- * Verifica plano do consultor antes de notificar client_consultor.
+ * Consolida push (in-app) + email. SMS não implementado.
  *
- * CORREÇÕES v2:
- * - canReceiveNotification: produtor agora é sempre permitido (estava bloqueado em todos os planos)
- * - Cache movido para dentro do handler (evita dados sujos entre requests no Deno)
- * - EnvironmentalAlert: notifica equipe do consultor
- * - Request: notifica equipe do consultor
- * - Equipe sempre permitida independente de plano (plano é do consultor, equipe é staff interno)
+ * COBERTURA:
+ * - License: criação/atualização/vencimento → owner + consultor + equipe + client_consultor (enterprise)
+ * - Process: criação/andamentos/status → client + consultor + equipe + client_consultor (enterprise)
+ * - EnvironmentalAlert: criação/resolução → owner + consultor + equipe
+ * - PRAD: criação/status/etapas → owner + consultor + equipe
+ * - ClientContract: criação/status/vencimento → client + consultor + equipe + client_consultor (enterprise)
+ * - ClientCRM: interações/tarefas/menções → consultor + membro mencionado
+ * - Request: criação/resposta → client + consultor + equipe
+ * - Property: criação → consultor
+ * - Mapping, Georeferencing, CarbonCredit, PSAContract, EnvironmentalEasement
+ * - AuditLog: notifica dono da equipe sobre ações da equipe
  */
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 // ─── Regras de notificação por plano ─────────────────────────────────────────
-// Regra: o PLANO determina se client_consultor recebe notificação.
-// Produtor, Consultor e Equipe SEMPRE recebem (independente de plano).
 function canReceiveNotification(recipient, consultor) {
   const type = recipient?.user_type || 'produtor';
-
-  // Produtor, consultor e equipe sempre recebem
   if (['produtor', 'consultor', 'equipe'].includes(type)) return true;
-
-  // client_consultor: depende do plano
   if (type === 'client_consultor') {
     const plan = (consultor?.plan || '').toLowerCase();
     return plan === 'enterprise';
   }
-
-  // admin ou outros: permite por segurança
   return true;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 function addNotif(notifications, userEmail, title, message, eventType, severity = 'info', link = null) {
   if (userEmail) notifications.push({ user_email: userEmail, title, message, event_type: eventType, severity, link });
 }
 
-// ─── Handler principal ────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -47,13 +41,12 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Payload inválido' }, { status: 400 });
     }
 
-    // Cache local por request (evita dados sujos entre invocações no Deno)
+    // Cache local por request
     const consultorCache = {};
     const recipientCache = {};
     const prefCache = {};
     const recentEmailsMap = new Map();
 
-    // ─── Busca dados do consultor ───────────────────────────────────────────
     async function getConsultorData(email) {
       if (!email) return null;
       if (consultorCache[email]) return consultorCache[email];
@@ -64,7 +57,6 @@ Deno.serve(async (req) => {
       } catch (e) { return null; }
     }
 
-    // ─── Busca dados do destinatário ────────────────────────────────────────
     async function getRecipientData(email) {
       if (!email) return null;
       if (recipientCache[email]) return recipientCache[email];
@@ -75,7 +67,6 @@ Deno.serve(async (req) => {
       } catch (e) { return { user_type: 'produtor' }; }
     }
 
-    // ─── Cache de preferências ──────────────────────────────────────────────
     async function getUserPrefs(email) {
       if (!email) return {};
       if (prefCache[email]) return prefCache[email];
@@ -88,7 +79,6 @@ Deno.serve(async (req) => {
       } catch (e) { return {}; }
     }
 
-    // ─── Deduplicação de email (janela de 5 minutos, por request) ──────────
     function isDuplicateEmail(email, subject) {
       const key = `${email}:${subject}`;
       const last = recentEmailsMap.get(key);
@@ -111,7 +101,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ─── Salva notificações push respeitando preferências ──────────────────
     async function saveNotifications(notifications, entityName, entityId) {
       for (const notif of notifications) {
         const prefs = await getUserPrefs(notif.user_email);
@@ -139,7 +128,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ─── Envia emails ───────────────────────────────────────────────────────
     async function sendEmails(emailsToSend) {
       for (const email of emailsToSend) {
         try {
@@ -155,12 +143,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ─── Filtra destinatários bloqueados por plano ──────────────────────────
     async function filterByPlan(emails, consultorEmail) {
       const result = [];
       const consultor = await getConsultorData(consultorEmail);
       const seen = new Set();
-
       for (const email of emails) {
         if (!email || seen.has(email)) continue;
         seen.add(email);
@@ -174,7 +160,6 @@ Deno.serve(async (req) => {
       return result;
     }
 
-    // ─── Busca emails da equipe do consultor ────────────────────────────────
     async function getTeamEmails(consultorEmail) {
       if (!consultorEmail) return [];
       try {
@@ -186,10 +171,22 @@ Deno.serve(async (req) => {
       } catch (e) { return []; }
     }
 
+    // Busca email do client_consultor vinculado a uma propriedade (portal do cliente)
+    async function getClientConsultorEmail(propertyId, ownerEmail) {
+      if (!propertyId) return null;
+      try {
+        const props = await base44.asServiceRole.entities.Property.filter({ id: propertyId });
+        if (props.length === 0) return null;
+        const clientEmail = props[0].owner_email || ownerEmail;
+        if (!clientEmail) return null;
+        const users = await base44.asServiceRole.entities.User.filter({ email: clientEmail });
+        if (users.length > 0 && users[0].user_type === 'client_consultor') return clientEmail;
+        return null;
+      } catch (e) { return null; }
+    }
+
     const notifications = [];
     const emailsToSend = [];
-
-    console.log('[Notif] SMS channel: not implemented, skipped.');
 
     // ─── LICENSE ─────────────────────────────────────────────────────────
     if (event.entity_name === 'License') {
@@ -204,13 +201,15 @@ Deno.serve(async (req) => {
       }
 
       const teamEmails = await getTeamEmails(consultorEmail);
-      const candidates = [...new Set([owner, consultorEmail, ...teamEmails].filter(Boolean))];
+      // Inclui o client_consultor se existir
+      const clientConsultorEmail = await getClientConsultorEmail(data.property_id, owner);
+      const candidates = [...new Set([owner, consultorEmail, ...teamEmails, clientConsultorEmail].filter(Boolean))];
       const recipients = await filterByPlan(candidates, consultorEmail);
 
       if (event.type === 'create') {
         const msgCreate = `Licença ${data.license_type}${data.license_number ? ` nº ${data.license_number}` : ''} foi registrada.`;
         for (const r of recipients) {
-          const label = r === consultorEmail ? 'Nova Licença - Cliente' : 'Nova Licença Cadastrada';
+          const label = r === consultorEmail ? 'Nova Licença - Cliente' : r === clientConsultorEmail ? 'Nova Licença em sua Propriedade' : 'Nova Licença Cadastrada';
           addNotif(notifications, r, label, msgCreate, 'nova_licenca', 'info', '/Licenses');
         }
         await addEmail(emailsToSend, owner,
@@ -218,6 +217,14 @@ Deno.serve(async (req) => {
           `<p>Olá,</p><p>Uma nova licença foi cadastrada:</p><ul><li><strong>Tipo:</strong> ${data.license_type}</li>${data.license_number ? `<li><strong>Número:</strong> ${data.license_number}</li>` : ''}<li><strong>Status:</strong> ${data.status || 'N/A'}</li></ul><p>Equipe PRUMO Hub</p>`,
           'nova_licenca'
         );
+        // Notifica client_consultor também por email se for diferente do owner
+        if (clientConsultorEmail && clientConsultorEmail !== owner) {
+          await addEmail(emailsToSend, clientConsultorEmail,
+            `[PRUMO Hub] Nova Licença em sua Propriedade: ${data.license_type}`,
+            `<p>Olá,</p><p>Seu consultor cadastrou uma nova licença em sua propriedade:</p><ul><li><strong>Tipo:</strong> ${data.license_type}</li>${data.license_number ? `<li><strong>Número:</strong> ${data.license_number}</li>` : ''}</ul><p>Equipe PRUMO Hub</p>`,
+            'nova_licenca'
+          );
+        }
       }
 
       if (event.type === 'update') {
@@ -226,7 +233,7 @@ Deno.serve(async (req) => {
           const latest = newU[newU.length - 1];
           const andamentoMsg = `Licença ${data.license_type}${data.license_number ? ` nº ${data.license_number}` : ''}: ${latest.description?.substring(0, 120) || 'Nova movimentação registrada'}`;
           for (const r of recipients) {
-            const label = r === consultorEmail ? 'Andamento em Licença - Cliente' : 'Novo Andamento em Licença';
+            const label = r === consultorEmail ? 'Andamento em Licença - Cliente' : r === clientConsultorEmail ? 'Novo Andamento em Licença da sua Propriedade' : 'Novo Andamento em Licença';
             addNotif(notifications, r, label, andamentoMsg, 'atualizacao_licenca', 'info', '/Licenses');
           }
           await addEmail(emailsToSend, owner,
@@ -234,6 +241,13 @@ Deno.serve(async (req) => {
             `<p>Olá,</p><p>Nova movimentação na licença <strong>${data.license_type}</strong>:</p><blockquote style="background:#f5f5f5;padding:12px;border-left:4px solid #2d6a4f;">${latest.description || 'Nova movimentação registrada'}</blockquote><p>Equipe PRUMO Hub</p>`,
             'atualizacao_licenca'
           );
+          if (clientConsultorEmail && clientConsultorEmail !== owner) {
+            await addEmail(emailsToSend, clientConsultorEmail,
+              `[PRUMO Hub] Andamento em Licença da sua Propriedade`,
+              `<p>Olá,</p><p>Seu consultor registrou uma atualização na licença <strong>${data.license_type}</strong>:</p><blockquote style="background:#f5f5f5;padding:12px;border-left:4px solid #2d6a4f;">${latest.description || 'Nova movimentação'}</blockquote><p>Equipe PRUMO Hub</p>`,
+              'atualizacao_licenca'
+            );
+          }
         }
         if (old_data?.status && old_data.status !== data.status) {
           const sev = data.status === 'Vencida' ? 'error' : 'warning';
@@ -247,6 +261,13 @@ Deno.serve(async (req) => {
             `<p>Status alterado: <strong>${old_data.status}</strong> → <strong>${data.status}</strong></p><p>Equipe PRUMO Hub</p>`,
             'licenca_vencida'
           );
+          if (clientConsultorEmail && clientConsultorEmail !== owner) {
+            await addEmail(emailsToSend, clientConsultorEmail,
+              `[PRUMO Hub] Status da Licença ${data.license_type} Alterado`,
+              `<p>Olá,</p><p>O status da sua licença foi alterado: <strong>${old_data.status}</strong> → <strong>${data.status}</strong></p><p>Equipe PRUMO Hub</p>`,
+              'licenca_vencida'
+            );
+          }
         }
       }
     }
@@ -264,13 +285,14 @@ Deno.serve(async (req) => {
       }
 
       const teamEmails = await getTeamEmails(consultorEmail);
-      const candidates = [...new Set([client, consultorEmail, ...teamEmails].filter(Boolean))];
+      const clientConsultorEmail = await getClientConsultorEmail(data.property_id, client);
+      const candidates = [...new Set([client, consultorEmail, ...teamEmails, clientConsultorEmail].filter(Boolean))];
       const recipients = await filterByPlan(candidates, consultorEmail);
 
       if (event.type === 'create') {
         const message = `Processo ${data.process_number} (${data.process_type}): ${data.subject}`;
         for (const r of recipients) {
-          const label = r === consultorEmail ? 'Novo Processo - Cliente' : 'Novo Processo Registrado';
+          const label = r === consultorEmail ? 'Novo Processo - Cliente' : r === clientConsultorEmail ? 'Novo Processo em sua Propriedade' : 'Novo Processo Registrado';
           addNotif(notifications, r, label, message, 'novo_processo', 'info', '/Processes');
         }
         await addEmail(emailsToSend, client,
@@ -278,6 +300,13 @@ Deno.serve(async (req) => {
           `<p>Novo processo cadastrado:</p><ul><li><strong>Número:</strong> ${data.process_number}</li><li><strong>Tipo:</strong> ${data.process_type}</li><li><strong>Matéria:</strong> ${data.subject}</li><li><strong>Status:</strong> ${data.status}</li></ul><p>Equipe PRUMO Hub</p>`,
           'novo_processo'
         );
+        if (clientConsultorEmail && clientConsultorEmail !== client) {
+          await addEmail(emailsToSend, clientConsultorEmail,
+            `[PRUMO Hub] Novo Processo Registrado em sua Propriedade`,
+            `<p>Olá,</p><p>Seu consultor registrou um novo processo para sua propriedade:</p><ul><li><strong>Número:</strong> ${data.process_number}</li><li><strong>Tipo:</strong> ${data.process_type}</li><li><strong>Matéria:</strong> ${data.subject}</li></ul><p>Equipe PRUMO Hub</p>`,
+            'novo_processo'
+          );
+        }
       }
 
       if (event.type === 'update') {
@@ -286,7 +315,7 @@ Deno.serve(async (req) => {
           const latest = newU[newU.length - 1];
           const movMessage = `Processo ${data.process_number}: ${latest.description?.substring(0, 120) || 'Nova movimentação'}`;
           for (const r of recipients) {
-            const label = r === consultorEmail ? 'Andamento em Processo - Cliente' : 'Novo Andamento em Processo';
+            const label = r === consultorEmail ? 'Andamento em Processo - Cliente' : r === clientConsultorEmail ? 'Novo Andamento no seu Processo' : 'Novo Andamento em Processo';
             addNotif(notifications, r, label, movMessage, 'atualizacao_processo', 'info', '/Processes');
           }
           await addEmail(emailsToSend, client,
@@ -294,6 +323,13 @@ Deno.serve(async (req) => {
             `<p>Nova movimentação no processo <strong>${data.process_number}</strong>:</p><blockquote style="background:#f5f5f5;padding:12px;border-left:4px solid #2d6a4f;">${latest.description || 'Nova movimentação'}</blockquote><p>Equipe PRUMO Hub</p>`,
             'atualizacao_processo'
           );
+          if (clientConsultorEmail && clientConsultorEmail !== client) {
+            await addEmail(emailsToSend, clientConsultorEmail,
+              `[PRUMO Hub] Andamento no seu Processo ${data.process_number}`,
+              `<p>Olá,</p><p>Novo andamento no processo <strong>${data.process_number}</strong>:</p><blockquote style="background:#f5f5f5;padding:12px;border-left:4px solid #2d6a4f;">${latest.description || 'Nova movimentação'}</blockquote><p>Equipe PRUMO Hub</p>`,
+              'atualizacao_processo'
+            );
+          }
         }
         if (old_data?.status && old_data.status !== data.status) {
           const statusMsg = `Processo ${data.process_number}: ${old_data.status} → ${data.status}`;
@@ -306,6 +342,71 @@ Deno.serve(async (req) => {
             `<p>Status alterado: <strong>${old_data.status}</strong> → <strong>${data.status}</strong></p><p>Equipe PRUMO Hub</p>`,
             'atualizacao_processo'
           );
+          if (clientConsultorEmail && clientConsultorEmail !== client) {
+            await addEmail(emailsToSend, clientConsultorEmail,
+              `[PRUMO Hub] Status do seu Processo ${data.process_number} Alterado`,
+              `<p>Olá,</p><p>O status do processo alterou: <strong>${old_data.status}</strong> → <strong>${data.status}</strong></p><p>Equipe PRUMO Hub</p>`,
+              'atualizacao_processo'
+            );
+          }
+        }
+      }
+    }
+
+    // ─── CLIENT CONTRACT ─────────────────────────────────────────────────
+    if (event.entity_name === 'ClientContract') {
+      const clientEmail = data.client_email;
+      const consultorEmail = data.consultor_email;
+      const teamEmails = await getTeamEmails(consultorEmail);
+      const clientConsultorEmail = await getClientConsultorEmail(data.property_id, clientEmail);
+      const candidates = [...new Set([clientEmail, consultorEmail, ...teamEmails, clientConsultorEmail].filter(Boolean))];
+      const recipients = await filterByPlan(candidates, consultorEmail);
+
+      if (event.type === 'create') {
+        const msg = `Contrato "${data.contract_type}" para ${data.client_name || clientEmail} foi criado.`;
+        for (const r of recipients) {
+          const label = r === clientEmail || r === clientConsultorEmail ? 'Novo Contrato Disponível' : 'Novo Contrato Criado';
+          addNotif(notifications, r, label, msg, 'outro', 'info', '/Contracts');
+        }
+        if (clientEmail) {
+          await addEmail(emailsToSend, clientEmail,
+            `[PRUMO Hub] Novo Contrato: ${data.contract_type}`,
+            `<p>Olá ${data.client_name || ''},</p><p>Um novo contrato foi criado para você:</p><ul><li><strong>Tipo:</strong> ${data.contract_type}</li><li><strong>Objeto:</strong> ${data.object || 'N/A'}</li><li><strong>Status:</strong> ${data.status}</li></ul><p>Acesse a plataforma para visualizar.</p><p>Equipe PRUMO Hub</p>`,
+            'outro'
+          );
+        }
+      }
+
+      if (event.type === 'update') {
+        // Mudança de status
+        if (old_data?.status && old_data.status !== data.status) {
+          const sev = data.status === 'Cancelado' ? 'error' : data.status === 'Assinado' || data.status === 'Ativo' ? 'success' : 'info';
+          const statusMsg = `Contrato "${data.contract_type}": ${old_data.status} → ${data.status}`;
+          for (const r of recipients) {
+            addNotif(notifications, r, 'Status de Contrato Alterado', statusMsg, 'outro', sev, '/Contracts');
+          }
+          if (clientEmail) {
+            await addEmail(emailsToSend, clientEmail,
+              `[PRUMO Hub] Status do Contrato "${data.contract_type}" Alterado`,
+              `<p>Olá,</p><p>O status do seu contrato foi atualizado: <strong>${old_data.status}</strong> → <strong>${data.status}</strong></p><p>Equipe PRUMO Hub</p>`,
+              'outro'
+            );
+          }
+          if (clientConsultorEmail && clientConsultorEmail !== clientEmail) {
+            await addEmail(emailsToSend, clientConsultorEmail,
+              `[PRUMO Hub] Status do seu Contrato Alterado`,
+              `<p>Olá,</p><p>O status do contrato <strong>${data.contract_type}</strong> foi alterado: <strong>${old_data.status}</strong> → <strong>${data.status}</strong></p><p>Equipe PRUMO Hub</p>`,
+              'outro'
+            );
+          }
+        }
+        // Mudança de signature_status
+        if (old_data?.signature_status && old_data.signature_status !== data.signature_status) {
+          const sigMsg = `Contrato "${data.contract_type}": assinatura ${data.signature_status}`;
+          const sev = data.signature_status === 'Assinado' ? 'success' : data.signature_status === 'Recusado' ? 'error' : 'info';
+          for (const r of recipients) {
+            addNotif(notifications, r, 'Atualização de Assinatura de Contrato', sigMsg, 'outro', sev, '/Contracts');
+          }
         }
       }
     }
@@ -327,7 +428,8 @@ Deno.serve(async (req) => {
 
       const sev = (data.severity === 'Crítica' || data.severity === 'Alta') ? 'error' : 'warning';
       const teamEmails = await getTeamEmails(consultorEmail);
-      const candidates = [...new Set([ownerEmail, consultorEmail, ...teamEmails].filter(Boolean))];
+      const clientConsultorEmail = await getClientConsultorEmail(data.property_id, ownerEmail);
+      const candidates = [...new Set([ownerEmail, consultorEmail, ...teamEmails, clientConsultorEmail].filter(Boolean))];
       const recipients = await filterByPlan(candidates, consultorEmail);
 
       if (event.type === 'create') {
@@ -341,11 +443,17 @@ Deno.serve(async (req) => {
           `<p>Um novo alerta ambiental foi detectado:</p><ul><li><strong>Tipo:</strong> ${data.alert_type}</li><li><strong>Título:</strong> ${data.title}</li><li><strong>Severidade:</strong> ${data.severity}</li>${data.description ? `<li><strong>Descrição:</strong> ${data.description}</li>` : ''}</ul><p>Acesse a plataforma para mais detalhes.</p><p>Equipe PRUMO Hub</p>`,
           'novo_alerta_ambiental'
         );
-        // Email para consultor também
         if (consultorEmail && consultorEmail !== ownerEmail) {
           await addEmail(emailsToSend, consultorEmail,
             `[PRUMO Hub] ⚠️ Alerta Ambiental em Propriedade Monitorada: ${data.title}`,
             `<p>Alerta detectado em propriedade de seu cliente:</p><ul><li><strong>Tipo:</strong> ${data.alert_type}</li><li><strong>Severidade:</strong> ${data.severity}</li></ul><p>Equipe PRUMO Hub</p>`,
+            'novo_alerta_ambiental'
+          );
+        }
+        if (clientConsultorEmail && clientConsultorEmail !== ownerEmail && clientConsultorEmail !== consultorEmail) {
+          await addEmail(emailsToSend, clientConsultorEmail,
+            `[PRUMO Hub] ⚠️ Alerta Ambiental em sua Propriedade: ${data.title}`,
+            `<p>Olá,</p><p>Um alerta ambiental foi detectado em sua propriedade:</p><ul><li><strong>Tipo:</strong> ${data.alert_type}</li><li><strong>Severidade:</strong> ${data.severity}</li></ul><p>Acesse a plataforma para mais detalhes.</p><p>Equipe PRUMO Hub</p>`,
             'novo_alerta_ambiental'
           );
         }
@@ -369,16 +477,15 @@ Deno.serve(async (req) => {
     if (event.entity_name === 'PRAD') {
       const owner = data.owner_email;
       let consultorEmail = null;
-
       if (data.property_id) {
         try {
           const props = await base44.asServiceRole.entities.Property.filter({ id: data.property_id });
           if (props.length > 0) consultorEmail = props[0].consultor_email;
         } catch (e) { /* ignore */ }
       }
-
       const teamEmails = await getTeamEmails(consultorEmail);
-      const candidates = [...new Set([owner, consultorEmail, ...teamEmails].filter(Boolean))];
+      const clientConsultorEmail = await getClientConsultorEmail(data.property_id, owner);
+      const candidates = [...new Set([owner, consultorEmail, ...teamEmails, clientConsultorEmail].filter(Boolean))];
       const recipients = await filterByPlan(candidates, consultorEmail);
 
       if (event.type === 'create') {
@@ -447,20 +554,77 @@ Deno.serve(async (req) => {
     if (event.entity_name === 'ClientCRM') {
       const consultor = data.consultor_email;
       if (event.type === 'update') {
+        // Nova interação
         const oldI = old_data?.interactions || [], newI = data?.interactions || [];
         if (newI.length > oldI.length) {
           const latest = newI[newI.length - 1];
+          // Notifica o consultor
           addNotif(notifications, consultor, 'Nova Interação com Cliente',
             `${latest.type}: ${latest.title || latest.description?.substring(0, 100) || 'Nova interação'}`,
             'outro', 'info', '/ConsultorClients');
+          // Notifica responsável se diferente do consultor
+          if (latest.responsible_email && latest.responsible_email !== consultor) {
+            addNotif(notifications, latest.responsible_email, 'Interação Atribuída a Você',
+              `"${latest.title || 'Nova interação'}" no cliente "${data.client_name || ''}"`,
+              'outro', 'info', '/CRMBoard');
+            await addEmail(emailsToSend, latest.responsible_email,
+              `[PRUMO Hub] Interação atribuída a você no CRM`,
+              `<p>Olá,</p><p>Uma nova interação foi atribuída a você no CRM do cliente <strong>${data.client_name || ''}</strong>:</p><p><strong>${latest.title || 'Nova interação'}</strong></p><p>Tipo: ${latest.type}</p><p>Acesse o CRM para responder.</p><p>Equipe PRUMO Hub</p>`,
+              'outro'
+            );
+          }
+          // Verifica menções (@) nas threads da interação
+          const thread = latest.thread || [];
+          for (const msg of thread) {
+            const mentions = msg.mentions || [];
+            for (const mentionedEmail of mentions) {
+              if (mentionedEmail !== msg.author_email) {
+                addNotif(notifications, mentionedEmail, `Você foi mencionado no CRM`,
+                  `${msg.author_name || msg.author_email} mencionou você: "${msg.message?.substring(0, 100) || ''}"`,
+                  'outro', 'info', '/CRMBoard');
+                await addEmail(emailsToSend, mentionedEmail,
+                  `[PRUMO Hub] Você foi mencionado no CRM - ${data.client_name || ''}`,
+                  `<p>Olá,</p><p><strong>${msg.author_name || msg.author_email}</strong> mencionou você em uma conversa sobre <strong>${data.client_name || 'cliente'}</strong>:</p><blockquote style="background:#f5f5f5;padding:12px;border-left:4px solid #2d6a4f;">${msg.message || ''}</blockquote><p>Acesse o CRM para responder.</p><p>Equipe PRUMO Hub</p>`,
+                  'outro'
+                );
+              }
+            }
+          }
         }
+
+        // Nova tarefa
         const oldT = old_data?.tasks || [], newT = data?.tasks || [];
         if (newT.length > oldT.length) {
           const latest = newT[newT.length - 1];
           addNotif(notifications, consultor, 'Nova Tarefa de CRM',
             `${latest.title} | Vence: ${latest.due_date || 'sem data'} | Prioridade: ${latest.priority}`,
             'outro', latest.priority === 'Alta' ? 'warning' : 'info', '/ConsultorClients');
+          // Notifica membro atribuído se diferente do consultor
+          if (latest.assigned_to_email && latest.assigned_to_email !== consultor) {
+            addNotif(notifications, latest.assigned_to_email, 'Tarefa Delegada a Você',
+              `"${latest.title}" — cliente: ${data.client_name || ''} | Vence: ${latest.due_date || 'sem data'}`,
+              'outro', latest.priority === 'Alta' ? 'warning' : 'info', '/CRMBoard');
+            await addEmail(emailsToSend, latest.assigned_to_email,
+              `[PRUMO Hub] Tarefa delegada a você: ${latest.title}`,
+              `<p>Olá,</p><p>Uma nova tarefa foi delegada a você:</p><ul><li><strong>Tarefa:</strong> ${latest.title}</li><li><strong>Cliente:</strong> ${data.client_name || ''}</li><li><strong>Vencimento:</strong> ${latest.due_date || 'Sem data'}</li><li><strong>Prioridade:</strong> ${latest.priority}</li></ul><p>Equipe PRUMO Hub</p>`,
+              'outro'
+            );
+          }
+          // Verifica menções em threads de tarefas
+          const thread = latest.thread || [];
+          for (const msg of thread) {
+            const mentions = msg.mentions || [];
+            for (const mentionedEmail of mentions) {
+              if (mentionedEmail !== msg.author_email) {
+                addNotif(notifications, mentionedEmail, `Você foi mencionado em Tarefa`,
+                  `${msg.author_name || msg.author_email}: "${msg.message?.substring(0, 100) || ''}"`,
+                  'outro', 'info', '/CRMBoard');
+              }
+            }
+          }
         }
+
+        // Serviços
         const oldS = old_data?.services || [], newS = data?.services || [];
         for (let i = 0; i < newS.length; i++) {
           if (oldS[i] && oldS[i].status !== newS[i].status) {
@@ -488,18 +652,15 @@ Deno.serve(async (req) => {
       if (event.type === 'create') {
         const consultores = await findConsultores();
         const sev = (data.priority === 'Urgente' || data.priority === 'Alta') ? 'warning' : 'info';
-
         for (const c of consultores) {
           addNotif(notifications, c, 'Novo Requerimento Recebido',
             `[${data.category}] ${data.subject}`, 'novo_requerimento', sev, '/Requests');
-          // Notifica equipe do consultor
           const teamEmails = await getTeamEmails(c);
           for (const memberEmail of teamEmails) {
             addNotif(notifications, memberEmail, 'Novo Requerimento - Cliente',
               `[${data.category}] ${data.subject}`, 'novo_requerimento', sev, '/Requests');
           }
         }
-        // Confirmação para o criador
         addNotif(notifications, client, 'Requerimento Enviado com Sucesso',
           `Seu requerimento "${data.subject}" foi recebido e está sendo analisado.`,
           'resposta_requerimento', 'info', '/Requests');
@@ -513,6 +674,11 @@ Deno.serve(async (req) => {
             addNotif(notifications, client, 'Nova Resposta ao seu Requerimento',
               `"${data.subject}": ${latest.message?.substring(0, 120) || 'Nova mensagem da equipe'}`,
               'resposta_requerimento', 'info', '/Requests');
+            await addEmail(emailsToSend, client,
+              `[PRUMO Hub] Nova resposta ao seu requerimento: ${data.subject}`,
+              `<p>Olá,</p><p>Sua equipe respondeu ao requerimento <strong>${data.subject}</strong>:</p><blockquote style="background:#f5f5f5;padding:12px;border-left:4px solid #2d6a4f;">${latest.message || ''}</blockquote><p>Equipe PRUMO Hub</p>`,
+              'resposta_requerimento'
+            );
           } else {
             const consultores = await findConsultores();
             for (const c of consultores) {
@@ -586,6 +752,38 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ─── AGENDA EVENT ─────────────────────────────────────────────────────
+    if (event.entity_name === 'AgendaEvent') {
+      const organizer = data.created_by;
+      const attendees = data.attendees || [];
+
+      if (event.type === 'create') {
+        const msg = `"${data.title}" — ${data.start_date ? new Date(data.start_date).toLocaleDateString('pt-BR') : 'data a confirmar'}`;
+        for (const attendeeEmail of attendees) {
+          if (attendeeEmail !== organizer) {
+            addNotif(notifications, attendeeEmail, 'Novo Agendamento para Você', msg, 'outro', 'info', '/Agenda');
+            await addEmail(emailsToSend, attendeeEmail,
+              `[PRUMO Hub] Novo agendamento: ${data.title}`,
+              `<p>Olá,</p><p>Você foi incluído em um novo agendamento:</p><ul><li><strong>Título:</strong> ${data.title}</li><li><strong>Data:</strong> ${data.start_date ? new Date(data.start_date).toLocaleDateString('pt-BR') : 'a confirmar'}</li>${data.description ? `<li><strong>Descrição:</strong> ${data.description}</li>` : ''}</ul><p>Acesse a plataforma para mais detalhes.</p><p>Equipe PRUMO Hub</p>`,
+              'outro'
+            );
+          }
+        }
+      }
+
+      if (event.type === 'update') {
+        // Notifica convidados sobre alteração
+        if (old_data?.start_date !== data.start_date || old_data?.title !== data.title) {
+          for (const attendeeEmail of attendees) {
+            if (attendeeEmail !== organizer) {
+              addNotif(notifications, attendeeEmail, 'Agendamento Atualizado',
+                `"${data.title}" foi atualizado.`, 'outro', 'warning', '/Agenda');
+            }
+          }
+        }
+      }
+    }
+
     // ─── AUDIT LOG (modificações pela equipe) ────────────────────────────
     if (event.entity_name === 'AuditLog' && event.type === 'create') {
       const actorEmail = data.user_email;
@@ -616,7 +814,7 @@ Deno.serve(async (req) => {
       sendEmails(emailsToSend)
     ]);
 
-    console.log(`[Notif] ${event.entity_name}.${event.type} → push:${notifications.length} email:${emailsToSend.length}`);
+    console.log(`[Notif] ${event.entity_name}.${event.type} → push:${notifications.length} email:${emailsToSend.length} sms:0`);
     return Response.json({
       success: true,
       notifications_sent: notifications.length,

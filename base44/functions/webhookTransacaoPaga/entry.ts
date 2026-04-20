@@ -70,20 +70,26 @@ function extractPlan(body) {
   const productNameLower = (productName + ' ' + offerId).toLowerCase();
 
   // Mapeamento de planos do Nexano → user_type + plano_interno
+  // SEMPRE checar pelo offerId primeiro (mais confiável que o nome)
+
+  // Produtor - Plano Único (checar ANTES do 'pro' para evitar falso positivo)
+  if (offerId === 'GNJXUCE') {
+    return { perfil: 'produtor', plano: 'unico', user_type: 'produtor', max_properties: 1, max_users: 1 };
+  }
   // Consultor - Start
-  if (productNameLower.includes('start') || offerId === 'GYXWU5X') {
+  if (offerId === 'GYXWU5X' || productNameLower.includes('start')) {
     return { perfil: 'consultor', plano: 'start', user_type: 'consultor', max_properties: 5, max_users: 1 };
   }
-  // Consultor - Pro
-  if (productNameLower.includes('pro') || offerId === '8QA4VR2') {
-    return { perfil: 'consultor', plano: 'pro', user_type: 'consultor', max_properties: 10, max_users: 2 };
-  }
-  // Consultor - Enterprise
-  if (productNameLower.includes('enterprise') || offerId === 'EQL1OTT') {
+  // Consultor - Enterprise (checar antes do 'pro' pois 'enterprise' não contém 'pro')
+  if (offerId === 'EQL1OTT' || productNameLower.includes('enterprise')) {
     return { perfil: 'consultor', plano: 'enterprise', user_type: 'consultor', max_properties: 200, max_users: 3 };
   }
-  // Produtor - Plano Único
-  if (productNameLower.includes('produtor') || productNameLower.includes('rural') || productNameLower.includes('único') || productNameLower.includes('unico') || offerId === 'GNJXUCE') {
+  // Consultor - Pro
+  if (offerId === '8QA4VR2' || productNameLower.includes('consultor pro')) {
+    return { perfil: 'consultor', plano: 'pro', user_type: 'consultor', max_properties: 10, max_users: 2 };
+  }
+  // Fallback por nome para produtor
+  if (productNameLower.includes('produtor') || productNameLower.includes('rural') || productNameLower.includes('único') || productNameLower.includes('unico')) {
     return { perfil: 'produtor', plano: 'unico', user_type: 'produtor', max_properties: 1, max_users: 1 };
   }
 
@@ -175,13 +181,38 @@ Deno.serve(async (req) => {
 
     // Enviar convite automático
     try {
-      const role = planInfo.user_type === 'consultor' ? 'user' : 'user'; // ambos recebem role 'user' por padrão
-      await base44.users.inviteUser(email, role);
+      await base44.users.inviteUser(email, 'user');
       console.log(`[webhookTransacaoPaga] Convite enviado automaticamente para: ${email}`);
-      
+
+      // Aguardar um momento e então aplicar o plano ao usuário recém-criado
+      await new Promise(r => setTimeout(r, 2000));
+
+      const newUsers = await base44.asServiceRole.entities.User.filter({ email });
+      if (newUsers && newUsers.length > 0) {
+        await base44.asServiceRole.entities.User.update(newUsers[0].id, {
+          user_type: planInfo.user_type,
+          plano: planInfo.plano,
+          max_properties: planInfo.max_properties,
+          max_users: planInfo.max_users,
+          subscription_status: 'active',
+          subscription_updated_at: new Date().toISOString(),
+        });
+        console.log(`[webhookTransacaoPaga] Plano aplicado ao novo usuário: ${email} → ${planInfo.plano}`);
+
+        // Atualizar lead para refletir que o usuário foi criado
+        const leads = await base44.asServiceRole.entities.LeadFormSubmission.filter({ email });
+        if (leads && leads.length > 0) {
+          await base44.asServiceRole.entities.LeadFormSubmission.update(leads[0].id, {
+            subscription_status: 'active',
+          });
+        }
+      } else {
+        console.warn(`[webhookTransacaoPaga] Usuário não encontrado após convite para aplicar plano: ${email}`);
+      }
+
       return Response.json({
         received: true,
-        message: 'Lead registrado e convite enviado automaticamente.',
+        message: 'Lead registrado, convite enviado e plano aplicado automaticamente.',
         email,
         plano: planInfo.plano,
         perfil: planInfo.perfil,

@@ -65,18 +65,6 @@ export default function Contracts() {
     try { return JSON.parse(localStorage.getItem('prumo_contratado_data')) || null; } catch { return null; }
   });
 
-  const filteredPartyClients = partySearch.length >= 1
-    ? crmClients.filter(c =>
-        c.client_name?.toLowerCase().includes(partySearch.toLowerCase()) ||
-        c.client_email?.toLowerCase().includes(partySearch.toLowerCase())
-      )
-    : crmClients.slice(0, 6);
-
-  const selectPartyClient = (client) => {
-    setNewParty(p => ({ ...p, name: client.client_name || '', }));
-    setPartySearch(client.client_name || '');
-    setShowPartySuggestions(false);
-  };
   const [newService, setNewService] = useState({ name: '', value: '', status: 'Em Andamento' });
   const [uploading, setUploading] = useState(false);
   const queryClient = useQueryClient();
@@ -89,6 +77,19 @@ export default function Contracts() {
     queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: effectiveEmail }),
     enabled: !!effectiveEmail && isConsultor,
   });
+
+  const filteredPartyClients = partySearch.length >= 1
+    ? crmClients.filter(c =>
+        c.client_name?.toLowerCase().includes(partySearch.toLowerCase()) ||
+        c.client_email?.toLowerCase().includes(partySearch.toLowerCase())
+      )
+    : crmClients.slice(0, 6);
+
+  const selectPartyClient = (client) => {
+    setNewParty(p => ({ ...p, name: client.client_name || '' }));
+    setPartySearch(client.client_name || '');
+    setShowPartySuggestions(false);
+  };
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
     queryKey: ['properties', effectiveEmail, isConsultor],

@@ -153,15 +153,17 @@ export default function SaasContractPage({ onAccepted }) {
         contractor_email: contractor.email,
       });
 
-      // Generate and download PDF proof
+      // Generate PDF proof and send via email
+      let pdfBase64 = null;
       try {
         const pdfResponse = await base44.functions.invoke('generateAcceptanceProofPDF', {
           type: 'saas_contract',
           contractorData: contractor,
         });
         if (pdfResponse.data && typeof pdfResponse.data === 'string') {
+          pdfBase64 = pdfResponse.data;
           const link = document.createElement('a');
-          link.href = `data:application/pdf;base64,${btoa(pdfResponse.data)}`;
+          link.href = `data:application/pdf;base64,${btoa(pdfBase64)}`;
           link.download = `Contrato_SaaS_${contractor.document}_${new Date().getTime()}.pdf`;
           document.body.appendChild(link);
           link.click();
@@ -169,6 +171,17 @@ export default function SaasContractPage({ onAccepted }) {
         }
       } catch (pdfError) {
         console.warn('Aviso: PDF não gerado, mas contrato foi registrado:', pdfError);
+      }
+
+      // Send email with contract copy
+      try {
+        await base44.functions.invoke('sendSaasContractEmail', {
+          contractorEmail: contractor.email,
+          contractorName: contractor.name,
+          pdfBase64: pdfBase64,
+        });
+      } catch (emailError) {
+        console.warn('Aviso: Email não enviado, mas contrato foi registrado:', emailError);
       }
 
       if (onAccepted) onAccepted();

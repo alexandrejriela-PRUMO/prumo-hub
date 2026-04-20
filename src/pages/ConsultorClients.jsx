@@ -80,34 +80,12 @@ export default function ConsultorClients() {
   }, [crmClients, propertyBasedClients]);
 
   const deleteClientMutation = useMutation({
-    mutationFn: async (client) => {
-      // Se tem ID, é um registro de ClientCRM — deleta direto
-      if (client.id) {
-        return base44.entities.ClientCRM.delete(client.id);
-      }
-      
-      // Senão, é um cliente vinculado só via propriedade — remove a vinculação
-      if (client.property_id) {
-        const prop = await base44.entities.Property.get('Property', client.property_id);
-        if (prop) {
-          await base44.entities.Property.update(client.property_id, {
-            client_name: null,
-            contact_email: null,
-            contact_phone: null
-          });
-        }
-      }
-    },
+    mutationFn: (client) => base44.entities.ClientCRM.delete(client.id),
     onSuccess: () => {
       queryClient.invalidateQueries(['consultor-crm-clients']);
       queryClient.invalidateQueries(['property-based-clients']);
-      queryClient.invalidateQueries(['consultor-properties']);
-      queryClient.invalidateQueries(['crm-board-list']);
       setClientToDelete(null);
       toast.success('Cliente removido.');
-    },
-    onError: (error) => {
-      toast.error('Erro ao remover cliente: ' + error.message);
     }
   });
 

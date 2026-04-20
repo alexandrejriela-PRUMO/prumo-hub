@@ -62,13 +62,6 @@ export default function Contracts() {
   const [partySearch, setPartySearch] = useState('');
   const [showPartySuggestions, setShowPartySuggestions] = useState(false);
 
-  // Buscar clientes do CRM do consultor
-  const { data: crmClients = [] } = useQuery({
-    queryKey: ['crm-clients-list', effectiveEmail],
-    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: effectiveEmail }),
-    enabled: !!effectiveEmail && isConsultor,
-  });
-
   const filteredPartyClients = partySearch.length >= 1
     ? crmClients.filter(c =>
         c.client_name?.toLowerCase().includes(partySearch.toLowerCase()) ||
@@ -86,6 +79,13 @@ export default function Contracts() {
   const queryClient = useQueryClient();
 
   const isConsultor = isConsultorHook || isEquipe;
+
+  // Buscar clientes do CRM do consultor
+  const { data: crmClients = [] } = useQuery({
+    queryKey: ['crm-clients-list', effectiveEmail],
+    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: effectiveEmail }),
+    enabled: !!effectiveEmail && isConsultor,
+  });
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
     queryKey: ['properties', effectiveEmail, isConsultor],

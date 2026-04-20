@@ -65,23 +65,13 @@ export default function ConsultorClients() {
     enabled: !!effectiveEmail,
   });
 
-  // Mescla clientes do CRM com clientes vinculados via propriedade, removendo duplicatas
+  // Mescla clientes do CRM com clientes vinculados via propriedade
   const allClients = React.useMemo(() => {
-    const seenEmails = new Set();
-    const combined = [];
+    const crmMap = new Map(crmClients.map(c => [c.client_email, c]));
+    const combined = [...crmClients];
     
-    // Adiciona clientes do CRM primeiro
-    crmClients.forEach(c => {
-      if (c.client_email && !seenEmails.has(c.client_email)) {
-        seenEmails.add(c.client_email);
-        combined.push(c);
-      }
-    });
-    
-    // Adiciona clientes de propriedade só se não estão já no CRM
     propertyBasedClients.forEach(pClient => {
-      if (pClient.client_email && !seenEmails.has(pClient.client_email)) {
-        seenEmails.add(pClient.client_email);
+      if (!crmMap.has(pClient.client_email)) {
         combined.push(pClient);
       }
     });

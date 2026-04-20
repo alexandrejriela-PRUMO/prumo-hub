@@ -44,16 +44,10 @@ Deno.serve(async (req) => {
         if (users.length > 0) {
           await base44.asServiceRole.entities.User.update(users[0].id, {
             user_type: userType,
-            plano: planId,
             subscription_plan: planId,
             subscription_billing: billing,
             subscription_status: 'active',
             subscription_since: new Date().toISOString(),
-            checkout_completed_at: new Date().toISOString(),
-            stripe_customer_id: session.customer || null,
-            stripe_subscription_id: session.subscription || null,
-            last_payment_amount: amountPaid,
-            last_payment_date: new Date().toISOString().split('T')[0],
           });
         }
 
@@ -112,8 +106,6 @@ Deno.serve(async (req) => {
         if (users.length > 0) {
           await base44.asServiceRole.entities.User.update(users[0].id, {
             subscription_status: 'active',
-            last_payment_amount: amountPaid,
-            last_payment_date: new Date().toISOString().split('T')[0],
           });
         }
 

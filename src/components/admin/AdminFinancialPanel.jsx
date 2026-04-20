@@ -77,13 +77,7 @@ function UserFinancialRow({ u, invoices, onAction }) {
   const checkoutDate = u.checkout_completed_at || u.subscription_since || u.created_date;
   const planAge = checkoutDate ? differenceInDays(new Date(), parseISO(checkoutDate)) : null;
 
-  // Stripe usa 'active', 'canceled', 'past_due'; nosso padrão usa português
-  const rawStatus = u.subscription_status || '';
-  const subscriptionStatus =
-    rawStatus === 'active' ? 'ativo' :
-    rawStatus === 'canceled' ? 'cancelado' :
-    rawStatus === 'past_due' ? 'inadimplente' :
-    rawStatus || (u.plano ? 'ativo' : 'pendente');
+  const subscriptionStatus = u.subscription_status || (u.plano ? 'ativo' : 'pendente');
 
   const handleZapiSend = async () => {
     if (!zapiMsg.trim()) return;
@@ -146,7 +140,7 @@ function UserFinancialRow({ u, invoices, onAction }) {
           {/* User Financial Info */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="bg-white rounded-lg p-3 border border-gray-100">
-              <p className="text-xs text-gray-500">Checkout Nexano / Stripe</p>
+              <p className="text-xs text-gray-500">Checkout Nexano</p>
               <p className="text-sm font-semibold text-gray-800 mt-1">
                 {checkoutDate && isValid(parseISO(checkoutDate))
                   ? format(parseISO(checkoutDate), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
@@ -168,10 +162,10 @@ function UserFinancialRow({ u, invoices, onAction }) {
               </p>
             </div>
             <div className="bg-white rounded-lg p-3 border border-gray-100">
-              <p className="text-xs text-gray-500">Stripe Customer ID</p>
-              <p className="text-xs font-mono text-gray-600 mt-1 truncate">{u.stripe_customer_id || 'Não vinculado'}</p>
-              {u.stripe_subscription_id && (
-                <p className="text-[10px] font-mono text-gray-400 truncate mt-0.5">{u.stripe_subscription_id}</p>
+              <p className="text-xs text-gray-500">ID Nexano</p>
+              <p className="text-xs font-mono text-gray-600 mt-1 truncate">{u.nexano_order_id || u.webhook_source || 'purchase_approved'}</p>
+              {u.nexano_product_id && (
+                <p className="text-[10px] font-mono text-gray-400 truncate mt-0.5">{u.nexano_product_id}</p>
               )}
             </div>
           </div>
@@ -288,12 +282,8 @@ export default function AdminFinancialPanel({ onEditUser }) {
   });
 
   // ── Stats ────────────────────────────────────────────────────────────────
-  const totalAtivos = users.filter(u =>
-    u.subscription_status === 'active' || u.subscription_status === 'ativo'
-  ).length;
-  const totalInadimplentes = users.filter(u =>
-    u.subscription_status === 'past_due' || u.subscription_status === 'inadimplente'
-  ).length;
+  const totalAtivos = users.filter(u => u.subscription_status === 'ativo' || (!u.subscription_status && u.plano)).length;
+  const totalInadimplentes = users.filter(u => u.subscription_status === 'inadimplente').length;
   const receitaMensal = invoices
     .filter(i => i.status === 'Pago' && i.payment_date)
     .filter(i => {

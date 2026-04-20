@@ -72,12 +72,14 @@ const diferenciais = [
     title: 'Emissão de NF-e Automatizada',
     desc: 'Integração com Focus NFe para emissão automática de notas fiscais após recebimento de cobranças.',
     color: 'from-emerald-500 to-teal-600',
+    comingSoon: true,
   },
   {
     icon: BarChart3,
     title: 'Controle Financeiro Completo',
     desc: 'Painel financeiro com receitas, despesas, cobranças via Nexano, conciliação bancária e relatórios de resultado.',
     color: 'from-green-500 to-lime-600',
+    comingSoon: true,
   },
   {
     icon: Users,
@@ -349,11 +351,18 @@ export default function LandingConsultor({ onLogin }) {
               const Icon = f.icon;
               return (
                 <FadeIn key={f.title} delay={i * 60}>
-                <div className={`group p-6 rounded-2xl border-2 transition-all ${
+                <div className={`group relative p-6 rounded-2xl border-2 transition-all ${
                   f.highlight
                     ? 'border-purple-300 bg-purple-50/40 hover:border-purple-400 hover:shadow-xl shadow-md ring-1 ring-purple-200'
                     : 'border-gray-100 bg-white hover:border-amber-200 hover:shadow-lg'
                 }`}>
+                  {f.comingSoon && (
+                    <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+                      <div className="absolute top-3 right-3 bg-orange-500 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-md z-10 flex items-center gap-1">
+                        🚧 Em Construção
+                      </div>
+                    </div>
+                  )}
                   {f.highlight && (
                     <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-700 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full mb-3">
                       ⭐ Destaque

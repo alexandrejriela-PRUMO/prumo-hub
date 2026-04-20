@@ -74,10 +74,16 @@ function UserFinancialRow({ u, invoices, onAction }) {
   const lastInvoice = userInvoices.sort((a, b) => new Date(b.created_date) - new Date(a.created_date))[0];
   const pendingInvoices = userInvoices.filter(i => i.status === 'Pendente' || i.status === 'Vencido');
 
-  const checkoutDate = u.checkout_completed_at || u.subscription_started_at || u.created_date;
+  const checkoutDate = u.checkout_completed_at || u.subscription_since || u.created_date;
   const planAge = checkoutDate ? differenceInDays(new Date(), parseISO(checkoutDate)) : null;
 
-  const subscriptionStatus = u.subscription_status || (u.plano ? 'ativo' : 'pendente');
+  // Stripe usa 'active', 'canceled', 'past_due'; nosso padrão usa português
+  const rawStatus = u.subscription_status || '';
+  const subscriptionStatus =
+    rawStatus === 'active' ? 'ativo' :
+    rawStatus === 'canceled' ? 'cancelado' :
+    rawStatus === 'past_due' ? 'inadimplente' :
+    rawStatus || (u.plano ? 'ativo' : 'pendente');
 
   const handleZapiSend = async () => {
     if (!zapiMsg.trim()) return;
@@ -140,24 +146,33 @@ function UserFinancialRow({ u, invoices, onAction }) {
           {/* User Financial Info */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="bg-white rounded-lg p-3 border border-gray-100">
-              <p className="text-xs text-gray-500">Início do Plano</p>
+              <p className="text-xs text-gray-500">Checkout Nexano / Stripe</p>
               <p className="text-sm font-semibold text-gray-800 mt-1">
                 {checkoutDate && isValid(parseISO(checkoutDate))
-                  ? format(parseISO(checkoutDate), 'dd/MM/yyyy', { locale: ptBR })
+                  ? format(parseISO(checkoutDate), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
                   : '—'}
               </p>
             </div>
             <div className="bg-white rounded-lg p-3 border border-gray-100">
-              <p className="text-xs text-gray-500">Tipo de Usuário</p>
-              <p className="text-sm font-semibold text-gray-800 mt-1 capitalize">{u.user_type || '—'}</p>
+              <p className="text-xs text-gray-500">Plano / Cobrança</p>
+              <p className="text-sm font-semibold text-gray-800 mt-1 capitalize">
+                {PLAN_LABELS[u.plano || u.subscription_plan] || '—'}
+                {u.subscription_billing && <span className="text-xs text-gray-400 ml-1">({u.subscription_billing})</span>}
+              </p>
             </div>
             <div className="bg-white rounded-lg p-3 border border-gray-100">
-              <p className="text-xs text-gray-500">Role / Perfil</p>
-              <p className="text-sm font-semibold text-gray-800 mt-1 capitalize">{u.role || '—'}</p>
+              <p className="text-xs text-gray-500">Último Pagamento</p>
+              <p className="text-sm font-semibold text-gray-800 mt-1">
+                {u.last_payment_amount ? `R$ ${Number(u.last_payment_amount).toFixed(2)}` : '—'}
+                {u.last_payment_date && <span className="block text-xs text-gray-400">{format(parseISO(u.last_payment_date), 'dd/MM/yy')}</span>}
+              </p>
             </div>
             <div className="bg-white rounded-lg p-3 border border-gray-100">
-              <p className="text-xs text-gray-500">Telefone / WhatsApp</p>
-              <p className="text-sm font-semibold text-gray-800 mt-1">{u.phone || u.contact_phone || u.whatsapp || '—'}</p>
+              <p className="text-xs text-gray-500">Stripe Customer ID</p>
+              <p className="text-xs font-mono text-gray-600 mt-1 truncate">{u.stripe_customer_id || 'Não vinculado'}</p>
+              {u.stripe_subscription_id && (
+                <p className="text-[10px] font-mono text-gray-400 truncate mt-0.5">{u.stripe_subscription_id}</p>
+              )}
             </div>
           </div>
 
@@ -273,11 +288,12 @@ export default function AdminFinancialPanel({ onEditUser }) {
   });
 
   // ── Stats ────────────────────────────────────────────────────────────────
-  const totalAtivos = users.filter(u => u.subscription_status !== 'cancelado' && u.plano).length;
-  const totalInadimplentes = users.filter(u => {
-    const userInvs = invoices.filter(i => i.client_email === u.email);
-    return userInvs.some(i => i.status === 'Vencido');
-  }).length;
+  const totalAtivos = users.filter(u =>
+    u.subscription_status === 'active' || u.subscription_status === 'ativo'
+  ).length;
+  const totalInadimplentes = users.filter(u =>
+    u.subscription_status === 'past_due' || u.subscription_status === 'inadimplente'
+  ).length;
   const receitaMensal = invoices
     .filter(i => i.status === 'Pago' && i.payment_date)
     .filter(i => {

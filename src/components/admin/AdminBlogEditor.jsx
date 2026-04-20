@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Newspaper, Plus, Pencil, Trash2, RefreshCw, X, Calendar, User, Tag, Upload } from 'lucide-react';
+import { Newspaper, Plus, Pencil, Trash2, RefreshCw, X, Calendar, User, Upload } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -127,7 +127,6 @@ function PostForm({ post, onSave, onCancel }) {
           />
         </div>
 
-        {/* Image */}
         <div className="space-y-1.5">
           <Label>Imagem de capa</Label>
           <div className="flex gap-2 items-center">
@@ -150,7 +149,6 @@ function PostForm({ post, onSave, onCancel }) {
           )}
         </div>
 
-        {/* Tags */}
         <div className="space-y-1.5">
           <Label>Tags</Label>
           <div className="flex gap-2">
@@ -191,7 +189,7 @@ function PostForm({ post, onSave, onCancel }) {
 
 export default function AdminBlogEditor() {
   const queryClient = useQueryClient();
-  const [editing, setEditing] = useState(null); // null = closed, {} = new, post = edit
+  const [editing, setEditing] = useState(null);
   const [filterType, setFilterType] = useState('all');
 
   const { data: posts = [], isLoading, refetch } = useQuery({
@@ -286,10 +284,7 @@ export default function AdminBlogEditor() {
                         </div>
                       </div>
                       <div className="flex gap-2 flex-shrink-0">
-                        <button
-                          onClick={() => setEditing(post)}
-                          className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50"
-                        >
+                        <button onClick={() => setEditing(post)} className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50">
                           <Pencil className="w-4 h-4" />
                         </button>
                         <button

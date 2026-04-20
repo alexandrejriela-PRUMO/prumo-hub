@@ -8,12 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, FileText, Eye, CheckCircle, GitCompare, Users, Bell } from 'lucide-react';
+import { Plus, FileText, Eye, CheckCircle, GitCompare, Users, Bell, ScrollText } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
 import TermsVersionCompare from '@/components/terms/TermsVersionCompare';
 import TermsAcceptanceLogs from '@/components/terms/TermsAcceptanceLogs';
+import SaasContractLogs from '@/components/terms/SaasContractLogs';
 
 export default function TermsAdmin() {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -159,6 +160,7 @@ export default function TermsAdmin() {
         <TabsList className="bg-emerald-50 border border-emerald-100">
           <TabsTrigger value="versions" className="gap-2"><FileText className="w-4 h-4" />Versões</TabsTrigger>
           <TabsTrigger value="logs" className="gap-2"><Users className="w-4 h-4" />Logs de Aceite</TabsTrigger>
+          <TabsTrigger value="contracts" className="gap-2"><ScrollText className="w-4 h-4" />Contratos SaaS</TabsTrigger>
           <TabsTrigger value="compare" className="gap-2"><GitCompare className="w-4 h-4" />Comparar Versões</TabsTrigger>
         </TabsList>
 
@@ -218,6 +220,11 @@ export default function TermsAdmin() {
         {/* Logs */}
         <TabsContent value="logs" className="mt-4">
           <TermsAcceptanceLogs />
+        </TabsContent>
+
+        {/* Contratos SaaS */}
+        <TabsContent value="contracts" className="mt-4">
+          <SaasContractLogs />
         </TabsContent>
 
         {/* Comparar */}

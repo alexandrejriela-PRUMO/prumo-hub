@@ -3,7 +3,9 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
-import { FileCheck, CheckCircle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { FileCheck, CheckCircle, User, ArrowRight, ArrowLeft } from 'lucide-react';
 
 const SAAS_CONTRACT_VERSION = 1;
 
@@ -115,11 +117,21 @@ O Plano Produtor Único integra o ecossistema da plataforma PRUMO HUB, permitind
 `;
 
 export default function SaasContractPage({ onAccepted }) {
+  const [step, setStep] = useState('contract'); // 'contract' | 'form'
   const [accepted, setAccepted] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [contractor, setContractor] = useState({
+    name: '',
+    document: '',
+    address: '',
+    phone: '',
+    email: '',
+  });
+
+  const contractorValid = contractor.name.trim() && contractor.document.trim() && contractor.address.trim() && contractor.phone.trim() && contractor.email.trim();
 
   const handleAccept = async () => {
-    if (!accepted) return;
+    if (!contractorValid) return;
     setSaving(true);
     try {
       const user = await base44.auth.me();
@@ -128,13 +140,17 @@ export default function SaasContractPage({ onAccepted }) {
         accepted_saas_contract_version: SAAS_CONTRACT_VERSION,
         accepted_saas_contract_date: now,
       });
-      // Log de aceite reutilizando TermsAcceptanceLog com event_type especial
       await base44.entities.TermsAcceptanceLog.create({
         user_email: user.email,
         user_name: user.full_name || '',
-        terms_version: SAAS_CONTRACT_VERSION + 1000, // namespace separado dos termos
+        terms_version: SAAS_CONTRACT_VERSION + 1000,
         accepted_at: now,
         user_agent: navigator.userAgent,
+        contractor_name: contractor.name,
+        contractor_document: contractor.document,
+        contractor_address: contractor.address,
+        contractor_phone: contractor.phone,
+        contractor_email: contractor.email,
       });
       if (onAccepted) onAccepted();
     } catch (e) {
@@ -159,52 +175,135 @@ export default function SaasContractPage({ onAccepted }) {
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-6 space-y-6">
-          <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
-            <FileCheck className="w-4 h-4 flex-shrink-0" />
-            <span>Para continuar utilizando a plataforma, leia e aceite o Contrato de Assinatura SaaS abaixo.</span>
+        {/* Step indicators */}
+        <div className="flex border-b border-gray-100">
+          <div className={`flex-1 py-3 text-center text-xs font-semibold flex items-center justify-center gap-1.5 ${step === 'contract' ? 'text-emerald-700 border-b-2 border-emerald-600' : 'text-gray-400'}`}>
+            <FileCheck className="w-3.5 h-3.5" /> 1. Leitura do Contrato
           </div>
-
-          <ScrollArea className="h-96 border border-gray-200 rounded-xl p-4 bg-gray-50">
-            <div
-              className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: CONTRACT_CONTENT }}
-            />
-          </ScrollArea>
-
-          {/* Checkbox */}
-          <div className="flex items-start gap-3 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
-            <Checkbox
-              id="accept-contract"
-              checked={accepted}
-              onCheckedChange={setAccepted}
-              className="mt-0.5"
-            />
-            <label htmlFor="accept-contract" className="text-sm text-gray-700 cursor-pointer leading-relaxed">
-              Li e concordo com o <strong>Contrato de Assinatura SaaS — PRUMO HUB</strong>, incluindo todas as cláusulas e condições acima. Compreendo que este aceite eletrônico possui plena validade jurídica.
-            </label>
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-3">
-            <Button
-              onClick={() => base44.auth.logout()}
-              variant="outline"
-              className="flex-1 border-gray-300 text-gray-600 hover:bg-gray-50"
-            >
-              Sair
-            </Button>
-            <Button
-              onClick={handleAccept}
-              disabled={!accepted || saving}
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
-            >
-              <CheckCircle className="w-4 h-4" />
-              {saving ? 'Salvando...' : 'Aceitar Contrato e Continuar'}
-            </Button>
+          <div className={`flex-1 py-3 text-center text-xs font-semibold flex items-center justify-center gap-1.5 ${step === 'form' ? 'text-emerald-700 border-b-2 border-emerald-600' : 'text-gray-400'}`}>
+            <User className="w-3.5 h-3.5" /> 2. Dados do Contratante
           </div>
         </div>
+
+        {/* STEP 1 — Contrato */}
+        {step === 'contract' && (
+          <div className="p-6 space-y-5">
+            <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
+              <FileCheck className="w-4 h-4 flex-shrink-0" />
+              <span>Leia o contrato abaixo na íntegra antes de prosseguir.</span>
+            </div>
+
+            <ScrollArea className="h-96 border border-gray-200 rounded-xl p-4 bg-gray-50">
+              <div
+                className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: CONTRACT_CONTENT }}
+              />
+            </ScrollArea>
+
+            <div className="flex items-start gap-3 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
+              <Checkbox
+                id="accept-contract"
+                checked={accepted}
+                onCheckedChange={setAccepted}
+                className="mt-0.5"
+              />
+              <label htmlFor="accept-contract" className="text-sm text-gray-700 cursor-pointer leading-relaxed">
+                Li e concordo com o <strong>Contrato de Assinatura SaaS — PRUMO HUB</strong>, incluindo todas as cláusulas e condições acima.
+              </label>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                onClick={() => base44.auth.logout()}
+                variant="outline"
+                className="flex-1 border-gray-300 text-gray-600 hover:bg-gray-50"
+              >
+                Sair
+              </Button>
+              <Button
+                onClick={() => setStep('form')}
+                disabled={!accepted}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+              >
+                Prosseguir <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 2 — Formulário do contratante */}
+        {step === 'form' && (
+          <div className="p-6 space-y-5">
+            <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-sm">
+              <User className="w-4 h-4 flex-shrink-0" />
+              <span>Preencha os dados de quem está contratando. Essas informações serão vinculadas ao contrato.</span>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>Nome do Contratante / Empresa *</Label>
+                <Input
+                  placeholder="Ex: João da Silva ou Fazenda Boa Esperança LTDA"
+                  value={contractor.name}
+                  onChange={e => setContractor({ ...contractor, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>CPF ou CNPJ *</Label>
+                <Input
+                  placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                  value={contractor.document}
+                  onChange={e => setContractor({ ...contractor, document: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Endereço Completo *</Label>
+                <Input
+                  placeholder="Rua, número, bairro, cidade, estado, CEP"
+                  value={contractor.address}
+                  onChange={e => setContractor({ ...contractor, address: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Telefone / WhatsApp *</Label>
+                  <Input
+                    placeholder="(55) 99999-9999"
+                    value={contractor.phone}
+                    onChange={e => setContractor({ ...contractor, phone: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>E-mail *</Label>
+                  <Input
+                    type="email"
+                    placeholder="contato@empresa.com"
+                    value={contractor.email}
+                    onChange={e => setContractor({ ...contractor, email: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <Button
+                onClick={() => setStep('contract')}
+                variant="outline"
+                className="gap-2 border-gray-300 text-gray-600"
+              >
+                <ArrowLeft className="w-4 h-4" /> Voltar
+              </Button>
+              <Button
+                onClick={handleAccept}
+                disabled={!contractorValid || saving}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+              >
+                <CheckCircle className="w-4 h-4" />
+                {saving ? 'Salvando...' : 'Assinar e Continuar'}
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

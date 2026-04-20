@@ -9,7 +9,8 @@ import AdminInviteUser from '@/components/admin/AdminInviteUser';
 import AdminSupportTickets from '@/components/admin/AdminSupportTickets';
 import AdminRequestsPanel from '@/components/admin/AdminRequestsPanel';
 import AdminBlogEditor from '@/components/admin/AdminBlogEditor';
-import { Shield, Users, Inbox, BarChart3, Link as LinkIcon, UserPlus, Headphones, ClipboardList, Newspaper } from 'lucide-react';
+import AdminFinancialPanel from '@/components/admin/AdminFinancialPanel';
+import { Shield, Users, Inbox, BarChart3, Link as LinkIcon, UserPlus, Headphones, ClipboardList, Newspaper, Wallet } from 'lucide-react';
 
 const TABS = [
   { key: 'users', label: 'Usuários', icon: Users },
@@ -19,6 +20,7 @@ const TABS = [
   { key: 'support', label: 'Suporte', icon: Headphones },
   { key: 'requests', label: 'Requerimentos', icon: ClipboardList },
   { key: 'blog', label: 'Santa Blog', icon: Newspaper },
+  { key: 'financial', label: 'Financeiro', icon: Wallet },
   { key: 'stats', label: 'Resumo', icon: BarChart3 },
 ];
 
@@ -91,6 +93,7 @@ export default function AdminPanel() {
       {activeTab === 'support' && <AdminSupportTickets />}
       {activeTab === 'requests' && <AdminRequestsPanel />}
       {activeTab === 'blog' && <AdminBlogEditor />}
+      {activeTab === 'financial' && <AdminFinancialPanel onEditUser={setEditingUser} />}
       {activeTab === 'stats' && <AdminStatsPanel />}
 
       {/* Plan Editor Modal */}

@@ -323,8 +323,8 @@ export default function LandingConsultor({ onLogin }) {
               O PRUMO Hub é a plataforma que unifica <strong className="text-white">CRM, contratos, financeiro, NF-e, gestão de equipe</strong> e toda a operação técnica da consultoria ambiental — para você atender mais clientes com menos burocracia.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <a href="#contato" className="flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold px-8 py-4 rounded-2xl shadow-xl transition-all hover:scale-105">
-                Falar com especialista <ArrowRight className="w-5 h-5" />
+              <a href="#planos" className="flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold px-8 py-4 rounded-2xl shadow-xl transition-all hover:scale-105">
+                Contratar agora <ArrowRight className="w-5 h-5" />
               </a>
               <button onClick={onLogin} className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white font-semibold px-8 py-4 rounded-2xl border border-white/20 transition-all">
                 Área do Cliente
@@ -526,8 +526,8 @@ export default function LandingConsultor({ onLogin }) {
         <div className="max-w-3xl mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">Pronto para levar seu escritório ao próximo nível?</h2>
           <p className="text-amber-200 mb-8">Fale com nosso time e veja como o PRUMO Hub pode transformar sua consultoria.</p>
-          <a href="#contato" className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold text-lg px-10 py-4 rounded-2xl shadow-xl transition-all hover:scale-105">
-            Falar com especialista <ArrowRight className="w-5 h-5" />
+          <a href="#planos" className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold text-lg px-10 py-4 rounded-2xl shadow-xl transition-all hover:scale-105">
+            Contratar agora <ArrowRight className="w-5 h-5" />
           </a>
         </div>
       </section>

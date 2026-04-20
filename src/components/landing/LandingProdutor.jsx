@@ -264,8 +264,8 @@ export default function LandingProdutor({ onLogin }) {
               O PRUMO Hub reúne <strong className="text-white">gestão ambiental, documentos, licenças, CAR, mapas e alertas</strong> em uma única plataforma — para o produtor rural que quer segurança jurídica e controle total da propriedade.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <a href="#contato" className="flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold px-8 py-4 rounded-2xl shadow-xl transition-all hover:scale-105">
-                Falar com especialista <ArrowRight className="w-5 h-5" />
+              <a href="#planos" className="flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold px-8 py-4 rounded-2xl shadow-xl transition-all hover:scale-105">
+                Contratar agora <ArrowRight className="w-5 h-5" />
               </a>
               <button onClick={onLogin} className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white font-semibold px-8 py-4 rounded-2xl border border-white/20 transition-all">
                 Área do Cliente
@@ -475,8 +475,8 @@ export default function LandingProdutor({ onLogin }) {
         <div className="max-w-3xl mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">Pronto para transformar sua gestão ambiental?</h2>
           <p className="text-emerald-200 mb-8">Fale com nosso time e descubra como o PRUMO Hub pode ajudar sua propriedade.</p>
-          <a href="#contato" className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold text-lg px-10 py-4 rounded-2xl shadow-xl transition-all hover:scale-105">
-            Falar com especialista <ArrowRight className="w-5 h-5" />
+          <a href="#planos" className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold text-lg px-10 py-4 rounded-2xl shadow-xl transition-all hover:scale-105">
+            Contratar agora <ArrowRight className="w-5 h-5" />
           </a>
         </div>
       </section>

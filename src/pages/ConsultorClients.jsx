@@ -82,8 +82,9 @@ export default function ConsultorClients() {
   const deleteClientMutation = useMutation({
     mutationFn: (client) => base44.entities.ClientCRM.delete(client.id),
     onSuccess: () => {
-      queryClient.invalidateQueries(['consultor-crm-clients']);
-      queryClient.invalidateQueries(['property-based-clients']);
+      queryClient.invalidateQueries({ queryKey: ['consultor-crm-clients'] });
+      queryClient.invalidateQueries({ queryKey: ['property-based-clients'] });
+      queryClient.invalidateQueries({ queryKey: ['consultor-properties'] });
       setClientToDelete(null);
       toast.success('Cliente removido.');
     }

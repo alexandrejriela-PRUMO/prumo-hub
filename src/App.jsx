@@ -188,6 +188,7 @@ function App() {
           <OnlineStatusIndicator />
           <Routes>
             <Route path="/landing" element={<Suspense fallback={<LoadingSpinner />}><LandingPage /></Suspense>} />
+            <Route path="/LandingPage" element={<Suspense fallback={<LoadingSpinner />}><LandingPage /></Suspense>} />
             <Route path="*" element={<AuthenticatedApp />} />
           </Routes>
         </Router>

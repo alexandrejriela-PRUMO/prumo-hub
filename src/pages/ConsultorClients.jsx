@@ -12,8 +12,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import NewClientForm from '../components/consultor/NewClientForm';
 import ClientCRMPanel from '../components/consultor/ClientCRMPanel';
-import ClientFinancialSummary from '../components/consultor/ClientFinancialSummary';
-import ClientChargesPanel from '../components/consultor/ClientChargesPanel';
 import ClientProfilePanel from '../components/consultor/ClientProfilePanel';
 import ClientARTPanel from '../components/consultor/ClientARTPanel';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
@@ -25,7 +23,7 @@ export default function ConsultorClients() {
   const queryClient = useQueryClient();
   const { effectiveEmail, isEquipe, actualEmail, memberRole } = useEffectiveUser();
   const canCreate = !isEquipe || memberRole === 'Administrador';
-  const canViewFinancial = !isEquipe || memberRole === 'Administrador';
+
 
   // Busca todos os clientes do consultor, independente do status
   const { data: crmClients = [], isLoading } = useQuery({
@@ -245,11 +243,9 @@ export default function ConsultorClients() {
           </DialogHeader>
           {selectedClient && (
             <Tabs defaultValue="perfil">
-              <TabsList className={`grid w-full ${canViewFinancial ? 'grid-cols-4' : 'grid-cols-2'}`}>
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="perfil">Perfil</TabsTrigger>
                 <TabsTrigger value="crm">CRM</TabsTrigger>
-                {canViewFinancial && <TabsTrigger value="financeiro">Financeiro</TabsTrigger>}
-                {canViewFinancial && <TabsTrigger value="cobranças">Cobranças</TabsTrigger>}
               </TabsList>
               <TabsContent value="perfil" className="mt-4">
                 <ClientProfilePanel client={enrichClient(selectedClient)} onUpdate={() => queryClient.invalidateQueries(['consultor-crm-clients'])} />
@@ -257,16 +253,6 @@ export default function ConsultorClients() {
               <TabsContent value="crm" className="mt-4">
                 <ClientCRMPanel property={enrichClient(selectedClient)} onClose={() => setSelectedClient(null)} />
               </TabsContent>
-              {canViewFinancial && (
-                <TabsContent value="financeiro" className="mt-4">
-                  <ClientFinancialSummary client={enrichClient(selectedClient)} />
-                </TabsContent>
-              )}
-              {canViewFinancial && (
-                <TabsContent value="cobranças" className="mt-4">
-                  <ClientChargesPanel client={enrichClient(selectedClient)} />
-                </TabsContent>
-              )}
             </Tabs>
           )}
         </DialogContent>

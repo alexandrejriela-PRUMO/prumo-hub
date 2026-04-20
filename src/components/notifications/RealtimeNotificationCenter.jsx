@@ -14,18 +14,26 @@ import {
 import { cn } from '@/lib/utils';
 
 const EVENT_CONFIG = {
-  novo_alerta_ambiental:   { icon: AlertTriangle, color: 'text-red-500',    bg: 'bg-red-50',     label: 'Alerta Ambiental' },
-  alerta_resolvido:        { icon: Check,         color: 'text-green-600',  bg: 'bg-green-50',   label: 'Resolvido' },
-  licenca_vencendo:        { icon: FileCheck,     color: 'text-amber-500',  bg: 'bg-amber-50',   label: 'Licença' },
-  licenca_vencida:         { icon: FileCheck,     color: 'text-red-500',    bg: 'bg-red-50',     label: 'Licença Vencida' },
-  novo_processo:           { icon: Scale,         color: 'text-blue-500',   bg: 'bg-blue-50',    label: 'Processo' },
-  atualizacao_processo:    { icon: Scale,         color: 'text-blue-600',   bg: 'bg-blue-50',    label: 'Processo' },
-  novo_requerimento:       { icon: MessageCircle, color: 'text-purple-500', bg: 'bg-purple-50',  label: 'Requerimento' },
-  resposta_requerimento:   { icon: MessageCircle, color: 'text-purple-600', bg: 'bg-purple-50',  label: 'Requerimento' },
-  nova_fatura:             { icon: CreditCard,    color: 'text-emerald-600',bg: 'bg-emerald-50', label: 'Fatura' },
-  fatura_vencendo:         { icon: CreditCard,    color: 'text-red-500',    bg: 'bg-red-50',     label: 'Fatura' },
-  documento_vencendo:      { icon: FileText,      color: 'text-amber-500',  bg: 'bg-amber-50',   label: 'Documento' },
-  outro:                   { icon: Bell,          color: 'text-gray-500',   bg: 'bg-gray-50',    label: 'Sistema' },
+  novo_alerta_ambiental:   { icon: AlertTriangle, color: 'text-red-500',    bg: 'bg-red-50',      label: 'Alerta Ambiental' },
+  alerta_resolvido:        { icon: Check,         color: 'text-green-600',  bg: 'bg-green-50',    label: 'Resolvido' },
+  nova_licenca:            { icon: FileCheck,     color: 'text-emerald-600',bg: 'bg-emerald-50',  label: 'Nova Licença' },
+  atualizacao_licenca:     { icon: FileCheck,     color: 'text-blue-500',   bg: 'bg-blue-50',     label: 'Licença' },
+  licenca_vencendo:        { icon: FileCheck,     color: 'text-amber-500',  bg: 'bg-amber-50',    label: 'Licença Vencendo' },
+  licenca_vencida:         { icon: FileCheck,     color: 'text-red-500',    bg: 'bg-red-50',      label: 'Licença Vencida' },
+  novo_processo:           { icon: Scale,         color: 'text-blue-500',   bg: 'bg-blue-50',     label: 'Processo' },
+  atualizacao_processo:    { icon: Scale,         color: 'text-blue-600',   bg: 'bg-blue-50',     label: 'Processo' },
+  novo_requerimento:       { icon: MessageCircle, color: 'text-purple-500', bg: 'bg-purple-50',   label: 'Requerimento' },
+  resposta_requerimento:   { icon: MessageCircle, color: 'text-purple-600', bg: 'bg-purple-50',   label: 'Requerimento' },
+  nova_fatura:             { icon: CreditCard,    color: 'text-emerald-600',bg: 'bg-emerald-50',  label: 'Fatura' },
+  fatura_vencendo:         { icon: CreditCard,    color: 'text-red-500',    bg: 'bg-red-50',      label: 'Fatura' },
+  documento_vencendo:      { icon: FileText,      color: 'text-amber-500',  bg: 'bg-amber-50',    label: 'Documento' },
+  task_overdue:            { icon: ClipboardList, color: 'text-red-600',    bg: 'bg-red-50',      label: 'Tarefa Vencida' },
+  task_due_soon:           { icon: ClipboardList, color: 'text-orange-500', bg: 'bg-orange-50',   label: 'Tarefa Vencendo' },
+  atualizacao_cliente_crm: { icon: Users,         color: 'text-violet-500', bg: 'bg-violet-50',   label: 'CRM' },
+  novo_cliente_crm:        { icon: Users,         color: 'text-violet-600', bg: 'bg-violet-50',   label: 'CRM' },
+  novo_contrato:           { icon: FileText,      color: 'text-teal-600',   bg: 'bg-teal-50',     label: 'Contrato' },
+  atualizacao_contrato:    { icon: FileText,      color: 'text-teal-500',   bg: 'bg-teal-50',     label: 'Contrato' },
+  outro:                   { icon: Bell,          color: 'text-gray-500',   bg: 'bg-gray-50',     label: 'Sistema' },
 };
 
 const SEVERITY_STYLE = {

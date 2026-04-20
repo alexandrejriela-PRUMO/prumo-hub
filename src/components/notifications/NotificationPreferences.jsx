@@ -51,6 +51,11 @@ export default function NotificationPreferences({ userEmail }) {
     { key: 'resposta_requerimento', label: 'Resposta a Requerimento', icon: '💬' },
     { key: 'nova_fatura', label: 'Nova Fatura', icon: '💳' },
     { key: 'fatura_vencendo', label: 'Fatura Vencendo', icon: '⏰' },
+    { key: 'task_overdue', label: 'Tarefa de CRM Vencida', icon: '🔴' },
+    { key: 'task_due_soon', label: 'Tarefa Vencendo em Breve', icon: '🟠' },
+    { key: 'atualizacao_cliente_crm', label: 'Interação / Menção no CRM', icon: '👥' },
+    { key: 'novo_contrato', label: 'Novo Contrato', icon: '📝' },
+    { key: 'atualizacao_contrato', label: 'Atualização / Vencimento de Contrato', icon: '📝' },
     { key: 'outro', label: 'Outras Notificações (PRAD, Georreferenciamento, etc)', icon: '🔔' }
   ];
 
@@ -126,29 +131,17 @@ export default function NotificationPreferences({ userEmail }) {
               </div>
             </div>
 
-            {/* SMS */}
-            <div className="flex items-start gap-3 p-4 border border-purple-200 rounded-lg bg-purple-50">
-              <Phone className="w-5 h-5 text-purple-600 mt-1" />
+            {/* SMS — Em breve */}
+            <div className="flex items-start gap-3 p-4 border border-gray-200 rounded-lg bg-gray-50 opacity-60">
+              <Phone className="w-5 h-5 text-gray-400 mt-1" />
               <div className="flex-1">
-                <p className="font-medium text-gray-900">SMS</p>
-                <p className="text-sm text-gray-600">Mensagens de texto</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-gray-500">SMS</p>
+                  <Badge variant="outline" className="text-[10px] border-orange-300 text-orange-600 bg-orange-50">Em breve</Badge>
+                </div>
+                <p className="text-sm text-gray-400">Canal em desenvolvimento</p>
               </div>
             </div>
-          </div>
-
-          {/* Telefone para SMS */}
-          <div className="pt-4 border-t">
-            <Label htmlFor="phone" className="text-sm font-medium text-gray-900">
-              Número de Telefone para SMS
-            </Label>
-            <Input
-              id="phone"
-              placeholder="(XX) 9XXXX-XXXX"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              className="mt-2"
-            />
-            <p className="text-xs text-gray-500 mt-1">Opcional - necessário para receber SMS</p>
           </div>
         </CardContent>
       </Card>
@@ -195,16 +188,14 @@ export default function NotificationPreferences({ userEmail }) {
                   />
                 </div>
 
-                {/* SMS Toggle */}
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                  <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                    <Phone className="w-4 h-4 text-purple-600" />
+                {/* SMS Toggle — desabilitado (em breve) */}
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded opacity-50 cursor-not-allowed">
+                  <label className="flex items-center gap-2 text-sm text-gray-400">
+                    <Phone className="w-4 h-4 text-gray-400" />
                     SMS
+                    <Badge variant="outline" className="text-[9px] border-orange-300 text-orange-500 bg-orange-50 py-0">Em breve</Badge>
                   </label>
-                  <Switch
-                    checked={preferences[event.key]?.sms ?? false}
-                    onCheckedChange={() => toggleNotification(event.key, 'sms')}
-                  />
+                  <Switch checked={false} disabled />
                 </div>
               </div>
             </div>

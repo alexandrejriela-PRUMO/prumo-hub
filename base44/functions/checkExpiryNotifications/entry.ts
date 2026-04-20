@@ -1,63 +1,53 @@
 /**
  * checkExpiryNotifications — Verifica vencimentos e notifica responsáveis + equipe.
- * SMS: ignorado silenciosamente (canal não implementado).
+ * Canais: push (in-app) + email. SMS: não implementado.
  *
- * CORREÇÕES v2:
- * - canReceiveNotification: produtor agora é sempre permitido
- * - notifyWithTeam: verifica plano para membros da equipe corretamente
- * - Cache movido para dentro do handler (sem dados sujos entre invocações)
+ * v3 — Adicionado envio de emails para tarefas vencidas, licenças, processos e prazos críticos.
  */
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const today = new Date();
-    let totalSent = 0;
+    const todayStr = today.toISOString().split('T')[0];
+    let totalPush = 0;
+    let totalEmail = 0;
 
-    // Cache local por execução
+    // ─── Cache local por execução ────────────────────────────────────────
     const teamCache = {};
     const userDataCache = {};
     const propConsultorCache = {};
+    const emailDedupeMap = new Map(); // evita email duplicado na mesma execução
 
-    // ─── Regras de notificação por plano ────────────────────────────────
-    // Produtor, consultor e equipe: sempre recebem.
-    // client_consultor: apenas no plano Enterprise.
+    // ─── Regras de notificação por plano ─────────────────────────────────
     function canReceiveNotification(recipient, consultor) {
       const type = recipient?.user_type || 'produtor';
       if (['produtor', 'consultor', 'equipe'].includes(type)) return true;
       if (type === 'client_consultor') {
-        const plan = (consultor?.plan || '').toLowerCase();
-        return plan === 'enterprise';
+        return (consultor?.plan || '').toLowerCase() === 'enterprise';
       }
       return true;
     }
 
-    // ─── Helper: dias restantes ──────────────────────────────────────────
     const getDays = (dateStr) => {
       if (!dateStr) return null;
       return Math.ceil((new Date(dateStr) - today) / (1000 * 60 * 60 * 24));
     };
 
-    // ─── Cache de emails da equipe por consultor ─────────────────────────
     const getTeamEmails = async (consultorEmail) => {
       if (!consultorEmail) return [];
       if (teamCache[consultorEmail]) return teamCache[consultorEmail];
       try {
         const team = await base44.asServiceRole.entities.TeamMember.filter({
-          consultor_email: consultorEmail,
-          status: 'Ativo'
+          consultor_email: consultorEmail, status: 'Ativo'
         });
         const emails = team.map(m => m.member_email).filter(Boolean);
         teamCache[consultorEmail] = emails;
         return emails;
-      } catch (e) {
-        console.warn('[Expiry] Erro ao buscar equipe:', e.message);
-        return [];
-      }
+      } catch (e) { return []; }
     };
 
-    // ─── Cache de dados de usuário ──────────────────────────────────────
     const getUserData = async (email) => {
       if (!email) return null;
       if (userDataCache[email]) return userDataCache[email];
@@ -68,19 +58,14 @@ Deno.serve(async (req) => {
       } catch (e) { return { user_type: 'produtor' }; }
     };
 
-    // ─── Verifica se deve notificar com base no plano ───────────────────
     const shouldNotify = async (email, consultorEmail) => {
       if (!email) return false;
       const recipient = await getUserData(email);
       const consultor = await getUserData(consultorEmail);
-      const allowed = canReceiveNotification(recipient, consultor);
-      if (!allowed) {
-        console.log(`[Expiry] Bloqueado: ${email} (${recipient?.user_type}) — plano: ${consultor?.plan || 'nenhum'}`);
-      }
-      return allowed;
+      return canReceiveNotification(recipient, consultor);
     };
 
-    // ─── Criação de notificação com deduplicação ─────────────────────────
+    // ─── Push in-app com deduplicação (janela 20h) ───────────────────────
     const createNotif = async (userEmail, title, message, eventType, severity, link) => {
       if (!userEmail) return;
       try {
@@ -89,66 +74,73 @@ Deno.serve(async (req) => {
         );
         if (recent.length > 0) {
           const hrs = (today - new Date(recent[0].created_date)) / (1000 * 60 * 60);
-          if (hrs < 20) {
-            console.log(`[Expiry] Duplicada evitada para ${userEmail}: "${title}"`);
-            return;
-          }
+          if (hrs < 20) return;
         }
-      } catch (e) {
-        console.warn('[Expiry] Erro ao verificar duplicatas:', e.message);
-      }
-
-      try {
         await base44.asServiceRole.entities.InAppNotification.create({
-          user_email: userEmail,
-          title,
-          message,
-          event_type: eventType,
-          severity,
-          read: false,
-          link,
+          user_email: userEmail, title, message, event_type: eventType,
+          severity, read: false, link,
           metadata: { type: 'expiry_check', checked_at: today.toISOString() }
         });
-        totalSent++;
-        console.log(`[Expiry] Notificação → ${userEmail}: "${title}"`);
+        totalPush++;
       } catch (e) {
-        console.error('[Expiry] Erro ao criar notificação:', e.message);
+        console.error('[Expiry] Erro ao criar push para', userEmail, ':', e.message);
       }
     };
 
-    // ─── Notifica owner + consultor + equipe do consultor ────────────────
-    const notifyWithTeam = async (ownerEmail, consultorEmail, title, message, eventType, severity, link) => {
-      // Owner (produtor): sempre notifica se houver email
-      if (ownerEmail) {
-        await createNotif(ownerEmail, title, message, eventType, severity, link);
+    // ─── Email com deduplicação (uma vez por execução por destinatário+assunto) ─
+    const sendEmail = async (to, subject, body) => {
+      if (!to) return;
+      const key = `${to}:${subject}`;
+      if (emailDedupeMap.has(key)) return;
+      emailDedupeMap.set(key, true);
+      try {
+        await base44.asServiceRole.integrations.Core.SendEmail({
+          from_name: 'PRUMO Hub', to, subject, body
+        });
+        totalEmail++;
+        console.log(`[Expiry] Email → ${to}: "${subject}"`);
+      } catch (e) {
+        console.error('[Expiry] Erro ao enviar email para', to, ':', e.message);
       }
+    };
 
+    // ─── Notifica owner + consultor + equipe (push) ──────────────────────
+    const notifyWithTeam = async (ownerEmail, consultorEmail, title, message, eventType, severity, link) => {
+      if (ownerEmail) await createNotif(ownerEmail, title, message, eventType, severity, link);
       if (consultorEmail && consultorEmail !== ownerEmail) {
-        // Consultor: sempre notifica
         await createNotif(consultorEmail, title, message, eventType, severity, link);
-
-        // Equipe do consultor: verifica plano
         const consultorData = await getUserData(consultorEmail);
         const plan = (consultorData?.plan || '').toLowerCase();
         if (['pro', 'enterprise'].includes(plan)) {
           const teamEmails = await getTeamEmails(consultorEmail);
-          for (const memberEmail of teamEmails) {
-            if (memberEmail === ownerEmail || memberEmail === consultorEmail) continue;
-            await createNotif(memberEmail, title, message, eventType, severity, link);
+          for (const m of teamEmails) {
+            if (m !== ownerEmail && m !== consultorEmail) {
+              await createNotif(m, title, message, eventType, severity, link);
+            }
           }
         }
       }
     };
 
-    // ─── Busca consultor da propriedade ─────────────────────────────────
+    // ─── Notifica push + email ────────────────────────────────────────────
+    const notifyWithEmail = async (ownerEmail, consultorEmail, title, message, eventType, severity, link, emailSubject, emailBody) => {
+      await notifyWithTeam(ownerEmail, consultorEmail, title, message, eventType, severity, link);
+      if (ownerEmail) await sendEmail(ownerEmail, emailSubject, emailBody);
+      if (consultorEmail && consultorEmail !== ownerEmail) {
+        await sendEmail(consultorEmail,
+          `[Equipe] ${emailSubject}`,
+          `<p><strong>Notificação sobre cliente:</strong></p>${emailBody}`
+        );
+      }
+    };
+
     const getConsultor = async (propertyId) => {
       if (!propertyId) return null;
       if (propConsultorCache[propertyId] !== undefined) return propConsultorCache[propertyId];
       try {
         const props = await base44.asServiceRole.entities.Property.filter({ id: propertyId });
-        const email = props[0]?.consultor_email || null;
-        propConsultorCache[propertyId] = email;
-        return email;
+        propConsultorCache[propertyId] = props[0]?.consultor_email || null;
+        return propConsultorCache[propertyId];
       } catch (e) { return null; }
     };
 
@@ -159,17 +151,26 @@ Deno.serve(async (req) => {
       const days = getDays(lic.expiry_date);
       if (days === null) continue;
       const consultorEmail = await getConsultor(lic.property_id);
+      const licLabel = `${lic.license_type}${lic.license_number ? ` nº ${lic.license_number}` : ''}`;
 
       if (days <= 0) {
-        await notifyWithTeam(lic.owner_email, consultorEmail,
-          'Licença Vencida',
-          `Licença ${lic.license_type}${lic.license_number ? ` nº ${lic.license_number}` : ''} está VENCIDA.`,
-          'licenca_vencida', 'error', '/Licenses');
+        const title = `Licença VENCIDA: ${lic.license_type}`;
+        await notifyWithEmail(lic.owner_email, consultorEmail,
+          title,
+          `Licença ${licLabel} está VENCIDA há ${Math.abs(days)} dia(s).`,
+          'licenca_vencida', 'error', '/Licenses',
+          `[PRUMO Hub] ⛔ ${title}`,
+          `<p>Olá,</p><p>A licença <strong>${licLabel}</strong> está <strong>VENCIDA</strong> há ${Math.abs(days)} dia(s).</p><p>Renove imediatamente para evitar penalidades.</p><p>Equipe PRUMO Hub</p>`
+        );
       } else if ([1, 7, 15, 30].includes(days)) {
-        await notifyWithTeam(lic.owner_email, consultorEmail,
-          `Licença Vencendo em ${days} dia${days > 1 ? 's' : ''}`,
-          `Licença ${lic.license_type} vence em ${days} dia${days > 1 ? 's' : ''}.`,
-          'licenca_vencendo', days <= 7 ? 'error' : 'warning', '/Licenses');
+        const title = `Licença vencendo em ${days} dia${days > 1 ? 's' : ''}`;
+        await notifyWithEmail(lic.owner_email, consultorEmail,
+          title,
+          `Licença ${licLabel} vence em ${days} dia${days > 1 ? 's' : ''}.`,
+          'licenca_vencendo', days <= 7 ? 'error' : 'warning', '/Licenses',
+          `[PRUMO Hub] ⚠️ ${title}: ${lic.license_type}`,
+          `<p>Olá,</p><p>A licença <strong>${licLabel}</strong> vencerá em <strong>${days} dia${days > 1 ? 's' : ''}</strong>.</p><p>Providencie a renovação com antecedência.</p><p>Equipe PRUMO Hub</p>`
+        );
       }
     }
 
@@ -183,16 +184,23 @@ Deno.serve(async (req) => {
         if (days === null) continue;
         const condText = cond.text || 'Condicionante';
         const licLabel = `${lic.license_type}${lic.license_number ? ` nº ${lic.license_number}` : ''}`;
+
         if (days <= 0) {
-          await notifyWithTeam(lic.owner_email, consultorEmail,
+          await notifyWithEmail(lic.owner_email, consultorEmail,
             'Prazo de Condicionante Vencido',
             `Condicionante "${condText}" da ${licLabel} está VENCIDA.`,
-            'licenca_vencida', 'error', '/Licenses');
+            'licenca_vencida', 'error', '/Licenses',
+            `[PRUMO Hub] ⛔ Condicionante VENCIDA: ${condText}`,
+            `<p>Olá,</p><p>A condicionante <strong>"${condText}"</strong> da licença <strong>${licLabel}</strong> está <strong>VENCIDA</strong>.</p><p>Equipe PRUMO Hub</p>`
+          );
         } else if ([1, 7, 15, 30].includes(days)) {
-          await notifyWithTeam(lic.owner_email, consultorEmail,
+          await notifyWithEmail(lic.owner_email, consultorEmail,
             `Condicionante vence em ${days} dia${days > 1 ? 's' : ''}`,
             `"${condText}" (${licLabel}) vence em ${days} dia${days > 1 ? 's' : ''}.`,
-            'licenca_vencendo', days <= 7 ? 'error' : 'warning', '/Licenses');
+            'licenca_vencendo', days <= 7 ? 'error' : 'warning', '/Licenses',
+            `[PRUMO Hub] ⚠️ Condicionante vencendo em ${days} dia${days > 1 ? 's' : ''}`,
+            `<p>Olá,</p><p>A condicionante <strong>"${condText}"</strong> da licença <strong>${licLabel}</strong> vence em <strong>${days} dia${days > 1 ? 's' : ''}</strong>.</p><p>Equipe PRUMO Hub</p>`
+          );
         }
       }
     }
@@ -202,21 +210,26 @@ Deno.serve(async (req) => {
     for (const proc of processes) {
       if (!proc.client_email || proc.status === 'Finalizado' || proc.status === 'Arquivado') continue;
       const consultorEmail = await getConsultor(proc.property_id);
-      const updates = proc.updates || [];
-      for (const upd of updates) {
+      for (const upd of (proc.updates || [])) {
         if (!upd.deadline) continue;
         const days = getDays(upd.deadline);
         if (days === null) continue;
         if (days <= 0) {
-          await notifyWithTeam(proc.client_email, consultorEmail,
+          await notifyWithEmail(proc.client_email, consultorEmail,
             'Prazo de Processo Vencido',
             `Processo ${proc.process_number}: prazo de etapa vencido.`,
-            'atualizacao_processo', 'error', '/Processes');
+            'atualizacao_processo', 'error', '/Processes',
+            `[PRUMO Hub] ⛔ Prazo Vencido — Processo ${proc.process_number}`,
+            `<p>Olá,</p><p>Um prazo do processo <strong>${proc.process_number}</strong> está <strong>vencido</strong>.</p><p>Acesse a plataforma para detalhes.</p><p>Equipe PRUMO Hub</p>`
+          );
         } else if ([1, 7].includes(days)) {
-          await notifyWithTeam(proc.client_email, consultorEmail,
+          await notifyWithEmail(proc.client_email, consultorEmail,
             `Prazo de Processo em ${days} dia${days > 1 ? 's' : ''}`,
             `Processo ${proc.process_number}: prazo em ${days} dia${days > 1 ? 's' : ''}.`,
-            'atualizacao_processo', 'warning', '/Processes');
+            'atualizacao_processo', 'warning', '/Processes',
+            `[PRUMO Hub] ⚠️ Prazo de Processo em ${days} dia${days > 1 ? 's' : ''}`,
+            `<p>Olá,</p><p>O processo <strong>${proc.process_number}</strong> possui um prazo que vence em <strong>${days} dia${days > 1 ? 's' : ''}</strong>.</p><p>Equipe PRUMO Hub</p>`
+          );
         }
       }
     }
@@ -226,22 +239,52 @@ Deno.serve(async (req) => {
     for (const prad of prads) {
       if (!prad.owner_email || prad.status === 'Concluído') continue;
       const consultorEmail = await getConsultor(prad.property_id);
-      const schedule = prad.execution_schedule || [];
-      for (const stage of schedule) {
+      for (const stage of (prad.execution_schedule || [])) {
         if (stage.status === 'Concluído' || !stage.deadline) continue;
         const days = getDays(stage.deadline);
         if (days === null) continue;
         if (days <= 0) {
-          await notifyWithTeam(prad.owner_email, consultorEmail,
-            'Etapa do PRAD Atrasada',
+          await notifyWithEmail(prad.owner_email, consultorEmail,
+            `Etapa do PRAD Atrasada`,
             `"${prad.project_name}" – etapa "${stage.stage}" está atrasada.`,
-            'outro', 'error', '/PRAD');
+            'outro', 'error', '/PRAD',
+            `[PRUMO Hub] ⛔ Etapa do PRAD Atrasada: ${prad.project_name}`,
+            `<p>Olá,</p><p>A etapa <strong>"${stage.stage}"</strong> do PRAD <strong>"${prad.project_name}"</strong> está <strong>atrasada</strong>.</p><p>Equipe PRUMO Hub</p>`
+          );
         } else if ([1, 7, 15].includes(days)) {
           await notifyWithTeam(prad.owner_email, consultorEmail,
             `Prazo do PRAD em ${days} dia${days > 1 ? 's' : ''}`,
             `"${prad.project_name}" – etapa "${stage.stage}" vence em ${days} dia${days > 1 ? 's' : ''}.`,
             'outro', days <= 7 ? 'warning' : 'info', '/PRAD');
         }
+      }
+    }
+
+    // ─── CLIENT CONTRACTS (vencimento) ───────────────────────────────────
+    const contracts = await base44.asServiceRole.entities.ClientContract.list();
+    for (const contract of contracts) {
+      if (!contract.end_date || contract.status === 'Cancelado' || contract.status === 'Encerrado') continue;
+      const days = getDays(contract.end_date);
+      if (days === null) continue;
+      const consultorEmail = contract.consultor_email;
+      const clientEmail = contract.client_email;
+
+      if (days <= 0) {
+        await notifyWithEmail(clientEmail, consultorEmail,
+          `Contrato Vencido: ${contract.contract_type}`,
+          `Contrato "${contract.contract_type}" expirou.`,
+          'atualizacao_contrato', 'error', '/Contracts',
+          `[PRUMO Hub] ⛔ Contrato Vencido: ${contract.contract_type}`,
+          `<p>Olá,</p><p>O contrato <strong>${contract.contract_type}</strong> está <strong>vencido</strong>. Verifique a necessidade de renovação.</p><p>Equipe PRUMO Hub</p>`
+        );
+      } else if ([7, 30].includes(days)) {
+        await notifyWithEmail(clientEmail, consultorEmail,
+          `Contrato vencendo em ${days} dia${days > 1 ? 's' : ''}`,
+          `Contrato "${contract.contract_type}" vence em ${days} dia${days > 1 ? 's' : ''}.`,
+          'atualizacao_contrato', days <= 7 ? 'error' : 'warning', '/Contracts',
+          `[PRUMO Hub] ⚠️ Contrato vencendo em ${days} dia${days > 1 ? 's' : ''}`,
+          `<p>Olá,</p><p>O contrato <strong>${contract.contract_type}</strong> vencerá em <strong>${days} dia${days > 1 ? 's' : ''}</strong>.</p><p>Equipe PRUMO Hub</p>`
+        );
       }
     }
 
@@ -306,16 +349,24 @@ Deno.serve(async (req) => {
       if (days <= 0) {
         await createNotif(inv.client_email, 'Fatura Vencida',
           `Fatura ${val} está VENCIDA.`, 'fatura_vencendo', 'error', '/Invoices');
+        await sendEmail(inv.client_email,
+          `[PRUMO Hub] ⛔ Fatura Vencida: ${val}`,
+          `<p>Olá,</p><p>Sua fatura de <strong>${val}</strong> está <strong>vencida</strong>. Regularize o quanto antes.</p><p>Equipe PRUMO Hub</p>`
+        );
       } else if ([1, 3, 7].includes(days)) {
         await createNotif(inv.client_email, `Fatura Vencendo em ${days} dia${days > 1 ? 's' : ''}`,
           `Fatura ${val} vence em ${days} dia${days > 1 ? 's' : ''}.`, 'fatura_vencendo', 'warning', '/Invoices');
+        if (days === 1) {
+          await sendEmail(inv.client_email,
+            `[PRUMO Hub] ⚠️ Fatura vence amanhã: ${val}`,
+            `<p>Olá,</p><p>Sua fatura de <strong>${val}</strong> vence <strong>amanhã</strong>. Efetue o pagamento para evitar bloqueio de acesso.</p><p>Equipe PRUMO Hub</p>`
+          );
+        }
       }
     }
 
     // ─── CRM TASKS ───────────────────────────────────────────────────────
     const crmList = await base44.asServiceRole.entities.ClientCRM.list();
-    const todayStr = today.toISOString().split('T')[0];
-
     for (const crm of crmList) {
       if (!crm.consultor_email) continue;
       const tasks = crm.tasks || [];
@@ -325,17 +376,14 @@ Deno.serve(async (req) => {
 
       for (const task of tasks) {
         let t = { ...task };
-
-        // Atualiza status para 'overdue' automaticamente
+        // Marca como overdue automaticamente
         if (!t.done && t.status !== 'done' && t.due_date && t.due_date < todayStr && t.status !== 'overdue') {
           t.status = 'overdue';
           crmChanged = true;
         }
-
         updatedTasks.push(t);
 
         if (t.done || t.status === 'done' || !t.due_date) continue;
-
         const responsible = t.assigned_to_email || t.responsible_email || crm.consultor_email;
         const days = getDays(t.due_date);
         if (days === null) continue;
@@ -345,10 +393,14 @@ Deno.serve(async (req) => {
             await createNotif(responsible, '⚠️ Tarefa de CRM Vencida',
               `Tarefa "${t.title}" do cliente "${crm.client_name || 'N/A'}" está VENCIDA.`,
               'task_overdue', 'error', '/ConsultorClients');
+            await sendEmail(responsible,
+              `[PRUMO Hub] ⚠️ Tarefa Vencida: ${t.title}`,
+              `<p>Olá,</p><p>A tarefa <strong>"${t.title}"</strong> do cliente <strong>${crm.client_name || 'N/A'}</strong> está <strong>vencida</strong>.</p><p>Acesse o CRM para atualizar o status.</p><p>Equipe PRUMO Hub</p>`
+            );
           }
-          // Equipe do consultor (plano pro/enterprise)
+          // Notifica demais membros da equipe (plano pro/enterprise)
           const plan = (consultorData?.plan || '').toLowerCase();
-          if (['pro', 'enterprise'].includes(plan) && responsible !== crm.consultor_email) {
+          if (['pro', 'enterprise'].includes(plan)) {
             const team = await getTeamEmails(crm.consultor_email);
             for (const memberEmail of team) {
               if (memberEmail === responsible) continue;
@@ -360,9 +412,15 @@ Deno.serve(async (req) => {
         } else if ([1, 3].includes(days)) {
           if (await shouldNotify(responsible, crm.consultor_email)) {
             await createNotif(responsible,
-              `Tarefa de CRM vence em ${days} dia${days > 1 ? 's' : ''}`,
-              `"${t.title}" do cliente "${crm.client_name || 'N/A'}" vence em ${days} dia${days > 1 ? 's' : ''}.`,
+              `Tarefa vence em ${days} dia${days > 1 ? 's' : ''}`,
+              `"${t.title}" — cliente "${crm.client_name || 'N/A'}" vence em ${days} dia${days > 1 ? 's' : ''}.`,
               'task_due_soon', days === 1 ? 'warning' : 'info', '/ConsultorClients');
+            if (days === 1) {
+              await sendEmail(responsible,
+                `[PRUMO Hub] Tarefa vence amanhã: ${t.title}`,
+                `<p>Olá,</p><p>A tarefa <strong>"${t.title}"</strong> do cliente <strong>${crm.client_name || 'N/A'}</strong> vence <strong>amanhã</strong>.</p><p>Equipe PRUMO Hub</p>`
+              );
+            }
           }
         }
       }
@@ -371,26 +429,24 @@ Deno.serve(async (req) => {
         try {
           await base44.asServiceRole.entities.ClientCRM.update(crm.id, { tasks: updatedTasks });
         } catch (e) {
-          console.warn(`[Expiry] Erro ao atualizar status overdue do CRM ${crm.id}:`, e.message);
+          console.warn(`[Expiry] Erro ao atualizar overdue no CRM ${crm.id}:`, e.message);
         }
       }
     }
 
-    // ─── GEOREFERENCIAMENTO ──────────────────────────────────────────────
+    // ─── GEOREFERENCIAMENTO IRREGULAR ────────────────────────────────────
     const geos = await base44.asServiceRole.entities.Georeferencing.list();
     for (const geo of geos) {
-      if (!geo.owner_email || geo.status === 'Regular') continue;
-      if (geo.status === 'Irregular') {
-        const consultorEmail = await getConsultor(geo.property_id);
-        await notifyWithTeam(geo.owner_email, consultorEmail,
-          'Georreferenciamento Irregular',
-          'Há uma irregularidade no georreferenciamento da propriedade. Regularize o mais breve possível.',
-          'outro', 'error', '/Georeferencing');
-      }
+      if (!geo.owner_email || geo.status !== 'Irregular') continue;
+      const consultorEmail = await getConsultor(geo.property_id);
+      await notifyWithTeam(geo.owner_email, consultorEmail,
+        'Georreferenciamento Irregular',
+        'Há uma irregularidade no georreferenciamento da propriedade.',
+        'outro', 'error', '/Georeferencing');
     }
 
-    console.log(`[Expiry] Concluído. Total de notificações enviadas: ${totalSent}`);
-    return Response.json({ success: true, notifications_sent: totalSent });
+    console.log(`[Expiry] Concluído. Push: ${totalPush} | Email: ${totalEmail} | SMS: 0`);
+    return Response.json({ success: true, notifications_push: totalPush, notifications_email: totalEmail, sms: 0 });
 
   } catch (error) {
     console.error('[Expiry] Erro:', error);

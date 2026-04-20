@@ -37,8 +37,10 @@ const LicenseChecklist = React.lazy(() => import('./pages/LicenseChecklist'));
 const Licenses = React.lazy(() => import('./pages/Licenses'));
 const BudgetGenerator = React.lazy(() => import('./pages/BudgetGenerator'));
 const ContractGenerator = React.lazy(() => import('./pages/ContractGenerator'));
+const AccessBlocked = React.lazy(() => import('./pages/AccessBlocked'));
 
 import OfflineIndicator from '@/components/offline/OfflineIndicator';
+import AccessBlockedGuard from '@/components/AccessBlockedGuard';
 import { useOfflineSync } from '@/components/offline/OfflineSyncHook';
 import { initializeOfflineDB } from '@/components/offline/OfflineStorageManager';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
@@ -126,6 +128,7 @@ const AuthenticatedApp = () => {
   return (
     <>
       <OfflineIndicator isOnline={isOnline} syncInProgress={syncInProgress} syncStats={syncStats} />
+      <AccessBlockedGuard>
       <Routes>
         <Route path="/" element={
           <LayoutWrapper currentPageName={mainPageKey}>
@@ -166,8 +169,10 @@ const AuthenticatedApp = () => {
         <Route path="/ContractGenerator" element={<LayoutWrapper currentPageName="ContractGenerator"><Suspense fallback={<LoadingSpinner />}><ContractGenerator /></Suspense></LayoutWrapper>} />
         <Route path="/TermsAdmin" element={<LayoutWrapper currentPageName="TermsAdmin"><Suspense fallback={<LoadingSpinner />}><TermsAdmin /></Suspense></LayoutWrapper>} />
         <Route path="/AdminPanel" element={<LayoutWrapper currentPageName="AdminPanel"><Suspense fallback={<LoadingSpinner />}><AdminPanel /></Suspense></LayoutWrapper>} />
+        <Route path="/AccessBlocked" element={<Suspense fallback={<LoadingSpinner />}><AccessBlocked /></Suspense>} />
         <Route path="*" element={<PageNotFound />} />
       </Routes>
+      </AccessBlockedGuard>
     </>
   );
 };

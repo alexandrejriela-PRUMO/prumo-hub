@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { X, Save, Trash2, MapPin, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminPropertyAccess from './AdminPropertyAccess';
@@ -35,10 +35,21 @@ export default function AdminPlanEditor({ user, onClose }) {
       max_properties: user.max_properties || planoDefaults.max_properties,
       max_users: user.max_users || planoDefaults.max_users,
       subscription_status: user.subscription_status || 'active',
+      primary_consultor_email: user.primary_consultor_email || '',
     };
   };
 
   const [form, setForm] = useState(initializeForm());
+
+  // Fetch consultors
+  const { data: consultors = [] } = useQuery({
+    queryKey: ['admin-consultors'],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('adminGetUsers', { type: 'users' });
+      const allUsers = res.data.users || [];
+      return allUsers.filter(u => u.user_type === 'consultor');
+    },
+  });
 
   const mutation = useMutation({
     mutationFn: (data) => base44.functions.invoke('adminUpdateUser', { userId: user.id, data }),
@@ -168,7 +179,24 @@ export default function AdminPlanEditor({ user, onClose }) {
               {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
-        </div>
+
+          {/* Consultor Principal (para equipe) */}
+          {form.user_type === 'equipe' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Consultor Principal</label>
+              <select
+                value={form.primary_consultor_email}
+                onChange={e => setForm(f => ({ ...f, primary_consultor_email: e.target.value }))}
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white"
+              >
+                <option value="">Selecione um consultor...</option>
+                {consultors.map(c => (
+                  <option key={c.email} value={c.email}>{c.full_name || c.email}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          </div>
 
         {user.user_type === 'client_consultor' && (
           <div className="p-6 border-t border-gray-100 bg-blue-50">

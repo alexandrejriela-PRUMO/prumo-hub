@@ -190,15 +190,24 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
     setFormData({ ...formData, property_type: type, main_activity: '', activities: [] });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validação: se é consultor, verifica se cliente está cadastrado
-    if (isConsultor && !property) {
+    // Validação: se é consultor e o cliente não existe no CRM, cria automaticamente
+    if (isConsultor && !property && formData.client_email) {
       const clientExists = existingClients.some(c => c.email === formData.client_email);
-      if (!clientExists) {
-        alert('❌ Cliente não encontrado no CRM.\n\nVocê deve cadastrar o cliente no CRM antes de criar uma propriedade para ele.\n\nVá para "Meus Clientes" e adicione o cliente.');
-        return;
+      if (!clientExists && formData.client_name) {
+        try {
+          await base44.entities.ClientCRM.create({
+            consultor_email: user.email,
+            client_name: formData.client_name,
+            client_email: formData.client_email,
+            client_phone: formData.client_contact || '',
+            status: 'Ativo',
+          });
+        } catch (err) {
+          console.error('Erro ao criar cliente no CRM:', err);
+        }
       }
     }
     

@@ -76,7 +76,7 @@ const diferenciais = [
   {
     icon: BarChart3,
     title: 'Controle Financeiro Completo',
-    desc: 'Painel financeiro com receitas, despesas, cobranças via Stripe, conciliação bancária e relatórios de resultado.',
+    desc: 'Painel financeiro com receitas, despesas, cobranças via Nexano, conciliação bancária e relatórios de resultado.',
     color: 'from-green-500 to-lime-600',
   },
   {

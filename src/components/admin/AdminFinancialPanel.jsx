@@ -152,12 +152,12 @@ function UserFinancialRow({ u, invoices, onAction }) {
               <p className="text-sm font-semibold text-gray-800 mt-1 capitalize">{u.user_type || '—'}</p>
             </div>
             <div className="bg-white rounded-lg p-3 border border-gray-100">
-              <p className="text-xs text-gray-500">Stripe Customer</p>
-              <p className="text-xs font-mono text-gray-600 mt-1 truncate">{u.stripe_customer_id || 'Não vinculado'}</p>
+              <p className="text-xs text-gray-500">Role / Perfil</p>
+              <p className="text-sm font-semibold text-gray-800 mt-1 capitalize">{u.role || '—'}</p>
             </div>
             <div className="bg-white rounded-lg p-3 border border-gray-100">
               <p className="text-xs text-gray-500">Telefone / WhatsApp</p>
-              <p className="text-sm font-semibold text-gray-800 mt-1">{u.phone || u.contact_phone || '—'}</p>
+              <p className="text-sm font-semibold text-gray-800 mt-1">{u.phone || u.contact_phone || u.whatsapp || '—'}</p>
             </div>
           </div>
 

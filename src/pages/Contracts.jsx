@@ -315,23 +315,23 @@ export default function Contracts() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <Card className="bg-emerald-50 border-emerald-200">
-          <CardContent className="p-4 text-center">
-            <p className="text-xs text-emerald-600 font-medium">Contratos Ativos</p>
+          <CardContent className="p-3 sm:p-4 text-center">
+            <p className="text-xs text-emerald-600 font-medium">Ativos</p>
             <p className="text-2xl font-bold text-emerald-800">{activeCount}</p>
           </CardContent>
         </Card>
         <Card className="bg-amber-50 border-amber-200">
-          <CardContent className="p-4 text-center">
+          <CardContent className="p-3 sm:p-4 text-center">
             <p className="text-xs text-amber-600 font-medium">A Vencer</p>
             <p className="text-2xl font-bold text-amber-800">{expiringCount}</p>
           </CardContent>
         </Card>
         <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="p-4 text-center">
+          <CardContent className="p-3 sm:p-4 text-center">
             <p className="text-xs text-blue-600 font-medium">Valor Total</p>
-            <p className="text-lg font-bold text-blue-800">
+            <p className="text-sm sm:text-lg font-bold text-blue-800">
               {totalValue > 0 ? `R$ ${totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}` : '—'}
             </p>
           </CardContent>
@@ -430,13 +430,13 @@ export default function Contracts() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-auto">
           <DialogHeader>
             <DialogTitle>{editingContract ? 'Editar Contrato' : 'Novo Contrato'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 mt-2">
             <Tabs defaultValue="basic">
-              <TabsList className="grid grid-cols-4 w-full text-xs">
+              <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full text-xs">
                 <TabsTrigger value="basic">Dados</TabsTrigger>
                 <TabsTrigger value="parties">Partes</TabsTrigger>
                 <TabsTrigger value="services">Serviços</TabsTrigger>
@@ -593,7 +593,7 @@ export default function Contracts() {
                       </button>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div className="relative">
                       <Input className="h-8 text-sm" placeholder="Nome completo *" value={partySearch}
                         onChange={e => {
@@ -660,8 +660,8 @@ export default function Contracts() {
                 )}
                 <div className="p-3 border border-dashed border-emerald-300 rounded-lg bg-emerald-50/30 space-y-2">
                   <p className="text-xs font-medium text-emerald-700">Adicionar serviço</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    <Input className="h-8 text-sm col-span-2" placeholder="Nome do serviço *" value={newService.name}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <Input className="h-8 text-sm sm:col-span-2" placeholder="Nome do serviço *" value={newService.name}
                       onChange={e => setNewService(p => ({ ...p, name: e.target.value }))} />
                     <Input type="number" className="h-8 text-sm" placeholder="Valor R$" value={newService.value}
                       onChange={e => setNewService(p => ({ ...p, value: e.target.value }))} />
@@ -716,7 +716,7 @@ export default function Contracts() {
       {/* View Dialog */}
       {viewingContract && (
         <Dialog open={!!viewingContract} onOpenChange={() => setViewingContract(null)}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <ClipboardList className="w-5 h-5 text-emerald-600" />

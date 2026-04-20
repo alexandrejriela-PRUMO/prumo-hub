@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { ScrollText, Search, User, Calendar, Monitor } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ScrollText, Search, User, Calendar, Monitor, Download, Mail } from 'lucide-react';
+import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -12,6 +14,8 @@ const CONTRACT_VERSION_OFFSET = 1000;
 
 export default function SaasContractLogs() {
   const [search, setSearch] = useState('');
+  const [downloading, setDownloading] = useState({});
+  const [resending, setResending] = useState({});
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ['saasContractLogs'],
@@ -27,6 +31,64 @@ export default function SaasContractLogs() {
     l.user_name?.toLowerCase().includes(search.toLowerCase()) ||
     l.contractor_name?.toLowerCase().includes(search.toLowerCase())
   );
+
+  const handleDownload = async (log) => {
+    setDownloading(prev => ({ ...prev, [log.id]: true }));
+    try {
+      const response = await base44.functions.invoke('generateSaasContractPDF', { logId: log.id });
+      
+      if (response.data?.success && response.data?.htmlContent) {
+        // Criar link de download usando html2canvas e jsPDF
+        const { jsPDF } = await import('jspdf');
+        const html2canvas = await import('html2canvas');
+        
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = response.data.htmlContent;
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        tempDiv.style.width = '800px';
+        document.body.appendChild(tempDiv);
+        
+        const canvas = await html2canvas.default(tempDiv, { scale: 2 });
+        document.body.removeChild(tempDiv);
+        
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgData = canvas.toDataURL('image/png');
+        const imgWidth = 210;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        pdf.save(response.data?.fileName || `Comprovante_SaaS_${log.user_email}.pdf`);
+        
+        toast.success('PDF baixado com sucesso!');
+      }
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.error('Erro ao gerar PDF. Tente novamente.');
+    }
+    setDownloading(prev => ({ ...prev, [log.id]: false }));
+  };
+
+  const handleResendEmail = async (log) => {
+    setResending(prev => ({ ...prev, [log.id]: true }));
+    try {
+      const pdfResponse = await base44.functions.invoke('generateSaasContractPDF', { logId: log.id });
+      
+      if (pdfResponse.data?.success) {
+        await base44.functions.invoke('sendSaasContractEmail', {
+          contractorEmail: log.contractor_email || log.user_email,
+          contractorName: log.contractor_name || log.user_name,
+          pdfBase64: null,
+          resend: true,
+        });
+        toast.success('E-mail reenviado com sucesso!');
+      }
+    } catch (error) {
+      console.error('Erro ao reenviar e-mail:', error);
+      toast.error('Erro ao reenviar e-mail. Tente novamente.');
+    }
+    setResending(prev => ({ ...prev, [log.id]: false }));
+  };
 
   return (
     <div className="space-y-4">
@@ -95,17 +157,41 @@ export default function SaasContractLogs() {
                 </div>
               )}
 
-              <div className="flex items-center gap-4 text-xs text-gray-400 flex-wrap pt-1">
-                <span className="flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
-                  {log.accepted_at ? format(parseISO(log.accepted_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : '—'}
-                </span>
-                {log.user_agent && (
-                  <span className="flex items-center gap-1 truncate max-w-xs">
-                    <Monitor className="w-3 h-3 flex-shrink-0" />
-                    {log.user_agent.substring(0, 60)}...
+              <div className="flex items-center justify-between flex-wrap gap-3 pt-2">
+                <div className="flex items-center gap-4 text-xs text-gray-400 flex-wrap">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    {log.accepted_at ? format(parseISO(log.accepted_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : '—'}
                   </span>
-                )}
+                  {log.user_agent && (
+                    <span className="flex items-center gap-1 truncate max-w-xs">
+                      <Monitor className="w-3 h-3 flex-shrink-0" />
+                      {log.user_agent.substring(0, 60)}...
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1 h-8 text-xs"
+                    onClick={() => handleDownload(log)}
+                    disabled={downloading[log.id]}
+                  >
+                    <Download className="w-3 h-3" />
+                    {downloading[log.id] ? 'Gerando...' : 'Download'}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1 h-8 text-xs"
+                    onClick={() => handleResendEmail(log)}
+                    disabled={resending[log.id]}
+                  >
+                    <Mail className="w-3 h-3" />
+                    {resending[log.id] ? 'Enviando...' : 'Reenviar Email'}
+                  </Button>
+                </div>
               </div>
             </div>
           ))}

@@ -59,6 +59,28 @@ export default function Contracts() {
   const [viewingContract, setViewingContract] = useState(null);
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [newParty, setNewParty] = useState({ name: '', role: 'Contratante', document: '', address: '' });
+  const [partySearch, setPartySearch] = useState('');
+  const [showPartySuggestions, setShowPartySuggestions] = useState(false);
+
+  // Buscar clientes do CRM do consultor
+  const { data: crmClients = [] } = useQuery({
+    queryKey: ['crm-clients-list', effectiveEmail],
+    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: effectiveEmail }),
+    enabled: !!effectiveEmail && isConsultor,
+  });
+
+  const filteredPartyClients = partySearch.length >= 1
+    ? crmClients.filter(c =>
+        c.client_name?.toLowerCase().includes(partySearch.toLowerCase()) ||
+        c.client_email?.toLowerCase().includes(partySearch.toLowerCase())
+      )
+    : crmClients.slice(0, 6);
+
+  const selectPartyClient = (client) => {
+    setNewParty(p => ({ ...p, name: client.client_name || '', }));
+    setPartySearch(client.client_name || '');
+    setShowPartySuggestions(false);
+  };
   const [newService, setNewService] = useState({ name: '', value: '', status: 'Em Andamento' });
   const [uploading, setUploading] = useState(false);
   const queryClient = useQueryClient();
@@ -189,6 +211,7 @@ export default function Contracts() {
     if (!newParty.name) return;
     setFormData(prev => ({ ...prev, parties: [...(prev.parties || []), { ...newParty }] }));
     setNewParty({ name: '', role: 'Contratante', document: '', address: '' });
+    setPartySearch('');
   };
 
   const removeParty = (idx) => {
@@ -549,8 +572,29 @@ export default function Contracts() {
                 <div className="p-3 border border-dashed border-emerald-300 rounded-lg bg-emerald-50/30 space-y-2">
                   <p className="text-xs font-medium text-emerald-700">Adicionar parte</p>
                   <div className="grid grid-cols-2 gap-2">
-                    <Input className="h-8 text-sm" placeholder="Nome completo *" value={newParty.name}
-                      onChange={e => setNewParty(p => ({ ...p, name: e.target.value }))} />
+                    <div className="relative">
+                      <Input className="h-8 text-sm" placeholder="Nome completo *" value={partySearch}
+                        onChange={e => {
+                          setPartySearch(e.target.value);
+                          setNewParty(p => ({ ...p, name: e.target.value }));
+                          setShowPartySuggestions(true);
+                        }}
+                        onFocus={() => setShowPartySuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowPartySuggestions(false), 200)}
+                        autoComplete="off"
+                      />
+                      {showPartySuggestions && filteredPartyClients.length > 0 && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-emerald-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                          {filteredPartyClients.map(c => (
+                            <button key={c.id} type="button" onMouseDown={() => selectPartyClient(c)}
+                              className="w-full text-left px-3 py-2 hover:bg-emerald-50 transition-colors border-b border-gray-100 last:border-0">
+                              <p className="text-xs font-medium text-gray-900">{c.client_name}</p>
+                              {c.client_email && <p className="text-xs text-gray-400">{c.client_email}</p>}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     <Select value={newParty.role} onValueChange={v => setNewParty(p => ({ ...p, role: v }))}>
                       <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                       <SelectContent>

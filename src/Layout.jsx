@@ -143,8 +143,8 @@ const produtorNavItems = [
   { name: 'Minha Equipe', page: 'MyTeam', icon: Users, separator: true },
   { name: 'Modo Campo', page: 'CampMode', icon: Smartphone },
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
-  { name: 'Termos de Uso (Admin)', page: 'TermsAdmin', icon: ScrollText },
-  { name: 'Painel de Admin', page: 'AdminPanel', icon: Shield },
+  { name: 'Termos de Uso (Admin)', page: 'TermsAdmin', icon: ScrollText, adminOnly: true },
+  { name: 'Painel de Admin', page: 'AdminPanel', icon: Shield, adminOnly: true },
   ];
 
 // Equipe do consultor: igual ao consultor, sem "Minha Equipe"
@@ -644,15 +644,21 @@ export default function Layout({ children, currentPageName }) {
                 return pageToModule[pageName];
               };
 
-              // Filtra itens baseado em permissões se for equipe
-              const filteredItems = user?.user_type === 'equipe' 
-                ? menuItems.filter(item => {
-                    if (!item.page && !item.children) return true;
-                    const moduleKey = getModuleKey(item.page);
-                    if (!moduleKey) return true; // Sem mapeamento = exibir
-                    return canAccessModule(moduleKey);
-                  })
-                : menuItems;
+              // Filtra itens baseado em permissões
+               const filteredItems = menuItems.filter(item => {
+                 // Filtro adminOnly: apenas usuários admin
+                 if (item.adminOnly && user?.role !== 'admin') {
+                   return false;
+                 }
+                 // Filtro de equipe: verifica permissões por módulo
+                 if (user?.user_type === 'equipe') {
+                   if (!item.page && !item.children) return true;
+                   const moduleKey = getModuleKey(item.page);
+                   if (!moduleKey) return true;
+                   return canAccessModule(moduleKey);
+                 }
+                 return true;
+               });
 
               return filteredItems.map((item, index) => {
                 const itemKey = item.page || `${item.name}-${index}`;

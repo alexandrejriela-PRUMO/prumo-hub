@@ -191,6 +191,7 @@ export default function SaasContractPage({ onAccepted }) {
           <div>
             <h1 className="text-white text-xl font-bold">Contrato de Assinatura SaaS</h1>
             <p className="text-emerald-200 text-sm">PRUMO HUB — Santa Rute Engenharia LTDA</p>
+            <p className="text-emerald-300 text-xs mt-1 italic">Obrigatório para Consultores e Produtores</p>
           </div>
         </div>
 
@@ -251,14 +252,19 @@ export default function SaasContractPage({ onAccepted }) {
         )}
 
         {/* STEP 2 — Formulário do contratante */}
-        {step === 'form' && (
-          <div className="p-6 space-y-5">
-            <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-sm">
-              <User className="w-4 h-4 flex-shrink-0" />
-              <span>Preencha os dados de quem está contratando. Essas informações serão vinculadas ao contrato.</span>
-            </div>
+         {step === 'form' && (
+           <div className="p-6 space-y-5">
+             <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-sm">
+               <User className="w-4 h-4 flex-shrink-0" />
+               <span>Preencha os dados de quem está contratando. Essas informações serão vinculadas ao contrato.</span>
+             </div>
 
-            <div className="space-y-4">
+             <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs">
+               <div className="flex-shrink-0 mt-0.5">ℹ️</div>
+               <span><strong>Observação:</strong> Membros de equipe e clientes do consultor serão vinculados automaticamente ao contratante principal (esta pessoa). Não é necessário fazer contratos individuais para eles.</span>
+             </div>
+
+             <div className="space-y-4">
               <div className="space-y-1.5">
                 <Label>Nome do Contratante / Empresa *</Label>
                 <Input

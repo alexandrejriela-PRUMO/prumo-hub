@@ -90,8 +90,9 @@ const AuthenticatedApp = () => {
         if (!user.accepted_terms_version || user.accepted_terms_version < latestVersion) {
           setNeedsTerms(true);
         } else {
-          // Termos ok — verificar contrato SaaS
-          if (!user.accepted_saas_contract_version) {
+          // Termos ok — verificar contrato SaaS (apenas para consultor e produtor)
+          const requiresContract = user.user_type === 'consultor' || user.user_type === 'produtor';
+          if (requiresContract && !user.accepted_saas_contract_version) {
             setNeedsContract(true);
           }
         }

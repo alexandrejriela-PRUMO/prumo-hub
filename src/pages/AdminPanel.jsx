@@ -5,12 +5,20 @@ import AdminUserTable from '@/components/admin/AdminUserTable';
 import AdminLeadsTable from '@/components/admin/AdminLeadsTable';
 import AdminClientPropertyLink from '@/components/admin/AdminClientPropertyLink';
 import AdminPlanEditor from '@/components/admin/AdminPlanEditor';
-import { Shield, Users, Inbox, Settings, BarChart3, RefreshCw, Link as LinkIcon } from 'lucide-react';
+import AdminInviteUser from '@/components/admin/AdminInviteUser';
+import AdminSupportTickets from '@/components/admin/AdminSupportTickets';
+import AdminRequestsPanel from '@/components/admin/AdminRequestsPanel';
+import AdminBlogEditor from '@/components/admin/AdminBlogEditor';
+import { Shield, Users, Inbox, BarChart3, Link as LinkIcon, UserPlus, Headphones, ClipboardList, Newspaper } from 'lucide-react';
 
 const TABS = [
   { key: 'users', label: 'Usuários', icon: Users },
-  { key: 'leads', label: 'Leads / Pendentes', icon: Inbox },
-  { key: 'clients', label: 'Clientes-Propriedades', icon: LinkIcon },
+  { key: 'invite', label: 'Convidar / Criar', icon: UserPlus },
+  { key: 'leads', label: 'Leads', icon: Inbox },
+  { key: 'clients', label: 'Clientes-Props', icon: LinkIcon },
+  { key: 'support', label: 'Suporte', icon: Headphones },
+  { key: 'requests', label: 'Requerimentos', icon: ClipboardList },
+  { key: 'blog', label: 'Santa Blog', icon: Newspaper },
   { key: 'stats', label: 'Resumo', icon: BarChart3 },
 ];
 
@@ -55,20 +63,20 @@ export default function AdminPanel() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-gray-200">
+      <div className="flex gap-1 border-b border-gray-200 overflow-x-auto pb-0 scrollbar-none">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           return (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              className={`flex items-center gap-1.5 px-3 py-2.5 text-xs sm:text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap ${
                 activeTab === tab.key
                   ? 'border-emerald-600 text-emerald-700'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               {tab.label}
             </button>
           );
@@ -76,18 +84,14 @@ export default function AdminPanel() {
       </div>
 
       {/* Content */}
-      {activeTab === 'users' && (
-        <AdminUserTable onEdit={setEditingUser} />
-      )}
-      {activeTab === 'leads' && (
-        <AdminLeadsTable />
-      )}
-      {activeTab === 'clients' && (
-        <AdminClientPropertyLink />
-      )}
-      {activeTab === 'stats' && (
-        <AdminStatsPanel />
-      )}
+      {activeTab === 'users' && <AdminUserTable onEdit={setEditingUser} />}
+      {activeTab === 'invite' && <AdminInviteUser />}
+      {activeTab === 'leads' && <AdminLeadsTable />}
+      {activeTab === 'clients' && <AdminClientPropertyLink />}
+      {activeTab === 'support' && <AdminSupportTickets />}
+      {activeTab === 'requests' && <AdminRequestsPanel />}
+      {activeTab === 'blog' && <AdminBlogEditor />}
+      {activeTab === 'stats' && <AdminStatsPanel />}
 
       {/* Plan Editor Modal */}
       {editingUser && (

@@ -4,35 +4,19 @@
   "description": "Plataforma de gestão ambiental e rural para consultores e produtores",
   "start_url": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#064e3b",
   "theme_color": "#064e3b",
-  "orientation": "portrait-primary",
-  "lang": "pt-BR",
-  "categories": ["productivity", "business"],
   "icons": [
     {
       "src": "https://media.base44.com/images/public/696695a3a998559f4c16429b/6d458f6c7_generated_image.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
+      "type": "image/png"
     },
     {
       "src": "https://media.base44.com/images/public/696695a3a998559f4c16429b/6d458f6c7_generated_image.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "Dashboard",
-      "url": "/",
-      "description": "Abrir o dashboard principal"
-    },
-    {
-      "name": "Propriedades",
-      "url": "/Properties",
-      "description": "Gerenciar propriedades"
+      "type": "image/png"
     }
   ]
 }

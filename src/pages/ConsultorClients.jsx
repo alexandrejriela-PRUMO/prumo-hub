@@ -16,10 +16,28 @@ import ClientProfilePanel from '../components/consultor/ClientProfilePanel';
 import ClientARTPanel from '../components/consultor/ClientARTPanel';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
+// Status considerados "Lead" (em negociação/prospecção)
+const LEAD_STATUSES = ['Prospect', 'NovoProspect', 'Em Negociação'];
+// Status considerados "Cliente" (contratado/ativo)
+const CLIENT_STATUSES = ['Ativo', 'Inativo', 'Encerrado'];
+
+const isLead = (status) => LEAD_STATUSES.includes(status) || !status;
+const isClient = (status) => CLIENT_STATUSES.includes(status);
+
+const STATUS_BADGE = {
+  'NovoProspect': { label: 'Lead', className: 'bg-amber-100 text-amber-800 border border-amber-300' },
+  'Prospect': { label: 'Lead', className: 'bg-amber-100 text-amber-800 border border-amber-300' },
+  'Em Negociação': { label: 'Em Negociação', className: 'bg-orange-100 text-orange-800 border border-orange-300' },
+  'Ativo': { label: 'Cliente Ativo', className: 'bg-emerald-100 text-emerald-800 border border-emerald-300' },
+  'Inativo': { label: 'Inativo', className: 'bg-gray-100 text-gray-700 border border-gray-300' },
+  'Encerrado': { label: 'Encerrado', className: 'bg-red-100 text-red-800 border border-red-300' },
+};
+
 export default function ConsultorClients() {
   const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const [clientToDelete, setClientToDelete] = useState(null);
+  const [filterType, setFilterType] = useState('todos'); // 'todos' | 'leads' | 'clientes'
   const queryClient = useQueryClient();
   const { effectiveEmail, isEquipe, actualEmail, memberRole } = useEffectiveUser();
   const canCreate = !isEquipe || memberRole === 'Administrador';
@@ -90,6 +108,16 @@ export default function ConsultorClients() {
     }
   });
 
+  // Filtra clientes conforme seleção
+  const filteredClients = useMemo(() => {
+    if (filterType === 'leads') return allClients.filter(c => isLead(c.status));
+    if (filterType === 'clientes') return allClients.filter(c => isClient(c.status));
+    return allClients;
+  }, [allClients, filterType]);
+
+  const leadsCount = useMemo(() => allClients.filter(c => isLead(c.status)).length, [allClients]);
+  const clientesCount = useMemo(() => allClients.filter(c => isClient(c.status)).length, [allClients]);
+
   // Enriquece o client com propriedades vinculadas para o perfil
   const enrichClient = (crm) => {
     const clientProps = properties.filter(p => {
@@ -114,7 +142,8 @@ export default function ConsultorClients() {
             Meus Clientes
           </h1>
           <p className="text-gray-500 mt-1">
-            {isEquipe ? `Visualizando clientes do consultor vinculado. ` : ''}Você tem {allClients.length} cliente(s) ativo(s).
+            {isEquipe ? `Visualizando clientes do consultor vinculado. ` : ''}
+            {allClients.length} registro(s) — {clientesCount} cliente(s), {leadsCount} lead(s).
           </p>
         </div>
         {canCreate && <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowNewClientForm(true)}>
@@ -123,21 +152,44 @@ export default function ConsultorClients() {
         </Button>}
       </div>
 
+      {/* Filtro Lead / Cliente */}
+      <div className="flex gap-2">
+        {[
+          { key: 'todos', label: `Todos (${allClients.length})` },
+          { key: 'leads', label: `Leads (${leadsCount})` },
+          { key: 'clientes', label: `Clientes (${clientesCount})` },
+        ].map(opt => (
+          <button
+            key={opt.key}
+            onClick={() => setFilterType(opt.key)}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+              filterType === opt.key
+                ? 'bg-emerald-600 text-white border-emerald-600'
+                : 'bg-white text-gray-600 border-gray-300 hover:border-emerald-400'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
       {isLoading && (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1,2,3].map(i => <Skeleton key={i} className="h-52 rounded-xl" />)}
         </div>
       )}
 
-      {!isLoading && allClients.length === 0 && (
+      {!isLoading && filteredClients.length === 0 && (
          <Card className="border-dashed border-2 border-emerald-200">
            <CardContent className="py-16 text-center">
              <Users className="w-16 h-16 mx-auto text-emerald-300 mb-4" />
-             <h3 className="text-lg font-semibold text-gray-900">Nenhum cliente ativo</h3>
+             <h3 className="text-lg font-semibold text-gray-900">
+               {filterType === 'leads' ? 'Nenhum lead encontrado' : filterType === 'clientes' ? 'Nenhum cliente encontrado' : 'Nenhum registro encontrado'}
+             </h3>
              <p className="text-gray-500 mt-2 max-w-md mx-auto">
-               Cadastre seu primeiro cliente ou converta um lead no CRM.
+               {filterType === 'todos' ? 'Cadastre seu primeiro cliente ou converta um lead no CRM.' : `Altere o filtro para ver outros registros.`}
              </p>
-             {canCreate && <Button className="mt-4 bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowNewClientForm(true)}>
+             {canCreate && filterType !== 'leads' && <Button className="mt-4 bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowNewClientForm(true)}>
                <Plus className="w-4 h-4 mr-2" />
                Cadastrar Cliente
              </Button>}
@@ -145,14 +197,23 @@ export default function ConsultorClients() {
          </Card>
        )}
 
-       {!isLoading && allClients.length > 0 && (
+       {!isLoading && filteredClients.length > 0 && (
          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-           {allClients.map(crm => (
-            <Card key={crm.id} className="hover:shadow-lg transition-shadow flex flex-col">
+           {filteredClients.map(crm => {
+            const statusInfo = STATUS_BADGE[crm.status] || STATUS_BADGE['Ativo'];
+            const clientIsLead = isLead(crm.status);
+            return (
+            <Card key={crm.id} className={`hover:shadow-lg transition-shadow flex flex-col ${clientIsLead ? 'border-amber-200' : ''}`}>
+              {clientIsLead && (
+                <div className="bg-amber-50 border-b border-amber-200 px-4 py-1.5 rounded-t-xl flex items-center gap-2">
+                  <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">🎯 Lead</span>
+                  <span className="text-xs text-amber-600">{crm.status === 'Em Negociação' ? '— Em Negociação' : '— Prospecção'}</span>
+                </div>
+              )}
               <CardContent className="p-5 flex-1 flex flex-col">
                 <div className="flex items-start gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                    <span className="font-bold text-emerald-700 text-sm">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${clientIsLead ? 'bg-amber-100' : 'bg-emerald-100'}`}>
+                    <span className={`font-bold text-sm ${clientIsLead ? 'text-amber-700' : 'text-emerald-700'}`}>
                       {(crm.client_name || crm.client_email || '?')[0].toUpperCase()}
                     </span>
                   </div>
@@ -179,10 +240,9 @@ export default function ConsultorClients() {
                   </button>
                 </div>
 
-                <div className="mb-3 space-y-1">
-                  <Badge className="bg-emerald-100 text-emerald-800">Ativo</Badge>
-                  {crm.city && <span className="text-xs text-gray-500 ml-2">{crm.city}{crm.state ? `/${crm.state}` : ''}</span>}
-                  <p className="text-xs text-gray-400 font-mono break-all">{crm.consultor_email}</p>
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <Badge className={statusInfo.className}>{statusInfo.label}</Badge>
+                  {crm.city && <span className="text-xs text-gray-500">{crm.city}{crm.state ? `/${crm.state}` : ''}</span>}
                 </div>
 
                 {(crm.services?.length > 0) && (
@@ -193,7 +253,7 @@ export default function ConsultorClients() {
 
                 <Button
                   onClick={() => setSelectedClient(crm)}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 mt-auto"
+                  className={`w-full mt-auto ${clientIsLead ? 'bg-amber-600 hover:bg-amber-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
                   size="sm"
                 >
                   <MessageCircle className="w-3 h-3 mr-2" />
@@ -201,7 +261,7 @@ export default function ConsultorClients() {
                 </Button>
               </CardContent>
             </Card>
-          ))}
+           )})}
         </div>
       )}
 

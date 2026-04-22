@@ -338,19 +338,38 @@ export default function Licenses() {
     }
     
     const submitData = {
-      ...formData,
+      property_id: formData.property_id,
+      license_type: formData.license_type,
+      other_license_description: formData.other_license_description,
+      license_number: formData.license_number,
+      elaboration_stage: formData.elaboration_stage,
+      issue_date: formData.issue_date,
+      expiry_date: formData.expiry_date,
+      conditions: formData.conditions && formData.conditions.length > 0 ? formData.conditions : [],
+      documents: formData.documents && formData.documents.length > 0 ? formData.documents : [],
       owner_email: effectiveEmail || user?.email,
     };
     
-    console.log('Enviando licença:', submitData);
+    console.log('Enviando licença com condicionantes:', submitData);
     createMutation.mutate(submitData);
   };
 
   const handleUpdate = (e) => {
     e.preventDefault();
+    const updateData = {
+      property_id: formData.property_id,
+      license_type: formData.license_type,
+      other_license_description: formData.other_license_description,
+      license_number: formData.license_number,
+      elaboration_stage: formData.elaboration_stage,
+      issue_date: formData.issue_date,
+      expiry_date: formData.expiry_date,
+      conditions: formData.conditions && formData.conditions.length > 0 ? formData.conditions : [],
+      documents: formData.documents && formData.documents.length > 0 ? formData.documents : [],
+    };
     updateMutation.mutate({
       id: selectedLicense.id,
-      data: formData
+      data: updateData
     });
     setEditDialogOpen(false);
     resetForm();

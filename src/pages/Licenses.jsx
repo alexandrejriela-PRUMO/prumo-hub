@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useFormDirtyAlert, useDialogDirtyAlert } from '@/hooks/useFormDirtyAlert';
 import { 
   FileCheck, 
   Plus, 
@@ -128,10 +129,30 @@ export default function Licenses() {
     conditions: [],
     documents: [],
   });
+  const [initialFormData, setInitialFormData] = useState(null);
   const [newCondition, setNewCondition] = useState('');
   const [newConditionDueDate, setNewConditionDueDate] = useState('');
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [docType, setDocType] = useState('Licença Principal');
+
+  // Detectar mudanças no formulário
+  const isFormDirty = initialFormData && JSON.stringify(formData) !== JSON.stringify(initialFormData);
+  
+  // Alertar ao fechar dialog
+  const handleCloseDialog = useDialogDirtyAlert(
+    isFormDirty,
+    () => { setDialogOpen(false); resetForm(); },
+    'Você tem alterações não salvas. Deseja fechar sem salvar?'
+  );
+
+  const handleCloseEditDialog = useDialogDirtyAlert(
+    isFormDirty,
+    () => { setEditDialogOpen(false); resetForm(); },
+    'Você tem alterações não salvas. Deseja fechar sem salvar?'
+  );
+
+  // Proteger navegação
+  useFormDirtyAlert(isFormDirty);
 
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -246,7 +267,7 @@ export default function Licenses() {
 
   const resetForm = () => {
     const defaultPropertyId = allProperties.length > 0 ? allProperties[0].id : '';
-    setFormData({
+    const freshFormData = {
       property_id: defaultPropertyId,
       license_type: '',
       other_license_description: '',
@@ -256,14 +277,16 @@ export default function Licenses() {
       expiry_date: '',
       conditions: [],
       documents: [],
-    });
+    };
+    setFormData(freshFormData);
+    setInitialFormData(freshFormData);
     setNewCondition('');
     setDocType('Licença Principal');
   };
 
   const openEditDialog = (license) => {
     setSelectedLicense(license);
-    setFormData({
+    const editFormData = {
       property_id: license.property_id || '',
       license_type: license.license_type || '',
       other_license_description: license.other_license_description || '',
@@ -273,7 +296,9 @@ export default function Licenses() {
       expiry_date: license.expiry_date || '',
       conditions: license.conditions || [],
       documents: license.documents || [],
-    });
+    };
+    setFormData(editFormData);
+    setInitialFormData(editFormData);
     setNewCondition('');
     setNewConditionDueDate('');
     setDocType('Licença Principal');
@@ -485,9 +510,22 @@ export default function Licenses() {
               <ClipboardList className="w-4 h-4" /> Modelos de Checklist
             </Button>
           )}
-        {canEdit && <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        {canEdit && <Dialog open={dialogOpen} onOpenChange={(open) => {
+          if (!open && isFormDirty) {
+            const confirmed = window.confirm('Você tem alterações não salvas. Deseja fechar sem salvar?');
+            if (!confirmed) return;
+          }
+          setDialogOpen(open);
+          if (!open) resetForm();
+        }}>
           <DialogTrigger asChild>
-            <Button className="bg-emerald-600 hover:bg-emerald-700">
+            <Button 
+              className="bg-emerald-600 hover:bg-emerald-700"
+              onClick={() => {
+                resetForm();
+                setDialogOpen(true);
+              }}
+            >
               <Plus className="w-4 h-4 mr-2" />
               Novo Registro
             </Button>
@@ -894,7 +932,14 @@ export default function Licenses() {
       )}
 
       {/* Dialog de Edição */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+      <Dialog open={editDialogOpen} onOpenChange={(open) => {
+        if (!open && isFormDirty) {
+          const confirmed = window.confirm('Você tem alterações não salvas. Deseja fechar sem salvar?');
+          if (!confirmed) return;
+        }
+        setEditDialogOpen(open);
+        if (!open) resetForm();
+      }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Licença</DialogTitle>

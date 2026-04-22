@@ -17,8 +17,7 @@ export default function ContractGenerator() {
   const [loadingUser, setLoadingUser] = useState(true);
   const queryClient = useQueryClient();
   
-  // Proteger contra saída do gerador sem salvar
-  useFormDirtyAlert(!!contractData && step === 'editor', 'Você tem alterações não salvas no contrato. Deseja realmente sair sem salvar?');
+  const isDirty = !!contractData && step === 'editor';
 
   useEffect(() => {
     const loadUser = async () => {
@@ -33,6 +32,32 @@ export default function ContractGenerator() {
     };
     loadUser();
   }, []);
+
+  // Proteger contra saída do gerador sem salvar
+  useFormDirtyAlert(isDirty, 'Você tem alterações não salvas no contrato. Deseja realmente sair sem salvar?');
+
+  // Interceptar cliques em links de navegação quando há alterações
+  useEffect(() => {
+    if (!isDirty) return;
+
+    const handleNavClick = (e) => {
+      const link = e.target.closest('a[href]');
+      if (link && !link.getAttribute('data-internal')) {
+        const href = link.getAttribute('href');
+        // Verifica se é um link de navegação (começa com /)
+        if (href && href.startsWith('/')) {
+          e.preventDefault();
+          const confirmed = window.confirm('Você tem alterações não salvas no contrato. Deseja realmente sair sem salvar?');
+          if (confirmed) {
+            window.location.href = href;
+          }
+        }
+      }
+    };
+
+    document.addEventListener('click', handleNavClick, true);
+    return () => document.removeEventListener('click', handleNavClick, true);
+  }, [isDirty]);
 
   const { data: templates = [] } = useQuery({
     queryKey: ['contractTemplates', user?.email],

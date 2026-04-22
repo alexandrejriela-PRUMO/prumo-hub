@@ -175,6 +175,7 @@ export default function BudgetGenerator() {
         {step === 'editor' && budgetData && (
           <BudgetEditorWYSIWYG
             budgetData={budgetData}
+            consultorData={user}
             onSave={handleSaveDocument}
             onSend={handleSendDocument}
           />

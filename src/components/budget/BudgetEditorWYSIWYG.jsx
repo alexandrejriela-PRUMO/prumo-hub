@@ -9,8 +9,9 @@ import jsPDF from 'jspdf';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 
-function buildBudgetHtml(budgetData) {
+function buildBudgetHtml(budgetData, consultorData) {
   const b = budgetData || {};
+  const c = consultorData || {};
   const services = Array.isArray(b.services) ? b.services : [];
   const fees = Array.isArray(b.additional_fees) ? b.additional_fees : [];
   const dataHoje = new Date().toLocaleDateString('pt-BR');
@@ -25,6 +26,10 @@ function buildBudgetHtml(budgetData) {
   const travelCost = parseFloat(b.travel_cost) || 0;
   const fuelCost = parseFloat(b.fuel_cost) || 0;
   const notes = b.notes || '';
+
+  // Dados do consultor (prestador)
+  const consultorName = c.full_name || blank;
+  const consultorEmail = c.email || blank;
 
   const servicesTotal = services.reduce((acc, s) => acc + (parseFloat(s.hours) * parseFloat(s.hourly_rate)), 0);
   const feesTotal = fees.reduce((acc, f) => acc + parseFloat(f.amount), 0);
@@ -100,21 +105,25 @@ function buildBudgetHtml(budgetData) {
 
   <div style="margin-top:60px; padding-top:20px; border-top:1px solid #ccc; font-size:12px; color:#888; text-align:center;">
     <p>Este orçamento é válido por ${validityDays} dias a partir da data de emissão.</p>
-    <p style="margin-top:8px;">Em caso de dúvidas, entre em contato pelo email: ${clientEmail || '___________________________'}</p>
+    <p style="margin-top:8px;">Em caso de dúvidas, entre em contato pelo email: <strong>${consultorEmail}</strong></p>
   </div>
 
-  <div style="margin-top:60px; display:grid; grid-template-columns:1fr 1fr; gap:40px;">
-    <div style="text-align:center;">
-      <div style="border-top:1px solid #000; padding-top:16px; margin-bottom:5px;"></div>
-      <p style="margin:0; font-size:13px;"><strong>Prestador de Serviço</strong></p>
-      <p style="margin:4px 0 0 0; font-size:12px; color:#666;">Data: ___/___/_______</p>
-    </div>
-    <div style="text-align:center;">
-      <div style="border-top:1px solid #000; padding-top:16px; margin-bottom:5px;"></div>
-      <p style="margin:0; font-size:13px;"><strong>${clientName}</strong></p>
-      <p style="margin:4px 0 0 0; font-size:12px; color:#666;">Data: ___/___/_______</p>
-    </div>
-  </div>
+  <table style="margin-top:60px; width:100%; border-collapse:collapse;">
+    <tr>
+      <td style="width:50%; text-align:center; padding-right:20px;">
+        <div style="border-top:1px solid #000; padding-top:16px; margin-bottom:5px;"></div>
+        <p style="margin:0; font-size:13px;"><strong>${consultorName}</strong></p>
+        <p style="margin:4px 0 0 0; font-size:12px; color:#666;">Prestador de Serviço</p>
+        <p style="margin:4px 0 0 0; font-size:12px; color:#666;">Data: ___/___/_______</p>
+      </td>
+      <td style="width:50%; text-align:center; padding-left:20px;">
+        <div style="border-top:1px solid #000; padding-top:16px; margin-bottom:5px;"></div>
+        <p style="margin:0; font-size:13px;"><strong>${clientName}</strong></p>
+        <p style="margin:4px 0 0 0; font-size:12px; color:#666;">Contratante</p>
+        <p style="margin:4px 0 0 0; font-size:12px; color:#666;">Data: ___/___/_______</p>
+      </td>
+    </tr>
+  </table>
 </div>`;
 }
 
@@ -130,8 +139,8 @@ const QUILL_MODULES = {
   ],
 };
 
-export default function BudgetEditorWYSIWYG({ budgetData = {}, onSave, onSend }) {
-  const [htmlContent, setHtmlContent] = useState(() => buildBudgetHtml(budgetData));
+export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = null, onSave, onSend }) {
+  const [htmlContent, setHtmlContent] = useState(() => buildBudgetHtml(budgetData, consultorData));
   const [logoBase64, setLogoBase64] = useState('');
   const [loadingLogo, setLoadingLogo] = useState(false);
   const fileInputRef = useRef(null);
@@ -232,7 +241,7 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, onSave, onSend })
   };
 
   const resetDocument = () => {
-    setHtmlContent(buildBudgetHtml(budgetData));
+    setHtmlContent(buildBudgetHtml(budgetData, consultorData));
     toast.success('Documento regenerado com os dados do formulário');
   };
 

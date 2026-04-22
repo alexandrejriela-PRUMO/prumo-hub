@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
@@ -17,7 +17,7 @@ export default function BudgetGenerator() {
   const [selectedBudget, setSelectedBudget] = useState(null);
   const queryClient = useQueryClient();
 
-  React.useEffect(() => {
+  useEffect(() => {
     const loadUser = async () => {
       try {
         const userData = await base44.auth.me();

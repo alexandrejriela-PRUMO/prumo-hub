@@ -18,6 +18,9 @@ export default function ContractGenerator() {
   const [isDirty, setIsDirty] = useState(false);
   const queryClient = useQueryClient();
 
+  // Proteger contra saída do gerador sem salvar
+  useNavigationGuard(isDirty);
+
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -31,9 +34,6 @@ export default function ContractGenerator() {
     };
     loadUser();
   }, []);
-
-  // Proteger contra saída do gerador sem salvar
-  useNavigationGuard(isDirty);
 
   const { data: templates = [] } = useQuery({
     queryKey: ['contractTemplates', user?.email],

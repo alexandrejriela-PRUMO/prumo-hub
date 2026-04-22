@@ -211,12 +211,16 @@ export default function Licenses() {
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.License.create(data),
-    onSuccess: () => {
+    onSuccess: (createdLicense) => {
       queryClient.invalidateQueries(['licenses']);
       setDialogOpen(false);
       resetForm();
+      console.log('Licença criada com sucesso:', createdLicense);
       toast.success('Licença criada com sucesso!');
     },
+    onError: (error) => {
+      console.error('Erro na criação de licença:', error);
+    }
   });
 
   const updateMutation = useMutation({
@@ -225,7 +229,11 @@ export default function Licenses() {
       queryClient.invalidateQueries(['licenses']);
       // Atualiza selectedLicense em tempo real para o histórico aparecer sem sair da aba
       setSelectedLicense(prev => prev?.id === id ? { ...prev, ...data } : prev);
+      console.log('Licença atualizada com sucesso:', { id, data });
     },
+    onError: (error) => {
+      console.error('Erro na mutação de atualização:', error);
+    }
   });
 
   const deleteMutation = useMutation({
@@ -355,7 +363,11 @@ export default function Licenses() {
     };
     
     console.log('Enviando licença com condicionantes:', submitData);
-    createMutation.mutate(submitData);
+    createMutation.mutate(submitData, {
+      onError: (error) => {
+        toast.error('Erro ao criar licença: ' + error.message);
+      }
+    });
   };
 
   const handleUpdate = (e) => {
@@ -371,13 +383,22 @@ export default function Licenses() {
       conditions: formData.conditions && formData.conditions.length > 0 ? formData.conditions : [],
       documents: formData.documents && formData.documents.length > 0 ? formData.documents : [],
     };
-    updateMutation.mutate({
-      id: selectedLicense.id,
-      data: updateData
-    });
-    setEditDialogOpen(false);
-    resetForm();
-    toast.success('Licença atualizada com sucesso!');
+    
+    console.log('Atualizando licença com condicionantes:', updateData);
+    
+    updateMutation.mutate(
+      { id: selectedLicense.id, data: updateData },
+      {
+        onSuccess: () => {
+          setEditDialogOpen(false);
+          resetForm();
+          toast.success('Licença atualizada com sucesso!');
+        },
+        onError: (error) => {
+          toast.error('Erro ao atualizar licença: ' + error.message);
+        }
+      }
+    );
   };
 
   const getLicenseStatus = (license) => {

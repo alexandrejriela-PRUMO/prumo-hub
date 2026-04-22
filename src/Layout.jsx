@@ -11,6 +11,7 @@ import ThemeProvider from './components/ThemeProvider';
 import RouteTransition from './components/mobile/RouteTransition';
 import NotificationCenter from './components/notifications/NotificationCenter';
 import RealtimeNotificationCenter from './components/notifications/RealtimeNotificationCenter';
+import { useRealtimeNotifications } from '@/components/notifications/useRealtimeNotifications';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import {
@@ -327,18 +328,7 @@ export default function Layout({ children, currentPageName }) {
     });
   }, [currentPageName]);
 
-  const { data: notifications = [] } = useQuery({
-    queryKey: ['inAppNotifications', user?.email],
-    queryFn: () => base44.entities.InAppNotification.filter(
-      { user_email: user.email },
-      '-created_date',
-      50
-    ),
-    enabled: !!user?.email,
-    refetchInterval: 30000
-  });
-
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const { unreadCount } = useRealtimeNotifications(user?.email);
 
   const handleLogout = () => {
     base44.auth.logout();

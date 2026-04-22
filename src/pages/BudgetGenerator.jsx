@@ -9,17 +9,15 @@ import BudgetEditorWYSIWYG from '@/components/budget/BudgetEditorWYSIWYG';
 import { ChevronLeft, Download, FileEdit } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { useFormDirtyAlert } from '@/hooks/useFormDirtyAlert';
-import { useNavigationBlocker } from '@/hooks/useNavigationBlocker';
+import { useNavigationGuard } from '@/hooks/useNavigationGuard';
 
 export default function BudgetGenerator() {
   const [step, setStep] = useState('form'); // form, editor, history
   const [budgetData, setBudgetData] = useState(null);
   const [user, setUser] = useState(null);
   const [selectedBudget, setSelectedBudget] = useState(null);
+  const [isDirty, setIsDirty] = useState(false);
   const queryClient = useQueryClient();
-  
-  const isDirty = !!budgetData && step === 'editor';
 
   useEffect(() => {
     const loadUser = async () => {
@@ -34,9 +32,7 @@ export default function BudgetGenerator() {
   }, []);
 
   // Proteger contra saída do gerador sem salvar
-  const message = 'Você tem alterações não salvas no orçamento. Deseja realmente sair sem salvar?';
-  useFormDirtyAlert(isDirty, message);
-  useNavigationBlocker(isDirty, message);
+  useNavigationGuard(isDirty);
 
   const { data: templates = [] } = useQuery({
     queryKey: ['budgetTemplates', user?.email],
@@ -120,6 +116,7 @@ export default function BudgetGenerator() {
       status: 'Rascunho'
     };
     setBudgetData(newData);
+    setIsDirty(true);
     setStep('editor');
   };
 
@@ -128,6 +125,7 @@ export default function BudgetGenerator() {
       const confirmed = window.confirm('Você tem alterações não salvas. Deseja sair sem salvar?');
       if (!confirmed) return;
       setBudgetData(null);
+      setIsDirty(false);
     }
     setStep(newStep);
   };
@@ -151,10 +149,12 @@ export default function BudgetGenerator() {
       logo_url: editorData.logoBase64 || budgetData.logo_url,
     };
     saveBudgetMutation.mutate(fullData);
+    setIsDirty(false);
   };
 
   const handleSendDocument = async (editorData) => {
     sendBudgetMutation.mutate(editorData);
+    setIsDirty(false);
   };
 
   // Abre o editor com um orçamento do histórico

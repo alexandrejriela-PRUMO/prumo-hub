@@ -7,8 +7,7 @@ import { toast } from 'sonner';
 import ContractForm from '@/components/contract/ContractForm';
 import ContractEditorWYSIWYG from '@/components/contract/ContractEditorWYSIWYG';
 import { ChevronLeft } from 'lucide-react';
-import { useFormDirtyAlert } from '@/hooks/useFormDirtyAlert';
-import { useNavigationBlocker } from '@/hooks/useNavigationBlocker';
+import { useNavigationGuard } from '@/hooks/useNavigationGuard';
 
 export default function ContractGenerator() {
   const [step, setStep] = useState('form');
@@ -16,9 +15,8 @@ export default function ContractGenerator() {
   const [user, setUser] = useState(null);
   const [selectedContract, setSelectedContract] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
+  const [isDirty, setIsDirty] = useState(false);
   const queryClient = useQueryClient();
-  
-  const isDirty = !!contractData && step === 'editor';
 
   useEffect(() => {
     const loadUser = async () => {
@@ -35,9 +33,7 @@ export default function ContractGenerator() {
   }, []);
 
   // Proteger contra saída do gerador sem salvar
-  const message = 'Você tem alterações não salvas no contrato. Deseja realmente sair sem salvar?';
-  useFormDirtyAlert(isDirty, message);
-  useNavigationBlocker(isDirty, message);
+  useNavigationGuard(isDirty);
 
   const { data: templates = [] } = useQuery({
     queryKey: ['contractTemplates', user?.email],
@@ -116,6 +112,7 @@ export default function ContractGenerator() {
       consultor_email: user?.email,
       status: 'Proposta'
     });
+    setIsDirty(true);
     setStep('editor');
   };
 
@@ -124,6 +121,7 @@ export default function ContractGenerator() {
       const confirmed = window.confirm('Você tem alterações não salvas. Deseja sair sem salvar?');
       if (!confirmed) return;
       setContractData(null);
+      setIsDirty(false);
     }
     setStep(newStep);
   };
@@ -150,10 +148,12 @@ export default function ContractGenerator() {
       documents,
     };
     saveContractMutation.mutate(fullData);
+    setIsDirty(false);
   };
 
   const handleSendToSign = async (editorData) => {
     sendToSignMutation.mutate(editorData);
+    setIsDirty(false);
   };
 
   if (loadingUser) {

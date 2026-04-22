@@ -78,14 +78,17 @@ export default function AdminUserTable({ onEdit }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filtered.map((u) => {
-                // Plano: equipe e client_consultor herdam do consultor principal
-                const isSecondary = u.user_type === 'equipe' || u.user_type === 'client_consultor';
-                const planKey = isSecondary ? (u.plano_display || u.plano) : u.plano;
-                const planInfo = PLAN_LABELS[planKey];
-                const typeColor = TYPE_LABELS[u.user_type] || 'bg-gray-100 text-gray-700';
-                return (
-                  <tr key={u.id} className="hover:bg-gray-50 transition-colors">
+             {filtered.map((u) => {
+               // Verifica se é um convite pendente
+               const isPending = u.is_pending_invite === true;
+
+               // Plano: equipe e client_consultor herdam do consultor principal
+               const isSecondary = u.user_type === 'equipe' || u.user_type === 'client_consultor';
+               const planKey = isSecondary ? (u.plano_display || u.plano) : u.plano;
+               const planInfo = PLAN_LABELS[planKey];
+               const typeColor = TYPE_LABELS[u.user_type] || 'bg-gray-100 text-gray-700';
+               return (
+                 <tr key={u.id} className={`${isPending ? 'bg-yellow-50/50' : 'hover:bg-gray-50'} transition-colors`}>
                     <td className="px-4 py-3">
                       <p className="font-medium text-gray-900">{u.full_name || '—'}</p>
                       <p className="text-xs text-gray-500">{u.email}</p>
@@ -123,18 +126,29 @@ export default function AdminUserTable({ onEdit }) {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${u.subscription_status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                        {u.subscription_status || 'ativo'}
-                      </span>
+                      {isPending ? (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">
+                          Convite Pendente
+                        </span>
+                      ) : (
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${u.subscription_status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                          {u.subscription_status || 'ativo'}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
-                      <button
-                        onClick={() => onEdit(u)}
-                        className="flex items-center gap-1 text-xs text-emerald-700 hover:text-emerald-900 font-medium"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                        Editar
-                      </button>
+                      {!isPending && (
+                        <button
+                          onClick={() => onEdit(u)}
+                          className="flex items-center gap-1 text-xs text-emerald-700 hover:text-emerald-900 font-medium"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                          Editar
+                        </button>
+                      )}
+                      {isPending && (
+                        <span className="text-xs text-gray-400">Aguardando aceite</span>
+                      )}
                     </td>
                   </tr>
                 );

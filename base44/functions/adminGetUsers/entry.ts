@@ -30,6 +30,30 @@ Deno.serve(async (req) => {
     // Busca usuários
     const users = await base44.asServiceRole.entities.User.list('-created_date', 200);
 
+    // Se type === 'users', inclui também TeamMembers pendentes (convites não aceitos)
+    let pendingInvites = [];
+    if (!type || type === 'users') {
+      const teamMembers = await base44.asServiceRole.entities.TeamMember.list('-invited_at', 500);
+      pendingInvites = teamMembers
+        .filter(tm => tm.status === 'Pendente')
+        .map(tm => ({
+          id: `pending_${tm.id}`,
+          email: tm.member_email,
+          full_name: tm.member_name || tm.member_email,
+          user_type: 'consultor', // default
+          plano: 'start', // default
+          role: 'user',
+          status: 'Pendente',
+          subscription_status: 'pending_invite',
+          is_pending_invite: true,
+          invite_data: {
+            team_member_id: tm.id,
+            invited_at: tm.invited_at,
+            expires_at: tm.expires_at,
+          }
+        }));
+    }
+
     // Busca membros de equipe para identificar o consultor principal
     const teamMembers = await base44.asServiceRole.entities.TeamMember.list('-created_date', 500);
 
@@ -72,7 +96,10 @@ Deno.serve(async (req) => {
       return u;
     });
 
-    return Response.json({ users: enrichedUsers });
+    // Combine usuários criados + convites pendentes
+    const finalUsers = !type || type === 'users' ? [...enrichedUsers, ...pendingInvites] : enrichedUsers;
+
+    return Response.json({ users: finalUsers });
 
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

@@ -10,6 +10,7 @@ import { ChevronLeft, Download, FileEdit } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useFormDirtyAlert } from '@/hooks/useFormDirtyAlert';
+import { useNavigationBlocker } from '@/hooks/useNavigationBlocker';
 
 export default function BudgetGenerator() {
   const [step, setStep] = useState('form'); // form, editor, history
@@ -33,30 +34,9 @@ export default function BudgetGenerator() {
   }, []);
 
   // Proteger contra saída do gerador sem salvar
-  useFormDirtyAlert(isDirty, 'Você tem alterações não salvas no orçamento. Deseja realmente sair sem salvar?');
-
-  // Interceptar cliques em links de navegação quando há alterações
-  useEffect(() => {
-    if (!isDirty) return;
-
-    const handleNavClick = (e) => {
-      const link = e.target.closest('a[href]');
-      if (link && !link.getAttribute('data-internal')) {
-        const href = link.getAttribute('href');
-        // Verifica se é um link de navegação (começa com /)
-        if (href && href.startsWith('/')) {
-          e.preventDefault();
-          const confirmed = window.confirm('Você tem alterações não salvas no orçamento. Deseja realmente sair sem salvar?');
-          if (confirmed) {
-            window.location.href = href;
-          }
-        }
-      }
-    };
-
-    document.addEventListener('click', handleNavClick, true);
-    return () => document.removeEventListener('click', handleNavClick, true);
-  }, [isDirty]);
+  const message = 'Você tem alterações não salvas no orçamento. Deseja realmente sair sem salvar?';
+  useFormDirtyAlert(isDirty, message);
+  useNavigationBlocker(isDirty, message);
 
   const { data: templates = [] } = useQuery({
     queryKey: ['budgetTemplates', user?.email],

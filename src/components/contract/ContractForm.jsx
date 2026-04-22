@@ -260,7 +260,10 @@ export default function ContractForm({ user, templates = [], onSubmit, onFormCha
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label className="text-xs">Tipo de Contrato *</Label>
-              <Select value={formData.contract_type} onValueChange={v => setFormData(p => ({ ...p, contract_type: v }))}>
+              <Select value={formData.contract_type} onValueChange={v => {
+                onFormChange();
+                setFormData(p => ({ ...p, contract_type: v }));
+              }}>
                 <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {CONTRACT_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
@@ -313,7 +316,10 @@ export default function ContractForm({ user, templates = [], onSubmit, onFormCha
             </div>
             <div>
               <Label className="text-xs">Status</Label>
-              <Select value={formData.status} onValueChange={v => setFormData(p => ({ ...p, status: v }))}>
+              <Select value={formData.status} onValueChange={v => {
+                onFormChange();
+                setFormData(p => ({ ...p, status: v }));
+              }}>
                 <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {['Proposta','Ativo','Em Assinatura','Em Renovação','Encerrado','Cancelado'].map(s => (
@@ -409,7 +415,10 @@ export default function ContractForm({ user, templates = [], onSubmit, onFormCha
                   </div>
                 )}
               </div>
-              <Select value={newParty.role} onValueChange={handlePartyRoleChange}>
+              <Select value={newParty.role} onValueChange={v => {
+                onFormChange();
+                handlePartyRoleChange(v);
+              }}>
                 <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {['Contratante','Contratado','Testemunha','Fiador','Interveniente'].map(r => (

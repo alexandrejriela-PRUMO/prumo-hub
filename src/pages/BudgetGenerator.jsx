@@ -9,6 +9,7 @@ import BudgetEditorWYSIWYG from '@/components/budget/BudgetEditorWYSIWYG';
 import { ChevronLeft, Download, FileEdit } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { useFormDirtyAlert } from '@/hooks/useFormDirtyAlert';
 
 export default function BudgetGenerator() {
   const [step, setStep] = useState('form'); // form, editor, history
@@ -16,6 +17,9 @@ export default function BudgetGenerator() {
   const [user, setUser] = useState(null);
   const [selectedBudget, setSelectedBudget] = useState(null);
   const queryClient = useQueryClient();
+  
+  // Proteger contra saída do gerador sem salvar
+  useFormDirtyAlert(!!budgetData && step === 'editor', 'Você tem alterações não salvas no orçamento. Deseja realmente sair sem salvar?');
 
   useEffect(() => {
     const loadUser = async () => {

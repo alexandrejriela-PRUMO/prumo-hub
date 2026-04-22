@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import ContractForm from '@/components/contract/ContractForm';
 import ContractEditorWYSIWYG from '@/components/contract/ContractEditorWYSIWYG';
 import { ChevronLeft } from 'lucide-react';
+import { useFormDirtyAlert } from '@/hooks/useFormDirtyAlert';
 
 export default function ContractGenerator() {
   const [step, setStep] = useState('form');
@@ -15,6 +16,9 @@ export default function ContractGenerator() {
   const [selectedContract, setSelectedContract] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const queryClient = useQueryClient();
+  
+  // Proteger contra saída do gerador sem salvar
+  useFormDirtyAlert(!!contractData && step === 'editor', 'Você tem alterações não salvas no contrato. Deseja realmente sair sem salvar?');
 
   useEffect(() => {
     const loadUser = async () => {

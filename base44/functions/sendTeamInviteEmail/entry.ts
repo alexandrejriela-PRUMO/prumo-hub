@@ -4,7 +4,8 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { member_email, member_name, member_role, consultor_name, app_url = 'https://prumo.app' } = body;
+    const { member_email, member_name, member_role, consultor_name } = body;
+    const app_url = 'https://hub.prumo.site/login?from_url=https%3A%2F%2Fhub.prumo.site%2F';
 
     if (!member_email) {
       return Response.json({ error: 'member_email é obrigatório' }, { status: 400 });

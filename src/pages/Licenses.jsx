@@ -250,7 +250,6 @@ export default function Licenses() {
       documents: [],
     });
     setNewCondition('');
-    setNewConditionDueDate('');
     setDocType('Licença Principal');
   };
 
@@ -308,7 +307,7 @@ export default function Licenses() {
     if (newCondition.trim()) {
       setFormData({
         ...formData,
-        conditions: [...formData.conditions, { text: newCondition.trim(), due_date: newConditionDueDate || null }],
+        conditions: [...formData.conditions, newCondition.trim()],
       });
       setNewCondition('');
       setNewConditionDueDate('');
@@ -322,9 +321,8 @@ export default function Licenses() {
     });
   };
 
-  // Normaliza condicionante (pode ser string legada ou objeto novo)
+  // Simplificado: conditions são apenas strings
   const getCondText = (cond) => typeof cond === 'string' ? cond : (cond?.text || '');
-  const getCondDueDate = (cond) => typeof cond === 'string' ? null : (cond?.due_date || null);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -556,33 +554,19 @@ export default function Licenses() {
                     placeholder="Descrição da condicionante"
                     onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCondition())}
                   />
-                  <div className="flex gap-2">
-                    <div className="flex-1">
-                      <Label className="text-xs text-gray-500">Prazo de Cumprimento (opcional)</Label>
-                      <Input
-                        type="date"
-                        value={newConditionDueDate}
-                        onChange={(e) => setNewConditionDueDate(e.target.value)}
-                      />
-                    </div>
-                    <div className="flex items-end">
-                      <Button type="button" variant="outline" onClick={addCondition}>
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
+                  <div className="flex items-end gap-2">
+                    <Button type="button" variant="outline" onClick={addCondition} className="flex-1">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Adicionar
+                    </Button>
                   </div>
                 </div>
                 {formData.conditions.length > 0 && (
                   <div className="space-y-2 mt-2">
                     {formData.conditions.map((cond, idx) => (
-                      <div key={idx} className="flex items-start gap-2 p-2 bg-gray-50 rounded-lg">
-                        <div className="flex-1">
-                          <p className="text-sm">{getCondText(cond)}</p>
-                          {getCondDueDate(cond) && (
-                            <p className="text-xs text-amber-600 mt-0.5">📅 Prazo: {format(parseISO(getCondDueDate(cond)), 'dd/MM/yyyy')}</p>
-                          )}
-                        </div>
-                        <button type="button" onClick={() => removeCondition(idx)} className="text-red-500 hover:text-red-700 mt-0.5">
+                      <div key={idx} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                        <p className="text-sm flex-1">{getCondText(cond)}</p>
+                        <button type="button" onClick={() => removeCondition(idx)} className="text-red-500 hover:text-red-700 flex-shrink-0">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -735,16 +719,9 @@ export default function Licenses() {
                         <div className="space-y-1">
                           {license.conditions.slice(0, 2).map((cond, idx) => {
                             const text = typeof cond === 'string' ? cond : (cond?.text || '');
-                            const due = typeof cond === 'string' ? null : (cond?.due_date || null);
-                            const daysLeft = due ? differenceInDays(parseISO(due), new Date()) : null;
                             return (
                               <div key={idx} className="text-xs text-gray-600 bg-gray-50 p-1.5 sm:p-2 rounded">
                                 <p className="line-clamp-2">• {text}</p>
-                                {due && (
-                                  <p className={`mt-0.5 font-medium ${daysLeft !== null && daysLeft <= 0 ? 'text-red-600' : daysLeft !== null && daysLeft <= 30 ? 'text-amber-600' : 'text-gray-500'}`}>
-                                    📅 {daysLeft !== null && daysLeft <= 0 ? 'Vencida' : `Prazo: ${format(parseISO(due), 'dd/MM/yyyy')}`}
-                                  </p>
-                                )}
                               </div>
                             );
                           })}
@@ -952,33 +929,19 @@ export default function Licenses() {
                   placeholder="Descrição da condicionante"
                   onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCondition())}
                 />
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <Label className="text-xs text-gray-500">Prazo de Cumprimento (opcional)</Label>
-                    <Input
-                      type="date"
-                      value={newConditionDueDate}
-                      onChange={(e) => setNewConditionDueDate(e.target.value)}
-                    />
-                  </div>
-                  <div className="flex items-end">
-                    <Button type="button" variant="outline" onClick={addCondition}>
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </div>
+                <div className="flex items-end gap-2">
+                  <Button type="button" variant="outline" onClick={addCondition} className="flex-1">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Adicionar
+                  </Button>
                 </div>
               </div>
               {formData.conditions.length > 0 && (
                 <div className="space-y-2 mt-2">
                   {formData.conditions.map((cond, idx) => (
-                    <div key={idx} className="flex items-start gap-2 p-2 bg-gray-50 rounded-lg">
-                      <div className="flex-1">
-                        <p className="text-sm">{getCondText(cond)}</p>
-                        {getCondDueDate(cond) && (
-                          <p className="text-xs text-amber-600 mt-0.5">📅 Prazo: {format(parseISO(getCondDueDate(cond)), 'dd/MM/yyyy')}</p>
-                        )}
-                      </div>
-                      <button type="button" onClick={() => removeCondition(idx)} className="text-red-500 hover:text-red-700 mt-0.5">
+                    <div key={idx} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                      <p className="text-sm flex-1">{getCondText(cond)}</p>
+                      <button type="button" onClick={() => removeCondition(idx)} className="text-red-500 hover:text-red-700 flex-shrink-0">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>

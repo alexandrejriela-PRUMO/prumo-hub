@@ -37,30 +37,11 @@ Deno.serve(async (req) => {
     let pendingInvites = [];
     if (!type || type === 'users') {
       const teamMembers = await base44.asServiceRole.entities.TeamMember.list('-invited_at', 500);
-      console.log('[adminGetUsers] Total TeamMembers fetched:', teamMembers.length);
       
-      // Log dos status encontrados (para debug)
-      const statuses = new Set(teamMembers.map(tm => tm.status).filter(Boolean));
-      console.log('[adminGetUsers] Found statuses:', Array.from(statuses));
-      
-      // Filtra por status 'Pendente' ou 'pending' (case-insensitive)
+      // Filtra por status 'Pendente' (case-sensitive)
       const pendingTeamMembers = teamMembers.filter(tm => 
-        tm.status && (tm.status === 'Pendente' || tm.status.toLowerCase() === 'pendente')
+        tm.status === 'Pendente'
       );
-      console.log('[adminGetUsers] Pending TeamMembers (case-sensitive):', pendingTeamMembers.length);
-      
-      // Se não encontrou, tenta sem case-sensitivity e busca por qualquer coisa com "pend"
-      if (pendingTeamMembers.length === 0) {
-        const alternativePending = teamMembers.filter(tm => 
-          !tm.status || tm.status.toLowerCase().includes('pend')
-        );
-        console.log('[adminGetUsers] Alternative pending matches:', alternativePending.length);
-        if (alternativePending.length > 0) {
-          pendingTeamMembers.push(...alternativePending);
-        }
-      }
-      
-      console.log('[adminGetUsers] Final pending TeamMembers:', pendingTeamMembers.length);
       
       pendingInvites = pendingTeamMembers
         .map(tm => {
@@ -137,6 +118,10 @@ Deno.serve(async (req) => {
     const existingEmails = new Set(enrichedUsers.map(u => u.email.toLowerCase()));
     const uniquePendingInvites = pendingInvites.filter(p => !existingEmails.has(p.email.toLowerCase()));
     
+    console.log('[adminGetUsers] Existing emails:', Array.from(existingEmails).slice(0, 5));
+    console.log('[adminGetUsers] Pending invites before dedup:', pendingInvites.map(p => p.email));
+    console.log('[adminGetUsers] Pending invites after dedup:', uniquePendingInvites.map(p => p.email));
+    
     const finalUsers = !type || type === 'users' ? [...enrichedUsers, ...uniquePendingInvites] : enrichedUsers;
 
     return Response.json({ 
@@ -145,7 +130,8 @@ Deno.serve(async (req) => {
         total_users: enrichedUsers.length,
         pending_invites_found: pendingInvites.length,
         pending_invites_after_dedup: uniquePendingInvites.length,
-        pending_invite_emails: uniquePendingInvites.map(p => p.email)
+        pending_invite_emails: uniquePendingInvites.map(p => p.email),
+        existing_emails_sample: Array.from(existingEmails).slice(0, 5)
       }
     });
 

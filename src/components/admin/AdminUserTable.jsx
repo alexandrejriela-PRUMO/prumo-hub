@@ -137,18 +137,13 @@ export default function AdminUserTable({ onEdit }) {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      {!isPending && (
-                        <button
-                          onClick={() => onEdit(u)}
-                          className="flex items-center gap-1 text-xs text-emerald-700 hover:text-emerald-900 font-medium"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                          Editar
-                        </button>
-                      )}
-                      {isPending && (
-                        <span className="text-xs text-gray-400">Aguardando aceite</span>
-                      )}
+                      <button
+                        onClick={() => onEdit(u)}
+                        className="flex items-center gap-1 text-xs text-emerald-700 hover:text-emerald-900 font-medium"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        Editar
+                      </button>
                     </td>
                   </tr>
                 );

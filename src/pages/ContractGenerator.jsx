@@ -206,7 +206,7 @@ export default function ContractGenerator() {
         </div>
 
         {step === 'form' && (
-          <ContractForm user={user} templates={templates} onSubmit={handleFormSubmit} />
+          <ContractForm user={user} templates={templates} onSubmit={handleFormSubmit} onFormChange={() => setIsDirty(true)} />
         )}
 
         {step === 'editor' && contractData && (

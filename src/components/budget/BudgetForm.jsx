@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Trash2, Search } from 'lucide-react';
 
-export default function BudgetForm({ onSubmit, initialData = null, user = null }) {
+export default function BudgetForm({ onSubmit, initialData = null, user = null, onFormChange = () => {} }) {
   const [clientSearch, setClientSearch] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -113,14 +113,15 @@ export default function BudgetForm({ onSubmit, initialData = null, user = null }
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
-                  className="pl-9"
-                  placeholder="Buscar cliente cadastrado..."
-                  value={clientSearch || formData.client_name}
-                  onChange={(e) => {
-                    setClientSearch(e.target.value);
-                    setFormData(prev => ({ ...prev, client_name: e.target.value }));
-                    setShowSuggestions(true);
-                  }}
+                   className="pl-9"
+                   placeholder="Buscar cliente cadastrado..."
+                   value={clientSearch || formData.client_name}
+                   onChange={(e) => {
+                     onFormChange();
+                     setClientSearch(e.target.value);
+                     setFormData(prev => ({ ...prev, client_name: e.target.value }));
+                     setShowSuggestions(true);
+                   }}
                   onFocus={() => setShowSuggestions(true)}
                   onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                   required
@@ -145,9 +146,12 @@ export default function BudgetForm({ onSubmit, initialData = null, user = null }
             <div>
               <label className="block text-sm font-medium mb-1">Email do Cliente *</label>
               <Input
-                type="email"
-                value={formData.client_email}
-                onChange={(e) => setFormData({...formData, client_email: e.target.value})}
+                 type="email"
+                 value={formData.client_email}
+                 onChange={(e) => {
+                   onFormChange();
+                   setFormData({...formData, client_email: e.target.value});
+                 }}
                 placeholder="email@cliente.com"
                 required
               />
@@ -156,7 +160,10 @@ export default function BudgetForm({ onSubmit, initialData = null, user = null }
               <label className="block text-sm font-medium mb-1">Título do Orçamento *</label>
               <Input
                 value={formData.title}
-                onChange={(e) => setFormData({...formData, title: e.target.value})}
+                onChange={(e) => {
+                  onFormChange();
+                  setFormData({...formData, title: e.target.value});
+                }}
                 placeholder="Ex: Consultoria Ambiental - Propriedade XYZ"
                 required
               />
@@ -178,7 +185,10 @@ export default function BudgetForm({ onSubmit, initialData = null, user = null }
                 <Input
                   placeholder="Ex: CAR, Consultoria, Georreferenciamento"
                   value={currentService.name}
-                  onChange={(e) => setCurrentService({...currentService, name: e.target.value})}
+                  onChange={(e) => {
+                    onFormChange();
+                    setCurrentService({...currentService, name: e.target.value});
+                  }}
                 />
               </div>
               <div>
@@ -186,7 +196,10 @@ export default function BudgetForm({ onSubmit, initialData = null, user = null }
                 <Input
                   placeholder="Detalhes adicionais do serviço"
                   value={currentService.description}
-                  onChange={(e) => setCurrentService({...currentService, description: e.target.value})}
+                  onChange={(e) => {
+                    onFormChange();
+                    setCurrentService({...currentService, description: e.target.value});
+                  }}
                 />
               </div>
               <div>
@@ -196,7 +209,10 @@ export default function BudgetForm({ onSubmit, initialData = null, user = null }
                   placeholder="10 ou 20.5"
                   step="any"
                   value={currentService.hours || ''}
-                  onChange={(e) => setCurrentService({...currentService, hours: e.target.value === '' ? 0 : parseFloat(e.target.value)})}
+                  onChange={(e) => {
+                    onFormChange();
+                    setCurrentService({...currentService, hours: e.target.value === '' ? 0 : parseFloat(e.target.value)});
+                  }}
                 />
               </div>
               <div>
@@ -206,7 +222,10 @@ export default function BudgetForm({ onSubmit, initialData = null, user = null }
                   placeholder="150 ou 150.50"
                   step="any"
                   value={currentService.hourly_rate || ''}
-                  onChange={(e) => setCurrentService({...currentService, hourly_rate: e.target.value === '' ? 0 : parseFloat(e.target.value)})}
+                  onChange={(e) => {
+                    onFormChange();
+                    setCurrentService({...currentService, hourly_rate: e.target.value === '' ? 0 : parseFloat(e.target.value)});
+                  }}
                 />
               </div>
             </div>
@@ -253,7 +272,10 @@ export default function BudgetForm({ onSubmit, initialData = null, user = null }
                 placeholder="100 ou 150.50"
                 step="any"
                 value={formData.travel_cost || ''}
-                onChange={(e) => setFormData({...formData, travel_cost: e.target.value === '' ? 0 : parseFloat(e.target.value)})}
+                onChange={(e) => {
+                  onFormChange();
+                  setFormData({...formData, travel_cost: e.target.value === '' ? 0 : parseFloat(e.target.value)});
+                }}
               />
               <p className="text-xs text-gray-500 mt-1">Custos de transporte e locomoção</p>
             </div>
@@ -264,7 +286,10 @@ export default function BudgetForm({ onSubmit, initialData = null, user = null }
                 placeholder="50 ou 75.30"
                 step="any"
                 value={formData.fuel_cost || ''}
-                onChange={(e) => setFormData({...formData, fuel_cost: e.target.value === '' ? 0 : parseFloat(e.target.value)})}
+                onChange={(e) => {
+                  onFormChange();
+                  setFormData({...formData, fuel_cost: e.target.value === '' ? 0 : parseFloat(e.target.value)});
+                }}
               />
               <p className="text-xs text-gray-500 mt-1">Gasolina, diesel ou outros combustíveis</p>
             </div>
@@ -279,7 +304,10 @@ export default function BudgetForm({ onSubmit, initialData = null, user = null }
                 <Input
                   placeholder="Ex: Taxa administrativa, Pesquisa documental, Análise técnica"
                   value={currentFee.name}
-                  onChange={(e) => setCurrentFee({...currentFee, name: e.target.value})}
+                  onChange={(e) => {
+                    onFormChange();
+                    setCurrentFee({...currentFee, name: e.target.value});
+                  }}
                 />
               </div>
               <div className="flex gap-3">
@@ -290,7 +318,10 @@ export default function BudgetForm({ onSubmit, initialData = null, user = null }
                     placeholder="200 ou 200.50"
                     step="any"
                     value={currentFee.amount || ''}
-                    onChange={(e) => setCurrentFee({...currentFee, amount: e.target.value === '' ? 0 : parseFloat(e.target.value)})}
+                    onChange={(e) => {
+                      onFormChange();
+                      setCurrentFee({...currentFee, amount: e.target.value === '' ? 0 : parseFloat(e.target.value)});
+                    }}
                   />
                 </div>
                 <Button type="button" onClick={addFee} variant="outline">
@@ -334,7 +365,10 @@ export default function BudgetForm({ onSubmit, initialData = null, user = null }
               placeholder="10 ou 15.5"
               step="any"
               value={formData.discount_percentage || ''}
-              onChange={(e) => setFormData({...formData, discount_percentage: e.target.value === '' ? 0 : parseFloat(e.target.value)})}
+              onChange={(e) => {
+                onFormChange();
+                setFormData({...formData, discount_percentage: e.target.value === '' ? 0 : parseFloat(e.target.value)});
+              }}
             />
             <p className="text-xs text-gray-500 mt-1">Percentual de desconto sobre o total</p>
           </div>
@@ -344,7 +378,10 @@ export default function BudgetForm({ onSubmit, initialData = null, user = null }
               type="number"
               placeholder="30"
               value={formData.validity_days || ''}
-              onChange={(e) => setFormData({...formData, validity_days: e.target.value === '' ? 30 : parseInt(e.target.value)})}
+              onChange={(e) => {
+                onFormChange();
+                setFormData({...formData, validity_days: e.target.value === '' ? 30 : parseInt(e.target.value)});
+              }}
             />
             <p className="text-xs text-gray-500 mt-1">Quantos dias o orçamento é válido</p>
           </div>
@@ -366,7 +403,10 @@ export default function BudgetForm({ onSubmit, initialData = null, user = null }
         <label className="block text-sm font-medium mb-1">Observações</label>
         <textarea
           value={formData.notes}
-          onChange={(e) => setFormData({...formData, notes: e.target.value})}
+          onChange={(e) => {
+            onFormChange();
+            setFormData({...formData, notes: e.target.value});
+          }}
           placeholder="Observações adicionais..."
           className="w-full border rounded-lg p-3 text-sm"
           rows="4"

@@ -32,7 +32,7 @@ const CONTRACT_TYPES = [
   'Contrato de Armazenagem de Grãos','Contrato de Rastreabilidade / Certificação','Outro'
 ];
 
-export default function ContractForm({ user, templates = [], onSubmit }) {
+export default function ContractForm({ user, templates = [], onSubmit, onFormChange = () => {} }) {
   const savedContratado = (() => {
     try { return JSON.parse(localStorage.getItem('prumo_contratado_data')) || null; } catch { return null; }
   })();
@@ -241,12 +241,18 @@ export default function ContractForm({ user, templates = [], onSubmit }) {
               <div>
                 <Label className="text-xs">Nome do Cliente *</Label>
                 <Input className="mt-1" value={formData.client_name}
-                  onChange={e => setFormData(p => ({ ...p, client_name: e.target.value }))} required />
+                  onChange={e => {
+                    onFormChange();
+                    setFormData(p => ({ ...p, client_name: e.target.value }));
+                  }} required />
               </div>
               <div>
                 <Label className="text-xs">Email do Cliente</Label>
                 <Input type="email" className="mt-1" value={formData.client_email}
-                  onChange={e => setFormData(p => ({ ...p, client_email: e.target.value }))} />
+                  onChange={e => {
+                    onFormChange();
+                    setFormData(p => ({ ...p, client_email: e.target.value }));
+                  }} />
               </div>
             </div>
           )}
@@ -264,30 +270,45 @@ export default function ContractForm({ user, templates = [], onSubmit }) {
             <div>
               <Label className="text-xs">Nº do Contrato</Label>
               <Input className="mt-1 h-9" value={formData.contract_number}
-                onChange={e => setFormData(p => ({ ...p, contract_number: e.target.value }))}
+                onChange={e => {
+                  onFormChange();
+                  setFormData(p => ({ ...p, contract_number: e.target.value }));
+                }}
                 placeholder="Ex: 001/2025" />
             </div>
             <div className="col-span-1 sm:col-span-2">
               <Label className="text-xs">Objeto do Contrato *</Label>
               <Textarea className="mt-1 text-sm" value={formData.object}
-                onChange={e => setFormData(p => ({ ...p, object: e.target.value }))}
+                onChange={e => {
+                  onFormChange();
+                  setFormData(p => ({ ...p, object: e.target.value }));
+                }}
                 placeholder="Descreva o objeto e finalidade do contrato..."
                 rows={3} required />
             </div>
             <div>
               <Label className="text-xs">Data de Início *</Label>
               <Input type="date" className="mt-1 h-9" value={formData.start_date}
-                onChange={e => setFormData(p => ({ ...p, start_date: e.target.value }))} required />
+                onChange={e => {
+                  onFormChange();
+                  setFormData(p => ({ ...p, start_date: e.target.value }));
+                }} required />
             </div>
             <div>
               <Label className="text-xs">Data de Término</Label>
               <Input type="date" className="mt-1 h-9" value={formData.end_date}
-                onChange={e => setFormData(p => ({ ...p, end_date: e.target.value }))} />
+                onChange={e => {
+                  onFormChange();
+                  setFormData(p => ({ ...p, end_date: e.target.value }));
+                }} />
             </div>
             <div>
               <Label className="text-xs">Valor Total (R$)</Label>
               <Input type="number" step="0.01" className="mt-1 h-9" value={formData.total_value}
-                onChange={e => setFormData(p => ({ ...p, total_value: e.target.value }))}
+                onChange={e => {
+                  onFormChange();
+                  setFormData(p => ({ ...p, total_value: e.target.value }));
+                }}
                 placeholder="0,00" />
             </div>
             <div>
@@ -304,18 +325,27 @@ export default function ContractForm({ user, templates = [], onSubmit }) {
             <div>
               <Label className="text-xs">Alertar X dias antes do vencimento</Label>
               <Input type="number" min="1" className="mt-1 h-9" value={formData.alert_days_before_expiry}
-                onChange={e => setFormData(p => ({ ...p, alert_days_before_expiry: parseInt(e.target.value) || 30 }))} />
+                onChange={e => {
+                  onFormChange();
+                  setFormData(p => ({ ...p, alert_days_before_expiry: parseInt(e.target.value) || 30 }));
+                }} />
             </div>
             <div className="col-span-1 sm:col-span-2">
               <Label className="text-xs">Condições de Pagamento</Label>
               <Input className="mt-1 h-9" value={formData.payment_terms}
-                onChange={e => setFormData(p => ({ ...p, payment_terms: e.target.value }))}
+                onChange={e => {
+                  onFormChange();
+                  setFormData(p => ({ ...p, payment_terms: e.target.value }));
+                }}
                 placeholder="Ex: 50% na assinatura, 50% na entrega" />
             </div>
             <div className="col-span-1 sm:col-span-2">
               <Label className="text-xs">Observações / Cláusulas Adicionais</Label>
               <Textarea className="mt-1 text-sm" value={formData.notes}
-                onChange={e => setFormData(p => ({ ...p, notes: e.target.value }))} rows={3}
+                onChange={e => {
+                  onFormChange();
+                  setFormData(p => ({ ...p, notes: e.target.value }));
+                }} rows={3}
                 placeholder="Termos, condições e cláusulas adicionais..." />
             </div>
           </div>
@@ -358,6 +388,7 @@ export default function ContractForm({ user, templates = [], onSubmit }) {
               <div className="relative">
                 <Input className="h-8 text-sm" placeholder="Nome completo *" value={partySearch}
                   onChange={e => {
+                    onFormChange();
                     setPartySearch(e.target.value);
                     setNewParty(p => ({ ...p, name: e.target.value }));
                     setShowPartySuggestions(true);
@@ -387,9 +418,15 @@ export default function ContractForm({ user, templates = [], onSubmit }) {
                 </SelectContent>
               </Select>
               <Input className="h-8 text-sm" placeholder="CPF/CNPJ" value={newParty.document}
-                onChange={e => setNewParty(p => ({ ...p, document: e.target.value }))} />
+                onChange={e => {
+                  onFormChange();
+                  setNewParty(p => ({ ...p, document: e.target.value }));
+                }} />
               <Input className="h-8 text-sm" placeholder="Endereço" value={newParty.address}
-                onChange={e => setNewParty(p => ({ ...p, address: e.target.value }))} />
+                onChange={e => {
+                  onFormChange();
+                  setNewParty(p => ({ ...p, address: e.target.value }));
+                }} />
             </div>
             <Button type="button" size="sm" variant="outline" onClick={addParty}
               className="border-emerald-500 text-emerald-700 hover:bg-emerald-50">
@@ -423,9 +460,15 @@ export default function ContractForm({ user, templates = [], onSubmit }) {
             <p className="text-xs font-medium text-emerald-700">Adicionar serviço</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <Input className="h-8 text-sm sm:col-span-2" placeholder="Nome do serviço *" value={newService.name}
-                onChange={e => setNewService(p => ({ ...p, name: e.target.value }))} />
+                onChange={e => {
+                  onFormChange();
+                  setNewService(p => ({ ...p, name: e.target.value }));
+                }} />
               <Input type="number" className="h-8 text-sm" placeholder="Valor R$" value={newService.value}
-                onChange={e => setNewService(p => ({ ...p, value: e.target.value }))} />
+                onChange={e => {
+                  onFormChange();
+                  setNewService(p => ({ ...p, value: e.target.value }));
+                }} />
             </div>
             <Button type="button" size="sm" variant="outline" onClick={addService}
               className="border-emerald-500 text-emerald-700 hover:bg-emerald-50">

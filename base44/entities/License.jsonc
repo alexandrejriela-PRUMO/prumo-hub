@@ -1,0 +1,223 @@
+{
+  "name": "License",
+  "type": "object",
+  "properties": {
+    "owner_email": {
+      "type": "string",
+      "description": "Email do propriet\u00e1rio"
+    },
+    "property_id": {
+      "type": "string",
+      "description": "ID da propriedade"
+    },
+    "elaboration_stage": {
+      "type": "string",
+      "enum": [
+        "Em Elabora\u00e7\u00e3o",
+        "Emitida"
+      ],
+      "default": "Em Elabora\u00e7\u00e3o",
+      "description": "Fase da licen\u00e7a: em elabora\u00e7\u00e3o ou j\u00e1 emitida"
+    },
+    "license_type": {
+      "type": "string",
+      "enum": [
+        "LP - Licen\u00e7a Pr\u00e9via",
+        "LI - Licen\u00e7a de Instala\u00e7\u00e3o",
+        "LO - Licen\u00e7a de Opera\u00e7\u00e3o",
+        "LAU - Licen\u00e7a de Autoriza\u00e7\u00e3o de Uso",
+        "LAS - Licen\u00e7a Ambiental Simplificada",
+        "LAC - Licen\u00e7a Ambiental Corretiva",
+        "Dispensa de Licenciamento",
+        "Outorga de Uso de Recursos H\u00eddricos",
+        "Autoriza\u00e7\u00e3o de Supress\u00e3o Vegetal (ASV)",
+        "Autoriza\u00e7\u00e3o de Interven\u00e7\u00e3o em APP",
+        "Autoriza\u00e7\u00e3o de Uso do Solo",
+        "Licen\u00e7a de Pesca / Aquicultura",
+        "Licen\u00e7a Sanit\u00e1ria",
+        "Licen\u00e7a de Funcionamento",
+        "ART - Anota\u00e7\u00e3o de Responsabilidade T\u00e9cnica",
+        "TRT - Termo de Responsabilidade T\u00e9cnica",
+        "RRT - Registro de Responsabilidade T\u00e9cnica",
+        "Laudo T\u00e9cnico Ambiental",
+        "Laudo de Vistoria",
+        "Laudo de Avalia\u00e7\u00e3o de Im\u00f3vel Rural",
+        "Laudo Agron\u00f4mico",
+        "Laudo Fitossanit\u00e1rio",
+        "Laudo de Conformidade de Estrutura",
+        "Parecer T\u00e9cnico",
+        "Relat\u00f3rio de Conformidade Ambiental",
+        "Relat\u00f3rio de Monitoramento",
+        "Certificado de Conformidade",
+        "Certificado Fitossanit\u00e1rio",
+        "Projeto T\u00e9cnico de Engenharia",
+        "Projeto de Drenagem",
+        "Projeto de Irriga\u00e7\u00e3o",
+        "Projeto de Saneamento",
+        "Outro"
+      ],
+      "description": "Tipo de licen\u00e7a ou documento t\u00e9cnico"
+    },
+    "other_license_description": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o quando tipo for Outro"
+    },
+    "license_number": {
+      "type": "string",
+      "description": "N\u00famero da licen\u00e7a / documento"
+    },
+    "issue_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de emiss\u00e3o"
+    },
+    "expiry_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de validade"
+    },
+    "environmental_agency": {
+      "type": "string",
+      "enum": [
+        "Municipal",
+        "Estadual",
+        "Federal",
+        "CREA",
+        "CAU",
+        "CRBio",
+        "CFMV",
+        "Outro \u00d3rg\u00e3o"
+      ],
+      "description": "\u00d3rg\u00e3o respons\u00e1vel"
+    },
+    "activity_description": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o da atividade ou empreendimento licenciado"
+    },
+    "conditions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Descri\u00e7\u00e3o da condicionante"
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date",
+            "description": "Data de cumprimento da condicionante"
+          }
+        },
+        "required": [
+          "text"
+        ]
+      },
+      "description": "Condicionantes a serem respeitadas com datas de cumprimento"
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "Documento Principal",
+              "Documento Complementar",
+              "Comprovante",
+              "Anexo T\u00e9cnico",
+              "Outro"
+            ]
+          },
+          "uploaded_by": {
+            "type": "string"
+          },
+          "uploaded_date": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "description": "Documentos do registro",
+      "default": []
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Vigente",
+        "Vencida",
+        "A Vencer",
+        "Em An\u00e1lise",
+        "Renova\u00e7\u00e3o"
+      ],
+      "description": "Status"
+    },
+    "updates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "description": {
+            "type": "string"
+          },
+          "responsible": {
+            "type": "string"
+          },
+          "file_url": {
+            "type": "string"
+          },
+          "file_name": {
+            "type": "string"
+          },
+          "audit_trail": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "created",
+                    "edited",
+                    "deleted"
+                  ]
+                },
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "user_email": {
+                  "type": "string"
+                },
+                "user_role": {
+                  "type": "string"
+                },
+                "previous_data": {
+                  "type": "object"
+                }
+              }
+            },
+            "default": []
+          }
+        }
+      },
+      "description": "Andamentos administrativos",
+      "default": []
+    }
+  },
+  "required": [
+    "owner_email",
+    "license_type"
+  ]
+}

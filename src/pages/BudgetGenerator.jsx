@@ -41,9 +41,10 @@ export default function BudgetGenerator() {
 
   const saveBudgetMutation = useMutation({
     mutationFn: (data) => base44.entities.Budget.create(data),
-    onSuccess: (result) => {
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
       toast.success('Orçamento salvo com sucesso!');
-      setBudgetData(result);
+      setTimeout(() => setStep('history'), 1500);
     },
     onError: (error) => {
       toast.error('Erro ao salvar orçamento: ' + error.message);
@@ -106,9 +107,22 @@ export default function BudgetGenerator() {
   };
 
   const handleSaveDocument = async (editorData) => {
+    // Garantir que IDs dos serviços sejam strings (validação da API)
+    const services = (budgetData.services || []).map(s => ({
+      ...s,
+      id: String(s.id),
+    }));
+    const additional_fees = (budgetData.additional_fees || []).map(f => ({
+      ...f,
+      id: String(f.id),
+    }));
+
     const fullData = {
       ...budgetData,
-      ...editorData
+      services,
+      additional_fees,
+      document_html: editorData.documentHtml,
+      logo_url: editorData.logoBase64 || budgetData.logo_url,
     };
     saveBudgetMutation.mutate(fullData);
   };

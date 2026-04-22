@@ -148,6 +148,13 @@ export default function Licenses() {
     loadUser();
   }, []);
 
+  // Garante que property_id seja preenchido quando properties são carregadas
+  useEffect(() => {
+    if (allProperties.length > 0 && !formData.property_id) {
+      setFormData(prev => ({ ...prev, property_id: allProperties[0].id }));
+    }
+  }, [allProperties]);
+
   const isConsultor = user?.user_type === 'consultor' || isEquipe;
   const isClientConsultor = user?.user_type === 'client_consultor';
   const canEdit = !isClientConsultor && canCreate;
@@ -230,11 +237,13 @@ export default function Licenses() {
   });
 
   const resetForm = () => {
+    const defaultPropertyId = allProperties.length > 0 ? allProperties[0].id : '';
     setFormData({
-      property_id: allProperties.length > 0 ? allProperties[0].id : '',
+      property_id: defaultPropertyId,
       license_type: '',
       other_license_description: '',
       license_number: '',
+      elaboration_stage: 'Em Elaboração',
       issue_date: '',
       expiry_date: '',
       conditions: [],
@@ -330,10 +339,13 @@ export default function Licenses() {
       return;
     }
     
-    createMutation.mutate({
+    const submitData = {
       ...formData,
       owner_email: effectiveEmail || user?.email,
-    });
+    };
+    
+    console.log('Enviando licença:', submitData);
+    createMutation.mutate(submitData);
   };
 
   const handleUpdate = (e) => {

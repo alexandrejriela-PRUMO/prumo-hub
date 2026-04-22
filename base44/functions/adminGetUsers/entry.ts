@@ -71,6 +71,13 @@ Deno.serve(async (req) => {
       console.log('[adminGetUsers] Pending invites mapped:', pendingInvites.length);
     }
 
+    // Busca metadados dos usuários (plano, tipo, etc)
+    const userMetadataList = await base44.asServiceRole.entities.UserMetadata.list('-updated_date', 500);
+    const metadataMap = {};
+    for (const meta of userMetadataList) {
+     metadataMap[meta.user_email?.toLowerCase()] = meta;
+    }
+
     // Busca membros de equipe para identificar o consultor principal
     const teamMembers = await base44.asServiceRole.entities.TeamMember.list('-created_date', 500);
 
@@ -78,9 +85,9 @@ Deno.serve(async (req) => {
     // Primeiro indexamos consultores por email para pegar o plano deles
     const consultorMap = {};
     for (const u of users) {
-      if (u.user_type === 'consultor' || u.user_type === 'produtor') {
-        consultorMap[u.email] = u;
-      }
+     if (u.user_type === 'consultor' || u.user_type === 'produtor') {
+       consultorMap[u.email] = u;
+     }
     }
 
     // Mapa de email do membro → dados do consultor principal
@@ -98,19 +105,32 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Enriquece usuários equipe/client_consultor com dados do consultor principal
+    // Enriquece usuários com metadados salvos (plano, tipo, limits, etc)
     const enrichedUsers = users.map(u => {
-      if ((u.user_type === 'equipe' || u.user_type === 'client_consultor') && memberToConsultor[u.email]) {
-        const consultorData = memberToConsultor[u.email];
+      const metadata = metadataMap[u.email?.toLowerCase()];
+      const baseUser = { ...u };
+      
+      // Se tem metadata, sobrescreve com os dados salvos
+      if (metadata) {
+        baseUser.plano = metadata.plano;
+        baseUser.user_type = metadata.user_type;
+        baseUser.max_properties = metadata.max_properties;
+        baseUser.max_users = metadata.max_users;
+        baseUser.subscription_status = metadata.subscription_status;
+      }
+      
+      // Adiciona dados do consultor principal para equipe/client
+      if ((baseUser.user_type === 'equipe' || baseUser.user_type === 'client_consultor') && memberToConsultor[baseUser.email]) {
+        const consultorData = memberToConsultor[baseUser.email];
         return {
-          ...u,
+          ...baseUser,
           primary_consultor_email: consultorData.primary_email,
           primary_consultor_name: consultorData.primary_name,
-          // Plano herdado do consultor principal
-          plano_display: consultorData.primary_plano,
+          // Plano herdado do consultor principal (se não tem metadata próprio)
+          plano_display: baseUser.plano || consultorData.primary_plano,
         };
       }
-      return u;
+      return baseUser;
     });
 
     // Combine usuários criados + convites pendentes, removendo duplicatas

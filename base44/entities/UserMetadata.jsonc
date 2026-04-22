@@ -1,0 +1,62 @@
+{
+  "name": "UserMetadata",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email do usu\u00e1rio"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "ID do usu\u00e1rio no sistema Base44"
+    },
+    "plano": {
+      "type": "string",
+      "enum": [
+        "start",
+        "pro",
+        "enterprise",
+        "unico"
+      ],
+      "description": "Plano do usu\u00e1rio"
+    },
+    "user_type": {
+      "type": "string",
+      "enum": [
+        "consultor",
+        "produtor",
+        "equipe",
+        "client_consultor"
+      ],
+      "description": "Tipo de usu\u00e1rio"
+    },
+    "max_properties": {
+      "type": "integer",
+      "default": 1,
+      "description": "M\u00e1ximo de propriedades permitidas"
+    },
+    "max_users": {
+      "type": "integer",
+      "default": 1,
+      "description": "M\u00e1ximo de usu\u00e1rios de equipe permitidos"
+    },
+    "subscription_status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "trial",
+        "inactive",
+        "pending_invite"
+      ],
+      "default": "active",
+      "description": "Status da assinatura"
+    },
+    "primary_consultor_email": {
+      "type": "string",
+      "description": "Email do consultor principal (para equipe/client_consultor)"
+    }
+  },
+  "required": [
+    "user_email"
+  ]
+}

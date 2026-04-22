@@ -1,10 +1,6 @@
-import { useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 
 export function useNavigationGuard(isDirty) {
-  const location = useLocation();
-  const lastLocationRef = useRef(location);
-
   // Proteger contra cliques em elementos de navegação
   useEffect(() => {
     const handleClick = (e) => {
@@ -30,29 +26,28 @@ export function useNavigationGuard(isDirty) {
     };
   }, [isDirty]);
 
-  // Proteger contra navegação programática via React Router
+  // Proteger contra navegação via botão voltar ou popstate
   useEffect(() => {
-    if (!isDirty) {
-      lastLocationRef.current = location;
-      return;
-    }
+    const handlePopstate = (e) => {
+      if (!isDirty) return;
 
-    const currentPath = location.pathname;
-    const lastPath = lastLocationRef.current?.pathname;
-
-    if (currentPath !== lastPath) {
       const confirmLeave = window.confirm(
         'Você possui alterações não salvas. Deseja realmente sair?'
       );
 
       if (!confirmLeave) {
-        // Retorna para a rota anterior
-        window.history.back();
-      } else {
-        lastLocationRef.current = location;
+        e.preventDefault();
+        // Push o estado novamente para manter na mesma página
+        window.history.pushState(null, null, window.location.href);
       }
-    }
-  }, [location, isDirty]);
+    };
+
+    window.addEventListener('popstate', handlePopstate);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopstate);
+    };
+  }, [isDirty]);
 
   // Proteger contra fechamento da aba ou refresh
   useEffect(() => {

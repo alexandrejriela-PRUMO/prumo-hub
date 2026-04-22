@@ -3,8 +3,8 @@ import { useEffect } from 'react';
 export function useNavigationGuard(isDirty) {
   useEffect(() => {
     const handleClick = (e) => {
-      const link = e.target.closest('a');
-      if (!link) return;
+      const navElement = e.target.closest('a,button,[role="button"]');
+      if (!navElement) return;
 
       if (!isDirty) return;
 

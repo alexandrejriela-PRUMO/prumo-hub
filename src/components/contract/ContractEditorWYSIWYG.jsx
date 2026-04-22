@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import ReactQuill from 'react-quill';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,7 +7,8 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
-import 'react-quill/dist/quill.snow.css';
+
+const ReactQuill = lazy(() => import('react-quill'));
 
 const modules = {
   toolbar: [
@@ -112,6 +112,17 @@ export default function ContractEditorWYSIWYG({
   const [templateName, setTemplateName] = useState('');
   const [showTemplateForm, setShowTemplateForm] = useState(false);
   const [zoom, setZoom] = useState(100);
+
+  // Inject quill CSS dynamically to avoid duplicate React instance from direct CSS import
+  useEffect(() => {
+    if (!document.getElementById('quill-css-contract')) {
+      const link = document.createElement('link');
+      link.id = 'quill-css-contract';
+      link.rel = 'stylesheet';
+      link.href = 'https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css';
+      document.head.appendChild(link);
+    }
+  }, []);
 
   useEffect(() => {
     if (!documentHtml && selectedTemplate) {
@@ -290,13 +301,15 @@ export default function ContractEditorWYSIWYG({
           <CardTitle className="text-lg">Editor WYSIWYG</CardTitle>
         </CardHeader>
         <CardContent>
-          <ReactQuill
-            value={documentHtml}
-            onChange={setDocumentHtml}
-            modules={modules}
-            theme="snow"
-            style={{ height: '500px', marginBottom: '40px' }}
-          />
+          <Suspense fallback={<div className="h-[500px] flex items-center justify-center text-gray-400">Carregando editor...</div>}>
+            <ReactQuill
+              value={documentHtml}
+              onChange={setDocumentHtml}
+              modules={modules}
+              theme="snow"
+              style={{ height: '500px', marginBottom: '40px' }}
+            />
+          </Suspense>
         </CardContent>
       </Card>
 

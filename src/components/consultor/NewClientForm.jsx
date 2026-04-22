@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Building2, UserPlus, Users } from 'lucide-react';
 import { toast } from 'sonner';
+import { useDialogDirtyAlert } from '@/hooks/useFormDirtyAlert';
 
 const ESTADOS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 
@@ -23,6 +24,25 @@ export default function NewClientForm({ isOpen, onClose, consultorEmail, onSucce
   const [clientType, setClientType] = useState('pf');
   const [crmStatus, setCrmStatus] = useState(initialStatus || 'Prospect');
   const [clientData, setClientData] = useState(emptyClient);
+  const [initialData, setInitialData] = useState(null);
+
+  const isFormDirty = initialData && (
+    JSON.stringify(clientData) !== JSON.stringify(initialData.clientData) ||
+    clientType !== initialData.clientType ||
+    crmStatus !== initialData.crmStatus
+  );
+
+  const handleCloseWithAlert = useDialogDirtyAlert(
+    isFormDirty,
+    () => {
+      setClientType('pf');
+      setCrmStatus(initialStatus || 'Prospect');
+      setClientData(emptyClient);
+      setInitialData(null);
+      onClose();
+    },
+    'Você tem alterações não salvas. Deseja fechar sem salvar?'
+  );
 
   const createCRM = useMutation({
     mutationFn: (data) => base44.entities.ClientCRM.create(data),
@@ -40,6 +60,7 @@ export default function NewClientForm({ isOpen, onClose, consultorEmail, onSucce
     setClientType('pf');
     setCrmStatus(initialStatus || 'Prospect');
     setClientData(emptyClient);
+    setInitialData(null);
     onClose();
   };
 
@@ -72,8 +93,15 @@ export default function NewClientForm({ isOpen, onClose, consultorEmail, onSucce
   const set = (field, val) => setClientData(prev => ({ ...prev, [field]: val }));
   const isCliente = crmStatus === 'Ativo';
 
+  // Capture initial state when dialog opens
+  useEffect(() => {
+    if (isOpen && !initialData) {
+      setInitialData({ clientType, crmStatus, clientData });
+    }
+  }, [isOpen, initialData]);
+
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
+    <Dialog open={isOpen} onOpenChange={handleCloseWithAlert}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-emerald-800">
@@ -209,7 +237,7 @@ export default function NewClientForm({ isOpen, onClose, consultorEmail, onSucce
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="outline" onClick={handleClose}>Cancelar</Button>
+            <Button variant="outline" onClick={handleCloseWithAlert}>Cancelar</Button>
             <Button
               className={!isCliente ? 'bg-amber-500 hover:bg-amber-600' : 'bg-emerald-600 hover:bg-emerald-700'}
               onClick={handleSubmit}

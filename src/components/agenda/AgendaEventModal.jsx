@@ -10,6 +10,7 @@ import { base44 } from '@/api/base44Client';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { CalendarDays, User } from 'lucide-react';
+import { useDialogDirtyAlert } from '@/hooks/useFormDirtyAlert';
 
 const toDatetimeLocal = (date) => {
   if (!date) return '';
@@ -38,20 +39,33 @@ const defaultForm = (initialDate, user) => ({
 
 export default function AgendaEventModal({ event, initialDate, user, properties, teamMembers, onClose, onSaved }) {
   const [form, setForm] = useState(defaultForm(initialDate, user));
+  const [initialForm, setInitialForm] = useState(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (event) {
-      setForm({
+      const eventForm = {
         ...defaultForm(initialDate, user),
         ...event,
         start_datetime: toDatetimeLocal(event.start_datetime),
         end_datetime: toDatetimeLocal(event.end_datetime),
-      });
+      };
+      setForm(eventForm);
+      setInitialForm(eventForm);
     } else {
-      setForm(defaultForm(initialDate, user));
+      const freshForm = defaultForm(initialDate, user);
+      setForm(freshForm);
+      setInitialForm(freshForm);
     }
   }, [event, initialDate, user]);
+
+  const isFormDirty = initialForm && JSON.stringify(form) !== JSON.stringify(initialForm);
+  
+  const handleCloseWithAlert = useDialogDirtyAlert(
+    isFormDirty,
+    onClose,
+    'Você tem alterações não salvas. Deseja fechar sem salvar?'
+  );
 
   const set = (field, value) => setForm(f => ({ ...f, [field]: value }));
 
@@ -129,7 +143,7 @@ export default function AgendaEventModal({ event, initialDate, user, properties,
   });
 
   return (
-    <Dialog open onOpenChange={onClose}>
+    <Dialog open onOpenChange={handleCloseWithAlert}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -248,7 +262,7 @@ export default function AgendaEventModal({ event, initialDate, user, properties,
           <Button onClick={handleSave} disabled={loading} className="flex-1 bg-emerald-700 hover:bg-emerald-800">
             {loading ? 'Salvando...' : 'Salvar Evento'}
           </Button>
-          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button variant="outline" onClick={handleCloseWithAlert}>Cancelar</Button>
         </div>
       </DialogContent>
     </Dialog>

@@ -71,10 +71,18 @@ export default function AdminInviteUser() {
       
       await base44.asServiceRole.entities.TeamMember.create(teamMemberData);
 
-      // 2. Invite via base44 platform
+      // 2. Send custom email with correct invite URL
+      await base44.functions.invoke('sendCustomInviteEmail', {
+        email: form.email,
+        name: form.email.split('@')[0],
+        type: form.user_type,
+        plan: form.plano
+      });
+
+      // 3. Also create base44 user via platform (without relying on their email)
       await base44.users.inviteUser(form.email, form.role);
 
-      // 3. Wait a bit then update user metadata via admin function
+      // 4. Wait a bit then update user metadata via admin function
       setTimeout(async () => {
         try {
           const res = await base44.functions.invoke('adminGetUsers', { type: 'users' });

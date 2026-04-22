@@ -65,6 +65,17 @@ export default function Contracts() {
     try { return JSON.parse(localStorage.getItem('prumo_contratado_data')) || null; } catch { return null; }
   });
 
+  // Busca os dados do consultor do contrato SaaS assinado
+  const { data: saasContractLog } = useQuery({
+    queryKey: ['saas-contract-log', user?.email],
+    queryFn: async () => {
+      const logs = await base44.entities.TermsAcceptanceLog.filter({ user_email: user.email });
+      // Pega o log do contrato SaaS (versão >= 1001)
+      return logs.filter(l => l.terms_version >= 1001 && l.contractor_name).sort((a, b) => new Date(b.accepted_at) - new Date(a.accepted_at))[0] || null;
+    },
+    enabled: !!user?.email,
+  });
+
   const [newService, setNewService] = useState({ name: '', value: '', status: 'Em Andamento' });
   const [uploading, setUploading] = useState(false);
   const queryClient = useQueryClient();
@@ -88,6 +99,21 @@ export default function Contracts() {
     setNewParty(p => ({ ...p, name: client.client_name || '' }));
     setPartySearch(client.client_name || '');
     setShowPartySuggestions(false);
+  };
+
+  // Preenche automaticamente com dados do consultor quando "Contratado" é selecionado
+  const handlePartyRoleChange = (role) => {
+    if (role === 'Contratado') {
+      const consultorData = saasContractLog
+        ? { name: saasContractLog.contractor_name || '', document: saasContractLog.contractor_document || '', address: saasContractLog.contractor_address || '' }
+        : savedContratado;
+      if (consultorData) {
+        setNewParty(p => ({ ...p, role, name: consultorData.name, document: consultorData.document || '', address: consultorData.address || '' }));
+        setPartySearch(consultorData.name);
+        return;
+      }
+    }
+    setNewParty(p => ({ ...p, role }));
   };
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
@@ -579,18 +605,13 @@ export default function Contracts() {
                   </div>
                 )}
                 <div className="p-3 border border-dashed border-emerald-300 rounded-lg bg-emerald-50/30 space-y-2">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
                     <p className="text-xs font-medium text-emerald-700">Adicionar parte</p>
-                    {savedContratado && newParty.role === 'Contratado' && (
-                      <button type="button"
-                        onClick={() => {
-                          setNewParty(p => ({ ...p, name: savedContratado.name, document: savedContratado.document || '', address: savedContratado.address || '' }));
-                          setPartySearch(savedContratado.name);
-                        }}
-                        className="text-xs text-emerald-700 bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 rounded px-2 py-0.5 transition-colors"
-                      >
-                        ↩ Usar dados salvos: <span className="font-semibold">{savedContratado.name}</span>
-                      </button>
+                    {newParty.role === 'Contratado' && (saasContractLog || savedContratado) && (
+                      <div className="flex items-center gap-1.5 p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-700 w-full">
+                        <CheckCircle className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                        <span>Dados do contrato SaaS carregados automaticamente. Edite abaixo se necessário.</span>
+                      </div>
                     )}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -617,7 +638,7 @@ export default function Contracts() {
                         </div>
                       )}
                     </div>
-                    <Select value={newParty.role} onValueChange={v => setNewParty(p => ({ ...p, role: v }))}>
+                    <Select value={newParty.role} onValueChange={handlePartyRoleChange}>
                       <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {['Contratante','Contratado','Testemunha','Fiador','Interveniente'].map(r => (

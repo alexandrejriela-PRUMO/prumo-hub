@@ -63,8 +63,8 @@ export default function AdminPlanEditor({ user, onClose }) {
       return base44.functions.invoke('adminUpdateUser', { userId: user.id, data });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-all-users']);
-      queryClient.invalidateQueries(['admin-users-stats']);
+      queryClient.invalidateQueries({ queryKey: ['admin-all-users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-users-stats'] });
       toast.success('Usuário atualizado com sucesso!');
       onClose();
     },
@@ -74,8 +74,8 @@ export default function AdminPlanEditor({ user, onClose }) {
   const deleteMutation = useMutation({
     mutationFn: () => base44.functions.invoke('adminDeleteUser', { userId: user.id }),
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-all-users']);
-      queryClient.invalidateQueries(['admin-users-stats']);
+      queryClient.invalidateQueries({ queryKey: ['admin-all-users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-users-stats'] });
       toast.success('Usuário deletado com sucesso!');
       onClose();
     },

@@ -319,6 +319,17 @@ export default function Licenses() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Validação
+    if (!formData.property_id) {
+      toast.error('Selecione uma propriedade');
+      return;
+    }
+    if (!formData.license_type) {
+      toast.error('Selecione o tipo de licença');
+      return;
+    }
+    
     createMutation.mutate({
       ...formData,
       owner_email: effectiveEmail || user?.email,

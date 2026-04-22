@@ -47,29 +47,12 @@ export default function AdminInviteUser() {
       const now = new Date();
       const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days
       
-      const teamMemberData = {
-        primary_user_email: currentUser.email,
-        consultor_email: currentUser.email,
+      // Create TeamMember via backend function (service role needed)
+      await base44.functions.invoke('createTeamMemberInvite', {
         member_email: form.email,
         member_name: form.email.split('@')[0],
-        member_role: 'Consultor',
-        status: 'Pendente',
-        invite_token: inviteToken,
-        invited_at: now.toISOString(),
-        expires_at: expiresAt.toISOString(),
-        pending_user_type: form.user_type,
-        permissions: {
-          office: { view: true, edit: true },
-          property_center: { view: true, edit: true },
-          advanced_modules: { access: true },
-          reports: { view: true },
-          ai_chat: { access: true },
-          team_management: { manage: false },
-          financial: { view: true },
-        }
-      };
-      
-      await base44.asServiceRole.entities.TeamMember.create(teamMemberData);
+        user_type: form.user_type,
+      });
 
       // 2. Send custom email with correct invite URL
       await base44.functions.invoke('sendCustomInviteEmail', {

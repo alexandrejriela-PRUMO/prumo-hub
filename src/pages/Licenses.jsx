@@ -122,6 +122,7 @@ export default function Licenses() {
     license_type: '',
     other_license_description: '',
     license_number: '',
+    elaboration_stage: 'Em Elaboração',
     issue_date: '',
     expiry_date: '',
     conditions: [],

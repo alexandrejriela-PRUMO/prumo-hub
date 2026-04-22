@@ -189,7 +189,14 @@ export default function CRATransactionSection({ user }) {
       )}
 
       {/* Form Dialog */}
-      <Dialog open={showForm} onOpenChange={setShowForm}>
+      <Dialog open={showForm} onOpenChange={(open) => {
+        if (!open && (formData.buyer_email || formData.area_hectares || formData.cra_title_id)) {
+          const confirmed = window.confirm('Você tem alterações não salvas. Deseja fechar sem salvar?');
+          if (!confirmed) return;
+        }
+        setShowForm(open);
+        if (!open) setSelectedTitle(null);
+      }}>
         <DialogContent className="max-w-2xl sm:max-w-lg md:max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Registrar Nova Transação de CRA</DialogTitle>
@@ -312,6 +319,10 @@ export default function CRATransactionSection({ user }) {
               <Button
                 variant="outline"
                 onClick={() => {
+                  if (formData.buyer_email || formData.area_hectares || formData.cra_title_id) {
+                    const confirmed = window.confirm('Você tem alterações não salvas. Deseja fechar sem salvar?');
+                    if (!confirmed) return;
+                  }
                   setShowForm(false);
                   setSelectedTitle(null);
                 }}

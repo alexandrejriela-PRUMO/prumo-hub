@@ -235,6 +235,10 @@ export default function PSAContractsPage() {
           user={user}
           onSubmit={handleSubmit}
           onCancel={() => {
+            if (!editingContract) {
+              const confirmed = window.confirm('Você tem alterações não salvas. Deseja fechar sem salvar?');
+              if (!confirmed) return;
+            }
             setShowForm(false);
             setEditingContract(null);
           }}

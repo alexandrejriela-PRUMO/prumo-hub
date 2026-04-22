@@ -139,6 +139,10 @@ export default function RuralCreditPage() {
   };
 
   const closeForm = () => {
+    if (!editing && (form.instituicao || form.valor_contratado || form.data_vencimento)) {
+      const confirmed = window.confirm('Você tem alterações não salvas. Deseja fechar sem salvar?');
+      if (!confirmed) return;
+    }
     setShowForm(false);
     setEditing(null);
     setForm(INITIAL_FORM);

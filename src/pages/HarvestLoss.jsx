@@ -148,6 +148,10 @@ export default function HarvestLossPage() {
   };
 
   const closeForm = () => {
+    if (!editing && (form.cultura || form.data_evento)) {
+      const confirmed = window.confirm('Você tem alterações não salvas. Deseja fechar sem salvar?');
+      if (!confirmed) return;
+    }
     setShowForm(false);
     setEditing(null);
     setForm(INITIAL_FORM);

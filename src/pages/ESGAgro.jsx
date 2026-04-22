@@ -375,7 +375,10 @@ export default function ESGAgro() {
         <GreenLoanWizard
           user={user}
           properties={properties}
-          onClose={() => setShowLoanWizard(false)}
+          onClose={() => {
+            const confirmed = window.confirm('Você tem alterações não salvas. Deseja fechar sem salvar?');
+            if (confirmed) setShowLoanWizard(false);
+          }}
         />
       )}
 
@@ -383,7 +386,10 @@ export default function ESGAgro() {
         <TaxIncentiveWizard
           user={user}
           properties={properties}
-          onClose={() => setShowIncentiveWizard(false)}
+          onClose={() => {
+            const confirmed = window.confirm('Você tem alterações não salvas. Deseja fechar sem salvar?');
+            if (confirmed) setShowIncentiveWizard(false);
+          }}
         />
       )}
 

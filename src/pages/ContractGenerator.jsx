@@ -9,10 +9,11 @@ import ContractEditorWYSIWYG from '@/components/contract/ContractEditorWYSIWYG';
 import { ChevronLeft } from 'lucide-react';
 
 export default function ContractGenerator() {
-  const [step, setStep] = useState('form'); // form, editor, history
+  const [step, setStep] = useState('form');
   const [contractData, setContractData] = useState(null);
   const [user, setUser] = useState(null);
   const [selectedContract, setSelectedContract] = useState(null);
+  const [loadingUser, setLoadingUser] = useState(true);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -22,6 +23,8 @@ export default function ContractGenerator() {
         setUser(userData);
       } catch (e) {
         console.error('Erro ao carregar usuário');
+      } finally {
+        setLoadingUser(false);
       }
     };
     loadUser();
@@ -120,7 +123,7 @@ export default function ContractGenerator() {
     sendToSignMutation.mutate(editorData);
   };
 
-  if (!user) {
+  if (loadingUser) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>

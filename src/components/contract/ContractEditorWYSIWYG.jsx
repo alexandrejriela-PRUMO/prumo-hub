@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactQuill from 'react-quill';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Download, Save, Mail, Copy, ZoomIn, ZoomOut } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import 'react-quill/dist/quill.snow.css';
 
@@ -126,34 +127,33 @@ export default function ContractEditorWYSIWYG({
 
 
 
+  const buildPdfFromHtml = async (htmlContent) => {
+    const container = document.createElement('div');
+    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;padding:40px;background:#fff;font-family:Calibri,Arial,sans-serif;line-height:1.8;color:#333;';
+    container.innerHTML = htmlContent;
+    document.body.appendChild(container);
+    const canvas = await html2canvas(container, { scale: 2, backgroundColor: '#fff', useCORS: true });
+    document.body.removeChild(container);
+
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const imgWidth = 210;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
+    while (heightLeft >= 0) {
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= 297;
+      position -= 297;
+      if (heightLeft > 0) pdf.addPage();
+    }
+    return pdf;
+  };
+
   const exportPDF = async () => {
     try {
-      const element = document.getElementById('contract-preview');
-      const canvas = await html2canvas(element, { 
-        scale: 2, 
-        backgroundColor: '#fff',
-        useCORS: true
-      });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
-      
-      const imgWidth = 210;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-      
-      while (heightLeft >= 0) {
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= 297;
-        position -= 297;
-        if (heightLeft > 0) pdf.addPage();
-      }
-      
-      pdf.save(`contrato-${new Date().getTime()}.pdf`);
+      const pdf = await buildPdfFromHtml(documentHtml);
+      pdf.save(`contrato-${Date.now()}.pdf`);
       toast.success('PDF exportado com sucesso!');
     } catch (error) {
       toast.error('Erro ao exportar PDF');
@@ -328,7 +328,20 @@ export default function ContractEditorWYSIWYG({
           <Download className="w-4 h-4" /> Download PDF
         </Button>
         <Button
-          onClick={() => onSave({ documentHtml, selectedTemplate })}
+          onClick={async () => {
+            toast.info('Gerando PDF...');
+            let pdfUrl = null;
+            try {
+              const pdf = await buildPdfFromHtml(documentHtml);
+              const blob = pdf.output('blob');
+              const file = new File([blob], `contrato-${Date.now()}.pdf`, { type: 'application/pdf' });
+              const result = await base44.integrations.Core.UploadFile({ file });
+              pdfUrl = result.file_url;
+            } catch (e) {
+              console.error('Erro ao gerar PDF para upload:', e);
+            }
+            onSave({ documentHtml, selectedTemplate, pdfUrl });
+          }}
           variant="outline"
           className="gap-2"
         >

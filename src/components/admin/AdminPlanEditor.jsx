@@ -52,7 +52,16 @@ export default function AdminPlanEditor({ user, onClose }) {
   });
 
   const mutation = useMutation({
-    mutationFn: (data) => base44.functions.invoke('adminUpdateUser', { userId: user.id, data }),
+    mutationFn: (data) => {
+      // Se é convite pendente, atualiza TeamMember ao invés de User
+      if (user.is_pending_invite && user.invite_data?.team_member_id) {
+        return base44.functions.invoke('adminUpdateTeamMemberInvite', {
+          teamMemberId: user.invite_data.team_member_id,
+          data
+        });
+      }
+      return base44.functions.invoke('adminUpdateUser', { userId: user.id, data });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['admin-all-users']);
       queryClient.invalidateQueries(['admin-users-stats']);
@@ -211,13 +220,15 @@ export default function AdminPlanEditor({ user, onClose }) {
         )}
 
         <div className="flex gap-3 p-6 border-t border-gray-100 bg-gray-50">
-          <button
-            onClick={() => setDeleteConfirmOpen(true)}
-            className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm font-medium hover:bg-red-100 transition-colors"
-          >
-            <Trash2 className="w-4 h-4" />
-            Deletar
-          </button>
+          {!user.is_pending_invite && (
+            <button
+              onClick={() => setDeleteConfirmOpen(true)}
+              className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm font-medium hover:bg-red-100 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              Deletar
+            </button>
+          )}
           <button
             onClick={onClose}
             className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"

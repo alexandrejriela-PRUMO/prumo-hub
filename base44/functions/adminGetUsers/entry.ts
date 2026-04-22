@@ -132,15 +132,20 @@ Deno.serve(async (req) => {
       return u;
     });
 
-    // Combine usuários criados + convites pendentes
-    const finalUsers = !type || type === 'users' ? [...enrichedUsers, ...pendingInvites] : enrichedUsers;
+    // Combine usuários criados + convites pendentes, removendo duplicatas
+    // (se um user já existe em User, não incluir o convite pendente)
+    const existingEmails = new Set(enrichedUsers.map(u => u.email.toLowerCase()));
+    const uniquePendingInvites = pendingInvites.filter(p => !existingEmails.has(p.email.toLowerCase()));
+    
+    const finalUsers = !type || type === 'users' ? [...enrichedUsers, ...uniquePendingInvites] : enrichedUsers;
 
     return Response.json({ 
       users: finalUsers,
       _debug: {
         total_users: enrichedUsers.length,
         pending_invites_found: pendingInvites.length,
-        pending_invite_emails: pendingInvites.map(p => p.email)
+        pending_invites_after_dedup: uniquePendingInvites.length,
+        pending_invite_emails: uniquePendingInvites.map(p => p.email)
       }
     });
 

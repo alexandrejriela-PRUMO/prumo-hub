@@ -169,7 +169,7 @@ export default function BudgetGenerator() {
 
         {/* Conteúdo */}
         {step === 'form' && (
-          <BudgetForm onSubmit={handleFormSubmit} />
+          <BudgetForm onSubmit={handleFormSubmit} user={user} />
         )}
 
         {step === 'editor' && budgetData && (

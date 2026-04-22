@@ -1,10 +1,38 @@
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Search } from 'lucide-react';
 
-export default function BudgetForm({ onSubmit, initialData = null }) {
+export default function BudgetForm({ onSubmit, initialData = null, user = null }) {
+  const [clientSearch, setClientSearch] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const { data: crmClients = [] } = useQuery({
+    queryKey: ['crm-clients-budget', user?.email],
+    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: user?.email }),
+    enabled: !!user?.email,
+  });
+
+  const filteredClients = clientSearch.length >= 1
+    ? crmClients.filter(c =>
+        c.client_name?.toLowerCase().includes(clientSearch.toLowerCase()) ||
+        c.client_email?.toLowerCase().includes(clientSearch.toLowerCase())
+      )
+    : crmClients.slice(0, 6);
+
+  const selectClient = (client) => {
+    setFormData(prev => ({
+      ...prev,
+      client_name: client.client_name || '',
+      client_email: client.client_email || '',
+    }));
+    setClientSearch(client.client_name || '');
+    setShowSuggestions(false);
+  };
+
   const [formData, setFormData] = useState(initialData || {
     client_name: '',
     client_email: '',
@@ -80,13 +108,39 @@ export default function BudgetForm({ onSubmit, initialData = null }) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+            <div className="relative">
               <label className="block text-sm font-medium mb-1">Nome do Cliente *</label>
-              <Input
-                value={formData.client_name}
-                onChange={(e) => setFormData({...formData, client_name: e.target.value})}
-                required
-              />
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  className="pl-9"
+                  placeholder="Buscar cliente cadastrado..."
+                  value={clientSearch || formData.client_name}
+                  onChange={(e) => {
+                    setClientSearch(e.target.value);
+                    setFormData(prev => ({ ...prev, client_name: e.target.value }));
+                    setShowSuggestions(true);
+                  }}
+                  onFocus={() => setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                  required
+                />
+              </div>
+              {showSuggestions && filteredClients.length > 0 && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-emerald-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  {filteredClients.map(c => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onMouseDown={() => selectClient(c)}
+                      className="w-full text-left px-3 py-2 hover:bg-emerald-50 transition-colors border-b border-gray-100 last:border-0"
+                    >
+                      <p className="text-sm font-medium text-gray-900">{c.client_name}</p>
+                      {c.client_email && <p className="text-xs text-gray-400">{c.client_email}</p>}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Email do Cliente *</label>
@@ -94,6 +148,7 @@ export default function BudgetForm({ onSubmit, initialData = null }) {
                 type="email"
                 value={formData.client_email}
                 onChange={(e) => setFormData({...formData, client_email: e.target.value})}
+                placeholder="email@cliente.com"
                 required
               />
             </div>

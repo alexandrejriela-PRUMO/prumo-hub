@@ -331,7 +331,7 @@ export default function Layout({ children, currentPageName }) {
   const { unreadCount, notifications, markAsRead, markAllAsRead, deleteNotification } = useRealtimeNotifications(user?.email);
 
   const handleLogout = () => {
-    base44.auth.logout();
+    base44.auth.logout('/landing');
   };
 
   const handleDeleteAccount = async () => {

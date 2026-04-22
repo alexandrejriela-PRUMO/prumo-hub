@@ -46,13 +46,13 @@ export default function ContractEditorWYSIWYG({
   }, [selectedTemplate, templates]);
 
   useEffect(() => {
-    if (!documentHtml) {
-      generateDefaultContract();
+    if (!contractData?.document_html) {
+      generateDefaultContract(contractData);
     }
-  }, []);
+  }, [contractData]);
 
-  const generateDefaultContract = () => {
-    const c = contractData || {};
+  const generateDefaultContract = (data) => {
+    const c = data || contractData || {};
     const contratante = c.contratante || {};
     const contratada = c.contratada || {};
     const html = `

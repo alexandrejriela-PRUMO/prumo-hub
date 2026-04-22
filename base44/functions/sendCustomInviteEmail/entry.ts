@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
     `;
 
     // Enviar o email via integração Base44
-    await base44.asServiceRole.integrations.Core.SendEmail({
+    const emailResult = await base44.integrations.Core.SendEmail({
       to: email,
       subject: `Bem-vindo à PRUMO Hub - Acesse sua conta agora!`,
       body: htmlBody,

@@ -343,7 +343,14 @@ export default function CARModule() {
       )}
 
       {/* Edit Dialog */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+      <Dialog open={editOpen} onOpenChange={(open) => {
+        if (!open && !editingCarId) {
+          const confirmed = window.confirm('Você tem alterações não salvas. Deseja fechar sem salvar?');
+          if (!confirmed) return;
+        }
+        setEditOpen(open);
+        if (!open) setEditingCarId(null);
+      }}>
         <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingCarId ? 'Editar CAR' : 'Adicionar Novo CAR'}</DialogTitle>

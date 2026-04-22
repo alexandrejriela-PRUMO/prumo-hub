@@ -769,7 +769,14 @@ export default function EnvironmentalAlerts() {
       )}
 
       {/* Form Dialog */}
-      <Dialog open={formDialogOpen} onOpenChange={setFormDialogOpen}>
+      <Dialog open={formDialogOpen} onOpenChange={(open) => {
+        if (!open && !editingAlert) {
+          const confirmed = window.confirm('Você tem alterações não salvas. Deseja fechar sem salvar?');
+          if (!confirmed) return;
+        }
+        setFormDialogOpen(open);
+        if (!open) setEditingAlert(null);
+      }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>

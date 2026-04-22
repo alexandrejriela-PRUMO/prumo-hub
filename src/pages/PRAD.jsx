@@ -188,7 +188,14 @@ export default function PRAD() {
             </p>
           </div>
           {canCreatePRAD && (
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <Dialog open={dialogOpen} onOpenChange={(open) => {
+              if (!open && !currentPRAD) {
+                const confirmed = window.confirm('Você tem alterações não salvas. Deseja fechar sem salvar?');
+                if (!confirmed) return;
+              }
+              setDialogOpen(open);
+              if (!open) setCurrentPRAD(null);
+            }}>
              <DialogTrigger asChild>
                <Button
                  onClick={() => setCurrentPRAD(null)}

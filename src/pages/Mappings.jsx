@@ -292,7 +292,14 @@ export default function Mappings() {
               Gerencie mapeamentos multiespectrais, obstáculos, relevo, frutíferas e pastagens
             </p>
           </div>
-          {canEdit && <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          {canEdit && <Dialog open={dialogOpen} onOpenChange={(open) => {
+              if (!open && !currentMapping) {
+                const confirmed = window.confirm('Você tem alterações não salvas. Deseja fechar sem salvar?');
+                if (!confirmed) return;
+              }
+              setDialogOpen(open);
+              if (!open) setCurrentMapping(null);
+            }}>
             <DialogTrigger asChild>
               <Button
                 onClick={() => setCurrentMapping(null)}

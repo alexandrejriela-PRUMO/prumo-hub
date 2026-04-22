@@ -262,8 +262,17 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
   const selectedClient = properties.find(p => p.id === form.client_property_id);
   const categories = isReceita ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
 
+  const handleClose = () => {
+    const isEmpty = !form.description && !form.amount && !form.date;
+    if (!isEmpty && !editing) {
+      const confirmed = window.confirm('Você tem alterações não salvas. Deseja fechar sem salvar?');
+      if (!confirmed) return;
+    }
+    onClose();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-emerald-800">{editing ? 'Editar Transação' : 'Nova Transação Manual'}</DialogTitle>
@@ -568,7 +577,7 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
           )}
 
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="outline" onClick={onClose}>Cancelar</Button>
+            <Button variant="outline" onClick={handleClose}>Cancelar</Button>
             <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={handleSubmit} disabled={saving}>
               {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-1"/>Salvando...</> : isParcelado ? `Registrar ${form.num_installments} Parcelas` : 'Salvar'}
             </Button>

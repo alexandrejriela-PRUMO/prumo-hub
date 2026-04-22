@@ -339,6 +339,7 @@ export default function FinancialTransactions() {
         editing={editing}
         consultorEmail={user?.email}
         accounts={accounts}
+        isDirtyGuard={true}
       />
     </div>
   );

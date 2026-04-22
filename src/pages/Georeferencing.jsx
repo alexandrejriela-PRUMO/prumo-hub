@@ -235,7 +235,13 @@ export default function Georeferencing() {
           <p className="text-gray-500 mt-1">{isConsultor ? 'Gestão completa do georreferenciamento dos clientes' : 'Georreferenciamento da sua propriedade'}</p>
         </div>
         {canCreateGeo && (
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <Dialog open={dialogOpen} onOpenChange={(open) => {
+            if (!open) {
+              const confirmed = window.confirm('Você tem alterações não salvas. Deseja fechar sem salvar?');
+              if (!confirmed) return;
+            }
+            setDialogOpen(open);
+          }}>
            <DialogTrigger asChild>
              <Button className="bg-emerald-600 hover:bg-emerald-700">
                <Plus className="w-4 h-4 mr-2" />

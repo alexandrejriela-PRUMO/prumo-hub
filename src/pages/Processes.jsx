@@ -719,7 +719,14 @@ export default function Processes() {
             Acompanhamento de processos administrativos, civis e criminais
           </p>
         </div>
-        {canCreateProcess && <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        {canCreateProcess && <Dialog open={showDialog} onOpenChange={(open) => {
+          if (!open && !editingProcess && (formData.process_number || formData.subject)) {
+            const confirmed = window.confirm('Você tem alterações não salvas. Deseja fechar sem salvar?');
+            if (!confirmed) return;
+          }
+          setShowDialog(open);
+          if (!open) resetForm();
+        }}>
           <DialogTrigger asChild>
             <Button
               className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto whitespace-nowrap"

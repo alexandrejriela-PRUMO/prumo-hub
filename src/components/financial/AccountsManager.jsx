@@ -54,7 +54,13 @@ export default function AccountsManager({ consultorEmail }) {
     else { setEditing(null); setForm(EMPTY); }
     setShowForm(true);
   };
-  const close = () => { setShowForm(false); setEditing(null); setForm(EMPTY); };
+  const close = () => {
+    if (JSON.stringify(form) !== JSON.stringify(EMPTY) && !editing) {
+      const confirmed = window.confirm('Você tem alterações não salvas. Deseja fechar sem salvar?');
+      if (!confirmed) return;
+    }
+    setShowForm(false); setEditing(null); setForm(EMPTY);
+  };
 
   const save = () => {
     if (!form.name) { toast.error('Informe o nome da conta.'); return; }

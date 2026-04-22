@@ -347,7 +347,10 @@ export default function DocumentsHub() {
           entityType="General"
           entityId=""
           onSuccess={handleUploadSuccess}
-          onCancel={() => setShowUpload(false)}
+          onCancel={() => {
+            const confirmed = window.confirm('Deseja cancelar o envio do documento?');
+            if (confirmed) setShowUpload(false);
+          }}
           allowedTypes={undefined}
           properties={effectiveProperties}
         />

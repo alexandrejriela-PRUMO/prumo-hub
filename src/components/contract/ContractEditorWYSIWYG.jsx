@@ -52,27 +52,31 @@ export default function ContractEditorWYSIWYG({
   }, []);
 
   const generateDefaultContract = () => {
+    const c = contractData || {};
+    const contratante = c.contratante || {};
+    const contratada = c.contratada || {};
     const html = `
       <div style="font-family: 'Calibri', 'Arial', sans-serif; line-height: 1.8; color: #333;">
         <!-- Header -->
         <div style="text-align: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 3px solid #1B4332;">
-          <h1 style="color: #1B4332; margin: 0; font-size: 28px; font-weight: bold;">CONTRATO DE ${contractData?.contract_type?.toUpperCase() || 'SERVIÇOS'}</h1>
+          <h1 style="color: #1B4332; margin: 0; font-size: 28px; font-weight: bold;">CONTRATO DE ${(c.contract_type || 'SERVIÇOS').toUpperCase()}</h1>
           <p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">Data: ${new Date().toLocaleDateString('pt-BR')}</p>
         </div>
 
         <!-- Partes -->
         <div style="margin-bottom: 30px;">
           <h2 style="color: #1B4332; font-size: 16px; margin-top: 0;">1. CONTRATANTE</h2>
-          <p style="margin: 8px 0;"><strong>Razão Social/Nome:</strong> ___________________________</p>
-          <p style="margin: 8px 0;"><strong>CNPJ/CPF:</strong> ___________________________</p>
-          <p style="margin: 8px 0;"><strong>Endereço:</strong> ___________________________</p>
+          <p style="margin: 8px 0;"><strong>Razão Social/Nome:</strong> ${contratante.name || c.client_name || '___________________________'}</p>
+          <p style="margin: 8px 0;"><strong>CNPJ/CPF:</strong> ${contratante.document || '___________________________'}</p>
+          <p style="margin: 8px 0;"><strong>Endereço:</strong> ${contratante.address || '___________________________'}</p>
+          ${c.client_email ? `<p style="margin: 8px 0;"><strong>E-mail:</strong> ${c.client_email}</p>` : ''}
         </div>
 
         <div style="margin-bottom: 30px;">
           <h2 style="color: #1B4332; font-size: 16px; margin-top: 0;">2. CONTRATADA</h2>
-          <p style="margin: 8px 0;"><strong>Razão Social/Nome:</strong> ___________________________</p>
-          <p style="margin: 8px 0;"><strong>CNPJ/CPF:</strong> ___________________________</p>
-          <p style="margin: 8px 0;"><strong>Endereço:</strong> ___________________________</p>
+          <p style="margin: 8px 0;"><strong>Razão Social/Nome:</strong> ${contratada.name || '___________________________'}</p>
+          <p style="margin: 8px 0;"><strong>CNPJ/CPF:</strong> ${contratada.document || '___________________________'}</p>
+          <p style="margin: 8px 0;"><strong>Endereço:</strong> ${contratada.address || '___________________________'}</p>
         </div>
 
         <!-- Objeto -->

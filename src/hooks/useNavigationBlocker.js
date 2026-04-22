@@ -20,7 +20,7 @@ export function useNavigationBlocker(isDirty = false, message = 'Você tem alter
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isDirty, message]);
 
-  // Bloqueia qualquer navegação via história
+  // Bloqueia qualquer navegação via história (botão voltar)
   useEffect(() => {
     if (!isDirty) return;
 

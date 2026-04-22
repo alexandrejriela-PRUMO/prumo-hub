@@ -25,28 +25,29 @@ const modules = {
 
 function buildContractHtml(contractData) {
   const c = contractData || {};
-  const contratante = c.contratante || {};
-  const contratada = c.contratada || {};
+  const parties = Array.isArray(c.parties) ? c.parties : [];
+  const contratanteParty = parties.find(p => p.role === 'Contratante') || {};
+  const contratadoParty = parties.find(p => p.role === 'Contratado') || {};
   const blank = '___________________________';
   const blankDate = '___/___/______';
 
   const tipoContrato = (c.contract_type || 'SERVIÇOS').toUpperCase();
   const dataHoje = new Date().toLocaleDateString('pt-BR');
-  const nomeContratante = contratante.name || c.client_name || blank;
-  const docContratante = contratante.document || blank;
-  const endContratante = contratante.address || blank;
+  const nomeContratante = contratanteParty.name || c.client_name || blank;
+  const docContratante = contratanteParty.document || blank;
+  const endContratante = contratanteParty.address || blank;
   const emailContratante = c.client_email ? '<p style="margin: 8px 0;"><strong>E-mail:</strong> ' + c.client_email + '</p>' : '';
-  const nomeContratada = contratada.name || blank;
-  const docContratada = contratada.document || blank;
-  const endContratada = contratada.address || blank;
+  const nomeContratada = contratadoParty.name || blank;
+  const docContratada = contratadoParty.document || blank;
+  const endContratada = contratadoParty.address || blank;
   const objeto = c.object || 'Descrição dos serviços ou acordo aqui.';
   const inicio = c.start_date || blankDate;
   const termino = c.end_date || blankDate;
   const valor = c.total_value ? Number(c.total_value).toFixed(2) : '0,00';
   const pagamento = c.payment_terms || 'Especificar condições';
   const notas = c.notes || 'Especificar termos e condições adicionais.';
-  const nomeContratanteAssinatura = contratante.name || 'Contratante';
-  const nomeContratadaAssinatura = contratada.name || 'Contratada';
+  const nomeContratanteAssinatura = contratanteParty.name || 'Contratante';
+  const nomeContratadaAssinatura = contratadoParty.name || 'Contratada';
 
   return '<div style="font-family: Calibri, Arial, sans-serif; line-height: 1.8; color: #333;">'
     + '<div style="text-align: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 3px solid #1B4332;">'

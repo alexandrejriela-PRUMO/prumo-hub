@@ -116,11 +116,18 @@ Deno.serve(async (req) => {
     // Combine usuários criados + convites pendentes, removendo duplicatas
     // (se um user já existe em User, não incluir o convite pendente)
     const existingEmails = new Set(enrichedUsers.map(u => u.email.toLowerCase()));
-    const uniquePendingInvites = pendingInvites.filter(p => !existingEmails.has(p.email.toLowerCase()));
     
-    console.log('[adminGetUsers] Existing emails:', Array.from(existingEmails).slice(0, 5));
-    console.log('[adminGetUsers] Pending invites before dedup:', pendingInvites.map(p => p.email));
-    console.log('[adminGetUsers] Pending invites after dedup:', uniquePendingInvites.map(p => p.email));
+    // Deduplica também os convites pendentes entre si (mesmo email não deve aparecer 2x)
+    const seenPendingEmails = new Set();
+    const uniquePendingInvites = pendingInvites.filter(p => {
+      const emailLower = p.email.toLowerCase();
+      // Se já existe como usuário real, ignora
+      if (existingEmails.has(emailLower)) return false;
+      // Se já vimos esse email pendente, ignora
+      if (seenPendingEmails.has(emailLower)) return false;
+      seenPendingEmails.add(emailLower);
+      return true;
+    });
     
     const finalUsers = !type || type === 'users' ? [...enrichedUsers, ...uniquePendingInvites] : enrichedUsers;
 

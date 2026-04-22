@@ -61,16 +61,14 @@ export default function ContractForm({ user, templates = [], onSubmit }) {
   const [newService, setNewService] = useState({ name: '', value: '', status: 'Em Andamento' });
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
 
-  // Dados do consultor (Contratada) - via SaaS contract log
-  const { data: saasContractLog } = useQuery({
-    queryKey: ['saas-contract-log-gen', user?.email],
-    queryFn: async () => {
-      const logs = await base44.entities.TermsAcceptanceLog.filter({ user_email: user.email });
-      return logs.filter(l => l.terms_version >= 1001 && l.contractor_name)
-        .sort((a, b) => new Date(b.accepted_at) - new Date(a.accepted_at))[0] || null;
-    },
-    enabled: !!user?.email,
-  });
+  // Dados do consultor (Contratada) - apenas do localStorage do usuário atual
+  const consultorData = (() => {
+    try { 
+      return JSON.parse(localStorage.getItem('prumo_consultor_data')) || null; 
+    } catch { 
+      return null; 
+    }
+  })();
 
   // Propriedades do consultor
   const { data: properties = [] } = useQuery({
@@ -99,15 +97,10 @@ export default function ContractForm({ user, templates = [], onSubmit }) {
 
   // Auto-completar Contratada com dados do consultor quando role = Contratado
   const handlePartyRoleChange = (role) => {
-    if (role === 'Contratado') {
-      const consultorData = saasContractLog
-        ? { name: saasContractLog.contractor_name || '', document: saasContractLog.contractor_document || '', address: saasContractLog.contractor_address || '' }
-        : savedContratado;
-      if (consultorData) {
-        setNewParty(p => ({ ...p, role, name: consultorData.name, document: consultorData.document || '', address: consultorData.address || '' }));
-        setPartySearch(consultorData.name);
-        return;
-      }
+    if (role === 'Contratado' && consultorData) {
+      setNewParty(p => ({ ...p, role, name: consultorData.name, document: consultorData.document || '', address: consultorData.address || '' }));
+      setPartySearch(consultorData.name);
+      return;
     }
     setNewParty(p => ({ ...p, role }));
   };
@@ -333,11 +326,11 @@ export default function ContractForm({ user, templates = [], onSubmit }) {
           <p className="text-sm font-medium text-gray-700">Partes do Contrato</p>
 
           {/* Info Contratada automática */}
-          {(saasContractLog || savedContratado) && (
+          {consultorData && (
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800 flex items-start gap-2">
               <CheckCircle className="w-3.5 h-3.5 text-blue-600 mt-0.5 flex-shrink-0" />
               <span>
-                <strong>Contratada:</strong> Seus dados de consultor ({saasContractLog?.contractor_name || savedContratado?.name}) serão preenchidos automaticamente ao selecionar o papel "Contratado".
+                <strong>Contratada:</strong> Seus dados de consultor ({consultorData.name}) serão preenchidos automaticamente ao selecionar o papel "Contratado".
               </span>
             </div>
           )}

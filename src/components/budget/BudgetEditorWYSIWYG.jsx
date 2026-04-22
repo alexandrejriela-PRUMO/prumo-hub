@@ -140,7 +140,7 @@ const QUILL_MODULES = {
 };
 
 export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = null, onSave, onSend }) {
-  const [htmlContent, setHtmlContent] = useState(() => buildBudgetHtml(budgetData, consultorData));
+  const [htmlContent, setHtmlContent] = useState(() => budgetData.document_html || buildBudgetHtml(budgetData, consultorData));
   const [logoBase64, setLogoBase64] = useState('');
   const [loadingLogo, setLoadingLogo] = useState(false);
   const fileInputRef = useRef(null);

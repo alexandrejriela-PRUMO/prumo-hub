@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import BudgetForm from '@/components/budget/BudgetForm';
 import BudgetEditorWYSIWYG from '@/components/budget/BudgetEditorWYSIWYG';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Download, FileEdit } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 export default function BudgetGenerator() {
   const [step, setStep] = useState('form'); // form, editor, history
@@ -40,7 +42,13 @@ export default function BudgetGenerator() {
   });
 
   const saveBudgetMutation = useMutation({
-    mutationFn: (data) => base44.entities.Budget.create(data),
+    mutationFn: (data) => {
+      if (data.id) {
+        const { id, ...rest } = data;
+        return base44.entities.Budget.update(id, rest);
+      }
+      return base44.entities.Budget.create(data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
       toast.success('Orçamento salvo com sucesso!');
@@ -131,6 +139,44 @@ export default function BudgetGenerator() {
     sendBudgetMutation.mutate(editorData);
   };
 
+  // Abre o editor com um orçamento do histórico
+  const handleOpenBudget = (budget) => {
+    setBudgetData(budget);
+    setStep('editor');
+  };
+
+  // Download PDF direto de um orçamento salvo
+  const handleDownloadPDF = async (e, budget) => {
+    e.stopPropagation();
+    if (!budget.document_html) {
+      toast.error('Este orçamento não possui documento gerado. Abra-o e salve novamente.');
+      return;
+    }
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.left = '-9999px';
+    container.style.top = '0';
+    container.style.width = '794px';
+    container.style.backgroundColor = '#fff';
+    container.style.padding = '40px';
+    container.innerHTML = budget.document_html;
+    document.body.appendChild(container);
+    try {
+      const canvas = await html2canvas(container, { scale: 2, backgroundColor: '#fff', useCORS: true, logging: false });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const imgWidth = 210;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      pdf.save(`orcamento-${budget.budget_number || budget.id}.pdf`);
+      toast.success('PDF gerado com sucesso!');
+    } catch (err) {
+      toast.error('Erro ao gerar PDF');
+    } finally {
+      document.body.removeChild(container);
+    }
+  };
+
   if (!user) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -203,27 +249,44 @@ export default function BudgetGenerator() {
               </div>
             ) : (
               budgets.map(budget => (
-                <div key={budget.id} className="border rounded-lg p-4 hover:bg-emerald-50/50 cursor-pointer" onClick={() => setSelectedBudget(budget)}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-bold">{budget.budget_number} - {budget.client_name}</h3>
-                      <p className="text-sm text-gray-600">{budget.title}</p>
-                      <div className="grid grid-cols-3 gap-4 text-sm mt-2">
-                        <div><span className="text-gray-500">Email:</span> {budget.client_email}</div>
-                        <div><span className="text-gray-500">Valor:</span> R$ {budget.total_amount?.toFixed(2)}</div>
-                        <div><span className={`px-2 py-1 rounded text-xs font-medium ${budget.status === 'Aceito' ? 'bg-green-100 text-green-800' : budget.status === 'Enviado' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>{budget.status}</span></div>
+                <div key={budget.id} className="border rounded-lg p-4 hover:bg-emerald-50/50 cursor-pointer" onClick={() => handleOpenBudget(budget)}>
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-emerald-900">{budget.budget_number} - {budget.client_name}</h3>
+                      <p className="text-sm text-gray-600 truncate">{budget.title}</p>
+                      <div className="flex flex-wrap gap-4 text-sm mt-2">
+                        <span className="text-gray-500">Email: {budget.client_email}</span>
+                        <span className="text-gray-500">Valor: <strong>R$ {budget.total_amount?.toFixed(2)}</strong></span>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${budget.status === 'Aceito' ? 'bg-green-100 text-green-800' : budget.status === 'Enviado' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>{budget.status}</span>
                       </div>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteBudgetMutation.mutate(budget.id);
-                      }}
-                    >
-                      Deletar
-                    </Button>
+                    <div className="flex gap-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1"
+                        onClick={(e) => handleDownloadPDF(e, budget)}
+                        title="Baixar PDF"
+                      >
+                        <Download className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1"
+                        onClick={() => handleOpenBudget(budget)}
+                        title="Abrir Editor"
+                      >
+                        <FileEdit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => deleteBudgetMutation.mutate(budget.id)}
+                      >
+                        Deletar
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))

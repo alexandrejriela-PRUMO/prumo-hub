@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 import ContractForm from '@/components/contract/ContractForm';
 import ContractEditorWYSIWYG from '@/components/contract/ContractEditorWYSIWYG';
 import { ChevronLeft } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 export default function ContractGenerator() {
   const [step, setStep] = useState('form');
@@ -110,12 +112,61 @@ export default function ContractGenerator() {
     setStep('editor');
   };
 
+  const generateAndUploadPDF = async (htmlContent) => {
+    try {
+      // Renderiza o HTML em um div temporário fora da tela
+      const container = document.createElement('div');
+      container.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;padding:40px;background:#fff;font-family:Calibri,Arial,sans-serif;line-height:1.8;color:#333;';
+      container.innerHTML = htmlContent;
+      document.body.appendChild(container);
+
+      const canvas = await html2canvas(container, { scale: 2, backgroundColor: '#fff', useCORS: true });
+      document.body.removeChild(container);
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const imgWidth = 210;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+      while (heightLeft >= 0) {
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= 297;
+        position -= 297;
+        if (heightLeft > 0) pdf.addPage();
+      }
+
+      const pdfBlob = pdf.output('blob');
+      const pdfFile = new File([pdfBlob], `contrato-${Date.now()}.pdf`, { type: 'application/pdf' });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: pdfFile });
+      return file_url;
+    } catch (err) {
+      console.error('Erro ao gerar/upload PDF:', err);
+      return null;
+    }
+  };
+
   const handleSaveDocument = async (editorData) => {
+    toast.info('Gerando PDF do contrato...');
+    const pdfUrl = await generateAndUploadPDF(editorData.documentHtml);
+
+    const now = new Date().toISOString();
+    const documents = [];
+    if (pdfUrl) {
+      documents.push({
+        name: `Contrato - ${contractData.contract_type || 'Gerado'} - ${new Date().toLocaleDateString('pt-BR')}`,
+        url: pdfUrl,
+        type: 'Proposta',
+        upload_date: now,
+      });
+    }
+
     const fullData = {
       ...contractData,
       consultor_email: user?.email,
       document_html: editorData.documentHtml,
       template_id: editorData.selectedTemplate || contractData.template_id,
+      documents,
     };
     saveContractMutation.mutate(fullData);
   };

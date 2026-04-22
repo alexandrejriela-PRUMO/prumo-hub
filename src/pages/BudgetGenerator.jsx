@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -18,6 +19,8 @@ export default function BudgetGenerator() {
   const [user, setUser] = useState(null);
   const [selectedBudget, setSelectedBudget] = useState(null);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const navigationRef = useRef(null);
   
   const isDirty = !!budgetData && step === 'editor';
 
@@ -37,6 +40,31 @@ export default function BudgetGenerator() {
   const message = 'Você tem alterações não salvas no orçamento. Deseja realmente sair sem salvar?';
   useFormDirtyAlert(isDirty, message);
   useNavigationBlocker(isDirty, message);
+
+  // Intercepta cliques em Links e botões de navegação (React Router)
+  useEffect(() => {
+    if (!isDirty) return;
+
+    const handleClick = (e) => {
+      const link = e.target.closest('a[href]');
+      if (!link) return;
+
+      const href = link.getAttribute('href');
+      if (href && href.startsWith('/')) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const confirmed = window.confirm(message);
+        if (confirmed) {
+          navigationRef.current = true;
+          navigate(href);
+        }
+      }
+    };
+
+    document.addEventListener('click', handleClick, true);
+    return () => document.removeEventListener('click', handleClick, true);
+  }, [isDirty, message, navigate]);
 
   const { data: templates = [] } = useQuery({
     queryKey: ['budgetTemplates', user?.email],

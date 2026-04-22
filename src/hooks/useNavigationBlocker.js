@@ -1,19 +1,12 @@
-import { useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 
 /**
- * Hook para bloquear navegação no React Router v6 quando há alterações não salvas
- * Funciona para cliques em Links, useNavigate() e mudanças no histórico
- * 
- * @param {boolean} isDirty - Se o formulário tem mudanças não salvas
- * @param {string} message - Mensagem customizada
+ * Hook para bloquear navegação quando há alterações não salvas
+ * Cobre: cliques em links, botão voltar, fechar aba
  */
 export function useNavigationBlocker(isDirty = false, message = 'Você tem alterações não salvas. Deseja realmente sair sem salvar?') {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const navigationPrevented = useRef(false);
-
-  // Bloqueio global ao tentar sair do navegador
+  
+  // Bloqueia beforeunload (fechar aba, F5, etc)
   useEffect(() => {
     if (!isDirty) return;
 
@@ -27,55 +20,21 @@ export function useNavigationBlocker(isDirty = false, message = 'Você tem alter
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isDirty, message]);
 
-  // Intercepta cliques em links de navegação
+  // Bloqueia qualquer navegação via história
   useEffect(() => {
     if (!isDirty) return;
 
-    const handleLinkClick = (e) => {
-      const link = e.target.closest('a[href]');
-      if (!link) return;
+    let shouldBlock = true;
 
-      const href = link.getAttribute('href');
-      
-      // Verifica se é um link interno (começa com /)
-      if (href && href.startsWith('/') && href !== location.pathname) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        navigationPrevented.current = true;
-        const confirmed = window.confirm(message);
-        navigationPrevented.current = false;
-        
-        if (confirmed) {
-          navigate(href);
-        }
-      }
-    };
+    const handlePopState = () => {
+      if (!shouldBlock) return;
+      shouldBlock = false;
 
-    // Usa capture phase para interceptar antes que React Router processe
-    document.addEventListener('click', handleLinkClick, true);
-    return () => {
-      document.removeEventListener('click', handleLinkClick, true);
-    };
-  }, [isDirty, message, navigate, location.pathname]);
-
-  // Bloqueia navegação via botão voltar do navegador
-  useEffect(() => {
-    if (!isDirty) return;
-
-    let isBlocked = false;
-
-    const handlePopState = (e) => {
-      if (isBlocked) return;
-      
-      isBlocked = true;
       const confirmed = window.confirm(message);
-      isBlocked = false;
-
       if (!confirmed) {
-        // Recoloca a página atual no histórico se usuário disser não
-        window.history.pushState(null, '', window.location.href);
+        window.history.forward();
       }
+      shouldBlock = true;
     };
 
     window.addEventListener('popstate', handlePopState);

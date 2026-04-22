@@ -110,6 +110,15 @@ export default function ContractGenerator() {
     setStep('editor');
   };
 
+  const handleStepChange = (newStep) => {
+    if (contractData && newStep !== 'editor') {
+      const confirmed = window.confirm('Você tem alterações não salvas. Deseja sair sem salvar?');
+      if (!confirmed) return;
+      setContractData(null);
+    }
+    setStep(newStep);
+  };
+
   const handleSaveDocument = async (editorData) => {
     const now = new Date().toISOString();
     const documents = [];
@@ -153,7 +162,7 @@ export default function ContractGenerator() {
           <div className="flex items-center gap-3 mb-4">
             {(step === 'editor' || step === 'history') && (
               <Button
-                onClick={() => setStep('form')}
+                onClick={() => handleStepChange('form')}
                 variant="outline"
                 size="sm"
                 className="gap-2"

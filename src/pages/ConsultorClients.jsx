@@ -266,12 +266,12 @@ export default function ConsultorClients() {
       )}
 
       <NewClientForm
-        isOpen={showNewClientForm}
-        onClose={() => setShowNewClientForm(false)}
-        consultorEmail={effectiveEmail}
-        initialStatus="Ativo"
-        onSuccess={() => setShowNewClientForm(false)}
-      />
+         isOpen={showNewClientForm}
+         onClose={() => setShowNewClientForm(false)}
+         consultorEmail={effectiveEmail}
+         initialStatus="Ativo"
+         onSuccess={() => setShowNewClientForm(false)}
+       />
 
       <AlertDialog open={!!clientToDelete} onOpenChange={() => setClientToDelete(null)}>
         <AlertDialogContent>

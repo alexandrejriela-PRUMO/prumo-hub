@@ -241,7 +241,18 @@ export default function Properties() {
       )}
 
       {/* Form Dialog */}
-      <Dialog open={formDialogOpen} onOpenChange={setFormDialogOpen}>
+      <Dialog open={formDialogOpen} onOpenChange={(open) => {
+        if (!open && editingProperty) {
+          // Apenas fecha o dialog se for edição (sem alerta)
+          setFormDialogOpen(false);
+          setEditingProperty(null);
+        } else if (!open) {
+          // Para novo, sempre fecha sem alerta (PropertyForm já tem proteção)
+          setFormDialogOpen(false);
+        } else {
+          setFormDialogOpen(open);
+        }
+      }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>

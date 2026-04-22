@@ -455,7 +455,17 @@ export default function Contracts() {
       )}
 
       {/* Create/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen} onOpenChange={(open) => {
+        if (!open && JSON.stringify(formData) !== JSON.stringify(EMPTY_FORM) && !editingContract) {
+          const confirmed = window.confirm('Você tem alterações não salvas. Deseja fechar sem salvar?');
+          if (!confirmed) return;
+        }
+        if (!open) {
+          setFormData(EMPTY_FORM);
+          setEditingContract(null);
+        }
+        setDialogOpen(open);
+      }}>
         <DialogContent className="w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-auto">
           <DialogHeader>
             <DialogTitle>{editingContract ? 'Editar Contrato' : 'Novo Contrato'}</DialogTitle>

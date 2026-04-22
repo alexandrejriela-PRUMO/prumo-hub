@@ -114,6 +114,15 @@ export default function BudgetGenerator() {
     setStep('editor');
   };
 
+  const handleStepChange = (newStep) => {
+    if (budgetData && newStep !== 'editor') {
+      const confirmed = window.confirm('Você tem alterações não salvas. Deseja sair sem salvar?');
+      if (!confirmed) return;
+      setBudgetData(null);
+    }
+    setStep(newStep);
+  };
+
   const handleSaveDocument = async (editorData) => {
     // Garantir que IDs dos serviços sejam strings (validação da API)
     const services = (budgetData.services || []).map(s => ({
@@ -193,7 +202,7 @@ export default function BudgetGenerator() {
           <div className="flex items-center gap-3 mb-4">
             {(step === 'editor' || step === 'history') && (
               <Button
-                onClick={() => setStep('form')}
+                onClick={() => handleStepChange('form')}
                 variant="outline"
                 size="sm"
                 className="gap-2"

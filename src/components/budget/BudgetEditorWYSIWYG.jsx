@@ -8,77 +8,114 @@ import jsPDF from 'jspdf';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 
-const DEFAULT_BUDGET_HTML = `
-<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-  <div style="border-bottom: 3px solid #000; padding-bottom: 20px; margin-bottom: 30px;">
-    <h1 style="margin: 0; font-size: 32px; font-weight: bold;">ORÇAMENTO</h1>
-    <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Número: [Adicione aqui]</p>
+function buildBudgetHtml(budgetData) {
+  const b = budgetData || {};
+  const services = Array.isArray(b.services) ? b.services : [];
+  const fees = Array.isArray(b.additional_fees) ? b.additional_fees : [];
+  const dataHoje = new Date().toLocaleDateString('pt-BR');
+  const blank = '___________________________';
+
+  const clientName = b.client_name || blank;
+  const clientEmail = b.client_email || '';
+  const budgetNumber = b.budget_number || `ORC-${Date.now().toString().slice(-8)}`;
+  const title = b.title || 'Orçamento de Serviços';
+  const validityDays = b.validity_days || 30;
+  const discount = parseFloat(b.discount_percentage) || 0;
+  const travelCost = parseFloat(b.travel_cost) || 0;
+  const fuelCost = parseFloat(b.fuel_cost) || 0;
+  const notes = b.notes || '';
+
+  const servicesTotal = services.reduce((acc, s) => acc + (parseFloat(s.hours) * parseFloat(s.hourly_rate)), 0);
+  const feesTotal = fees.reduce((acc, f) => acc + parseFloat(f.amount), 0);
+  const subtotal = servicesTotal + travelCost + fuelCost + feesTotal;
+  const discountValue = subtotal * (discount / 100);
+  const total = subtotal - discountValue;
+
+  const fmt = (v) => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const servicesRows = services.length > 0
+    ? services.map(s => {
+        const subtotalSvc = parseFloat(s.hours) * parseFloat(s.hourly_rate);
+        return `<tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 10px 8px;">${s.name}${s.description ? '<br><span style="font-size:12px;color:#666;">' + s.description + '</span>' : ''}</td>
+          <td style="text-align:center; padding: 10px 8px;">${s.hours}h</td>
+          <td style="text-align:right; padding: 10px 8px;">R$ ${fmt(s.hourly_rate)}/h</td>
+          <td style="text-align:right; padding: 10px 8px; font-weight:500;">R$ ${fmt(subtotalSvc)}</td>
+        </tr>`;
+      }).join('')
+    : `<tr><td colspan="4" style="padding:10px;color:#999;text-align:center;">Nenhum serviço informado</td></tr>`;
+
+  const extraRows = [
+    travelCost > 0 ? `<tr><td colspan="3" style="padding:6px 8px;color:#555;">Deslocamento</td><td style="text-align:right;padding:6px 8px;">R$ ${fmt(travelCost)}</td></tr>` : '',
+    fuelCost > 0 ? `<tr><td colspan="3" style="padding:6px 8px;color:#555;">Combustível</td><td style="text-align:right;padding:6px 8px;">R$ ${fmt(fuelCost)}</td></tr>` : '',
+    ...fees.map(f => `<tr><td colspan="3" style="padding:6px 8px;color:#555;">${f.name}</td><td style="text-align:right;padding:6px 8px;">R$ ${fmt(f.amount)}</td></tr>`),
+  ].join('');
+
+  const discountRow = discount > 0
+    ? `<tr><td colspan="3" style="padding:6px 8px;color:#dc2626;">Desconto (${discount}%)</td><td style="text-align:right;padding:6px 8px;color:#dc2626;">- R$ ${fmt(discountValue)}</td></tr>`
+    : '';
+
+  return `<div style="font-family: Calibri, Arial, sans-serif; line-height: 1.8; color: #333; max-width: 794px; margin: 0 auto;">
+  <div style="text-align:center; margin-bottom:40px; padding-bottom:20px; border-bottom:3px solid #1B4332;">
+    <h1 style="color:#1B4332; margin:0; font-size:28px; font-weight:bold;">ORÇAMENTO</h1>
+    <p style="margin:6px 0 0 0; color:#666; font-size:14px;">${title}</p>
+    <p style="margin:4px 0 0 0; color:#888; font-size:13px;">Nº ${budgetNumber} &nbsp;|&nbsp; Emitido em: ${dataHoje} &nbsp;|&nbsp; Válido por ${validityDays} dias</p>
   </div>
 
-  <div style="margin-bottom: 30px;">
-    <h2 style="font-size: 16px; font-weight: bold; margin-bottom: 10px;">DADOS DA EMPRESA</h2>
-    <p style="margin: 5px 0;"><strong>[Nome da Empresa]</strong></p>
-    <p style="margin: 5px 0; font-size: 14px;">CNPJ: [CNPJ]</p>
-    <p style="margin: 5px 0; font-size: 14px;">Tel: [Telefone]</p>
-    <p style="margin: 5px 0; font-size: 14px;">Email: [Email]</p>
+  <div style="margin-bottom:28px;">
+    <h2 style="color:#1B4332; font-size:15px; margin:0 0 8px 0; text-transform:uppercase; letter-spacing:1px;">Cliente</h2>
+    <p style="margin:4px 0; font-size:15px;"><strong>${clientName}</strong></p>
+    ${clientEmail ? `<p style="margin:4px 0; font-size:13px; color:#555;">Email: ${clientEmail}</p>` : ''}
   </div>
 
-  <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-
-  <div style="margin-bottom: 30px;">
-    <h2 style="font-size: 16px; font-weight: bold; margin-bottom: 10px;">DADOS DO CLIENTE</h2>
-    <p style="margin: 5px 0;"><strong>[Nome do Cliente]</strong></p>
-    <p style="margin: 5px 0; font-size: 14px;">CPF/CNPJ: [Documento]</p>
-    <p style="margin: 5px 0; font-size: 14px;">Email: [Email do Cliente]</p>
-    <p style="margin: 5px 0; font-size: 14px;">Telefone: [Telefone do Cliente]</p>
-  </div>
-
-  <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-
-  <div style="margin-bottom: 30px;">
-    <h2 style="font-size: 16px; font-weight: bold; margin-bottom: 10px;">SERVIÇOS</h2>
-    <table style="width: 100%; border-collapse: collapse;">
+  <div style="margin-bottom:28px;">
+    <h2 style="color:#1B4332; font-size:15px; margin:0 0 10px 0; text-transform:uppercase; letter-spacing:1px;">Serviços</h2>
+    <table style="width:100%; border-collapse:collapse; font-size:14px;">
       <thead>
-        <tr style="border-bottom: 2px solid #000;">
-          <th style="text-align: left; padding: 10px; font-weight: bold;">Descrição</th>
-          <th style="text-align: center; padding: 10px; font-weight: bold; width: 80px;">Qtd</th>
-          <th style="text-align: right; padding: 10px; font-weight: bold; width: 120px;">Valor Unit.</th>
-          <th style="text-align: right; padding: 10px; font-weight: bold; width: 120px;">Total</th>
+        <tr style="background:#1B4332; color:#fff;">
+          <th style="text-align:left; padding:10px 8px;">Descrição</th>
+          <th style="text-align:center; padding:10px 8px; width:80px;">Horas</th>
+          <th style="text-align:right; padding:10px 8px; width:120px;">Valor/Hora</th>
+          <th style="text-align:right; padding:10px 8px; width:120px;">Subtotal</th>
         </tr>
       </thead>
       <tbody>
-        <tr style="border-bottom: 1px solid #ddd;">
-          <td style="padding: 10px;">[Serviço 1]</td>
-          <td style="text-align: center; padding: 10px;">1</td>
-          <td style="text-align: right; padding: 10px;">R$ 0,00</td>
-          <td style="text-align: right; padding: 10px;">R$ 0,00</td>
-        </tr>
+        ${servicesRows}
+        ${extraRows}
+        ${discountRow}
       </tbody>
     </table>
   </div>
 
-  <div style="margin-bottom: 30px; text-align: right;">
-    <p style="margin: 10px 0;"><strong>Subtotal:</strong> R$ 0,00</p>
-    <p style="margin: 10px 0; font-size: 18px; font-weight: bold; border-top: 2px solid #000; padding-top: 10px;">
-      <strong>TOTAL:</strong> R$ 0,00
-    </p>
+  <div style="margin-bottom:30px; text-align:right;">
+    <p style="margin:8px 0; font-size:14px; color:#555;"><strong>Subtotal:</strong> R$ ${fmt(subtotal)}</p>
+    ${discount > 0 ? `<p style="margin:8px 0; font-size:14px; color:#dc2626;"><strong>Desconto (${discount}%):</strong> - R$ ${fmt(discountValue)}</p>` : ''}
+    <p style="margin:12px 0 0 0; font-size:20px; font-weight:bold; color:#1B4332; border-top:2px solid #1B4332; padding-top:12px;">TOTAL: R$ ${fmt(total)}</p>
   </div>
 
-  <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+  ${notes ? `<div style="margin-bottom:28px; padding:16px; background:#f9fafb; border-left:4px solid #1B4332; border-radius:4px; font-size:13px;">
+    <strong>Observações:</strong><br>${notes}
+  </div>` : ''}
 
-  <div style="margin-bottom: 30px; font-size: 14px;">
-    <p style="margin: 10px 0;"><strong>Forma de Pagamento:</strong> [A combinar]</p>
-    <p style="margin: 10px 0;"><strong>Prazo de Execução:</strong> [30 dias]</p>
-    <p style="margin: 10px 0;"><strong>Validade:</strong> [30 dias]</p>
+  <div style="margin-top:60px; padding-top:20px; border-top:1px solid #ccc; font-size:12px; color:#888; text-align:center;">
+    <p>Este orçamento é válido por ${validityDays} dias a partir da data de emissão.</p>
+    <p style="margin-top:8px;">Em caso de dúvidas, entre em contato pelo email: ${clientEmail || '___________________________'}</p>
   </div>
 
-  <div style="margin-top: 50px; padding-top: 30px; border-top: 1px solid #ccc; text-align: center;">
-    <div style="margin-bottom: 50px;">&nbsp;</div>
-    <p style="margin: 0;"><strong>[Nome do Responsável]</strong></p>
-    <p style="margin: 5px 0; font-size: 12px; color: #666;">[Cargo]</p>
+  <div style="margin-top:60px; display:grid; grid-template-columns:1fr 1fr; gap:40px;">
+    <div style="text-align:center;">
+      <div style="border-top:1px solid #000; padding-top:16px; margin-bottom:5px;"></div>
+      <p style="margin:0; font-size:13px;"><strong>Prestador de Serviço</strong></p>
+      <p style="margin:4px 0 0 0; font-size:12px; color:#666;">Data: ___/___/_______</p>
+    </div>
+    <div style="text-align:center;">
+      <div style="border-top:1px solid #000; padding-top:16px; margin-bottom:5px;"></div>
+      <p style="margin:0; font-size:13px;"><strong>${clientName}</strong></p>
+      <p style="margin:4px 0 0 0; font-size:12px; color:#666;">Data: ___/___/_______</p>
+    </div>
   </div>
-</div>
-`;
+</div>`;
+}
 
 const QUILL_MODULES = {
   toolbar: [
@@ -93,7 +130,7 @@ const QUILL_MODULES = {
 };
 
 export default function BudgetEditorWYSIWYG({ budgetData = {}, onSave, onSend }) {
-  const [htmlContent, setHtmlContent] = useState(DEFAULT_BUDGET_HTML);
+  const [htmlContent, setHtmlContent] = useState(() => buildBudgetHtml(budgetData));
   const [logoBase64, setLogoBase64] = useState('');
   const [loadingLogo, setLoadingLogo] = useState(false);
   const fileInputRef = useRef(null);
@@ -185,8 +222,8 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, onSave, onSend })
   };
 
   const resetDocument = () => {
-    setHtmlContent(DEFAULT_BUDGET_HTML);
-    toast.success('Documento restaurado ao padrão');
+    setHtmlContent(buildBudgetHtml(budgetData));
+    toast.success('Documento regenerado com os dados do formulário');
   };
 
   return (
@@ -223,7 +260,7 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, onSave, onSend })
               className="gap-2"
             >
               <RefreshCw className="w-4 h-4" />
-              Restaurar
+              Regenerar do Formulário
             </Button>
           </div>
         </div>

@@ -113,8 +113,9 @@ export default function ContractGenerator() {
   const handleSaveDocument = async (editorData) => {
     const fullData = {
       ...contractData,
+      consultor_email: user?.email,
       document_html: editorData.documentHtml,
-      template_id: editorData.selectedTemplate
+      template_id: editorData.selectedTemplate || contractData.template_id,
     };
     saveContractMutation.mutate(fullData);
   };
@@ -173,7 +174,7 @@ export default function ContractGenerator() {
         </div>
 
         {step === 'form' && (
-          <ContractForm onSubmit={handleFormSubmit} />
+          <ContractForm user={user} templates={templates} onSubmit={handleFormSubmit} />
         )}
 
         {step === 'editor' && contractData && (

@@ -148,13 +148,6 @@ export default function Licenses() {
     loadUser();
   }, []);
 
-  // Garante que property_id seja preenchido quando properties são carregadas
-  useEffect(() => {
-    if (allProperties.length > 0 && !formData.property_id) {
-      setFormData(prev => ({ ...prev, property_id: allProperties[0].id }));
-    }
-  }, [allProperties]);
-
   const isConsultor = user?.user_type === 'consultor' || isEquipe;
   const isClientConsultor = user?.user_type === 'client_consultor';
   const canEdit = !isClientConsultor && canCreate;
@@ -191,6 +184,13 @@ export default function Licenses() {
   const allProperties = isClientConsultor
     ? clientConsultorProperties
     : (user?.user_type === 'consultor' || isEquipe) ? properties : ownerProperties;
+
+  // Garante que property_id seja preenchido quando properties são carregadas
+  useEffect(() => {
+    if (allProperties.length > 0 && !formData.property_id) {
+      setFormData(prev => ({ ...prev, property_id: allProperties[0].id }));
+    }
+  }, [allProperties]);
 
   const { data: licenses, isLoading } = useQuery({
     queryKey: ['licenses', consultorPropertyId, queryEmail, isClientConsultor],

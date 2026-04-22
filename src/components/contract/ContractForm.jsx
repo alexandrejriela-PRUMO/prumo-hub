@@ -15,7 +15,9 @@ export default function ContractForm({ properties = [], onSubmit, initialData = 
     total_value: 0,
     payment_terms: '',
     signers: [{ name: '', email: '' }],
-    notes: ''
+    notes: '',
+    contratante: { name: '', document: '', address: '' },
+    contratada: { name: '', document: '', address: '' }
   });
 
   const handleAddSigner = () => {
@@ -103,6 +105,74 @@ export default function ContractForm({ properties = [], onSubmit, initialData = 
                 required
               />
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Contratante */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Contratante (Quem contrata)</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium mb-1">Razão Social / Nome Completo *</label>
+            <Input
+              value={formData.contratante.name}
+              onChange={(e) => setFormData({...formData, contratante: {...formData.contratante, name: e.target.value}})}
+              placeholder="Nome ou Razão Social do Contratante"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">CNPJ / CPF</label>
+            <Input
+              value={formData.contratante.document}
+              onChange={(e) => setFormData({...formData, contratante: {...formData.contratante, document: e.target.value}})}
+              placeholder="00.000.000/0001-00 ou 000.000.000-00"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Endereço</label>
+            <Input
+              value={formData.contratante.address}
+              onChange={(e) => setFormData({...formData, contratante: {...formData.contratante, address: e.target.value}})}
+              placeholder="Rua, nº, Cidade - UF"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Contratada */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Contratada (Quem presta o serviço)</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium mb-1">Razão Social / Nome Completo *</label>
+            <Input
+              value={formData.contratada.name}
+              onChange={(e) => setFormData({...formData, contratada: {...formData.contratada, name: e.target.value}})}
+              placeholder="Nome ou Razão Social da Contratada"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">CNPJ / CPF</label>
+            <Input
+              value={formData.contratada.document}
+              onChange={(e) => setFormData({...formData, contratada: {...formData.contratada, document: e.target.value}})}
+              placeholder="00.000.000/0001-00 ou 000.000.000-00"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Endereço</label>
+            <Input
+              value={formData.contratada.address}
+              onChange={(e) => setFormData({...formData, contratada: {...formData.contratada, address: e.target.value}})}
+              placeholder="Rua, nº, Cidade - UF"
+            />
           </div>
         </CardContent>
       </Card>

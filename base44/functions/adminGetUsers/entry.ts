@@ -26,6 +26,9 @@ Deno.serve(async (req) => {
       const clients = users.filter(u => u.user_type === 'client_consultor');
       return Response.json({ clients });
     }
+    
+    // Log: entramos na seção de usuários
+    console.log('[adminGetUsers] Processing users request...');
 
     // Busca usuários
     const users = await base44.asServiceRole.entities.User.list('-created_date', 200);
@@ -34,24 +37,57 @@ Deno.serve(async (req) => {
     let pendingInvites = [];
     if (!type || type === 'users') {
       const teamMembers = await base44.asServiceRole.entities.TeamMember.list('-invited_at', 500);
-      pendingInvites = teamMembers
-        .filter(tm => tm.status === 'Pendente')
-        .map(tm => ({
-          id: `pending_${tm.id}`,
-          email: tm.member_email,
-          full_name: tm.member_name || tm.member_email,
-          user_type: 'consultor', // default
-          plano: 'start', // default
-          role: 'user',
-          status: 'Pendente',
-          subscription_status: 'pending_invite',
-          is_pending_invite: true,
-          invite_data: {
-            team_member_id: tm.id,
-            invited_at: tm.invited_at,
-            expires_at: tm.expires_at,
-          }
-        }));
+      console.log('[adminGetUsers] Total TeamMembers fetched:', teamMembers.length);
+      
+      // Log dos status encontrados (para debug)
+      const statuses = new Set(teamMembers.map(tm => tm.status).filter(Boolean));
+      console.log('[adminGetUsers] Found statuses:', Array.from(statuses));
+      
+      // Filtra por status 'Pendente' ou 'pending' (case-insensitive)
+      const pendingTeamMembers = teamMembers.filter(tm => 
+        tm.status && (tm.status === 'Pendente' || tm.status.toLowerCase() === 'pendente')
+      );
+      console.log('[adminGetUsers] Pending TeamMembers (case-sensitive):', pendingTeamMembers.length);
+      
+      // Se não encontrou, tenta sem case-sensitivity e busca por qualquer coisa com "pend"
+      if (pendingTeamMembers.length === 0) {
+        const alternativePending = teamMembers.filter(tm => 
+          !tm.status || tm.status.toLowerCase().includes('pend')
+        );
+        console.log('[adminGetUsers] Alternative pending matches:', alternativePending.length);
+        if (alternativePending.length > 0) {
+          pendingTeamMembers.push(...alternativePending);
+        }
+      }
+      
+      console.log('[adminGetUsers] Final pending TeamMembers:', pendingTeamMembers.length);
+      
+      pendingInvites = pendingTeamMembers
+        .map(tm => {
+          // Tenta usar pending_user_type ou default baseado em tipo
+          const userType = tm.pending_user_type || 'consultor';
+          const plan = userType === 'produtor' ? 'unico' : 'start';
+          
+          return {
+            id: `pending_${tm.id}`,
+            email: tm.member_email,
+            full_name: tm.member_name || tm.member_email,
+            user_type: userType,
+            plano: plan,
+            role: 'user',
+            status: 'Pendente',
+            subscription_status: 'pending_invite',
+            is_pending_invite: true,
+            invite_data: {
+              team_member_id: tm.id,
+              invited_at: tm.invited_at,
+              expires_at: tm.expires_at,
+              member_role: tm.member_role,
+            }
+          };
+        });
+      
+      console.log('[adminGetUsers] Pending invites mapped:', pendingInvites.length);
     }
 
     // Busca membros de equipe para identificar o consultor principal
@@ -99,7 +135,14 @@ Deno.serve(async (req) => {
     // Combine usuários criados + convites pendentes
     const finalUsers = !type || type === 'users' ? [...enrichedUsers, ...pendingInvites] : enrichedUsers;
 
-    return Response.json({ users: finalUsers });
+    return Response.json({ 
+      users: finalUsers,
+      _debug: {
+        total_users: enrichedUsers.length,
+        pending_invites_found: pendingInvites.length,
+        pending_invite_emails: pendingInvites.map(p => p.email)
+      }
+    });
 
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

@@ -40,10 +40,41 @@ export default function AdminInviteUser() {
     setLoading(true);
     setResult(null);
     try {
-      // 1. Invite via base44 platform
+      const currentUser = await base44.auth.me();
+      
+      // 1. Create a TeamMember with Pendente status (as if it's an invite)
+      const inviteToken = Math.random().toString(36).substr(2, 9) + Date.now();
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days
+      
+      const teamMemberData = {
+        primary_user_email: currentUser.email,
+        consultor_email: currentUser.email,
+        member_email: form.email,
+        member_name: form.email.split('@')[0],
+        member_role: 'Consultor',
+        status: 'Pendente',
+        invite_token: inviteToken,
+        invited_at: now.toISOString(),
+        expires_at: expiresAt.toISOString(),
+        pending_user_type: form.user_type,
+        permissions: {
+          office: { view: true, edit: true },
+          property_center: { view: true, edit: true },
+          advanced_modules: { access: true },
+          reports: { view: true },
+          ai_chat: { access: true },
+          team_management: { manage: false },
+          financial: { view: true },
+        }
+      };
+      
+      await base44.asServiceRole.entities.TeamMember.create(teamMemberData);
+
+      // 2. Invite via base44 platform
       await base44.users.inviteUser(form.email, form.role);
 
-      // 2. Wait a bit then update user metadata via admin function
+      // 3. Wait a bit then update user metadata via admin function
       setTimeout(async () => {
         try {
           const res = await base44.functions.invoke('adminGetUsers', { type: 'users' });

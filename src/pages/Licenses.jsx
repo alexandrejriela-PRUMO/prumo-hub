@@ -274,6 +274,9 @@ export default function Licenses() {
       conditions: license.conditions || [],
       documents: license.documents || [],
     });
+    setNewCondition('');
+    setNewConditionDueDate('');
+    setDocType('Licença Principal');
     setEditDialogOpen(true);
   };
 
@@ -908,19 +911,19 @@ export default function Licenses() {
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                  {properties.map(prop => (
-                    <SelectItem key={prop.id} value={prop.id}>
-                      {prop.property_name} - {prop.city || 'N/A'}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                   {allProperties.map(prop => (
+                     <SelectItem key={prop.id} value={prop.id}>
+                       {prop.property_name} - {prop.city || 'N/A'}
+                     </SelectItem>
+                   ))}
+                 </SelectContent>
+                </Select>
+                </div>
 
-            <div className="space-y-2">
-              <Label>Fase *</Label>
-              <Select
-                value={formData.elaboration_stage}
+                <div className="space-y-2">
+                <Label>Fase *</Label>
+                <Select
+                 value={formData.elaboration_stage}
                 onValueChange={(v) => setFormData({ ...formData, elaboration_stage: v })}
               >
                 <SelectTrigger>

@@ -22,62 +22,81 @@ const modules = {
   ]
 };
 
-const buildContractHtml = (c) => {
-  c = c || {};
+function buildContractHtml(contractData) {
+  const c = contractData || {};
   const contratante = c.contratante || {};
   const contratada = c.contratada || {};
-  return `
-    <div style="font-family: 'Calibri', 'Arial', sans-serif; line-height: 1.8; color: #333;">
-      <div style="text-align: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 3px solid #1B4332;">
-        <h1 style="color: #1B4332; margin: 0; font-size: 28px; font-weight: bold;">CONTRATO DE ${(c.contract_type || 'SERVIÇOS').toUpperCase()}</h1>
-        <p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">Data: ${new Date().toLocaleDateString('pt-BR')}</p>
-      </div>
-      <div style="margin-bottom: 30px;">
-        <h2 style="color: #1B4332; font-size: 16px; margin-top: 0;">1. CONTRATANTE</h2>
-        <p style="margin: 8px 0;"><strong>Razão Social/Nome:</strong> ${contratante.name || c.client_name || '___________________________'}</p>
-        <p style="margin: 8px 0;"><strong>CNPJ/CPF:</strong> ${contratante.document || '___________________________'}</p>
-        <p style="margin: 8px 0;"><strong>Endereço:</strong> ${contratante.address || '___________________________'}</p>
-        ${c.client_email ? `<p style="margin: 8px 0;"><strong>E-mail:</strong> ${c.client_email}</p>` : ''}
-      </div>
-      <div style="margin-bottom: 30px;">
-        <h2 style="color: #1B4332; font-size: 16px; margin-top: 0;">2. CONTRATADA</h2>
-        <p style="margin: 8px 0;"><strong>Razão Social/Nome:</strong> ${contratada.name || '___________________________'}</p>
-        <p style="margin: 8px 0;"><strong>CNPJ/CPF:</strong> ${contratada.document || '___________________________'}</p>
-        <p style="margin: 8px 0;"><strong>Endereço:</strong> ${contratada.address || '___________________________'}</p>
-      </div>
-      <div style="margin-bottom: 30px;">
-        <h2 style="color: #1B4332; font-size: 16px; margin-top: 0;">3. OBJETO DO CONTRATO</h2>
-        <p>${c.object || 'Descrição dos serviços ou acordo aqui.'}</p>
-      </div>
-      <div style="margin-bottom: 30px;">
-        <h2 style="color: #1B4332; font-size: 16px; margin-top: 0;">4. VIGÊNCIA</h2>
-        <p style="margin: 8px 0;"><strong>Início:</strong> ${c.start_date || '___/___/______'}</p>
-        <p style="margin: 8px 0;"><strong>Término:</strong> ${c.end_date || '___/___/______'}</p>
-      </div>
-      <div style="margin-bottom: 30px;">
-        <h2 style="color: #1B4332; font-size: 16px; margin-top: 0;">5. VALOR E CONDIÇÕES DE PAGAMENTO</h2>
-        <p style="margin: 8px 0;"><strong>Valor Total:</strong> R$ ${c.total_value ? Number(c.total_value).toFixed(2) : '0,00'}</p>
-        <p style="margin: 8px 0;"><strong>Condições de Pagamento:</strong> ${c.payment_terms || 'Especificar condições'}</p>
-      </div>
-      <div style="margin-bottom: 30px;">
-        <h2 style="color: #1B4332; font-size: 16px; margin-top: 0;">6. TERMOS E CONDIÇÕES</h2>
-        <p>${c.notes || 'Especificar termos e condições adicionais.'}</p>
-      </div>
-      <div style="margin-top: 60px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
-        <div style="text-align: center;">
-          <div style="border-top: 1px solid #000; padding-top: 20px; margin-bottom: 5px;"></div>
-          <p style="margin: 0; font-size: 13px;"><strong>${contratante.name || 'Contratante'}</strong></p>
-          <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">Data: ___/___/_______</p>
-        </div>
-        <div style="text-align: center;">
-          <div style="border-top: 1px solid #000; padding-top: 20px; margin-bottom: 5px;"></div>
-          <p style="margin: 0; font-size: 13px;"><strong>${contratada.name || 'Contratada'}</strong></p>
-          <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">Data: ___/___/_______</p>
-        </div>
-      </div>
-    </div>
-  `;
-};
+  const blank = '___________________________';
+  const blankDate = '___/___/______';
+
+  const tipoContrato = (c.contract_type || 'SERVIÇOS').toUpperCase();
+  const dataHoje = new Date().toLocaleDateString('pt-BR');
+  const nomeContratante = contratante.name || c.client_name || blank;
+  const docContratante = contratante.document || blank;
+  const endContratante = contratante.address || blank;
+  const emailContratante = c.client_email ? '<p style="margin: 8px 0;"><strong>E-mail:</strong> ' + c.client_email + '</p>' : '';
+  const nomeContratada = contratada.name || blank;
+  const docContratada = contratada.document || blank;
+  const endContratada = contratada.address || blank;
+  const objeto = c.object || 'Descrição dos serviços ou acordo aqui.';
+  const inicio = c.start_date || blankDate;
+  const termino = c.end_date || blankDate;
+  const valor = c.total_value ? Number(c.total_value).toFixed(2) : '0,00';
+  const pagamento = c.payment_terms || 'Especificar condições';
+  const notas = c.notes || 'Especificar termos e condições adicionais.';
+  const nomeContratanteAssinatura = contratante.name || 'Contratante';
+  const nomeContratadaAssinatura = contratada.name || 'Contratada';
+
+  return '<div style="font-family: Calibri, Arial, sans-serif; line-height: 1.8; color: #333;">'
+    + '<div style="text-align: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 3px solid #1B4332;">'
+    + '<h1 style="color: #1B4332; margin: 0; font-size: 28px; font-weight: bold;">CONTRATO DE ' + tipoContrato + '</h1>'
+    + '<p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">Data: ' + dataHoje + '</p>'
+    + '</div>'
+    + '<div style="margin-bottom: 30px;">'
+    + '<h2 style="color: #1B4332; font-size: 16px; margin-top: 0;">1. CONTRATANTE</h2>'
+    + '<p style="margin: 8px 0;"><strong>Razão Social/Nome:</strong> ' + nomeContratante + '</p>'
+    + '<p style="margin: 8px 0;"><strong>CNPJ/CPF:</strong> ' + docContratante + '</p>'
+    + '<p style="margin: 8px 0;"><strong>Endereço:</strong> ' + endContratante + '</p>'
+    + emailContratante
+    + '</div>'
+    + '<div style="margin-bottom: 30px;">'
+    + '<h2 style="color: #1B4332; font-size: 16px; margin-top: 0;">2. CONTRATADA</h2>'
+    + '<p style="margin: 8px 0;"><strong>Razão Social/Nome:</strong> ' + nomeContratada + '</p>'
+    + '<p style="margin: 8px 0;"><strong>CNPJ/CPF:</strong> ' + docContratada + '</p>'
+    + '<p style="margin: 8px 0;"><strong>Endereço:</strong> ' + endContratada + '</p>'
+    + '</div>'
+    + '<div style="margin-bottom: 30px;">'
+    + '<h2 style="color: #1B4332; font-size: 16px; margin-top: 0;">3. OBJETO DO CONTRATO</h2>'
+    + '<p>' + objeto + '</p>'
+    + '</div>'
+    + '<div style="margin-bottom: 30px;">'
+    + '<h2 style="color: #1B4332; font-size: 16px; margin-top: 0;">4. VIGÊNCIA</h2>'
+    + '<p style="margin: 8px 0;"><strong>Início:</strong> ' + inicio + '</p>'
+    + '<p style="margin: 8px 0;"><strong>Término:</strong> ' + termino + '</p>'
+    + '</div>'
+    + '<div style="margin-bottom: 30px;">'
+    + '<h2 style="color: #1B4332; font-size: 16px; margin-top: 0;">5. VALOR E CONDIÇÕES DE PAGAMENTO</h2>'
+    + '<p style="margin: 8px 0;"><strong>Valor Total:</strong> R$ ' + valor + '</p>'
+    + '<p style="margin: 8px 0;"><strong>Condições de Pagamento:</strong> ' + pagamento + '</p>'
+    + '</div>'
+    + '<div style="margin-bottom: 30px;">'
+    + '<h2 style="color: #1B4332; font-size: 16px; margin-top: 0;">6. TERMOS E CONDIÇÕES</h2>'
+    + '<p>' + notas + '</p>'
+    + '</div>'
+    + '<div style="margin-top: 60px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">'
+    + '<div style="text-align: center;">'
+    + '<div style="border-top: 1px solid #000; padding-top: 20px; margin-bottom: 5px;"></div>'
+    + '<p style="margin: 0; font-size: 13px;"><strong>' + nomeContratanteAssinatura + '</strong></p>'
+    + '<p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">Data: ___/___/_______</p>'
+    + '</div>'
+    + '<div style="text-align: center;">'
+    + '<div style="border-top: 1px solid #000; padding-top: 20px; margin-bottom: 5px;"></div>'
+    + '<p style="margin: 0; font-size: 13px;"><strong>' + nomeContratadaAssinatura + '</strong></p>'
+    + '<p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">Data: ___/___/_______</p>'
+    + '</div>'
+    + '</div>'
+    + '</div>';
+}
 
 export default function ContractEditorWYSIWYG({ 
   contractData, 

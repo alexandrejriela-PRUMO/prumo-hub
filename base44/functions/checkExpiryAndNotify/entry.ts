@@ -35,21 +35,23 @@ Deno.serve(async (req) => {
       } catch (e) { return []; }
     };
 
-    // Deduplicação: verifica notificação recente (últimas 20h)
+    // Deduplicação por dia: evita recriar notificação deletada pelo usuário
+    const todayStr = today.toISOString().split('T')[0];
     const createNotifSafe = async (userEmail, title, message, eventType, severity, link) => {
       if (!userEmail) return;
       try {
         const recent = await base44.asServiceRole.entities.InAppNotification.filter(
-          { user_email: userEmail, title }, '-created_date', 1
+          { user_email: userEmail }, '-created_date', 200
         );
-        if (recent.length > 0) {
-          const hrs = (today - new Date(recent[0].created_date)) / (1000 * 60 * 60);
-          if (hrs < 20) return;
-        }
+        const alreadySentToday = recent.some(n =>
+          n.title === title &&
+          n.metadata?.checked_date === todayStr
+        );
+        if (alreadySentToday) return;
         await base44.asServiceRole.entities.InAppNotification.create({
           user_email: userEmail, title, message, event_type: eventType,
           severity, read: false, link,
-          metadata: { type: 'expiry_check_legacy', checked_at: today.toISOString() }
+          metadata: { type: 'expiry_check_legacy', checked_at: today.toISOString(), checked_date: todayStr }
         });
       } catch (e) {
         console.error('[ExpiryLegacy] Erro notif:', e.message);

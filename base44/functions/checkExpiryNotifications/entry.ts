@@ -65,21 +65,28 @@ Deno.serve(async (req) => {
       return canReceiveNotification(recipient, consultor);
     };
 
-    // ─── Push in-app com deduplicação (janela 20h) ───────────────────────
+    // ─── Push in-app com deduplicação por dia ────────────────────────────
+    // Usa todayStr para garantir que não crie duplicata no mesmo dia de execução,
+    // mesmo que a notificação anterior tenha sido deletada pelo usuário.
+    // A deduplicação é baseada em metadata.checked_date === todayStr.
     const createNotif = async (userEmail, title, message, eventType, severity, link) => {
       if (!userEmail) return;
       try {
+        // Busca notificações recentes (últimas 200) para verificar se já foi criada hoje
         const recent = await base44.asServiceRole.entities.InAppNotification.filter(
-          { user_email: userEmail, title }, '-created_date', 1
+          { user_email: userEmail }, '-created_date', 200
         );
-        if (recent.length > 0) {
-          const hrs = (today - new Date(recent[0].created_date)) / (1000 * 60 * 60);
-          if (hrs < 20) return;
-        }
+        // Verifica se já existe notificação com mesmo título E checked_date de hoje
+        const alreadySentToday = recent.some(n =>
+          n.title === title &&
+          n.metadata?.checked_date === todayStr
+        );
+        if (alreadySentToday) return;
+
         await base44.asServiceRole.entities.InAppNotification.create({
           user_email: userEmail, title, message, event_type: eventType,
           severity, read: false, link,
-          metadata: { type: 'expiry_check', checked_at: today.toISOString() }
+          metadata: { type: 'expiry_check', checked_at: today.toISOString(), checked_date: todayStr }
         });
         totalPush++;
       } catch (e) {

@@ -5,6 +5,9 @@ export function useRealtimeNotifications(userEmail) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const intervalRef = useRef(null);
+  // Rastreia IDs deletados e lidos localmente para sobreviver ao reload periódico
+  const deletedIds = useRef(new Set());
+  const readIds = useRef(new Set());
 
   const load = useCallback(async () => {
     if (!userEmail) return;
@@ -14,17 +17,23 @@ export function useRealtimeNotifications(userEmail) {
         '-created_date',
         100
       );
-      // Remove duplicatas baseadas em title + event_type + hora (mesma hora)
-      const unique = [];
-      const seen = new Set();
-      for (const n of data) {
-        const key = `${n.title}|${n.event_type}|${new Date(n.created_date).toISOString().slice(0, 13)}`;
-        if (!seen.has(key)) {
-          unique.push(n);
-          seen.add(key);
+      setNotifications(prev => {
+        // Remove duplicatas por title + event_type + hora
+        const unique = [];
+        const seen = new Set();
+        for (const n of data) {
+          // Pula IDs que foram deletados localmente (ainda não propagados)
+          if (deletedIds.current.has(n.id)) continue;
+          const key = `${n.title}|${n.event_type}|${new Date(n.created_date).toISOString().slice(0, 13)}`;
+          if (!seen.has(key)) {
+            // Aplica estado de lido local se já foi marcado localmente
+            const isRead = readIds.current.has(n.id) ? true : n.read;
+            unique.push({ ...n, read: isRead });
+            seen.add(key);
+          }
         }
-      }
-      setNotifications(unique);
+        return unique;
+      });
     } catch (error) {
       console.error('[Notif] Erro ao carregar notificações:', error);
     } finally {
@@ -37,7 +46,6 @@ export function useRealtimeNotifications(userEmail) {
 
     load();
 
-    // Subscribe a mudanças em tempo real
     const unsubscribe = base44.entities.InAppNotification.subscribe((event) => {
       if (event.type === 'create') {
         if (event.data?.user_email === userEmail) {
@@ -51,16 +59,15 @@ export function useRealtimeNotifications(userEmail) {
           });
         }
       } else if (event.type === 'update') {
-        // Atualiza o item no estado local imediatamente
         setNotifications(prev => prev.map(n => n.id === event.id ? { ...n, ...event.data } : n));
       } else if (event.type === 'delete') {
-        // Remove do estado local imediatamente
+        deletedIds.current.add(event.id);
         setNotifications(prev => prev.filter(n => n.id !== event.id));
       }
     });
 
-    // Refetch a cada 60s (era 30s, aumentado para reduzir race conditions)
-    intervalRef.current = setInterval(load, 60000);
+    // Refetch a cada 90s
+    intervalRef.current = setInterval(load, 90000);
 
     return () => {
       unsubscribe();
@@ -69,13 +76,13 @@ export function useRealtimeNotifications(userEmail) {
   }, [userEmail, load]);
 
   const markAsRead = useCallback(async (id) => {
-    // Atualização otimista imediata no estado local
+    readIds.current.add(id);
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
     try {
       await base44.entities.InAppNotification.update(id, { read: true });
     } catch (error) {
       console.error('[Notif] Erro ao marcar como lido:', error);
-      // Reverte em caso de erro
+      readIds.current.delete(id);
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: false } : n));
     }
   }, []);
@@ -84,25 +91,24 @@ export function useRealtimeNotifications(userEmail) {
     const unread = notifs.filter(n => !n.read);
     if (unread.length === 0) return;
     const ids = unread.map(n => n.id);
-    // Atualização otimista imediata
+    ids.forEach(id => readIds.current.add(id));
     setNotifications(prev => prev.map(n => ids.includes(n.id) ? { ...n, read: true } : n));
     try {
       await Promise.all(unread.map(n => base44.entities.InAppNotification.update(n.id, { read: true })));
     } catch (error) {
       console.error('[Notif] Erro ao marcar todas como lidas:', error);
-      // Em caso de erro, refaz o fetch para sincronizar
       load();
     }
   }, [load]);
 
   const deleteNotification = useCallback(async (id) => {
-    // Remove imediatamente do estado local
+    deletedIds.current.add(id);
     setNotifications(prev => prev.filter(n => n.id !== id));
     try {
       await base44.entities.InAppNotification.delete(id);
     } catch (error) {
       console.error('[Notif] Erro ao deletar notificação:', error);
-      // Em caso de erro, refaz o fetch para sincronizar
+      deletedIds.current.delete(id);
       load();
     }
   }, [load]);

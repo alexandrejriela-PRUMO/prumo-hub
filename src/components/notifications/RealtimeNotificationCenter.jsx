@@ -144,8 +144,14 @@ function timeAgo(dateStr) {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
 }
 
-export default function RealtimeNotificationCenter({ user, isOpen, onClose }) {
-  const { notifications = [], unreadCount = 0, markAsRead, markAllAsRead, deleteNotification } = useRealtimeNotifications(user?.email) || {};
+export default function RealtimeNotificationCenter({ user, isOpen, onClose, notifications: propNotifications, unreadCount: propUnreadCount, markAsRead: propMarkAsRead, markAllAsRead: propMarkAllAsRead, deleteNotification: propDeleteNotification }) {
+  // Usa props do layout (instância compartilhada) se disponíveis, senão cria instância própria
+  const hook = useRealtimeNotifications(propNotifications !== undefined ? null : user?.email);
+  const notifications = propNotifications !== undefined ? propNotifications : (hook?.notifications || []);
+  const unreadCount = propUnreadCount !== undefined ? propUnreadCount : (hook?.unreadCount || 0);
+  const markAsRead = propMarkAsRead || hook?.markAsRead;
+  const markAllAsRead = propMarkAllAsRead || hook?.markAllAsRead;
+  const deleteNotification = propDeleteNotification || hook?.deleteNotification;
   const navigate = useNavigate();
   const [readFilter, setReadFilter] = useState('all'); // 'all' | 'unread'
   const [categoryFilter, setCategoryFilter] = useState('all');

@@ -328,7 +328,7 @@ export default function Layout({ children, currentPageName }) {
     });
   }, [currentPageName]);
 
-  const { unreadCount } = useRealtimeNotifications(user?.email);
+  const { unreadCount, notifications, markAsRead, markAllAsRead, deleteNotification } = useRealtimeNotifications(user?.email);
 
   const handleLogout = () => {
     base44.auth.logout();
@@ -507,6 +507,11 @@ export default function Layout({ children, currentPageName }) {
               user={user}
               isOpen={notificationOpen}
               onClose={() => setNotificationOpen(false)}
+              notifications={notifications}
+              unreadCount={unreadCount}
+              markAsRead={markAsRead}
+              markAllAsRead={markAllAsRead}
+              deleteNotification={deleteNotification}
             />
 
       {/* Mobile Overlay */}

@@ -85,15 +85,18 @@ Deno.serve(async (req) => {
 </html>
     `;
 
-    // Enviar o email via integração Base44
-    const emailResult = await base44.integrations.Core.SendEmail({
-      to: email,
-      subject: `Bem-vindo à PRUMO Hub - Acesse sua conta agora!`,
-      body: htmlBody,
-      from_name: 'PRUMO Hub'
-    });
-
-    console.log(`✅ [sendCustomInviteEmail] Email enviado para ${email}`);
+    // Enviar o email via integração Base44 (se disponível)
+    try {
+      await base44.integrations.Core.SendEmail({
+        to: email,
+        subject: `Bem-vindo à PRUMO Hub - Acesse sua conta agora!`,
+        body: htmlBody,
+        from_name: 'PRUMO Hub'
+      });
+      console.log(`✅ [sendCustomInviteEmail] Email enviado para ${email}`);
+    } catch (emailErr) {
+      console.warn(`⚠️ [sendCustomInviteEmail] Email falhou (continuando): ${emailErr.message}`);
+    }
 
     return Response.json({
       success: true,

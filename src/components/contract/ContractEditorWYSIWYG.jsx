@@ -1,8 +1,8 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Download, Save, Mail, Copy, ZoomIn, ZoomOut } from 'lucide-react';
+import { Download, Save, Mail, Copy, ZoomIn, ZoomOut, Image as ImageIcon, RefreshCw } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { base44 } from '@/api/base44Client';
@@ -112,6 +112,9 @@ export default function ContractEditorWYSIWYG({
   const [templateName, setTemplateName] = useState('');
   const [showTemplateForm, setShowTemplateForm] = useState(false);
   const [zoom, setZoom] = useState(100);
+  const [logoBase64, setLogoBase64] = useState('');
+  const [loadingLogo, setLoadingLogo] = useState(false);
+  const fileInputRef = useRef(null);
 
   // Inject quill CSS dynamically to avoid duplicate React instance from direct CSS import
   useEffect(() => {
@@ -196,6 +199,40 @@ export default function ContractEditorWYSIWYG({
     toast.success('Modelo duplicado para edição');
   };
 
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setLoadingLogo(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result;
+        if (base64) {
+          setLogoBase64(base64);
+          toast.success('Logo carregada com sucesso!');
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      toast.error('Erro ao carregar logo');
+      console.error(error);
+    } finally {
+      setLoadingLogo(false);
+    }
+  };
+
+  const generateCompleteHTML = () => {
+    let finalHTML = documentHtml;
+    
+    if (logoBase64) {
+      const logoHTML = `<img src="${logoBase64}" style="max-height: 80px; margin-bottom: 20px;" alt="Logo Empresa">`;
+      finalHTML = logoHTML + finalHTML;
+    }
+
+    return finalHTML;
+  };
+
   return (
     <div className="space-y-6">
       <style>{`
@@ -243,6 +280,24 @@ export default function ContractEditorWYSIWYG({
           <CardTitle className="text-lg">Ferramentas</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
+
+          <Button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={loadingLogo}
+            size="sm"
+            variant="outline"
+            className="gap-2"
+          >
+            <ImageIcon className="w-4 h-4" />
+            {loadingLogo ? 'Carregando...' : 'Logo'}
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleLogoUpload}
+            className="hidden"
+          />
 
           <Button
             size="sm"
@@ -327,7 +382,7 @@ export default function ContractEditorWYSIWYG({
               transformOrigin: 'top left',
               minHeight: '600px'
             }}
-            dangerouslySetInnerHTML={{ __html: documentHtml }}
+            dangerouslySetInnerHTML={{ __html: generateCompleteHTML() }}
           />
         </CardContent>
       </Card>
@@ -354,7 +409,7 @@ export default function ContractEditorWYSIWYG({
             } catch (e) {
               console.error('Erro ao gerar PDF para upload:', e);
             }
-            onSave({ documentHtml, selectedTemplate, pdfUrl });
+            onSave({ documentHtml: generateCompleteHTML(), selectedTemplate, pdfUrl, logoBase64 });
           }}
           variant="outline"
           className="gap-2"
@@ -362,7 +417,7 @@ export default function ContractEditorWYSIWYG({
           <Save className="w-4 h-4" /> Salvar Contrato
         </Button>
         <Button
-          onClick={() => onSendToSign({ documentHtml, selectedTemplate })}
+          onClick={() => onSendToSign({ documentHtml: generateCompleteHTML(), selectedTemplate, logoBase64 })}
           className="bg-emerald-600 hover:bg-emerald-700 gap-2"
         >
           <Mail className="w-4 h-4" /> Enviar para Assinatura

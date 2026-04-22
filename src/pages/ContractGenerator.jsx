@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import ContractForm from '@/components/contract/ContractForm';
 import ContractEditorWYSIWYG from '@/components/contract/ContractEditorWYSIWYG';
 import { ChevronLeft } from 'lucide-react';
-import { useNavigationGuard } from '@/hooks/useNavigationGuard';
+import { useNavigationGuard } from '../hooks/useNavigationGuard';
 
 export default function ContractGenerator() {
   const [step, setStep] = useState('form');

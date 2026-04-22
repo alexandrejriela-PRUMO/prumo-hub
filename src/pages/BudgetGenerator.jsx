@@ -9,7 +9,7 @@ import BudgetEditorWYSIWYG from '@/components/budget/BudgetEditorWYSIWYG';
 import { ChevronLeft, Download, FileEdit } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { useNavigationGuard } from '@/hooks/useNavigationGuard';
+import { useNavigationGuard } from '../hooks/useNavigationGuard';
 
 export default function BudgetGenerator() {
   const [step, setStep] = useState('form'); // form, editor, history

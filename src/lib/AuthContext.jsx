@@ -135,9 +135,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const navigateToLogin = () => {
-    // Avoid redirect loops: don't pass the current URL as next if it will trigger auth again
-    const next = window.location.pathname !== '/' ? window.location.href : undefined;
-    base44.auth.redirectToLogin(next);
+    base44.auth.redirectToLogin('https://hub.prumo.site/');
   };
 
   return (

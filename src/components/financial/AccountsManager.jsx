@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Landmark, Zap, Wallet, Banknote } from 'lucide-react';
+import { Plus, Pencil, Trash2, Landmark, Wallet, Banknote } from 'lucide-react';
 import { toast } from 'sonner';
 
 const ACCOUNT_TYPES = ['Caixa', 'Conta Corrente', 'Conta Poupança', 'PIX', 'Outro'];
@@ -17,7 +17,6 @@ const TYPE_ICONS = {
   'Caixa': Banknote,
   'Conta Corrente': Landmark,
   'Conta Poupança': Landmark,
-  'Stripe': Zap,
   'PIX': Wallet,
   'Outro': Wallet,
 };
@@ -69,8 +68,6 @@ export default function AccountsManager({ consultorEmail }) {
     else createMutation.mutate(payload);
   };
 
-  // Stripe account is system, show separately
-  const stripeAccounts = accounts.filter(a => a.is_stripe);
   const userAccounts = accounts.filter(a => !a.is_stripe);
 
   return (

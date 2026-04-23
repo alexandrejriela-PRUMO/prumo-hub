@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import {
   TrendingUp, TrendingDown, ArrowLeftRight, Download, Search,
-  ChevronUp, ChevronDown, Plus, Pencil, Trash2, Zap, Banknote, Paperclip
+  ChevronUp, ChevronDown, Plus, Pencil, Trash2, Banknote, Paperclip
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
@@ -46,11 +46,7 @@ export default function FinancialTransactions() {
 
   useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);
 
-  const { data: charges = [] } = useQuery({
-    queryKey: ['fin-charges', user?.email],
-    queryFn: () => base44.entities.ConsultorCharge.filter({ consultor_email: user.email }, '-due_date', 500),
-    enabled: !!user?.email,
-  });
+  const charges = [];
   const { data: manualEntries = [] } = useQuery({
     queryKey: ['fin-manual', user?.email],
     queryFn: () => base44.entities.Expense.filter({ consultor_email: user.email }, '-date', 500),
@@ -82,23 +78,6 @@ export default function FinancialTransactions() {
 
   const allTransactions = useMemo(() => {
     const txns = [];
-
-    // Transações de Stripe
-    charges.forEach(c => {
-      const prop = propertyMap[c.property_id];
-      txns.push({
-        id: `charge-${c.id}`, type:'receita', source:'Stripe', sourceIcon:'stripe',
-        description: c.description || 'Cobrança via Stripe',
-        client: prop?.client_name || c.client_email?.split('@')[0] || '—',
-        amount: c.amount||0,
-        date: c.due_date || c.created_date?.substring(0,10),
-        competencia: (c.due_date||c.created_date?.substring(0,10))?.substring(0,7),
-        status: normalizeStatus(c.status),
-        payment_method: c.payment_method,
-        accountLabel: 'Conta Stripe',
-        editable: false,
-      });
-    });
 
     // Todas as entradas manuais (Expense) — incluindo parcelamentos registrados
     manualEntries.forEach(e => {
@@ -282,15 +261,11 @@ export default function FinancialTransactions() {
                       <span className={`text-xs font-semibold ${t.type==='receita'?'text-emerald-600':'text-red-600'}`}>{t.type==='receita'?'Receita':'Despesa'}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-500">
-                    {t.sourceIcon==='stripe'
-                      ?<span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-violet-100 text-violet-700 rounded text-xs font-semibold"><Zap className="w-3 h-3"/>Stripe</span>
-                      :t.source}
-                  </td>
+                  <td className="px-4 py-3 text-xs text-gray-500">{t.source}</td>
                   <td className="px-4 py-3 text-sm text-gray-800 font-medium max-w-[160px] truncate">{t.description}</td>
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-600 rounded-lg text-xs">
-                      {t.sourceIcon==='stripe'?<Zap className="w-3 h-3 text-violet-500"/>:<Banknote className="w-3 h-3"/>}
+                      <Banknote className="w-3 h-3"/>
                       {t.accountLabel || '—'}
                     </span>
                   </td>

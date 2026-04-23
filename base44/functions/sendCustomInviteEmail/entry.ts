@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'email é obrigatório' }, { status: 400 });
     }
 
-    const inviteUrl = 'https://hub.prumo.site/login?from_url=https%3A%2F%2Fhub.prumo.site%2F';
+    const inviteUrl = `https://hub.prumo.site/accept-invite?email=${encodeURIComponent(email)}`;
     
     const typeLabel = type === 'produtor' ? 'Produtor Rural' : 'Consultor';
     const planLabel = {

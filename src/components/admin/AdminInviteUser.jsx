@@ -54,17 +54,16 @@ export default function AdminInviteUser() {
         user_type: form.user_type,
       });
 
-      // 2. Send custom email with correct invite URL
+      // 2. Create base44 user via platform invite (cria a conta na plataforma)
+      await base44.users.inviteUser(form.email, form.role);
+
+      // 3. Send custom email with correct invite URL (sobrepõe o email da plataforma com um mais claro)
       await base44.functions.invoke('sendCustomInviteEmail', {
         email: form.email,
         name: form.email.split('@')[0],
         type: form.user_type,
         plan: form.plano
       });
-
-      // 3. Create base44 user via platform invite (sem envio de email pela plataforma — o email customizado já foi enviado acima)
-      // inviteUser envia email padrão da plataforma com URL sem /login, causando loop — removido
-      // O usuário será criado automaticamente no primeiro login via email customizado
 
       // 4. Wait a bit then update user metadata via admin function
       setTimeout(async () => {

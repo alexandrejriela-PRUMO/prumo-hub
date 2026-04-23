@@ -181,8 +181,21 @@ Deno.serve(async (req) => {
 
     // Enviar convite automático
     try {
-      await base44.users.inviteUser(email, 'user');
+      await base44.asServiceRole.users.inviteUser(email, 'user');
       console.log(`[webhookTransacaoPaga] Convite enviado automaticamente para: ${email}`);
+
+      // Enviar e-mail customizado com link de acesso correto
+      try {
+        await base44.asServiceRole.functions.invoke('sendCustomInviteEmail', {
+          email,
+          name: fullName || email.split('@')[0],
+          type: planInfo.user_type,
+          plan: planInfo.plano,
+        });
+        console.log(`[webhookTransacaoPaga] E-mail customizado enviado para: ${email}`);
+      } catch (emailError) {
+        console.warn(`[webhookTransacaoPaga] Erro ao enviar e-mail customizado (não crítico): ${emailError.message}`);
+      }
 
       // Aguardar um momento e então aplicar o plano ao usuário recém-criado
       await new Promise(r => setTimeout(r, 2000));

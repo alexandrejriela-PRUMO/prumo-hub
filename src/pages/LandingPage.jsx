@@ -4,7 +4,6 @@ import { Wheat, Briefcase, ArrowRight, Menu, X, ChevronRight, MessageCircle } fr
 import ParticleBackground from '../components/landing/ParticleBackground';
 import LandingProdutor from '../components/landing/LandingProdutor';
 import LandingConsultor from '../components/landing/LandingConsultor';
-import ParceiroPrumoSection from '../components/landing/ParceiroPrumoSection';
 
 function useScrollFade(threshold = 0.12) {
   const ref = useRef(null);
@@ -72,6 +71,9 @@ export default function LandingPage() {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
+            <a href="/Parceiros" className="text-sm font-semibold text-emerald-700 border border-emerald-700 px-4 py-2 rounded-xl hover:bg-emerald-50 transition-colors">
+              Seja Parceiro
+            </a>
             <button onClick={handleLogin} className="text-sm font-semibold bg-emerald-700 text-white px-5 py-2 rounded-xl hover:bg-emerald-800 transition-colors shadow-md">
               Área do Cliente
             </button>
@@ -95,6 +97,9 @@ export default function LandingPage() {
               <a href="#planos" className="block text-sm text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>Planos</a>
               <a href="#contato" className="block text-sm text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>Contato</a>
             </>}
+            <a href="/Parceiros" className="block w-full text-center text-sm font-semibold text-emerald-700 border border-emerald-700 px-5 py-3 rounded-xl hover:bg-emerald-50 transition-colors">
+              Seja Parceiro
+            </a>
             <button onClick={handleLogin} className="w-full text-sm font-semibold bg-emerald-700 text-white px-5 py-3 rounded-xl">
               Área do Cliente
             </button>
@@ -218,9 +223,6 @@ export default function LandingPage() {
       {/* CONTEÚDO POR PERFIL */}
       {perfil === 'produtor' && <LandingProdutor onLogin={handleLogin} />}
       {perfil === 'consultor' && <LandingConsultor onLogin={handleLogin} />}
-
-      {/* SEÇÃO PARCEIROS — visível em todos os perfis */}
-      <ParceiroPrumoSection />
 
       {/* Floating WhatsApp Button */}
       <a

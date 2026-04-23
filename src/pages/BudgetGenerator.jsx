@@ -7,8 +7,7 @@ import { toast } from 'sonner';
 import BudgetForm from '@/components/budget/BudgetForm';
 import BudgetEditorWYSIWYG from '@/components/budget/BudgetEditorWYSIWYG';
 import { ChevronLeft, Download, FileEdit } from 'lucide-react';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+
 import { useNavigationGuard } from '../hooks/useNavigationGuard';
 
 export default function BudgetGenerator() {
@@ -170,6 +169,10 @@ export default function BudgetGenerator() {
       toast.error('Este orçamento não possui documento gerado. Abra-o e salve novamente.');
       return;
     }
+    const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+      import('html2canvas'),
+      import('jspdf'),
+    ]);
     const container = document.createElement('div');
     container.style.position = 'fixed';
     container.style.left = '-9999px';

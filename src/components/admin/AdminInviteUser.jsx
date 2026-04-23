@@ -62,8 +62,9 @@ export default function AdminInviteUser() {
         plan: form.plano
       });
 
-      // 3. Also create base44 user via platform (without relying on their email)
-      await base44.users.inviteUser(form.email, form.role);
+      // 3. Create base44 user via platform invite (sem envio de email pela plataforma — o email customizado já foi enviado acima)
+      // inviteUser envia email padrão da plataforma com URL sem /login, causando loop — removido
+      // O usuário será criado automaticamente no primeiro login via email customizado
 
       // 4. Wait a bit then update user metadata via admin function
       setTimeout(async () => {

@@ -55,15 +55,8 @@ export default function AdminInviteUser() {
       });
 
       // 2. Create base44 user via platform invite (cria a conta na plataforma)
+      // O Base44 envia automaticamente o e-mail de convite com o link correto de acesso.
       await base44.users.inviteUser(form.email, form.role);
-
-      // 3. Send custom email with correct invite URL (sobrepõe o email da plataforma com um mais claro)
-      await base44.functions.invoke('sendCustomInviteEmail', {
-        email: form.email,
-        name: form.email.split('@')[0],
-        type: form.user_type,
-        plan: form.plano
-      });
 
       // 4. Wait a bit then update user metadata via admin function
       setTimeout(async () => {

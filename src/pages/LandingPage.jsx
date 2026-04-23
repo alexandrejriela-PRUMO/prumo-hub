@@ -4,6 +4,7 @@ import { Wheat, Briefcase, ArrowRight, Menu, X, ChevronRight, MessageCircle } fr
 import ParticleBackground from '../components/landing/ParticleBackground';
 import LandingProdutor from '../components/landing/LandingProdutor';
 import LandingConsultor from '../components/landing/LandingConsultor';
+import ParceiroPrumoSection from '../components/landing/ParceiroPrumoSection';
 
 function useScrollFade(threshold = 0.12) {
   const ref = useRef(null);
@@ -217,6 +218,9 @@ export default function LandingPage() {
       {/* CONTEÚDO POR PERFIL */}
       {perfil === 'produtor' && <LandingProdutor onLogin={handleLogin} />}
       {perfil === 'consultor' && <LandingConsultor onLogin={handleLogin} />}
+
+      {/* SEÇÃO PARCEIROS — visível em todos os perfis */}
+      <ParceiroPrumoSection />
 
       {/* Floating WhatsApp Button */}
       <a

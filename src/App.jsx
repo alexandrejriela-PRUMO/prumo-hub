@@ -77,7 +77,10 @@ const AuthenticatedApp = () => {
 
   // Verificar aceitação dos termos
   useEffect(() => {
-    if (isLoadingAuth || isLoadingPublicSettings || authError) return;
+    if (isLoadingAuth || isLoadingPublicSettings || authError) {
+      if (authError) setTermsChecked(true); // não bloquear o render em caso de erro de auth
+      return;
+    }
     const checkTerms = async () => {
       try {
         const user = await base44.auth.me();
@@ -103,7 +106,7 @@ const AuthenticatedApp = () => {
       setTermsChecked(true);
     };
     checkTerms();
-  }, [isLoadingAuth, isLoadingPublicSettings, authError]);
+  }, [isLoadingAuth, isLoadingPublicSettings]); // NÃO incluir authError — evita loop
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth || !termsChecked) {

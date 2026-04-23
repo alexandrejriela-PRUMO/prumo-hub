@@ -14,7 +14,7 @@ const PLANOS = [
 
 const USER_TYPES = ['consultor', 'produtor', 'equipe', 'client_consultor'];
 const ROLES = ['user', 'admin'];
-const STATUSES = ['active', 'inactive', 'pending_invite'];
+const STATUSES = ['active', 'trial', 'test', 'pending_payment', 'inactive', 'pending_invite', 'suspended', 'cancelled', 'payment_failed', 'chargeback'];
 
 export default function AdminPlanEditor({ user, onClose }) {
   const queryClient = useQueryClient();

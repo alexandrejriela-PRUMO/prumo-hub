@@ -45,10 +45,16 @@
       "enum": [
         "active",
         "trial",
+        "test",
         "inactive",
-        "pending_invite"
+        "pending_invite",
+        "pending_payment",
+        "suspended",
+        "cancelled",
+        "payment_failed",
+        "chargeback"
       ],
-      "default": "active",
+      "default": "pending_payment",
       "description": "Status da assinatura"
     },
     "primary_consultor_email": {

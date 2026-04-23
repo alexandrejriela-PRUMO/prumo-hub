@@ -3,6 +3,14 @@ import { Lock, AlertTriangle, CreditCard, MessageCircle, LogOut, Clock, XCircle,
 import { base44 } from '@/api/base44Client';
 
 const STATUS_INFO = {
+  pending_payment: {
+    label: 'Pagamento pendente',
+    icon: CreditCard,
+    color: 'text-amber-500',
+    bg: 'bg-amber-50',
+    border: 'border-amber-200',
+    message: 'Seu cadastro foi recebido! Para liberar o acesso completo à plataforma, finalize a contratação do seu plano.',
+  },
   suspended: {
     label: 'Pagamento pendente',
     icon: Clock,
@@ -142,7 +150,7 @@ export default function AccessBlocked() {
 
             {/* Actions */}
             <div className="space-y-3">
-              {/* Primary: Regularize */}
+              {/* Primary: Regularize or Contract */}
               <a
                 href={renewalUrl}
                 target="_blank"
@@ -150,7 +158,7 @@ export default function AccessBlocked() {
                 className="w-full flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3.5 px-6 rounded-2xl transition-all hover:scale-[1.02] shadow-lg shadow-emerald-900/20"
               >
                 <CreditCard className="w-5 h-5" />
-                Regularizar pagamento
+                {statusKey === 'pending_payment' ? 'Contratar plano e liberar acesso' : 'Regularizar pagamento'}
               </a>
 
               {/* Secondary: WhatsApp Support */}

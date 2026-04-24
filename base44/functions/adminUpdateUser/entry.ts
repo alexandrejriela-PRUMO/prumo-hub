@@ -47,9 +47,18 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.UserMetadata.create(metadataPayload);
     }
 
-    // Atualiza o role no User se fornecido
-    if (data.role) {
-      await base44.asServiceRole.entities.User.update(userId, { role: data.role });
+    // Atualiza campos diretamente no User entity (user_type e role são lidos via base44.auth.me())
+    const userUpdate = {};
+    if (data.role) userUpdate.role = data.role;
+    if (data.user_type !== undefined) userUpdate.user_type = data.user_type;
+    if (data.plano !== undefined) userUpdate.plano = data.plano;
+    if (data.max_properties !== undefined) userUpdate.max_properties = data.max_properties;
+    if (data.max_users !== undefined) userUpdate.max_users = data.max_users;
+    if (data.subscription_status !== undefined) userUpdate.subscription_status = data.subscription_status;
+    if (data.primary_consultor_email !== undefined) userUpdate.primary_consultor_email = data.primary_consultor_email;
+
+    if (Object.keys(userUpdate).length > 0) {
+      await base44.asServiceRole.entities.User.update(userId, userUpdate);
     }
 
     return Response.json({ success: true, message: 'Usuário atualizado com sucesso' });

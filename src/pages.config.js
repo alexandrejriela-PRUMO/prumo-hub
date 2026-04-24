@@ -120,7 +120,6 @@ export const PAGES = {
     "RuralCredit": RuralCredit,
     "Support": Support,
     "TaxIncentives": TaxIncentives,
-    "CRA": CRA,
     "NotificationAudit": NotificationAudit,
     "NFeManagement": NFeManagement,
     "TermsAdmin": TermsAdmin,

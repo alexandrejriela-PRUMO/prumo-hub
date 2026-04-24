@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
@@ -34,10 +34,10 @@ const STATUS_BADGE = {
 };
 
 export default function ConsultorClients() {
-  const [showNewClientForm, setShowNewClientForm] = useState(false);
-  const [selectedClient, setSelectedClient] = useState(null);
-  const [clientToDelete, setClientToDelete] = useState(null);
-  const [filterType, setFilterType] = useState('todos'); // 'todos' | 'leads' | 'clientes'
+  const [showNewClientForm, setShowNewClientForm] = React.useState(false);
+  const [selectedClient, setSelectedClient] = React.useState(null);
+  const [clientToDelete, setClientToDelete] = React.useState(null);
+  const [filterType, setFilterType] = React.useState('todos'); // 'todos' | 'leads' | 'clientes'
   const queryClient = useQueryClient();
   const { effectiveEmail, isEquipe, actualEmail, memberRole } = useEffectiveUser();
   const canCreate = !isEquipe || memberRole === 'Administrador';
@@ -46,55 +46,65 @@ export default function ConsultorClients() {
   // Busca todos os clientes do consultor, independente do status
   const { data: crmClients = [], isLoading } = useQuery({
     queryKey: ['consultor-crm-clients', effectiveEmail],
-    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: effectiveEmail }),
+    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: effectiveEmail }) || [],
     enabled: !!effectiveEmail,
+    initialData: [],
   });
 
   // Busca propriedades para vincular ao perfil
   const { data: properties = [] } = useQuery({
     queryKey: ['consultor-properties', effectiveEmail],
-    queryFn: () => base44.entities.Property.filter({ consultor_email: effectiveEmail }),
+    queryFn: () => base44.entities.Property.filter({ consultor_email: effectiveEmail }) || [],
     enabled: !!effectiveEmail,
+    initialData: [],
   });
 
   // Busca clientes que podem estar vinculados apenas via propriedade (sem CRM direto)
   const { data: propertyBasedClients = [] } = useQuery({
     queryKey: ['property-based-clients', effectiveEmail],
     queryFn: async () => {
-      const props = await base44.entities.Property.filter({ consultor_email: effectiveEmail });
-      // Agrupa por client_name/owner_email para encontrar clientes únicos
-      const clients = new Map();
-      props.forEach(p => {
-        if (p.client_name && p.owner_email) {
-          const key = `${p.owner_email}`;
-          if (!clients.has(key)) {
-            clients.set(key, {
-              property_id: p.id,
-              consultor_email: effectiveEmail,
-              client_email: p.owner_email,
-              client_name: p.client_name,
-              status: 'Ativo',
-            });
+      try {
+        const props = (await base44.entities.Property.filter({ consultor_email: effectiveEmail })) || [];
+        // Agrupa por client_name/owner_email para encontrar clientes únicos
+        const clients = new Map();
+        (props || []).forEach(p => {
+          if (p?.client_name && p?.owner_email) {
+            const key = `${p.owner_email}`;
+            if (!clients.has(key)) {
+              clients.set(key, {
+                property_id: p.id,
+                consultor_email: effectiveEmail,
+                client_email: p.owner_email,
+                client_name: p.client_name,
+                status: 'Ativo',
+              });
+            }
           }
-        }
-      });
-      return Array.from(clients.values());
+        });
+        return Array.from(clients.values());
+      } catch (e) {
+        console.error('Erro ao buscar clientes via propriedade:', e);
+        return [];
+      }
     },
     enabled: !!effectiveEmail,
+    initialData: [],
   });
 
   // Mescla clientes do CRM com clientes vinculados via propriedade
   const allClients = React.useMemo(() => {
-    const crmMap = new Map(crmClients.map(c => [c.client_email, c]));
-    const combined = [...crmClients];
+    const safe_crmClients = crmClients || [];
+    const safe_propertyBasedClients = propertyBasedClients || [];
+    const crmMap = new Map((safe_crmClients || []).map(c => [c?.client_email, c]));
+    const combined = [...safe_crmClients];
     
-    propertyBasedClients.forEach(pClient => {
-      if (!crmMap.has(pClient.client_email)) {
+    (safe_propertyBasedClients || []).forEach(pClient => {
+      if (pClient?.client_email && !crmMap.has(pClient.client_email)) {
         combined.push(pClient);
       }
     });
     
-    return combined;
+    return combined || [];
   }, [crmClients, propertyBasedClients]);
 
   const deleteClientMutation = useMutation({
@@ -110,23 +120,27 @@ export default function ConsultorClients() {
 
   // Filtra clientes conforme seleção
   const filteredClients = useMemo(() => {
-    if (filterType === 'leads') return allClients.filter(c => isLead(c.status));
-    if (filterType === 'clientes') return allClients.filter(c => isClient(c.status));
-    return allClients;
+    const safe_allClients = allClients || [];
+    if (filterType === 'leads') return safe_allClients.filter(c => isLead(c?.status));
+    if (filterType === 'clientes') return safe_allClients.filter(c => isClient(c?.status));
+    return safe_allClients;
   }, [allClients, filterType]);
 
-  const leadsCount = useMemo(() => allClients.filter(c => isLead(c.status)).length, [allClients]);
-  const clientesCount = useMemo(() => allClients.filter(c => isClient(c.status)).length, [allClients]);
+  const leadsCount = useMemo(() => (allClients || []).filter(c => isLead(c?.status)).length, [allClients]);
+  const clientesCount = useMemo(() => (allClients || []).filter(c => isClient(c?.status)).length, [allClients]);
 
   // Enriquece o client com propriedades vinculadas para o perfil
   const enrichClient = (crm) => {
-    const clientProps = properties.filter(p => {
+    if (!crm) return {};
+    const safe_properties = properties || [];
+    const clientProps = safe_properties.filter(p => {
+      if (!p) return false;
       // Vinculação primária por property_id
-      if (crm.property_id && p.id === crm.property_id) return true;
+      if (crm?.property_id && p?.id === crm.property_id) return true;
       // Vinculação secundária por email do cliente
-      if (crm.client_email && p.owner_email === crm.client_email) return true;
+      if (crm?.client_email && p?.owner_email === crm.client_email) return true;
       // Vinculação terciária por nome do cliente na propriedade
-      if (crm.client_name && p.client_name === crm.client_name) return true;
+      if (crm?.client_name && p?.client_name === crm.client_name) return true;
       return false;
     });
     return { ...crm, properties: clientProps };
@@ -197,35 +211,36 @@ export default function ConsultorClients() {
          </Card>
        )}
 
-       {!isLoading && filteredClients.length > 0 && (
+       {!isLoading && filteredClients?.length > 0 && (
          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-           {filteredClients.map(crm => {
-            const statusInfo = STATUS_BADGE[crm.status] || STATUS_BADGE['Ativo'];
-            const clientIsLead = isLead(crm.status);
+           {(filteredClients || []).map(crm => {
+            if (!crm?.id) return null;
+            const statusInfo = STATUS_BADGE[crm?.status] || STATUS_BADGE['Ativo'];
+            const clientIsLead = isLead(crm?.status);
             return (
-            <Card key={crm.id} className={`hover:shadow-lg transition-shadow flex flex-col ${clientIsLead ? 'border-amber-200' : ''}`}>
+            <Card key={crm?.id} className={`hover:shadow-lg transition-shadow flex flex-col ${clientIsLead ? 'border-amber-200' : ''}`}>
               {clientIsLead && (
                 <div className="bg-amber-50 border-b border-amber-200 px-4 py-1.5 rounded-t-xl flex items-center gap-2">
                   <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">🎯 Lead</span>
-                  <span className="text-xs text-amber-600">{crm.status === 'Em Negociação' ? '— Em Negociação' : '— Prospecção'}</span>
+                  <span className="text-xs text-amber-600">{crm?.status === 'Em Negociação' ? '— Em Negociação' : '— Prospecção'}</span>
                 </div>
               )}
               <CardContent className="p-5 flex-1 flex flex-col">
                 <div className="flex items-start gap-3 mb-4">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${clientIsLead ? 'bg-amber-100' : 'bg-emerald-100'}`}>
                     <span className={`font-bold text-sm ${clientIsLead ? 'text-amber-700' : 'text-emerald-700'}`}>
-                      {(crm.client_name || crm.client_email || '?')[0].toUpperCase()}
+                      {((crm?.client_name || crm?.client_email || '?')[0] || '?').toUpperCase()}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-gray-900 truncate">{crm.client_name || crm.client_email?.split('@')[0]}</h3>
-                    {crm.client_email && (
+                    <h3 className="font-bold text-gray-900 truncate">{crm?.client_name || crm?.client_email?.split('@')?.[0] || 'Cliente'}</h3>
+                    {crm?.client_email && (
                       <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1 truncate">
                         <Mail className="w-3 h-3 flex-shrink-0" />
                         {crm.client_email}
                       </p>
                     )}
-                    {crm.client_phone && (
+                    {crm?.client_phone && (
                       <p className="text-xs text-gray-500 flex items-center gap-1">
                         <Phone className="w-3 h-3 flex-shrink-0" />
                         {crm.client_phone}
@@ -241,13 +256,13 @@ export default function ConsultorClients() {
                 </div>
 
                 <div className="mb-3 flex flex-wrap items-center gap-2">
-                  <Badge className={statusInfo.className}>{statusInfo.label}</Badge>
-                  {crm.city && <span className="text-xs text-gray-500">{crm.city}{crm.state ? `/${crm.state}` : ''}</span>}
+                  <Badge className={statusInfo?.className || 'bg-gray-100 text-gray-800'}>{statusInfo?.label || 'Ativo'}</Badge>
+                  {crm?.city && <span className="text-xs text-gray-500">{crm.city}{crm?.state ? `/${crm.state}` : ''}</span>}
                 </div>
 
-                {(crm.services?.length > 0) && (
+                {(crm?.services?.length > 0) && (
                   <div className="bg-emerald-50 rounded-lg p-2 mb-3 text-xs text-emerald-700">
-                    {crm.services.filter(s => s.status === 'Contratado' || s.status === 'Em Andamento').length} serviço(s) ativo(s)
+                    {(crm?.services || []).filter(s => s?.status === 'Contratado' || s?.status === 'Em Andamento').length} serviço(s) ativo(s)
                   </div>
                 )}
 
@@ -309,10 +324,10 @@ export default function ConsultorClients() {
                 <TabsTrigger value="crm">CRM</TabsTrigger>
               </TabsList>
               <TabsContent value="perfil" className="mt-4">
-                <ClientProfilePanel client={enrichClient(selectedClient)} onUpdate={() => queryClient.invalidateQueries(['consultor-crm-clients'])} />
+                <ClientProfilePanel client={enrichClient(selectedClient) || {}} onUpdate={() => queryClient.invalidateQueries({ queryKey: ['consultor-crm-clients'] })} />
               </TabsContent>
               <TabsContent value="crm" className="mt-4">
-                <ClientCRMPanel property={enrichClient(selectedClient)} onClose={() => setSelectedClient(null)} />
+                <ClientCRMPanel property={enrichClient(selectedClient) || {}} onClose={() => setSelectedClient(null)} />
               </TabsContent>
             </Tabs>
           )}

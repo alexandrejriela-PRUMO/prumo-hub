@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,7 @@ import AgendaEventModal from '../components/agenda/AgendaEventModal';
 import AgendaEventDetail from '../components/agenda/AgendaEventDetail';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
-export default function Agenda() {
+function AgendaContent() {
   const { user, effectiveEmail, isLoading: effectiveLoading } = useEffectiveUser();
   const [selectedDate, setSelectedDate] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -317,4 +317,8 @@ export default function Agenda() {
       )}
     </div>
   );
+}
+
+export default function Agenda() {
+  return <AgendaContent />;
 }

@@ -353,32 +353,36 @@ export default function AdminFinancialPanel({ onEditUser }) {
             className="pl-9 h-9 text-sm"
           />
         </div>
-        <Select value={filterPlan} onValueChange={setFilterPlan}>
-          <SelectTrigger className="w-full sm:w-40 h-9 text-sm">
-            <SelectValue placeholder="Plano" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos os planos</SelectItem>
-            <SelectItem value="start">Start</SelectItem>
-            <SelectItem value="pro">Pro</SelectItem>
-            <SelectItem value="enterprise">Enterprise</SelectItem>
-            <SelectItem value="unico">Único</SelectItem>
-            <SelectItem value="sem_plano">Sem Plano</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-full sm:w-44 h-9 text-sm">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos os status</SelectItem>
-            <SelectItem value="ativo">Ativo</SelectItem>
-            <SelectItem value="trial">Trial</SelectItem>
-            <SelectItem value="inadimplente">Inadimplente</SelectItem>
-            <SelectItem value="cancelado">Cancelado</SelectItem>
-            <SelectItem value="pendente">Pendente</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="w-full sm:w-40">
+          <Select value={filterPlan} onValueChange={setFilterPlan}>
+            <SelectTrigger className="h-9 text-sm">
+              <SelectValue placeholder="Plano" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os planos</SelectItem>
+              <SelectItem value="start">Start</SelectItem>
+              <SelectItem value="pro">Pro</SelectItem>
+              <SelectItem value="enterprise">Enterprise</SelectItem>
+              <SelectItem value="unico">Único</SelectItem>
+              <SelectItem value="sem_plano">Sem Plano</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="w-full sm:w-44">
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="h-9 text-sm">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os status</SelectItem>
+              <SelectItem value="ativo">Ativo</SelectItem>
+              <SelectItem value="trial">Trial</SelectItem>
+              <SelectItem value="inadimplente">Inadimplente</SelectItem>
+              <SelectItem value="cancelado">Cancelado</SelectItem>
+              <SelectItem value="pendente">Pendente</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <Button variant="outline" size="sm" onClick={() => refetch()} className="h-9 gap-1.5 flex-shrink-0">
           <RefreshCw className="w-3.5 h-3.5" /> Atualizar
         </Button>

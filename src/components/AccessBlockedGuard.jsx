@@ -34,9 +34,34 @@ export default function AccessBlockedGuard({ children }) {
         // Buscar UserMetadata para verificar subscription_status
         const metaList = await base44.entities.UserMetadata.filter({ user_email: user.email }, '-created_date', 1);
 
-        // Se não existe UserMetadata, é usuário novo → bloquear com pending_payment
+        // Se não existe UserMetadata, verificar se veio do Nexano (já pagou)
         if (!metaList || metaList.length === 0) {
-          // Criar o registro com pending_payment para que a tela mostre o status correto
+          // Verificar se há lead do Nexano com pagamento confirmado
+          const leads = await base44.entities.LeadFormSubmission.filter({ email: user.email }, '-created_date', 1);
+          const nexanoLead = leads && leads.find(l =>
+            l.parceiro && l.parceiro.startsWith('nexano_') && l.plano && l.plano !== 'desconhecido'
+          );
+
+          if (nexanoLead) {
+            // Usuário já pagou via Nexano → liberar direto com o plano correto
+            try {
+              await base44.entities.UserMetadata.create({
+                user_email: user.email,
+                user_id: user.id,
+                plano: nexanoLead.plano,
+                user_type: nexanoLead.user_type || (nexanoLead.perfil === 'consultor' ? 'consultor' : 'produtor'),
+                max_properties: nexanoLead.max_properties || 5,
+                max_users: nexanoLead.max_users || 1,
+                subscription_status: 'active',
+              });
+            } catch (e) {
+              // Ignora erro de criação duplicada
+            }
+            setChecked(true);
+            return;
+          }
+
+          // Nenhum pagamento encontrado → bloquear com pending_payment
           try {
             await base44.entities.UserMetadata.create({
               user_email: user.email,

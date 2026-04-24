@@ -201,9 +201,9 @@ export default function RealtimeNotificationCenter({ user, isOpen, onClose, noti
   const activeCategory = CATEGORIES.find(c => c.key === categoryFilter);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-end" onClick={onClose}>
+    <div className="fixed inset-0 z-40 flex items-start justify-end" onClick={onClose}>
       <div
-        className="w-full max-w-sm h-screen bg-white shadow-2xl flex flex-col border-l border-gray-100"
+        className="w-full max-w-sm h-screen bg-white shadow-2xl flex flex-col border-l border-gray-100 pointer-events-auto"
         onClick={e => e.stopPropagation()}
       >
         {/* ── Header ── */}

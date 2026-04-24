@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
@@ -69,8 +69,8 @@ export default function ClientProfilePanel({ client, onUpdate }) {
     };
   };
 
-  const [editingPersonal, setEditingPersonal] = useState(false);
-  const [personalData, setPersonalData] = useState(() => buildPersonalData(client));
+  const [editingPersonal, setEditingPersonal] = React.useState(false);
+  const [personalData, setPersonalData] = React.useState(() => buildPersonalData(client));
 
   // Reinicializa estado quando muda de cliente
   React.useEffect(() => {
@@ -78,10 +78,10 @@ export default function ClientProfilePanel({ client, onUpdate }) {
     setEditingPersonal(false);
   }, [client?.id]);
 
-  const [editingProperty, setEditingProperty] = useState(null);
-  const [propertyForm, setPropertyForm] = useState({});
-  const [addingProperty, setAddingProperty] = useState(false);
-  const [newPropertyForm, setNewPropertyForm] = useState({
+  const [editingProperty, setEditingProperty] = React.useState(null);
+  const [propertyForm, setPropertyForm] = React.useState({});
+  const [addingProperty, setAddingProperty] = React.useState(false);
+  const [newPropertyForm, setNewPropertyForm] = React.useState({
     property_name: '', property_type: 'rural', location: '', city: '', state: '',
     total_hectares: '', app_hectares: '', legal_reserve_hectares: '',
     total_area_m2: '', built_area_m2: '', main_activity: '', activities: '',
@@ -93,7 +93,8 @@ export default function ClientProfilePanel({ client, onUpdate }) {
 
   const updatePersonal = useMutation({
     mutationFn: async () => {
-      const name = personalData.client_type === 'pf' ? personalData.full_name : personalData.company_name;
+      if (!client?.id) throw new Error('Client ID not found');
+      const name = personalData?.client_type === 'pf' ? personalData?.full_name : personalData?.company_name;
       await base44.entities.ClientCRM.update(client.id, {
         client_name: name,
         client_email: personalData.email,
@@ -123,22 +124,25 @@ export default function ClientProfilePanel({ client, onUpdate }) {
   });
 
   const updateProperty = useMutation({
-    mutationFn: () => base44.entities.Property.update(editingProperty.id, {
-      property_name: propertyForm.property_name,
-      property_type: propertyForm.property_type,
-      location: propertyForm.location,
-      city: propertyForm.city,
-      state: propertyForm.state,
-      main_activity: propertyForm.main_activity,
-      activities: propertyForm.activities,
-      owner_email: client.client_email,
-      client_name: clientName,
-      total_hectares: propertyForm.property_type === 'rural' ? (parseFloat(propertyForm.total_hectares) || 0) : undefined,
-      app_hectares: propertyForm.property_type === 'rural' ? (parseFloat(propertyForm.app_hectares) || 0) : undefined,
-      legal_reserve_hectares: propertyForm.property_type === 'rural' ? (parseFloat(propertyForm.legal_reserve_hectares) || 0) : undefined,
-      total_area_m2: propertyForm.property_type === 'urbano' ? (parseFloat(propertyForm.total_area_m2) || 0) : undefined,
-      built_area_m2: propertyForm.property_type === 'urbano' ? (parseFloat(propertyForm.built_area_m2) || 0) : undefined,
-    }),
+    mutationFn: () => {
+      if (!editingProperty?.id) throw new Error('Property ID not found');
+      return base44.entities.Property.update(editingProperty.id, {
+        property_name: propertyForm?.property_name || '',
+        property_type: propertyForm?.property_type || 'rural',
+        location: propertyForm?.location || '',
+        city: propertyForm?.city || '',
+        state: propertyForm?.state || '',
+        main_activity: propertyForm?.main_activity || '',
+        activities: propertyForm?.activities || '',
+        owner_email: client?.client_email || '',
+        client_name: clientName || '',
+        total_hectares: (propertyForm?.property_type === 'rural') ? (parseFloat(propertyForm?.total_hectares) || 0) : undefined,
+        app_hectares: (propertyForm?.property_type === 'rural') ? (parseFloat(propertyForm?.app_hectares) || 0) : undefined,
+        legal_reserve_hectares: (propertyForm?.property_type === 'rural') ? (parseFloat(propertyForm?.legal_reserve_hectares) || 0) : undefined,
+        total_area_m2: (propertyForm?.property_type === 'urbano') ? (parseFloat(propertyForm?.total_area_m2) || 0) : undefined,
+        built_area_m2: (propertyForm?.property_type === 'urbano') ? (parseFloat(propertyForm?.built_area_m2) || 0) : undefined,
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['consultor-properties'] });
       queryClient.invalidateQueries({ queryKey: ['consultor-crm-clients'] });
@@ -150,26 +154,27 @@ export default function ClientProfilePanel({ client, onUpdate }) {
 
   const createProperty = useMutation({
     mutationFn: async () => {
+      if (!client?.client_email) throw new Error('Client email not found');
       const newProp = await base44.entities.Property.create({
         owner_email: client.client_email,
-        property_name: newPropertyForm.property_name,
-        property_type: newPropertyForm.property_type,
-        location: newPropertyForm.location,
-        city: newPropertyForm.city,
-        state: newPropertyForm.state,
-        main_activity: newPropertyForm.main_activity,
-        activities: newPropertyForm.activities,
-        total_hectares: newPropertyForm.property_type === 'rural' ? (parseFloat(newPropertyForm.total_hectares) || 0) : undefined,
-        app_hectares: newPropertyForm.property_type === 'rural' ? (parseFloat(newPropertyForm.app_hectares) || 0) : undefined,
-        legal_reserve_hectares: newPropertyForm.property_type === 'rural' ? (parseFloat(newPropertyForm.legal_reserve_hectares) || 0) : undefined,
-        total_area_m2: newPropertyForm.property_type === 'urbano' ? (parseFloat(newPropertyForm.total_area_m2) || 0) : undefined,
-        built_area_m2: newPropertyForm.property_type === 'urbano' ? (parseFloat(newPropertyForm.built_area_m2) || 0) : undefined,
-        consultor_email: client.consultor_email,
-        client_name: clientName,
+        property_name: newPropertyForm?.property_name || '',
+        property_type: newPropertyForm?.property_type || 'rural',
+        location: newPropertyForm?.location || '',
+        city: newPropertyForm?.city || '',
+        state: newPropertyForm?.state || '',
+        main_activity: newPropertyForm?.main_activity || '',
+        activities: newPropertyForm?.activities || '',
+        total_hectares: (newPropertyForm?.property_type === 'rural') ? (parseFloat(newPropertyForm?.total_hectares) || 0) : undefined,
+        app_hectares: (newPropertyForm?.property_type === 'rural') ? (parseFloat(newPropertyForm?.app_hectares) || 0) : undefined,
+        legal_reserve_hectares: (newPropertyForm?.property_type === 'rural') ? (parseFloat(newPropertyForm?.legal_reserve_hectares) || 0) : undefined,
+        total_area_m2: (newPropertyForm?.property_type === 'urbano') ? (parseFloat(newPropertyForm?.total_area_m2) || 0) : undefined,
+        built_area_m2: (newPropertyForm?.property_type === 'urbano') ? (parseFloat(newPropertyForm?.built_area_m2) || 0) : undefined,
+        consultor_email: client?.consultor_email || '',
+        client_name: clientName || '',
       });
       // Sincroniza vinculação no ClientCRM
-      if (client.id) {
-        await base44.entities.ClientCRM.update(client.id, { property_id: newProp.id });
+      if (client?.id) {
+        await base44.entities.ClientCRM.update(client.id, { property_id: newProp?.id });
       }
       return newProp;
     },
@@ -184,24 +189,27 @@ export default function ClientProfilePanel({ client, onUpdate }) {
   });
 
   const openEditProperty = (prop) => {
+    if (!prop?.id) return;
     setEditingProperty(prop);
     setPropertyForm({
-      property_name: prop.property_name || '',
-      property_type: prop.property_type || 'rural',
-      location: prop.location || '',
-      city: prop.city || '',
-      state: prop.state || '',
-      main_activity: prop.main_activity || '',
-      activities: prop.activities || '',
-      total_hectares: prop.total_hectares || '',
-      app_hectares: prop.app_hectares || '',
-      legal_reserve_hectares: prop.legal_reserve_hectares || '',
-      total_area_m2: prop.total_area_m2 || '',
-      built_area_m2: prop.built_area_m2 || '',
+      property_name: prop?.property_name || '',
+      property_type: prop?.property_type || 'rural',
+      location: prop?.location || '',
+      city: prop?.city || '',
+      state: prop?.state || '',
+      main_activity: prop?.main_activity || '',
+      activities: prop?.activities || '',
+      total_hectares: prop?.total_hectares || '',
+      app_hectares: prop?.app_hectares || '',
+      legal_reserve_hectares: prop?.legal_reserve_hectares || '',
+      total_area_m2: prop?.total_area_m2 || '',
+      built_area_m2: prop?.built_area_m2 || '',
     });
   };
 
-  const visibleProperties = (client?.properties || []).filter(p => !p.is_client_only);
+  if (!client) return <div className="text-center py-8 text-gray-500">Selecione um cliente</div>;
+
+  const visibleProperties = (client?.properties || []).filter(p => !p?.is_client_only);
 
   return (
     <div className="space-y-4">

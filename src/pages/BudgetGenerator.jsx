@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
@@ -11,17 +11,17 @@ import { ChevronLeft, Download, FileEdit } from 'lucide-react';
 import { useNavigationGuard } from '../hooks/useNavigationGuard';
 
 export default function BudgetGenerator() {
-  const [step, setStep] = useState('form'); // form, editor, history
-  const [budgetData, setBudgetData] = useState(null);
-  const [user, setUser] = useState(null);
-  const [selectedBudget, setSelectedBudget] = useState(null);
-  const [isDirty, setIsDirty] = useState(false);
+  const [step, setStep] = React.useState('form'); // form, editor, history
+  const [budgetData, setBudgetData] = React.useState(null);
+  const [user, setUser] = React.useState(null);
+  const [selectedBudget, setSelectedBudget] = React.useState(null);
+  const [isDirty, setIsDirty] = React.useState(false);
   const queryClient = useQueryClient();
 
   // Proteger contra saída do gerador sem salvar
   useNavigationGuard(isDirty);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const loadUser = async () => {
       try {
         const userData = await base44.auth.me();
@@ -200,8 +200,11 @@ export default function BudgetGenerator() {
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+      <div className="flex items-center justify-center h-screen bg-white">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando...</p>
+        </div>
       </div>
     );
   }

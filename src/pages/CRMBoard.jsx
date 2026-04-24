@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
@@ -29,10 +29,11 @@ const COLUMNS = [
 ];
 
 function ClientCard({ crm, property, index, onClick }) {
-  const lastInteraction = crm.interactions?.slice(-1)[0];
-  const pendingTasks = (crm.tasks || []).filter(t => !t.done);
-  const nextTask = pendingTasks.sort((a, b) => new Date(a.due_date) - new Date(b.due_date))[0];
-  const activeServices = (crm.services || []).filter(s => s.status === 'Contratado' || s.status === 'Em Andamento');
+  if (!crm) return null;
+  const lastInteraction = (crm?.interactions || [])?.slice(-1)[0];
+  const pendingTasks = (crm?.tasks || [])?.filter(t => !t?.done) || [];
+  const nextTask = (pendingTasks || [])?.sort((a, b) => new Date(a?.due_date) - new Date(b?.due_date))[0];
+  const activeServices = (crm?.services || [])?.filter(s => s?.status === 'Contratado' || s?.status === 'Em Andamento') || [];
 
   return (
     <Draggable draggableId={crm.id} index={index}>
@@ -137,12 +138,12 @@ function ClientCard({ crm, property, index, onClick }) {
 
 
 export default function CRMBoard() {
-  const [showNewClientForm, setShowNewClientForm] = useState(false);
-  const [selectedCRM, setSelectedCRM] = useState(null);
+  const [showNewClientForm, setShowNewClientForm] = React.useState(false);
+  const [selectedCRM, setSelectedCRM] = React.useState(null);
   const queryClient = useQueryClient();
   const { user, effectiveEmail, isEquipe, memberRole, isLoading: effectiveLoading } = useEffectiveUser();
-  const canCreateLead = !isEquipe || memberRole === 'Administrador';
-  const canViewFinancial = !isEquipe || memberRole === 'Administrador';
+  const canCreateLead = !isEquipe || (memberRole === 'Administrador');
+  const canViewFinancial = !isEquipe || (memberRole === 'Administrador');
 
   const { data: properties = [] } = useQuery({
     queryKey: ['crm-board-properties', effectiveEmail],
@@ -190,42 +191,42 @@ export default function CRMBoard() {
     onSuccess: () => queryClient.invalidateQueries(['crm-board-list']),
   });
 
-  const propertyMap = useMemo(() => {
+  const propertyMap = React.useMemo(() => {
     const map = {};
-    properties.forEach(p => { map[p.id] = p; });
+    (properties || []).forEach(p => { if (p?.id) map[p.id] = p; });
     return map;
   }, [properties]);
 
   // Group CRM records by status
-  const columns = useMemo(() => {
+  const columns = React.useMemo(() => {
     const grouped = {};
     COLUMNS.forEach(col => { grouped[col.id] = []; });
-    crmList.forEach(crm => {
-      const status = crm.status || 'Ativo';
+    (crmList || []).forEach(crm => {
+      const status = crm?.status || 'Ativo';
       if (grouped[status]) grouped[status].push(crm);
     });
     return grouped;
   }, [crmList]);
 
   const handleDragEnd = (result) => {
-    const { destination, source, draggableId } = result;
+    const { destination, source, draggableId } = result || {};
     if (!destination) return;
-    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
-    if (destination.droppableId === source.droppableId) return;
-    updateStatusMutation.mutate({ id: draggableId, status: destination.droppableId });
+    if (destination?.droppableId === source?.droppableId && destination?.index === source?.index) return;
+    if (destination?.droppableId === source?.droppableId) return;
+    updateStatusMutation.mutate({ id: draggableId, status: destination?.droppableId });
   };
 
   // Build client object for modal with all linked properties
-  const selectedClient = useMemo(() => {
+  const selectedClient = React.useMemo(() => {
     if (!selectedCRM) return null;
-    const linkedProps = properties.filter(p => {
-      if (selectedCRM.property_id && p.id === selectedCRM.property_id) return true;
-      if (selectedCRM.client_email && p.owner_email === selectedCRM.client_email) return true;
+    const linkedProps = (properties || []).filter(p => {
+      if (selectedCRM?.property_id && p?.id === selectedCRM.property_id) return true;
+      if (selectedCRM?.client_email && p?.owner_email === selectedCRM.client_email) return true;
       return false;
     });
     return {
       ...selectedCRM,
-      client_name: selectedCRM.client_name || selectedCRM.client_email?.split('@')[0],
+      client_name: selectedCRM?.client_name || selectedCRM?.client_email?.split('@')[0],
       properties: linkedProps,
     };
   }, [selectedCRM, properties]);

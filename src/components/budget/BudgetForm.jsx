@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
@@ -7,8 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Trash2, Search } from 'lucide-react';
 
 export default function BudgetForm({ onSubmit, initialData = null, user = null, onFormChange = () => {} }) {
-  const [clientSearch, setClientSearch] = useState('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [clientSearch, setClientSearch] = React.useState('');
+  const [showSuggestions, setShowSuggestions] = React.useState(false);
 
   const { data: crmClients = [] } = useQuery({
     queryKey: ['crm-clients-budget', user?.email],
@@ -33,7 +33,7 @@ export default function BudgetForm({ onSubmit, initialData = null, user = null, 
     setShowSuggestions(false);
   };
 
-  const [formData, setFormData] = useState(initialData || {
+  const [formData, setFormData] = React.useState(initialData || {
     client_name: '',
     client_email: '',
     title: '',
@@ -46,8 +46,8 @@ export default function BudgetForm({ onSubmit, initialData = null, user = null, 
     notes: ''
   });
 
-  const [currentService, setCurrentService] = useState({ name: '', description: '', hours: 0, hourly_rate: 0 });
-  const [currentFee, setCurrentFee] = useState({ name: '', amount: 0 });
+  const [currentService, setCurrentService] = React.useState({ name: '', description: '', hours: 0, hourly_rate: 0 });
+  const [currentFee, setCurrentFee] = React.useState({ name: '', amount: 0 });
 
   const addService = () => {
     if (currentService.name && currentService.hourly_rate) {
@@ -84,10 +84,10 @@ export default function BudgetForm({ onSubmit, initialData = null, user = null, 
   };
 
   const calculateTotal = () => {
-    const servicesTotal = formData.services.reduce((acc, s) => acc + (s.hours * s.hourly_rate), 0);
-    const feesTotal = formData.additional_fees.reduce((acc, f) => acc + f.amount, 0);
-    const subtotal = servicesTotal + parseFloat(formData.travel_cost || 0) + parseFloat(formData.fuel_cost || 0) + feesTotal;
-    const discount = subtotal * (formData.discount_percentage / 100);
+    const servicesTotal = (formData?.services || []).reduce((acc, s) => acc + ((s?.hours || 0) * (s?.hourly_rate || 0)), 0);
+    const feesTotal = (formData?.additional_fees || []).reduce((acc, f) => acc + (f?.amount || 0), 0);
+    const subtotal = servicesTotal + parseFloat(formData?.travel_cost || 0) + parseFloat(formData?.fuel_cost || 0) + feesTotal;
+    const discount = subtotal * ((formData?.discount_percentage || 0) / 100);
     return subtotal - discount;
   };
 

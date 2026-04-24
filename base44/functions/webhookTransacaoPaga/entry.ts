@@ -147,6 +147,29 @@ Deno.serve(async (req) => {
         subscription_status: 'active',
         subscription_updated_at: new Date().toISOString(),
       });
+
+      // Atualizar ou criar UserMetadata (usado pelo AccessBlockedGuard)
+      const existingMeta = await base44.asServiceRole.entities.UserMetadata.filter({ user_email: email });
+      if (existingMeta && existingMeta.length > 0) {
+        await base44.asServiceRole.entities.UserMetadata.update(existingMeta[0].id, {
+          plano: planInfo.plano,
+          user_type: planInfo.user_type,
+          max_properties: planInfo.max_properties,
+          max_users: planInfo.max_users,
+          subscription_status: 'active',
+        });
+      } else {
+        await base44.asServiceRole.entities.UserMetadata.create({
+          user_email: email,
+          user_id: existingUser.id,
+          plano: planInfo.plano,
+          user_type: planInfo.user_type,
+          max_properties: planInfo.max_properties,
+          max_users: planInfo.max_users,
+          subscription_status: 'active',
+        });
+      }
+
       console.log(`[webhookTransacaoPaga] Usuário existente atualizado: ${email} → plano ${planInfo.plano}`);
       return Response.json({ received: true, message: 'Usuário existente atualizado com o novo plano.', email, plano: planInfo.plano }, { status: 200 });
     }
@@ -213,6 +236,29 @@ Deno.serve(async (req) => {
           subscription_status: 'active',
           subscription_updated_at: new Date().toISOString(),
         });
+
+        // Atualizar ou criar UserMetadata (usado pelo AccessBlockedGuard)
+        const newMeta = await base44.asServiceRole.entities.UserMetadata.filter({ user_email: email });
+        if (newMeta && newMeta.length > 0) {
+          await base44.asServiceRole.entities.UserMetadata.update(newMeta[0].id, {
+            plano: planInfo.plano,
+            user_type: planInfo.user_type,
+            max_properties: planInfo.max_properties,
+            max_users: planInfo.max_users,
+            subscription_status: 'active',
+          });
+        } else {
+          await base44.asServiceRole.entities.UserMetadata.create({
+            user_email: email,
+            user_id: newUsers[0].id,
+            plano: planInfo.plano,
+            user_type: planInfo.user_type,
+            max_properties: planInfo.max_properties,
+            max_users: planInfo.max_users,
+            subscription_status: 'active',
+          });
+        }
+
         console.log(`[webhookTransacaoPaga] Plano aplicado ao novo usuário: ${email} → ${planInfo.plano}`);
 
         // Atualizar lead para refletir que o usuário foi criado

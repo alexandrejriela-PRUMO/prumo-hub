@@ -200,6 +200,8 @@ Deno.serve(async (req) => {
         user_type: planInfo.user_type,
         parceiro: `nexano_${planInfo.plano}`,
         subscription_status: 'pending_invite',
+        max_properties: planInfo.max_properties,
+        max_users: planInfo.max_users,
       });
       console.log(`[webhookTransacaoPaga] Lead existente atualizado com plano: ${email}`);
       return Response.json({ received: true, message: 'Lead existente atualizado com plano.', email, plano: planInfo.plano }, { status: 200 });
@@ -217,6 +219,8 @@ Deno.serve(async (req) => {
       user_type: planInfo.user_type,
       subscription_status: 'pending_invite',
       document: cleanDoc || '',
+      max_properties: planInfo.max_properties,
+      max_users: planInfo.max_users,
     });
 
     console.log(`[webhookTransacaoPaga] Novo lead criado: ${email} | Plano: ${planInfo.plano} | Tipo: ${planInfo.user_type}`);

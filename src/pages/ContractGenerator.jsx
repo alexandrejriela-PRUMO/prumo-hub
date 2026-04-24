@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
@@ -10,18 +10,18 @@ import { ChevronLeft } from 'lucide-react';
 import { useNavigationGuard } from '../hooks/useNavigationGuard';
 
 export default function ContractGenerator() {
-  const [step, setStep] = useState('form');
-  const [contractData, setContractData] = useState(null);
-  const [user, setUser] = useState(null);
-  const [selectedContract, setSelectedContract] = useState(null);
-  const [loadingUser, setLoadingUser] = useState(true);
-  const [isDirty, setIsDirty] = useState(false);
+  const [step, setStep] = React.useState('form');
+  const [contractData, setContractData] = React.useState(null);
+  const [user, setUser] = React.useState(null);
+  const [selectedContract, setSelectedContract] = React.useState(null);
+  const [loadingUser, setLoadingUser] = React.useState(true);
+  const [isDirty, setIsDirty] = React.useState(false);
   const queryClient = useQueryClient();
 
   // Proteger contra saída do gerador sem salvar
   useNavigationGuard(isDirty);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const loadUser = async () => {
       try {
         const userData = await base44.auth.me();

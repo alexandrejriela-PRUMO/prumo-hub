@@ -1,18 +1,19 @@
-import { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 
 const AuthContext = createContext(undefined);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
-  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(true);
-  const [authError, setAuthError] = useState(null);
-  const [appPublicSettings, setAppPublicSettings] = useState(null); // Contains only { id, public_settings }
+  // Initialize state
+  const [user, setUser] = React.useState(null);
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const [isLoadingAuth, setIsLoadingAuth] = React.useState(true);
+  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = React.useState(true);
+  const [authError, setAuthError] = React.useState(null);
+  const [appPublicSettings, setAppPublicSettings] = React.useState(null);
 
-  useEffect(() => {
+  React.useEffect(() => {
     checkAppState();
   }, []);
 

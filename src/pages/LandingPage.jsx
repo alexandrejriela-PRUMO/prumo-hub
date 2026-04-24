@@ -133,32 +133,33 @@ export default function LandingPage() {
               <img
                 src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/9e64158f0_PRUMO1.png"
                 alt="PRUMO Hub"
-                className="h-32 sm:h-44 w-auto object-contain mx-auto mb-6 drop-shadow-2xl"
+                className="h-24 sm:h-44 w-auto object-contain mx-auto mb-4 drop-shadow-2xl"
               />
-              <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-400/20 text-emerald-400 text-xs font-semibold uppercase tracking-widest px-5 py-2 rounded-full mb-5">
+              <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-400/20 text-emerald-400 text-xs font-semibold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
                 <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
-                Plataforma Agroambiental Inteligente
+                <span className="hidden sm:inline">Plataforma Agroambiental Inteligente</span>
+                <span className="sm:hidden">Agroambiental</span>
               </div>
-              <h1 className="text-4xl sm:text-6xl font-black text-white leading-tight mb-4">
+              <h1 className="text-3xl sm:text-6xl font-black text-white leading-tight mb-3">
                 Gestão ambiental que
                 <br />
                 <span className="text-transparent bg-clip-text" style={{backgroundImage: 'linear-gradient(90deg, #34d399, #fbbf24, #34d399)', backgroundSize: '200%'}}>
                   protege quem produz.
                 </span>
               </h1>
-              <p className="text-slate-400 text-lg max-w-xl mx-auto">
-                Escolha seu perfil e descubra como o PRUMO Hub transforma a gestão da sua propriedade ou consultoria.
+              <p className="text-slate-400 text-sm sm:text-lg max-w-xl mx-auto px-2">
+                Escolha seu perfil e descubra como o PRUMO Hub transforma sua gestão.
               </p>
             </div>
 
 
 
             {/* Profile cards */}
-            <div
-              ref={cardRef}
-              className="grid sm:grid-cols-2 gap-6 max-w-3xl mx-auto transition-all duration-1000 delay-300"
-              style={{ opacity: cardVisible ? 1 : 0, transform: cardVisible ? 'translateY(0)' : 'translateY(50px)' }}
-            >
+             <div
+               ref={cardRef}
+               className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-3xl mx-auto px-4 transition-all duration-1000 delay-300"
+               style={{ opacity: cardVisible ? 1 : 0, transform: cardVisible ? 'translateY(0)' : 'translateY(50px)' }}
+             >
               {/* Produtor */}
               <button
                 onClick={() => setPerfil('produtor')}
@@ -166,20 +167,20 @@ export default function LandingPage() {
                 style={{background: 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(16,185,129,0.03) 100%)'}}
               >
                 <div className="h-1 w-full bg-gradient-to-r from-emerald-400 to-teal-500 group-hover:h-1.5 transition-all duration-300" />
-                <div className="p-8">
-                  <div className="flex items-start justify-between mb-6">
-                    <div className="text-5xl">🌾</div>
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-emerald-500/20 text-emerald-300 text-xs font-bold px-3 py-1 rounded-full border border-emerald-400/30">
+                <div className="p-5 sm:p-8">
+                  <div className="flex items-start justify-between mb-4 sm:mb-6">
+                    <div className="text-4xl sm:text-5xl">🌾</div>
+                    <div className="opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300 bg-emerald-500/20 text-emerald-300 text-xs font-bold px-2 py-0.5 sm:px-3 sm:py-1 rounded-full border border-emerald-400/30">
                       Entrar →
                     </div>
                   </div>
-                  <h2 className="text-2xl font-black text-white mb-3">Produtor Rural</h2>
-                  <p className="text-slate-400 text-sm leading-relaxed mb-6">
-                    Proprietário, fazendeiro, agricultor ou pecuarista que quer organizar, monitorar e proteger sua propriedade.
+                  <h2 className="text-xl sm:text-2xl font-black text-white mb-2 sm:mb-3">Produtor Rural</h2>
+                  <p className="text-slate-400 text-xs sm:text-sm leading-relaxed mb-4 sm:mb-6">
+                    Proprietário, fazendeiro, agricultor que quer organizar e proteger sua propriedade.
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    {['CAR & PRAD', 'Alertas MapBiomas', 'Licenças', 'IA Rute'].map(tag => (
-                      <span key={tag} className="text-xs bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-full">{tag}</span>
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                    {['CAR & PRAD', 'Alertas', 'Licenças', 'IA'].map(tag => (
+                      <span key={tag} className="text-xs bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full">{tag}</span>
                     ))}
                   </div>
                 </div>
@@ -192,20 +193,20 @@ export default function LandingPage() {
                 style={{background: 'linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(245,158,11,0.03) 100%)'}}
               >
                 <div className="h-1 w-full bg-gradient-to-r from-amber-400 to-orange-500 group-hover:h-1.5 transition-all duration-300" />
-                <div className="p-8">
-                  <div className="flex items-start justify-between mb-6">
-                    <div className="text-5xl">🧑‍💼</div>
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-amber-500/20 text-amber-300 text-xs font-bold px-3 py-1 rounded-full border border-amber-400/30">
+                <div className="p-5 sm:p-8">
+                  <div className="flex items-start justify-between mb-4 sm:mb-6">
+                    <div className="text-4xl sm:text-5xl">🧑‍💼</div>
+                    <div className="opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300 bg-amber-500/20 text-amber-300 text-xs font-bold px-2 py-0.5 sm:px-3 sm:py-1 rounded-full border border-amber-400/30">
                       Entrar →
                     </div>
                   </div>
-                  <h2 className="text-2xl font-black text-white mb-3">Consultor Ambiental</h2>
-                  <p className="text-slate-400 text-sm leading-relaxed mb-6">
-                    Engenheiro, agrônomo, advogado ou técnico que presta consultoria ambiental para produtores e empresas.
+                  <h2 className="text-xl sm:text-2xl font-black text-white mb-2 sm:mb-3">Consultor Ambiental</h2>
+                  <p className="text-slate-400 text-xs sm:text-sm leading-relaxed mb-4 sm:mb-6">
+                    Engenheiro, agrônomo, advogado ou técnico que presta consultoria ambiental.
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    {['CRM Prumo', 'Contratos', 'Financeiro', 'Equipe'].map(tag => (
-                      <span key={tag} className="text-xs bg-amber-500/10 border border-amber-500/20 text-amber-300 px-2.5 py-1 rounded-full">{tag}</span>
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                    {['CRM', 'Contratos', 'Financeiro', 'Equipe'].map(tag => (
+                      <span key={tag} className="text-xs bg-amber-500/10 border border-amber-500/20 text-amber-300 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full">{tag}</span>
                     ))}
                   </div>
                 </div>
@@ -226,14 +227,14 @@ export default function LandingPage() {
 
       {/* Floating WhatsApp Button */}
       <a
-        href="https://wa.me/5555999480489"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-full shadow-xl transition-all hover:scale-105"
-      >
-        <MessageCircle className="w-6 h-6" />
-        <span className="text-sm font-semibold">WhatsApp</span>
-      </a>
+         href="https://wa.me/5555999480489"
+         target="_blank"
+         rel="noopener noreferrer"
+         className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-3 py-2 sm:px-4 sm:py-3 rounded-full shadow-xl transition-all hover:scale-105"
+       >
+         <MessageCircle className="w-5 sm:w-6 h-5 sm:h-6" />
+         <span className="hidden sm:inline text-sm font-semibold">WhatsApp</span>
+       </a>
     </div>
   );
 }

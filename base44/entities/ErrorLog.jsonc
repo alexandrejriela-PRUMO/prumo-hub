@@ -1,0 +1,77 @@
+{
+  "name": "ErrorLog",
+  "type": "object",
+  "properties": {
+    "error_message": {
+      "type": "string",
+      "description": "Mensagem de erro"
+    },
+    "error_stack": {
+      "type": "string",
+      "description": "Stack trace completo"
+    },
+    "error_type": {
+      "type": "string",
+      "enum": [
+        "runtime",
+        "network",
+        "validation",
+        "auth",
+        "database",
+        "unknown"
+      ],
+      "default": "unknown",
+      "description": "Tipo de erro"
+    },
+    "page_url": {
+      "type": "string",
+      "description": "URL onde o erro ocorreu"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email do usu\u00e1rio que enfrentou o erro"
+    },
+    "user_agent": {
+      "type": "string",
+      "description": "Browser/dispositivo info"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "default": "medium",
+      "description": "Severidade do erro"
+    },
+    "resolved": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se o erro foi resolvido"
+    },
+    "resolution_notes": {
+      "type": "string",
+      "description": "Notas sobre a resolu\u00e7\u00e3o"
+    },
+    "frequency": {
+      "type": "integer",
+      "default": 1,
+      "description": "Quantas vezes este erro ocorreu"
+    },
+    "last_occurrence": {
+      "type": "string",
+      "format": "date-time",
+      "description": "\u00daltima ocorr\u00eancia do erro"
+    },
+    "context_data": {
+      "type": "object",
+      "description": "Dados adicionais do contexto do erro"
+    }
+  },
+  "required": [
+    "error_message",
+    "error_type"
+  ]
+}

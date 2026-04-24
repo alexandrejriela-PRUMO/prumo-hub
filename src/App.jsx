@@ -17,6 +17,7 @@ const SaasContractPage = React.lazy(() => import('./pages/SaasContractPage'));
 const LandingPage = React.lazy(() => import('./pages/LandingPage'));
 const AccessBlocked = React.lazy(() => import('./pages/AccessBlocked'));
 const Parceiros = React.lazy(() => import('./pages/Parceiros'));
+const ErrorLogsAdmin = React.lazy(() => import('./pages/ErrorLogsAdmin'));
 
 import OfflineIndicator from '@/components/offline/OfflineIndicator';
 import AccessBlockedGuard from '@/components/AccessBlockedGuard';
@@ -176,6 +177,7 @@ function AppContent() {
         <Route path="/landing" element={<Suspense fallback={<LoadingSpinner />}><LandingPage /></Suspense>} />
         <Route path="/LandingPage" element={<Suspense fallback={<LoadingSpinner />}><LandingPage /></Suspense>} />
         <Route path="/Parceiros" element={<Suspense fallback={<LoadingSpinner />}><Parceiros /></Suspense>} />
+        <Route path="/ErrorLogsAdmin" element={<Suspense fallback={<LoadingSpinner />}><ErrorLogsAdmin /></Suspense>} />
         <Route path="*" element={<AuthenticatedApp />} />
       </Routes>
     </>

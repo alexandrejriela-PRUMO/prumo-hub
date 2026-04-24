@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import ErrorLogger from '@/lib/ErrorLogger';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -15,6 +16,12 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('Error caught by boundary:', error, errorInfo);
+    
+    // Log to global error logging system
+    ErrorLogger.captureError(error, {
+      component: errorInfo.componentStack,
+      severity: 'high'
+    });
   }
 
   render() {
@@ -38,14 +45,14 @@ class ErrorBoundary extends React.Component {
                     <summary className="text-xs font-medium text-gray-700 cursor-pointer">
                       Detalhes técnicos
                     </summary>
-                    <pre className="text-xs text-gray-600 mt-2 overflow-auto">
+                    <pre className="text-xs text-gray-600 mt-2 overflow-auto max-h-40">
                       {this.state.error.toString()}
                     </pre>
                   </details>
                 )}
                 <Button 
                   onClick={() => window.location.reload()}
-                  className="bg-emerald-600 hover:bg-emerald-700"
+                  className="bg-emerald-600 hover:bg-emerald-700 w-full"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Recarregar Página

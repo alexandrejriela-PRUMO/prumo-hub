@@ -25,7 +25,8 @@ Deno.serve(async (req) => {
 });
 
 function generateTermsProof(user) {
-  const doc = new jsPDF();
+  const doc = new jsPDF({ compress: false });
+  doc.setFont('Helvetica');
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 15;
@@ -89,7 +90,8 @@ function generateTermsProof(user) {
 }
 
 function generateSaasContractProof(user, contractorData) {
-  const doc = new jsPDF();
+  const doc = new jsPDF({ compress: false });
+  doc.setFont('Helvetica');
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 15;

@@ -1,4 +1,4 @@
-import React, { useEffect, Suspense } from 'react'
+import React, { Suspense } from 'react'
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -48,12 +48,12 @@ const AuthenticatedApp = () => {
   const [needsContract, setNeedsContract] = React.useState(false);
 
   // Inicializar offline DB
-  useEffect(() => {
+  React.useEffect(() => {
     initializeOfflineDB().catch(err => console.error('[App] Erro ao inicializar offline DB:', err));
   }, []);
 
   // Verificar aceitação dos termos
-  useEffect(() => {
+  React.useEffect(() => {
     if (isLoadingAuth || isLoadingPublicSettings) return;
     // Se há erro de auth ou usuário não autenticado, não precisa checar termos
     if (authError || !isAuthenticated) {

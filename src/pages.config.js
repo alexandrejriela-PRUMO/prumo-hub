@@ -1,108 +1,63 @@
 /**
  * pages.config.js - Page routing configuration
- * 
- * This file is AUTO-GENERATED. Do not add imports or modify PAGES manually.
- * Pages are auto-registered when you create files in the ./pages/ folder.
- * 
- * THE ONLY EDITABLE VALUE: mainPage
- * This controls which page is the landing page (shown when users visit the app).
- * 
- * Example file structure:
- * 
- *   import HomePage from './pages/HomePage';
- *   import Dashboard from './pages/Dashboard';
- *   import Settings from './pages/Settings';
- *   
- *   export const PAGES = {
- *       "HomePage": HomePage,
- *       "Dashboard": Dashboard,
- *       "Settings": Settings,
- *   }
- *   
- *   export const pagesConfig = {
- *       mainPage: "HomePage",
- *       Pages: PAGES,
- *   };
- * 
- * Example with Layout (wraps all pages):
- *
- *   import Home from './pages/Home';
- *   import Settings from './pages/Settings';
- *   import __Layout from './Layout.jsx';
- *
- *   export const PAGES = {
- *       "Home": Home,
- *       "Settings": Settings,
- *   }
- *
- *   export const pagesConfig = {
- *       mainPage: "Home",
- *       Pages: PAGES,
- *       Layout: __Layout,
- *   };
- *
- * To change the main page from HomePage to Dashboard, use find_replace:
- *   Old: mainPage: "HomePage",
- *   New: mainPage: "Dashboard",
- *
- * The mainPage value must match a key in the PAGES object exactly.
+ * Uses React.lazy for all pages to avoid duplicate module loading.
  */
-import Agenda from './pages/Agenda';
-import AlertSettings from './pages/AlertSettings';
-import AlertsReports from './pages/AlertsReports';
-import AuditLogs from './pages/AuditLogs';
-import Blog from './pages/Blog';
-import CARModule from './pages/CARModule';
-import CRA from './pages/CRA';
-import CRMBoard from './pages/CRMBoard';
-import CampMode from './pages/CampMode';
-import CarbonCredits from './pages/CarbonCredits';
-import Certifications from './pages/Certifications';
-import ChatRute from './pages/ChatRute';
-import ClientConsultorPortal from './pages/ClientConsultorPortal';
-import ClimateMonitoring from './pages/ClimateMonitoring';
-import CommodityAnalysis from './pages/CommodityAnalysis';
-import ConsolidatedReports from './pages/ConsolidatedReports';
-import ConsultorClients from './pages/ConsultorClients';
-import Contracts from './pages/Contracts';
-import Documents from './pages/Documents';
-import DocumentsHub from './pages/DocumentsHub';
-import DocumentsManager from './pages/DocumentsManager';
-import ESGAgro from './pages/ESGAgro';
-import EbookReader from './pages/EbookReader';
-import EnvironmentalAlerts from './pages/EnvironmentalAlerts';
-import EnvironmentalAssets from './pages/EnvironmentalAssets.jsx';
-import EnvironmentalEasements from './pages/EnvironmentalEasements';
-import Expenses from './pages/Expenses';
-import FinancialDashboard from './pages/FinancialDashboard';
-import FinancialTransactions from './pages/FinancialTransactions';
-import Georeferencing from './pages/Georeferencing';
-import GreenLoans from './pages/GreenLoans';
-import HarvestLoss from './pages/HarvestLoss';
-import Home from './pages/Home';
-import Invoices from './pages/Invoices';
-import Licenses from './pages/Licenses';
-import Mappings from './pages/Mappings';
-import MyTeam from './pages/MyTeam';
-import NotificationSettings from './pages/NotificationSettings';
-import PRAD from './pages/PRAD';
-import PSAContracts from './pages/PSAContracts';
-import PaymentSettings from './pages/PaymentSettings';
-import Processes from './pages/Processes';
-import Properties from './pages/Properties';
-import PropertyCentral from './pages/PropertyCentral';
-import PropertyMapView from './pages/PropertyMapView';
-import RealtimeNotificationSettings from './pages/RealtimeNotificationSettings';
-import RegularityReport from './pages/RegularityReport';
-import Reports from './pages/Reports';
-import Requests from './pages/Requests';
-import RuralCredit from './pages/RuralCredit';
-import Support from './pages/Support';
-import TaxIncentives from './pages/TaxIncentives';
-import AcceptInvite from './pages/AcceptInvite';
-import LandingPage from './pages/LandingPage';
+import React from 'react';
 import __Layout from './Layout.jsx';
 
+const Agenda = React.lazy(() => import('./pages/Agenda'));
+const AlertSettings = React.lazy(() => import('./pages/AlertSettings'));
+const AlertsReports = React.lazy(() => import('./pages/AlertsReports'));
+const AuditLogs = React.lazy(() => import('./pages/AuditLogs'));
+const Blog = React.lazy(() => import('./pages/Blog'));
+const CARModule = React.lazy(() => import('./pages/CARModule'));
+const CRA = React.lazy(() => import('./pages/CRA'));
+const CRMBoard = React.lazy(() => import('./pages/CRMBoard'));
+const CampMode = React.lazy(() => import('./pages/CampMode'));
+const CarbonCredits = React.lazy(() => import('./pages/CarbonCredits'));
+const Certifications = React.lazy(() => import('./pages/Certifications'));
+const ChatRute = React.lazy(() => import('./pages/ChatRute'));
+const ClientConsultorPortal = React.lazy(() => import('./pages/ClientConsultorPortal'));
+const ClimateMonitoring = React.lazy(() => import('./pages/ClimateMonitoring'));
+const CommodityAnalysis = React.lazy(() => import('./pages/CommodityAnalysis'));
+const ConsolidatedReports = React.lazy(() => import('./pages/ConsolidatedReports'));
+const ConsultorClients = React.lazy(() => import('./pages/ConsultorClients'));
+const Contracts = React.lazy(() => import('./pages/Contracts'));
+const Documents = React.lazy(() => import('./pages/Documents'));
+const DocumentsHub = React.lazy(() => import('./pages/DocumentsHub'));
+const DocumentsManager = React.lazy(() => import('./pages/DocumentsManager'));
+const ESGAgro = React.lazy(() => import('./pages/ESGAgro'));
+const EbookReader = React.lazy(() => import('./pages/EbookReader'));
+const EnvironmentalAlerts = React.lazy(() => import('./pages/EnvironmentalAlerts'));
+const EnvironmentalAssets = React.lazy(() => import('./pages/EnvironmentalAssets'));
+const EnvironmentalEasements = React.lazy(() => import('./pages/EnvironmentalEasements'));
+const Expenses = React.lazy(() => import('./pages/Expenses'));
+const FinancialDashboard = React.lazy(() => import('./pages/FinancialDashboard'));
+const FinancialTransactions = React.lazy(() => import('./pages/FinancialTransactions'));
+const Georeferencing = React.lazy(() => import('./pages/Georeferencing'));
+const GreenLoans = React.lazy(() => import('./pages/GreenLoans'));
+const HarvestLoss = React.lazy(() => import('./pages/HarvestLoss'));
+const Home = React.lazy(() => import('./pages/Home'));
+const Invoices = React.lazy(() => import('./pages/Invoices'));
+const Licenses = React.lazy(() => import('./pages/Licenses'));
+const Mappings = React.lazy(() => import('./pages/Mappings'));
+const MyTeam = React.lazy(() => import('./pages/MyTeam'));
+const NotificationSettings = React.lazy(() => import('./pages/NotificationSettings'));
+const PRAD = React.lazy(() => import('./pages/PRAD'));
+const PSAContracts = React.lazy(() => import('./pages/PSAContracts'));
+const PaymentSettings = React.lazy(() => import('./pages/PaymentSettings'));
+const Processes = React.lazy(() => import('./pages/Processes'));
+const Properties = React.lazy(() => import('./pages/Properties'));
+const PropertyCentral = React.lazy(() => import('./pages/PropertyCentral'));
+const PropertyMapView = React.lazy(() => import('./pages/PropertyMapView'));
+const RealtimeNotificationSettings = React.lazy(() => import('./pages/RealtimeNotificationSettings'));
+const RegularityReport = React.lazy(() => import('./pages/RegularityReport'));
+const Reports = React.lazy(() => import('./pages/Reports'));
+const Requests = React.lazy(() => import('./pages/Requests'));
+const RuralCredit = React.lazy(() => import('./pages/RuralCredit'));
+const Support = React.lazy(() => import('./pages/Support'));
+const TaxIncentives = React.lazy(() => import('./pages/TaxIncentives'));
+const LandingPage = React.lazy(() => import('./pages/LandingPage'));
 
 export const PAGES = {
     "Agenda": Agenda,

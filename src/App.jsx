@@ -153,7 +153,9 @@ const AuthenticatedApp = () => {
       <Routes>
         <Route path="/" element={
           <LayoutWrapper currentPageName={mainPageKey}>
-            <MainPage />
+            <Suspense fallback={<LoadingSpinner />}>
+              <MainPage />
+            </Suspense>
           </LayoutWrapper>
         } />
         {Object.entries(Pages).filter(([path]) => path !== 'LandingPage').map(([path, Page]) => (
@@ -162,7 +164,9 @@ const AuthenticatedApp = () => {
             path={`/${path}`}
             element={
               <LayoutWrapper currentPageName={path}>
-                <Page />
+                <Suspense fallback={<LoadingSpinner />}>
+                  <Page />
+                </Suspense>
               </LayoutWrapper>
             }
           />

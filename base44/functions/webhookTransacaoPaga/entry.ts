@@ -110,6 +110,15 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
   }
 
+  // Validação de token (Nexano deve enviar como header ou query param)
+  const token = req.headers.get('x-webhook-token') || new URL(req.url).searchParams.get('token');
+  const expectedToken = Deno.env.get('WEBHOOK_TOKEN_PAGO');
+  
+  if (!expectedToken || token !== expectedToken) {
+    console.warn('[webhookTransacaoPaga] FALHA: Token inválido ou ausente');
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   let body;
   try {
     body = await req.json();
@@ -149,25 +158,32 @@ Deno.serve(async (req) => {
       });
 
       // Atualizar ou criar UserMetadata (usado pelo AccessBlockedGuard)
-      const existingMeta = await base44.asServiceRole.entities.UserMetadata.filter({ user_email: email });
-      if (existingMeta && existingMeta.length > 0) {
-        await base44.asServiceRole.entities.UserMetadata.update(existingMeta[0].id, {
-          plano: planInfo.plano,
-          user_type: planInfo.user_type,
-          max_properties: planInfo.max_properties,
-          max_users: planInfo.max_users,
-          subscription_status: 'active',
-        });
-      } else {
-        await base44.asServiceRole.entities.UserMetadata.create({
-          user_email: email,
-          user_id: existingUser.id,
-          plano: planInfo.plano,
-          user_type: planInfo.user_type,
-          max_properties: planInfo.max_properties,
-          max_users: planInfo.max_users,
-          subscription_status: 'active',
-        });
+      try {
+        const existingMeta = await base44.asServiceRole.entities.UserMetadata.filter({ user_email: email });
+        if (existingMeta && existingMeta.length > 0) {
+          await base44.asServiceRole.entities.UserMetadata.update(existingMeta[0].id, {
+            plano: planInfo.plano,
+            user_type: planInfo.user_type,
+            max_properties: planInfo.max_properties,
+            max_users: planInfo.max_users,
+            subscription_status: 'active',
+          });
+          console.log(`[webhookTransacaoPaga] UserMetadata atualizado para ${email}`);
+        } else {
+          await base44.asServiceRole.entities.UserMetadata.create({
+            user_email: email,
+            user_id: existingUser.id,
+            plano: planInfo.plano,
+            user_type: planInfo.user_type,
+            max_properties: planInfo.max_properties,
+            max_users: planInfo.max_users,
+            subscription_status: 'active',
+          });
+          console.log(`[webhookTransacaoPaga] UserMetadata criado para ${email}`);
+        }
+      } catch (metaError) {
+        console.error(`[webhookTransacaoPaga] ERRO ao atualizar metadata para ${email}:`, metaError.message);
+        throw metaError;
       }
 
       console.log(`[webhookTransacaoPaga] Usuário existente atualizado: ${email} → plano ${planInfo.plano}`);
@@ -238,25 +254,32 @@ Deno.serve(async (req) => {
         });
 
         // Atualizar ou criar UserMetadata (usado pelo AccessBlockedGuard)
-        const newMeta = await base44.asServiceRole.entities.UserMetadata.filter({ user_email: email });
-        if (newMeta && newMeta.length > 0) {
-          await base44.asServiceRole.entities.UserMetadata.update(newMeta[0].id, {
-            plano: planInfo.plano,
-            user_type: planInfo.user_type,
-            max_properties: planInfo.max_properties,
-            max_users: planInfo.max_users,
-            subscription_status: 'active',
-          });
-        } else {
-          await base44.asServiceRole.entities.UserMetadata.create({
-            user_email: email,
-            user_id: newUsers[0].id,
-            plano: planInfo.plano,
-            user_type: planInfo.user_type,
-            max_properties: planInfo.max_properties,
-            max_users: planInfo.max_users,
-            subscription_status: 'active',
-          });
+        try {
+          const newMeta = await base44.asServiceRole.entities.UserMetadata.filter({ user_email: email });
+          if (newMeta && newMeta.length > 0) {
+            await base44.asServiceRole.entities.UserMetadata.update(newMeta[0].id, {
+              plano: planInfo.plano,
+              user_type: planInfo.user_type,
+              max_properties: planInfo.max_properties,
+              max_users: planInfo.max_users,
+              subscription_status: 'active',
+            });
+            console.log(`[webhookTransacaoPaga] UserMetadata atualizado para novo usuário ${email}`);
+          } else {
+            await base44.asServiceRole.entities.UserMetadata.create({
+              user_email: email,
+              user_id: newUsers[0].id,
+              plano: planInfo.plano,
+              user_type: planInfo.user_type,
+              max_properties: planInfo.max_properties,
+              max_users: planInfo.max_users,
+              subscription_status: 'active',
+            });
+            console.log(`[webhookTransacaoPaga] UserMetadata criado para novo usuário ${email}`);
+          }
+        } catch (metaError) {
+          console.error(`[webhookTransacaoPaga] ERRO ao processar metadata para novo usuário ${email}:`, metaError.message);
+          throw metaError;
         }
 
         console.log(`[webhookTransacaoPaga] Plano aplicado ao novo usuário: ${email} → ${planInfo.plano}`);

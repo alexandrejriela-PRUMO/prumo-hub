@@ -1,10 +1,10 @@
-import React, { createContext, useContext, useState } from 'react';
+import React from 'react';
 
-const ThemeContext = createContext({ theme: 'light' });
-export const useTheme = () => useContext(ThemeContext);
+const ThemeContext = React.createContext({ theme: 'light' });
+export const useTheme = () => React.useContext(ThemeContext);
 
 export default function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => {
+  const [theme, setTheme] = React.useState(() => {
     if (typeof window !== 'undefined') {
       return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }

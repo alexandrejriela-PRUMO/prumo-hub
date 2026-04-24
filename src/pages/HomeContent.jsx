@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import PropertyCard from '../components/dashboard/PropertyCard';
@@ -26,9 +26,9 @@ import PullToRefresh from '../components/mobile/PullToRefresh';
 
 // Component que recebe hooks já resolvidos via props
 export default function HomeContent({ navigate, queryClient, user, effectiveEmail, isEquipe, isConsultor, effectiveLoading }) {
-  const [selectedPropertyId, setSelectedPropertyId] = useState(null);
-  const [ruteChatOpen, setRuteChatOpen] = useState(false);
-  const [filters, setFilters] = useState({
+  const [selectedPropertyId, setSelectedPropertyId] = React.useState(null);
+  const [ruteChatOpen, setRuteChatOpen] = React.useState(false);
+  const [filters, setFilters] = React.useState({
     period: 'all',
     licenseStatus: 'all',
     alertSeverity: 'all',
@@ -130,11 +130,11 @@ export default function HomeContent({ navigate, queryClient, user, effectiveEmai
   const isDashboardView = !!propertyIdFromUrl; // Se tem property_id na URL, é o dashboard detalhado
   
   // Apply filters
-  const filteredData = useMemo(() => {
-    let filteredLicenses = licenses.filter(l => l.property_id === selectedPropertyId);
-    let filteredDocuments = documents.filter(d => d.property_id === selectedPropertyId);
-    let filteredAlerts = environmentalAlerts.filter(a => a.property_id === selectedPropertyId);
-    let filteredProcesses = processes.filter(p => p.property_id === selectedPropertyId);
+  const filteredData = React.useMemo(() => {
+    let filteredLicenses = (licenses || []).filter(l => l?.property_id === selectedPropertyId);
+    let filteredDocuments = (documents || []).filter(d => d?.property_id === selectedPropertyId);
+    let filteredAlerts = (environmentalAlerts || []).filter(a => a?.property_id === selectedPropertyId);
+    let filteredProcesses = (processes || []).filter(p => p?.property_id === selectedPropertyId);
 
     // Date filter
     if (filters.period !== 'all') {

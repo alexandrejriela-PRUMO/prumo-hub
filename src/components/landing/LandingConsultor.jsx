@@ -1,4 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
+import {
+  CheckCircle2, Star, ArrowRight, Zap, FileCheck,
+  BarChart3, MessageCircle, Briefcase, Building2,
+  Smartphone, Globe, Lock, Award, Crown, Send, Mail, Phone, User,
+  ClipboardList, ScrollText, Users, ReceiptText, Map, Leaf,
+  Sparkles, TrendingUp, Scale, AlertTriangle, MapPin
+} from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
 function FadeIn({ children, delay = 0, className = '' }) {
@@ -26,13 +33,6 @@ function FadeIn({ children, delay = 0, className = '' }) {
     </div>
   );
 }
-import {
-  CheckCircle2, Star, ArrowRight, Zap, FileCheck,
-  BarChart3, MessageCircle, Briefcase, Building2,
-  Smartphone, Globe, Lock, Award, Crown, Send, Mail, Phone, User,
-  ClipboardList, ScrollText, Users, ReceiptText, Map, Leaf,
-  Sparkles, TrendingUp, Scale, AlertTriangle, MapPin
-} from 'lucide-react';
 
 const diferenciais = [
   {

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
@@ -34,10 +34,10 @@ const STATUS_BADGE = {
 };
 
 export default function ConsultorClients() {
-  const [showNewClientForm, setShowNewClientForm] = React.useState(false);
-  const [selectedClient, setSelectedClient] = React.useState(null);
-  const [clientToDelete, setClientToDelete] = React.useState(null);
-  const [filterType, setFilterType] = React.useState('todos'); // 'todos' | 'leads' | 'clientes'
+  const [showNewClientForm, setShowNewClientForm] = useState(false);
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [clientToDelete, setClientToDelete] = useState(null);
+  const [filterType, setFilterType] = useState('todos'); // 'todos' | 'leads' | 'clientes'
   const queryClient = useQueryClient();
   const { effectiveEmail, isEquipe, actualEmail, memberRole } = useEffectiveUser();
   const canCreate = !isEquipe || memberRole === 'Administrador';
@@ -92,7 +92,7 @@ export default function ConsultorClients() {
   });
 
   // Mescla clientes do CRM com clientes vinculados via propriedade
-  const allClients = React.useMemo(() => {
+  const allClients = useMemo(() => {
     const safe_crmClients = crmClients || [];
     const safe_propertyBasedClients = propertyBasedClients || [];
     const crmMap = new Map((safe_crmClients || []).map(c => [c?.client_email, c]));

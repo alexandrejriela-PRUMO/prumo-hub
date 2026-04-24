@@ -37,7 +37,7 @@ export default function PropertyCentral() {
   });
 
   // Set first property as default
-  React.useEffect(() => {
+  useEffect(() => {
     if (properties.length > 0 && !selectedPropertyId) {
       setSelectedPropertyId(properties[0].id);
     }

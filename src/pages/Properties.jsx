@@ -34,38 +34,41 @@ export default function Properties() {
   
   const queryClient = useQueryClient();
   const { effectiveEmail, isEquipe, isConsultor: isConsultorType, isProdutor, memberRole, loading: effectiveLoading, user: effectiveUser } = useEffectiveUser();
-  const [user, setUser] = useState(effectiveUser || null);
+  const [user, setUser] = useState(null);
   const [userMeta, setUserMeta] = useState(null);
 
   useEffect(() => {
-    base44.auth.me().then(u => {
-      setUser(u);
-      if (u?.email) {
-        base44.entities.UserMetadata.filter({ user_email: u.email }, '-created_date', 1)
-          .then(list => { if (list?.length > 0) setUserMeta(list[0]); })
-          .catch(() => {});
-      }
-    }).catch(() => {});
-  }, []);
+    if (effectiveUser) {
+      setUser(effectiveUser);
+    }
+  }, [effectiveUser]);
 
-  const isConsultor = isConsultorType || isEquipe; // consultor ou equipe gerencia pelo consultor_email
+  useEffect(() => {
+    if (user?.email) {
+      base44.entities.UserMetadata.filter({ user_email: user.email }, '-created_date', 1)
+        .then(list => { if (list?.length > 0) setUserMeta(list[0]); })
+        .catch(() => {});
+    }
+  }, [user?.email]);
+
+  const isConsultor = isConsultorType || isEquipe;
 
   const { data: ownerProperties = [] } = useQuery({
     queryKey: ['properties-owner', effectiveEmail],
-    queryFn: () => base44.entities.Property.filter({ owner_email: effectiveEmail }),
+    queryFn: () => (effectiveEmail ? base44.entities.Property.filter({ owner_email: effectiveEmail }) : Promise.resolve([])),
     enabled: !!effectiveEmail && isProdutor
   });
 
   const { data: consultorProperties = [] } = useQuery({
     queryKey: ['properties-consultor', effectiveEmail],
-    queryFn: () => base44.entities.Property.filter({ consultor_email: effectiveEmail }),
+    queryFn: () => (effectiveEmail ? base44.entities.Property.filter({ consultor_email: effectiveEmail }) : Promise.resolve([])),
     enabled: !!effectiveEmail && (isConsultorType || isEquipe)
   });
 
   const properties = isProdutor
-    ? ownerProperties.filter(p => !p.is_client_only)
-    : consultorProperties.filter(p => !p.is_client_only);
-  const isLoading = effectiveLoading;
+    ? (ownerProperties || []).filter(p => !p.is_client_only)
+    : (consultorProperties || []).filter(p => !p.is_client_only);
+  const isLoading = effectiveLoading || !effectiveEmail;
 
   // Limite de propriedades por plano
   const maxProperties = userMeta?.max_properties ?? 9999;

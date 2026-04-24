@@ -32,15 +32,17 @@ export default function NewClientForm({ isOpen, onClose, consultorEmail, onSucce
     crmStatus !== initialData.crmStatus
   );
 
+  const handleClose = () => {
+    setClientType('pf');
+    setCrmStatus(initialStatus || 'Prospect');
+    setClientData(emptyClient);
+    setInitialData(null);
+    onClose();
+  };
+
   const handleCloseWithAlert = useDialogDirtyAlert(
     isFormDirty,
-    () => {
-      setClientType('pf');
-      setCrmStatus(initialStatus || 'Prospect');
-      setClientData(emptyClient);
-      setInitialData(null);
-      onClose();
-    },
+    handleClose,
     'Você tem alterações não salvas. Deseja fechar sem salvar?'
   );
 
@@ -55,14 +57,6 @@ export default function NewClientForm({ isOpen, onClose, consultorEmail, onSucce
     },
     onError: () => toast.error('Erro ao cadastrar.')
   });
-
-  const handleClose = () => {
-    setClientType('pf');
-    setCrmStatus(initialStatus || 'Prospect');
-    setClientData(emptyClient);
-    setInitialData(null);
-    onClose();
-  };
 
   const handleSubmit = () => {
     const name = clientType === 'pf' ? clientData.full_name : clientData.company_name;
@@ -101,7 +95,7 @@ export default function NewClientForm({ isOpen, onClose, consultorEmail, onSucce
   }, [isOpen, initialData]);
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleCloseWithAlert}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleCloseWithAlert()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-emerald-800">

@@ -1,7 +1,7 @@
 // @ts-nocheck
-// deno-lint-ignore no-undef
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
+// deno-lint-ignore no-undef
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -38,7 +38,8 @@ Atenciosamente,
 PRUMO Hub
     `.trim();
 
-    await base44.integrations.Core.SendEmail({
+    // Usar SendEmail da integração Core com to em vez de email
+    await base44.asServiceRole.integrations.Core.SendEmail({
       to: email,
       subject: subject,
       body: body,

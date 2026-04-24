@@ -140,15 +140,11 @@ export default function LandingPage() {
                 <span className="hidden sm:inline">Plataforma Agroambiental Inteligente</span>
                 <span className="sm:hidden">Agroambiental</span>
               </div>
-              <h1 className="text-3xl sm:text-6xl font-black text-white leading-tight mb-3">
-                Gestão ambiental que
-                <br />
-                <span className="text-transparent bg-clip-text" style={{backgroundImage: 'linear-gradient(90deg, #34d399, #fbbf24, #34d399)', backgroundSize: '200%'}}>
-                  protege quem produz.
-                </span>
+              <h1 className="text-2xl sm:text-6xl font-black text-white leading-snug mb-2 sm:mb-3 px-2">
+                Gestão ambiental que protege quem produz.
               </h1>
-              <p className="text-slate-400 text-sm sm:text-lg max-w-xl mx-auto px-2">
-                Escolha seu perfil e descubra como o PRUMO Hub transforma sua gestão.
+              <p className="text-xs sm:text-lg text-slate-300 max-w-xl mx-auto px-3 mb-6 sm:mb-8">
+                Escolha seu perfil e veja como o PRUMO Hub transforma sua gestão.
               </p>
             </div>
 
@@ -174,13 +170,13 @@ export default function LandingPage() {
                       Entrar →
                     </div>
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-black text-white mb-2 sm:mb-3">Produtor Rural</h2>
-                  <p className="text-slate-400 text-xs sm:text-sm leading-relaxed mb-4 sm:mb-6">
-                    Proprietário, fazendeiro, agricultor que quer organizar e proteger sua propriedade.
+                  <h2 className="text-lg sm:text-2xl font-bold text-white mb-1.5 sm:mb-3">Produtor Rural</h2>
+                  <p className="text-xs sm:text-sm leading-relaxed mb-3 sm:mb-6 text-slate-300">
+                    Organize e proteja sua propriedade.
                   </p>
-                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                    {['CAR & PRAD', 'Alertas', 'Licenças', 'IA'].map(tag => (
-                      <span key={tag} className="text-xs bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full">{tag}</span>
+                  <div className="flex flex-wrap gap-1 sm:gap-2">
+                    {['CAR', 'Alertas', 'Licenças', 'IA'].map(tag => (
+                      <span key={tag} className="text-[10px] sm:text-xs bg-emerald-500/15 border border-emerald-400/30 text-emerald-200 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full">{tag}</span>
                     ))}
                   </div>
                 </div>
@@ -200,13 +196,13 @@ export default function LandingPage() {
                       Entrar →
                     </div>
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-black text-white mb-2 sm:mb-3">Consultor Ambiental</h2>
-                  <p className="text-slate-400 text-xs sm:text-sm leading-relaxed mb-4 sm:mb-6">
-                    Engenheiro, agrônomo, advogado ou técnico que presta consultoria ambiental.
+                  <h2 className="text-lg sm:text-2xl font-bold text-white mb-1.5 sm:mb-3">Consultor Ambiental</h2>
+                  <p className="text-xs sm:text-sm leading-relaxed mb-3 sm:mb-6 text-slate-300">
+                    Gerencie consultoria com CRM e financeiro.
                   </p>
-                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                  <div className="flex flex-wrap gap-1 sm:gap-2">
                     {['CRM', 'Contratos', 'Financeiro', 'Equipe'].map(tag => (
-                      <span key={tag} className="text-xs bg-amber-500/10 border border-amber-500/20 text-amber-300 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full">{tag}</span>
+                      <span key={tag} className="text-[10px] sm:text-xs bg-amber-500/15 border border-amber-400/30 text-amber-200 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full">{tag}</span>
                     ))}
                   </div>
                 </div>

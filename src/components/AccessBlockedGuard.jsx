@@ -6,9 +6,9 @@ const BLOCKED_STATUSES = ['suspended', 'cancelled', 'payment_failed', 'chargebac
 const EXEMPT_PATHS = ['/AccessBlocked', '/AcceptInvite', '/landing', '/TermsOfUsePage'];
 
 export default function AccessBlockedGuard({ children }) {
+  const [checked, setChecked] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const [checked, setChecked] = useState(false);
 
   useEffect(() => {
     // Não verificar em rotas isentas

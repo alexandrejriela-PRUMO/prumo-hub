@@ -50,11 +50,6 @@ export default function Properties() {
 
   const isConsultor = isConsultorType || isEquipe; // consultor ou equipe gerencia pelo consultor_email
 
-  // Limite de propriedades por plano
-  const maxProperties = userMeta?.max_properties ?? 9999;
-  const canCreate = (!isEquipe || memberRole === 'Administrador') && properties.length < maxProperties;
-  const atPropertyLimit = !isEquipe && properties.length >= maxProperties && maxProperties < 9999;
-
   const { data: ownerProperties = [] } = useQuery({
     queryKey: ['properties-owner', effectiveEmail],
     queryFn: () => base44.entities.Property.filter({ owner_email: effectiveEmail }),
@@ -71,6 +66,11 @@ export default function Properties() {
     ? ownerProperties.filter(p => !p.is_client_only)
     : consultorProperties.filter(p => !p.is_client_only);
   const isLoading = effectiveLoading;
+
+  // Limite de propriedades por plano
+  const maxProperties = userMeta?.max_properties ?? 9999;
+  const canCreate = (!isEquipe || memberRole === 'Administrador') && properties.length < maxProperties;
+  const atPropertyLimit = !isEquipe && properties.length >= maxProperties && maxProperties < 9999;
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Property.create({

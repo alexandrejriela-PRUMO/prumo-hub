@@ -1,4 +1,4 @@
-import React, { useEffect, createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 
 const ThemeContext = createContext({ theme: 'light' });
 export const useTheme = () => useContext(ThemeContext);
@@ -11,14 +11,14 @@ export default function ThemeProvider({ children }) {
     return 'light';
   });
 
-  useEffect(() => {
+  React.useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const handler = (e) => setTheme(e.matches ? 'dark' : 'light');
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {

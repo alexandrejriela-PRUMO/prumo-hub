@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,13 +27,13 @@ export default function RuteAIChat({ user, property, isOpen, onClose }) {
   const [downloadLoading, setDownloadLoading] = useState(null);
   const scrollRef = useRef(null);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (isOpen && messages.length === 0) {
       setMessages([{
         role: 'assistant',

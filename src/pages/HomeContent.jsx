@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import PropertyCard from '../components/dashboard/PropertyCard';
@@ -110,14 +110,14 @@ export default function HomeContent({ navigate, queryClient, user, effectiveEmai
   const isLoading = effectiveLoading || loadingProperties || loadingLicenses || loadingInvoices || loadingDocuments || loadingProcesses || loadingAlerts;
 
   // Auto-select first property when properties load
-  useEffect(() => {
+  React.useEffect(() => {
     if (properties.length > 0 && !selectedPropertyId) {
       setSelectedPropertyId(properties[0].id);
     }
   }, [properties, selectedPropertyId]);
 
   // Se vem com property_id da URL, usa esse; senão, auto-seleciona o primeiro
-  useEffect(() => {
+  React.useEffect(() => {
     if (propertyIdFromUrl) {
       setSelectedPropertyId(propertyIdFromUrl);
     } else if (properties.length > 0 && !selectedPropertyId) {
@@ -207,7 +207,7 @@ export default function HomeContent({ navigate, queryClient, user, effectiveEmai
   };
 
   // Redireciona client_consultor para o portal dedicado
-  useEffect(() => {
+  React.useEffect(() => {
     if (user?.user_type === 'client_consultor' && navigate) {
       navigate(createPageUrl('ClientConsultorPortal'));
     }

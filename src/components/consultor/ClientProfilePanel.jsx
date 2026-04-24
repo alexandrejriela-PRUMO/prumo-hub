@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
@@ -73,7 +73,7 @@ export default function ClientProfilePanel({ client, onUpdate }) {
   const [personalData, setPersonalData] = useState(() => buildPersonalData(client));
 
   // Reinicializa estado quando muda de cliente
-  useEffect(() => {
+  React.useEffect(() => {
     setPersonalData(buildPersonalData(client));
     setEditingPersonal(false);
   }, [client?.id]);

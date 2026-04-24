@@ -54,8 +54,10 @@ const AuthenticatedApp = () => {
 
   // Verificar aceitação dos termos
   useEffect(() => {
-    if (isLoadingAuth || isLoadingPublicSettings || authError) {
-      if (authError) setTermsChecked(true); // não bloquear o render em caso de erro de auth
+    if (isLoadingAuth || isLoadingPublicSettings) return;
+    // Se há erro de auth ou usuário não autenticado, não precisa checar termos
+    if (authError || !isAuthenticated) {
+      setTermsChecked(true);
       return;
     }
     const checkTerms = async () => {

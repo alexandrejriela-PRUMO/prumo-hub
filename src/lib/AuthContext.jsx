@@ -107,21 +107,30 @@ export const AuthProvider = ({ children }) => {
       // Now check if the user is authenticated
       setIsLoadingAuth(true);
       const currentUser = await base44.auth.me();
+      
+      // Validate that we got a real user with email
+      if (!currentUser || !currentUser.email) {
+        // Clear stale token and require login
+        localStorage.removeItem('base44_access_token');
+        setIsLoadingAuth(false);
+        setIsAuthenticated(false);
+        setAuthError({ type: 'auth_required', message: 'Authentication required' });
+        return;
+      }
+
       setUser(currentUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
     } catch (error) {
       console.error('User auth check failed:', error);
+      // Clear potentially stale token
+      localStorage.removeItem('base44_access_token');
       setIsLoadingAuth(false);
       setIsAuthenticated(false);
-      
-      // If user auth fails, it might be an expired token
-      if (error.status === 401 || error.status === 403) {
-        setAuthError({
-          type: 'auth_required',
-          message: 'Authentication required'
-        });
-      }
+      setAuthError({
+        type: 'auth_required',
+        message: 'Authentication required'
+      });
     }
   };
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, Suspense } from 'react';
+import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
@@ -17,13 +17,13 @@ import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 function AgendaContent() {
   const { user, effectiveEmail, isLoading: effectiveLoading } = useEffectiveUser();
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-  const [editingEvent, setEditingEvent] = useState(null);
-  const [detailEvent, setDetailEvent] = useState(null);
-  const [filterAssignee, setFilterAssignee] = useState('all');
-  const [filterType, setFilterType] = useState('all');
-  const [search, setSearch] = useState('');
+  const [selectedDate, setSelectedDate] = React.useState(null);
+  const [showModal, setShowModal] = React.useState(false);
+  const [editingEvent, setEditingEvent] = React.useState(null);
+  const [detailEvent, setDetailEvent] = React.useState(null);
+  const [filterAssignee, setFilterAssignee] = React.useState('all');
+  const [filterType, setFilterType] = React.useState('all');
+  const [search, setSearch] = React.useState('');
 
   const qc = useQueryClient();
 
@@ -65,45 +65,45 @@ function AgendaContent() {
   });
 
   // Extract CRM events (tasks + interactions with next_action_date)
-  const crmEvents = useMemo(() => {
+  const crmEvents = React.useMemo(() => {
     const evs = [];
-    crmRecords.forEach(crm => {
-      const prop = properties.find(p => p.id === crm.property_id);
-      const clientName = prop?.client_name || prop?.property_name || crm.client_email || '';
+    (crmRecords || []).forEach(crm => {
+      const prop = properties?.find(p => p?.id === crm?.property_id);
+      const clientName = prop?.client_name || prop?.property_name || crm?.client_email || '';
 
       // Pending tasks with due_date
-      (crm.tasks || []).forEach(task => {
-        if (!task.done && task.due_date) {
+      (crm?.tasks || []).forEach(task => {
+        if (!task?.done && task?.due_date) {
           evs.push({
-            id: `crm_task_${crm.id}_${task.id}`,
-            title: task.title,
-            _date: task.due_date,
-            start_datetime: task.due_date,
+            id: `crm_task_${crm?.id}_${task?.id}`,
+            title: task?.title,
+            _date: task?.due_date,
+            start_datetime: task?.due_date,
             _source: 'crm_task',
             client_name: clientName,
-            client_email: crm.client_email,
-            priority: task.priority || 'Média',
-            assigned_to_email: task.responsible_email || '',
-            assigned_to_name: task.responsible_name || '',
+            client_email: crm?.client_email,
+            priority: task?.priority || 'Média',
+            assigned_to_email: task?.responsible_email || '',
+            assigned_to_name: task?.responsible_name || '',
             description: '',
           });
         }
       });
 
       // Interactions with next_action_date
-      (crm.interactions || []).forEach(inter => {
-        if (inter.next_action_date) {
+      (crm?.interactions || []).forEach(inter => {
+        if (inter?.next_action_date) {
           evs.push({
-            id: `crm_inter_${crm.id}_${inter.id}`,
-            title: inter.next_action || `Follow-up: ${inter.title}`,
-            _date: inter.next_action_date,
-            start_datetime: inter.next_action_date,
+            id: `crm_inter_${crm?.id}_${inter?.id}`,
+            title: inter?.next_action || `Follow-up: ${inter?.title}`,
+            _date: inter?.next_action_date,
+            start_datetime: inter?.next_action_date,
             _source: 'crm_interaction',
             client_name: clientName,
-            client_email: crm.client_email,
-            assigned_to_email: inter.responsible_email || '',
-            assigned_to_name: inter.responsible_name || '',
-            description: inter.description || '',
+            client_email: crm?.client_email,
+            assigned_to_email: inter?.responsible_email || '',
+            assigned_to_name: inter?.responsible_name || '',
+            description: inter?.description || '',
           });
         }
       });
@@ -112,35 +112,35 @@ function AgendaContent() {
   }, [crmRecords, properties]);
 
   // All events merged
-  const allEvents = useMemo(() => {
+  const allEvents = React.useMemo(() => {
     return [
-      ...agendaEvents.map(e => ({ ...e, _source: 'agenda' })),
+      ...(agendaEvents || []).map(e => ({ ...e, _source: 'agenda' })),
       ...crmEvents,
     ];
   }, [agendaEvents, crmEvents]);
 
   // Filtered events
-  const filteredEvents = useMemo(() => {
-    return allEvents.filter(ev => {
-      if (filterAssignee !== 'all' && ev.assigned_to_email !== filterAssignee) return false;
+  const filteredEvents = React.useMemo(() => {
+    return (allEvents || []).filter(ev => {
+      if (filterAssignee !== 'all' && ev?.assigned_to_email !== filterAssignee) return false;
       if (filterType !== 'all') {
-        if (filterType === 'crm' && ev._source !== 'crm_task' && ev._source !== 'crm_interaction') return false;
-        if (filterType === 'agenda' && ev._source !== 'agenda') return false;
+        if (filterType === 'crm' && ev?._source !== 'crm_task' && ev?._source !== 'crm_interaction') return false;
+        if (filterType === 'agenda' && ev?._source !== 'agenda') return false;
       }
-      if (search && !ev.title?.toLowerCase().includes(search.toLowerCase()) &&
-          !ev.client_name?.toLowerCase().includes(search.toLowerCase())) return false;
+      if (search && !ev?.title?.toLowerCase().includes(search.toLowerCase()) &&
+          !ev?.client_name?.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
   }, [allEvents, filterAssignee, filterType, search]);
 
   // Stats
-  const stats = useMemo(() => {
+  const stats = React.useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
     return {
-      total: allEvents.length,
-      today: allEvents.filter(e => (e.start_datetime || e._date || '')?.startsWith(today)).length,
-      crm: crmEvents.length,
-      delegated: agendaEvents.filter(e => e.assigned_to_email && e.assigned_to_email !== user?.email).length,
+      total: (allEvents || []).length,
+      today: (allEvents || []).filter(e => (e?.start_datetime || e?._date || '')?.startsWith(today)).length,
+      crm: (crmEvents || []).length,
+      delegated: (agendaEvents || []).filter(e => e?.assigned_to_email && e?.assigned_to_email !== user?.email).length,
     };
   }, [allEvents, crmEvents, agendaEvents, user]);
 
@@ -193,13 +193,13 @@ function AgendaContent() {
     qc.invalidateQueries(['agendaEvents']);
   };
 
-  const allAssignees = useMemo(() => {
+  const allAssignees = React.useMemo(() => {
     const seen = new Set();
     const arr = [];
-    allEvents.forEach(e => {
-      if (e.assigned_to_email && !seen.has(e.assigned_to_email)) {
+    (allEvents || []).forEach(e => {
+      if (e?.assigned_to_email && !seen.has(e.assigned_to_email)) {
         seen.add(e.assigned_to_email);
-        arr.push({ email: e.assigned_to_email, name: e.assigned_to_name || e.assigned_to_email });
+        arr.push({ email: e.assigned_to_email, name: e?.assigned_to_name || e?.assigned_to_email });
       }
     });
     return arr;

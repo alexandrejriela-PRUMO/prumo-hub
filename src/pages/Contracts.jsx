@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,15 +53,15 @@ const EMPTY_FORM = {
 
 export default function Contracts() {
   const { user, effectiveEmail, isEquipe, isConsultor: isConsultorHook, isLoading: effectiveLoading } = useEffectiveUser();
-  const [selectedPropertyId, setSelectedPropertyId] = useState(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingContract, setEditingContract] = useState(null);
-  const [viewingContract, setViewingContract] = useState(null);
-  const [formData, setFormData] = useState(EMPTY_FORM);
-  const [newParty, setNewParty] = useState({ name: '', role: 'Contratante', document: '', address: '' });
-  const [partySearch, setPartySearch] = useState('');
-  const [showPartySuggestions, setShowPartySuggestions] = useState(false);
-  const [savedContratado, setSavedContratado] = useState(() => {
+  const [selectedPropertyId, setSelectedPropertyId] = React.useState(null);
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [editingContract, setEditingContract] = React.useState(null);
+  const [viewingContract, setViewingContract] = React.useState(null);
+  const [formData, setFormData] = React.useState(EMPTY_FORM);
+  const [newParty, setNewParty] = React.useState({ name: '', role: 'Contratante', document: '', address: '' });
+  const [partySearch, setPartySearch] = React.useState('');
+  const [showPartySuggestions, setShowPartySuggestions] = React.useState(false);
+  const [savedContratado, setSavedContratado] = React.useState(() => {
     try { return JSON.parse(localStorage.getItem('prumo_contratado_data')) || null; } catch { return null; }
   });
 
@@ -69,15 +69,15 @@ export default function Contracts() {
   const { data: saasContractLog } = useQuery({
     queryKey: ['saas-contract-log', user?.email],
     queryFn: async () => {
-      const logs = await base44.entities.TermsAcceptanceLog.filter({ user_email: user.email });
+      const logs = await base44.entities.TermsAcceptanceLog.filter({ user_email: user?.email });
       // Pega o log do contrato SaaS (versão >= 1001)
-      return logs.filter(l => l.terms_version >= 1001 && l.contractor_name).sort((a, b) => new Date(b.accepted_at) - new Date(a.accepted_at))[0] || null;
+      return logs?.filter(l => l?.terms_version >= 1001 && l?.contractor_name)?.sort((a, b) => new Date(b?.accepted_at) - new Date(a?.accepted_at))[0] || null;
     },
     enabled: !!user?.email,
   });
 
-  const [newService, setNewService] = useState({ name: '', value: '', status: 'Em Andamento' });
-  const [uploading, setUploading] = useState(false);
+  const [newService, setNewService] = React.useState({ name: '', value: '', status: 'Em Andamento' });
+  const [uploading, setUploading] = React.useState(false);
   const queryClient = useQueryClient();
   const isConsultor = isConsultorHook || isEquipe;
 

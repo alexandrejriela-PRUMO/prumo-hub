@@ -1,4 +1,4 @@
-import React from 'react';
+import { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
@@ -138,8 +138,8 @@ function ClientCard({ crm, property, index, onClick }) {
 
 
 export default function CRMBoard() {
-  const [showNewClientForm, setShowNewClientForm] = React.useState(false);
-  const [selectedCRM, setSelectedCRM] = React.useState(null);
+  const [showNewClientForm, setShowNewClientForm] = useState(false);
+  const [selectedCRM, setSelectedCRM] = useState(null);
   const queryClient = useQueryClient();
   const { user, effectiveEmail, isEquipe, memberRole, isLoading: effectiveLoading } = useEffectiveUser();
   const canCreateLead = !isEquipe || (memberRole === 'Administrador');
@@ -191,14 +191,14 @@ export default function CRMBoard() {
     onSuccess: () => queryClient.invalidateQueries(['crm-board-list']),
   });
 
-  const propertyMap = React.useMemo(() => {
+  const propertyMap = useMemo(() => {
     const map = {};
     (properties || []).forEach(p => { if (p?.id) map[p.id] = p; });
     return map;
   }, [properties]);
 
   // Group CRM records by status
-  const columns = React.useMemo(() => {
+  const columns = useMemo(() => {
     const grouped = {};
     COLUMNS.forEach(col => { grouped[col.id] = []; });
     (crmList || []).forEach(crm => {
@@ -217,7 +217,7 @@ export default function CRMBoard() {
   };
 
   // Build client object for modal with all linked properties
-  const selectedClient = React.useMemo(() => {
+  const selectedClient = useMemo(() => {
     if (!selectedCRM) return null;
     const linkedProps = (properties || []).filter(p => {
       if (selectedCRM?.property_id && p?.id === selectedCRM.property_id) return true;

@@ -35,32 +35,32 @@ export default function SaasContractLogs() {
   const handleDownload = async (log) => {
     setDownloading(prev => ({ ...prev, [log.id]: true }));
     try {
-      const response = await base44.functions.invoke('generateSaasContractPDF', { logId: log.id });
-      
-      if (response.data?.success && response.data?.htmlContent) {
-        // Criar link de download usando html2canvas e jsPDF
-        const { jsPDF } = await import('jspdf');
-        const html2canvas = await import('html2canvas');
-        
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = response.data.htmlContent;
-        tempDiv.style.position = 'absolute';
-        tempDiv.style.left = '-9999px';
-        tempDiv.style.width = '800px';
-        document.body.appendChild(tempDiv);
-        
-        const canvas = await html2canvas.default(tempDiv, { scale: 2 });
-        document.body.removeChild(tempDiv);
-        
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgData = canvas.toDataURL('image/png');
-        const imgWidth = 210;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-        pdf.save(response.data?.fileName || `Comprovante_SaaS_${log.user_email}.pdf`);
-        
+      // Usa generateAcceptanceProofPDF que retorna PDF binário completo (comprovante + contrato)
+      const contractorData = {
+        name: log.contractor_name || log.user_name || '',
+        document: log.contractor_document || '',
+        address: log.contractor_address || '',
+        phone: log.contractor_phone || '',
+        email: log.contractor_email || log.user_email || '',
+      };
+      const response = await base44.functions.invoke('generateAcceptanceProofPDF', {
+        type: 'saas_contract',
+        contractorData,
+      });
+
+      if (response?.data) {
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Contrato_SaaS_PRUMO_${(contractorData.document || log.user_email).replace(/\W/g, '_')}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
         toast.success('PDF baixado com sucesso!');
+      } else {
+        toast.error('Erro ao gerar PDF. Tente novamente.');
       }
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);

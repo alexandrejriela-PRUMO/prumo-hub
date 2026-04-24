@@ -5,7 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { FileCheck, CheckCircle, User, ArrowRight, ArrowLeft } from 'lucide-react';
+import { FileCheck, CheckCircle, User, ArrowRight, ArrowLeft, Download } from 'lucide-react';
 
 const SAAS_CONTRACT_VERSION = 1;
 
@@ -117,9 +117,11 @@ O Plano Produtor Único integra o ecossistema da plataforma PRUMO HUB, permitind
 `;
 
 export default function SaasContractPage({ onAccepted }) {
-  const [step, setStep] = useState('contract'); // 'contract' | 'form'
+  const [step, setStep] = useState('contract'); // 'contract' | 'form' | 'done'
   const [accepted, setAccepted] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
+  const [savedContractor, setSavedContractor] = useState(null);
   const [contractor, setContractor] = useState({
     name: '',
     document: '',
@@ -153,42 +155,44 @@ export default function SaasContractPage({ onAccepted }) {
         contractor_email: contractor.email,
       });
 
-      // Generate PDF proof and send via email
-      let pdfBase64 = null;
-      try {
-        const pdfResponse = await base44.functions.invoke('generateAcceptanceProofPDF', {
-          type: 'saas_contract',
-          contractorData: contractor,
-        });
-        if (pdfResponse.data && typeof pdfResponse.data === 'string') {
-          pdfBase64 = pdfResponse.data;
-          const link = document.createElement('a');
-          link.href = `data:application/pdf;base64,${btoa(pdfBase64)}`;
-          link.download = `Contrato_SaaS_${contractor.document}_${new Date().getTime()}.pdf`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        }
-      } catch (pdfError) {
-        console.warn('Aviso: PDF não gerado, mas contrato foi registrado:', pdfError);
-      }
+      setSavedContractor({ ...contractor });
+      setStep('done');
 
-      // Send email with contract copy
-      try {
-        await base44.functions.invoke('sendSaasContractEmail', {
-          contractorEmail: contractor.email,
-          contractorName: contractor.name,
-          pdfBase64: pdfBase64,
-        });
-      } catch (emailError) {
-        console.warn('Aviso: Email não enviado, mas contrato foi registrado:', emailError);
-      }
-
-      if (onAccepted) onAccepted();
+      // Enviar e-mail de notificação (não bloquear)
+      base44.functions.invoke('sendSaasContractEmail', {
+        contractorEmail: contractor.email,
+        contractorName: contractor.name,
+        pdfBase64: null,
+      }).catch(e => console.warn('Email não enviado (não crítico):', e));
     } catch (e) {
       console.error('Erro ao salvar aceite do contrato:', e);
     }
     setSaving(false);
+  };
+
+  const handleDownloadContract = async () => {
+    setDownloadingPDF(true);
+    try {
+      const response = await base44.functions.invoke('generateAcceptanceProofPDF', {
+        type: 'saas_contract',
+        contractorData: savedContractor,
+      });
+      // A função retorna PDF binário diretamente
+      if (response?.data) {
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Contrato_SaaS_PRUMO_${savedContractor?.document?.replace(/\D/g,'') || 'assinado'}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+    } catch (e) {
+      console.error('Erro ao baixar contrato:', e);
+    }
+    setDownloadingPDF(false);
   };
 
   return (
@@ -209,14 +213,16 @@ export default function SaasContractPage({ onAccepted }) {
         </div>
 
         {/* Step indicators */}
-        <div className="flex border-b border-gray-100">
-          <div className={`flex-1 py-3 text-center text-xs font-semibold flex items-center justify-center gap-1.5 ${step === 'contract' ? 'text-emerald-700 border-b-2 border-emerald-600' : 'text-gray-400'}`}>
-            <FileCheck className="w-3.5 h-3.5" /> 1. Leitura do Contrato
+        {step !== 'done' && (
+          <div className="flex border-b border-gray-100">
+            <div className={`flex-1 py-3 text-center text-xs font-semibold flex items-center justify-center gap-1.5 ${step === 'contract' ? 'text-emerald-700 border-b-2 border-emerald-600' : 'text-gray-400'}`}>
+              <FileCheck className="w-3.5 h-3.5" /> 1. Leitura do Contrato
+            </div>
+            <div className={`flex-1 py-3 text-center text-xs font-semibold flex items-center justify-center gap-1.5 ${step === 'form' ? 'text-emerald-700 border-b-2 border-emerald-600' : 'text-gray-400'}`}>
+              <User className="w-3.5 h-3.5" /> 2. Dados do Contratante
+            </div>
           </div>
-          <div className={`flex-1 py-3 text-center text-xs font-semibold flex items-center justify-center gap-1.5 ${step === 'form' ? 'text-emerald-700 border-b-2 border-emerald-600' : 'text-gray-400'}`}>
-            <User className="w-3.5 h-3.5" /> 2. Dados do Contratante
-          </div>
-        </div>
+        )}
 
         {/* STEP 1 — Contrato */}
         {step === 'contract' && (
@@ -261,6 +267,43 @@ export default function SaasContractPage({ onAccepted }) {
                 Prosseguir <ArrowRight className="w-4 h-4" />
               </Button>
             </div>
+          </div>
+        )}
+
+        {/* STEP done — Contrato assinado com downloads */}
+        {step === 'done' && (
+          <div className="p-6 space-y-5">
+            <div className="text-center py-4">
+              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-9 h-9 text-emerald-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-800">Contrato Assinado!</h2>
+              <p className="text-gray-500 text-sm mt-2">
+                Seu contrato foi registrado com sucesso. Faça o download abaixo para guardar sua via assinada.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <Button
+                onClick={handleDownloadContract}
+                disabled={downloadingPDF}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+              >
+                <Download className="w-4 h-4" />
+                {downloadingPDF ? 'Gerando PDF...' : 'Baixar Contrato SaaS Assinado (PDF)'}
+              </Button>
+              <p className="text-xs text-gray-400 text-center">
+                O PDF contém o comprovante de aceite e o contrato completo com seus dados.
+              </p>
+            </div>
+
+            <Button
+              onClick={() => { if (onAccepted) onAccepted(); }}
+              variant="outline"
+              className="w-full border-gray-200 text-gray-600"
+            >
+              Entrar na plataforma →
+            </Button>
           </div>
         )}
 

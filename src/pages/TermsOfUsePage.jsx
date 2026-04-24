@@ -3,13 +3,15 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
-import { FileText, CheckCircle } from 'lucide-react';
+import { FileText, CheckCircle, Download } from 'lucide-react';
 
 export default function TermsOfUsePage({ onAccepted }) {
   const [terms, setTerms] = useState(null);
   const [accepted, setAccepted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [done, setDone] = useState(false);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -47,34 +49,67 @@ export default function TermsOfUsePage({ onAccepted }) {
         }),
       ]);
 
-      // Generate and download PDF proof
-      try {
-        const pdfResponse = await base44.functions.invoke('generateAcceptanceProofPDF', {
-          type: 'terms',
-        });
-        if (pdfResponse.data && typeof pdfResponse.data === 'string') {
-          const link = document.createElement('a');
-          link.href = `data:application/pdf;base64,${btoa(pdfResponse.data)}`;
-          link.download = `Comprovante_Termos_${user.email}_${new Date().getTime()}.pdf`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        }
-      } catch (pdfError) {
-        console.warn('Aviso: PDF não gerado, mas aceite foi registrado:', pdfError);
-      }
-
-      if (onAccepted) onAccepted();
+      setDone(true);
     } catch (e) {
       console.error('Erro ao salvar aceite:', e);
     }
     setSaving(false);
   };
 
+  const handleDownloadTerms = async () => {
+    setDownloadingPDF(true);
+    try {
+      const response = await base44.functions.invoke('generateAcceptanceProofPDF', { type: 'terms' });
+      if (response?.data) {
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'Comprovante_Termos_PRUMO.pdf';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+    } catch (e) {
+      console.error('Erro ao baixar comprovante:', e);
+    }
+    setDownloadingPDF(false);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-950 to-emerald-900">
         <div className="w-8 h-8 border-4 border-emerald-200 border-t-emerald-400 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (done) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-emerald-900 to-emerald-950 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+          <div className="bg-gradient-to-r from-emerald-800 to-emerald-700 px-8 py-6 flex items-center gap-4">
+            <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/9e64158f0_PRUMO1.png" alt="PRUMO Hub" className="h-12 w-auto object-contain" />
+            <h1 className="text-white text-xl font-bold">Termos de Uso</h1>
+          </div>
+          <div className="p-6 space-y-5">
+            <div className="text-center py-4">
+              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-9 h-9 text-emerald-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-800">Termos Aceitos!</h2>
+              <p className="text-gray-500 text-sm mt-2">Seu aceite foi registrado. Baixe o comprovante abaixo para seus registros.</p>
+            </div>
+            <Button onClick={handleDownloadTerms} disabled={downloadingPDF} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
+              <Download className="w-4 h-4" />
+              {downloadingPDF ? 'Gerando...' : 'Baixar Comprovante de Aceite (PDF)'}
+            </Button>
+            <Button onClick={() => { if (onAccepted) onAccepted(); }} variant="outline" className="w-full border-gray-200 text-gray-600">
+              Continuar →
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }

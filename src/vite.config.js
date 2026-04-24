@@ -19,6 +19,12 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
       'react': reactPath,
       'react-dom': reactDomPath,
+      'react/jsx-runtime': path.resolve(__dirname, 'node_modules/react/jsx-runtime'),
+      'react/jsx-dev-runtime': path.resolve(__dirname, 'node_modules/react/jsx-dev-runtime'),
     },
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
+    force: true,
   },
 });

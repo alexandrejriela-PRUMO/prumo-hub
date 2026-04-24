@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react'
+import { Suspense, lazy, useState, useEffect } from 'react'
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -11,13 +11,13 @@ import PageNotFound from './lib/PageNotFound';
 import RouteProtector from '@/components/RouteProtector';
 
 // Lazy load pages not in pagesConfig
-const AcceptInvite = React.lazy(() => import('./pages/AcceptInvite'));
-const TermsOfUsePage = React.lazy(() => import('./pages/TermsOfUsePage'));
-const SaasContractPage = React.lazy(() => import('./pages/SaasContractPage'));
-const LandingPage = React.lazy(() => import('./pages/LandingPage'));
-const AccessBlocked = React.lazy(() => import('./pages/AccessBlocked'));
-const Parceiros = React.lazy(() => import('./pages/Parceiros'));
-const ErrorLogsAdmin = React.lazy(() => import('./pages/ErrorLogsAdmin'));
+const AcceptInvite = lazy(() => import('./pages/AcceptInvite'));
+const TermsOfUsePage = lazy(() => import('./pages/TermsOfUsePage'));
+const SaasContractPage = lazy(() => import('./pages/SaasContractPage'));
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const AccessBlocked = lazy(() => import('./pages/AccessBlocked'));
+const Parceiros = lazy(() => import('./pages/Parceiros'));
+const ErrorLogsAdmin = lazy(() => import('./pages/ErrorLogsAdmin'));
 
 import OfflineIndicator from '@/components/offline/OfflineIndicator';
 import AccessBlockedGuard from '@/components/AccessBlockedGuard';
@@ -44,17 +44,17 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
   const { isOnline, syncInProgress, syncStats } = useOfflineSync();
-  const [termsChecked, setTermsChecked] = React.useState(false);
-  const [needsTerms, setNeedsTerms] = React.useState(false);
-  const [needsContract, setNeedsContract] = React.useState(false);
+  const [termsChecked, setTermsChecked] = useState(false);
+  const [needsTerms, setNeedsTerms] = useState(false);
+  const [needsContract, setNeedsContract] = useState(false);
 
   // Inicializar offline DB
-  React.useEffect(() => {
+  useEffect(() => {
     initializeOfflineDB().catch(err => console.error('[App] Erro ao inicializar offline DB:', err));
   }, []);
 
   // Verificar aceitação dos termos
-  React.useEffect(() => {
+  useEffect(() => {
     if (isLoadingAuth || isLoadingPublicSettings) return;
     // Se há erro de auth ou usuário não autenticado, não precisa checar termos
     if (authError || !isAuthenticated) {

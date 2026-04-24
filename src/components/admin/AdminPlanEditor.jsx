@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { X, Save, Trash2, MapPin, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminPropertyAccess from './AdminPropertyAccess';
@@ -20,6 +20,8 @@ export default function AdminPlanEditor({ user, onClose }) {
   const queryClient = useQueryClient();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [showPropertyAccess, setShowPropertyAccess] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const getPlanoDefaults = (planValue) => {
     const plan = PLANOS.find(p => p.value === planValue);
@@ -51,36 +53,42 @@ export default function AdminPlanEditor({ user, onClose }) {
     },
   });
 
-  const mutation = useMutation({
-    mutationFn: (data) => {
-      // Se é convite pendente, atualiza TeamMember ao invés de User
+  const handleSaveAsync = async (data) => {
+    setIsSaving(true);
+    try {
       if (user.is_pending_invite && user.invite_data?.team_member_id) {
-        return base44.functions.invoke('adminUpdateTeamMemberInvite', {
+        await base44.functions.invoke('adminUpdateTeamMemberInvite', {
           teamMemberId: user.invite_data.team_member_id,
           data
         });
+      } else {
+        await base44.functions.invoke('adminUpdateUser', { userId: user.id, data });
       }
-      return base44.functions.invoke('adminUpdateUser', { userId: user.id, data });
-    },
-    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-all-users'] });
       queryClient.invalidateQueries({ queryKey: ['admin-users-stats'] });
       toast.success('Usuário atualizado com sucesso!');
       onClose();
-    },
-    onError: (err) => toast.error(`Erro: ${err.message}`),
-  });
+    } catch (err) {
+      toast.error(`Erro: ${err.message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
-  const deleteMutation = useMutation({
-    mutationFn: () => base44.functions.invoke('adminDeleteUser', { userId: user.id }),
-    onSuccess: () => {
+  const handleDeleteAsync = async () => {
+    setIsDeleting(true);
+    try {
+      await base44.functions.invoke('adminDeleteUser', { userId: user.id });
       queryClient.invalidateQueries({ queryKey: ['admin-all-users'] });
       queryClient.invalidateQueries({ queryKey: ['admin-users-stats'] });
       toast.success('Usuário deletado com sucesso!');
       onClose();
-    },
-    onError: (err) => toast.error(`Erro ao deletar: ${err.message}`),
-  });
+    } catch (err) {
+      toast.error(`Erro ao deletar: ${err.message}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const handlePlanChange = (planValue) => {
     const plan = PLANOS.find(p => p.value === planValue);
@@ -98,7 +106,7 @@ export default function AdminPlanEditor({ user, onClose }) {
   };
 
   const handleSave = () => {
-    mutation.mutate(form);
+    handleSaveAsync(form);
   };
 
   return (
@@ -237,11 +245,11 @@ export default function AdminPlanEditor({ user, onClose }) {
           </button>
           <button
             onClick={handleSave}
-            disabled={mutation.isPending}
+            disabled={isSaving}
             className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
-            {mutation.isPending ? 'Salvando...' : 'Salvar'}
+            {isSaving ? 'Salvando...' : 'Salvar'}
           </button>
         </div>
 
@@ -258,17 +266,17 @@ export default function AdminPlanEditor({ user, onClose }) {
               <div className="flex gap-3 justify-end pt-2">
                 <button
                   onClick={() => setDeleteConfirmOpen(false)}
-                  disabled={deleteMutation.isPending}
+                  disabled={isDeleting}
                   className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors text-sm font-medium"
                 >
                   Cancelar
                 </button>
                 <button
-                  onClick={() => deleteMutation.mutate()}
-                  disabled={deleteMutation.isPending}
+                  onClick={handleDeleteAsync}
+                  disabled={isDeleting}
                   className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors text-sm font-medium disabled:opacity-50"
                 >
-                  {deleteMutation.isPending ? 'Deletando...' : 'Deletar'}
+                  {isDeleting ? 'Deletando...' : 'Deletar'}
                 </button>
               </div>
             </div>

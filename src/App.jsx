@@ -186,14 +186,14 @@ function AppContent() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClientInstance}>
-      <AuthProvider>
+    <AuthProvider>
+      <QueryClientProvider client={queryClientInstance}>
         <Router>
           <AppContent />
         </Router>
         <Toaster />
-      </AuthProvider>
-    </QueryClientProvider>
+      </QueryClientProvider>
+    </AuthProvider>
   )
 }
 

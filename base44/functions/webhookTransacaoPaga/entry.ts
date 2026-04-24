@@ -12,13 +12,14 @@ function cleanDocument(doc = '') {
 }
 
 function extractBuyer(body) {
+  // Nexano envia em body.client; outros gateways podem usar customer/buyer
   const buyer =
+    body?.client ||
     body?.data?.customer ||
     body?.customer ||
     body?.buyer ||
     body?.data?.buyer ||
     body?.data?.client ||
-    body?.client ||
     body?.purchase?.customer ||
     body?.event?.customer ||
     {};
@@ -48,6 +49,7 @@ function extractBuyer(body) {
  */
 function extractPlan(body) {
   const productName =
+    body?.orderItems?.[0]?.product?.name ||
     body?.product?.name ||
     body?.offer?.name ||
     body?.data?.product_name ||
@@ -61,6 +63,7 @@ function extractPlan(body) {
     '';
 
   const offerId =
+    body?.offerCode ||
     body?.offer?.id ||
     body?.data?.offer_id ||
     body?.offer_id ||
@@ -181,7 +184,7 @@ Deno.serve(async (req) => {
 
     // Enviar convite automático
     try {
-      await base44.asServiceRole.users.inviteUser(email, 'user');
+      await base44.users.inviteUser(email, 'user');
       console.log(`[webhookTransacaoPaga] Convite enviado automaticamente para: ${email}`);
 
       // Enviar e-mail customizado com link de acesso correto

@@ -41,7 +41,7 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   : <>{children}</>;
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
   const { isOnline, syncInProgress, syncStats } = useOfflineSync();
   const [termsChecked, setTermsChecked] = React.useState(false);
   const [needsTerms, setNeedsTerms] = React.useState(false);
@@ -102,6 +102,12 @@ const AuthenticatedApp = () => {
       navigateToLogin();
       return null;
     }
+  }
+
+  // Not authenticated and no error — redirect to login
+  if (!isAuthenticated) {
+    navigateToLogin();
+    return null;
   }
 
   // Redirecionar para aceite de termos se necessário

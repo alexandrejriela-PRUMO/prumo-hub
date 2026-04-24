@@ -106,7 +106,7 @@ export default function AdminPlanEditor({ user, onClose }) {
   };
 
   const handleSave = () => {
-    handleSaveAsync(form);
+    handleSaveAsync({ ...form, user_email: user.email });
   };
 
   return (

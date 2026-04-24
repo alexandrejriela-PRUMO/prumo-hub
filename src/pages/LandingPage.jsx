@@ -109,7 +109,7 @@ export default function LandingPage() {
 
       {/* ESCOLHA DE PERFIL */}
       {!perfil && (
-        <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden px-4 pt-16" style={{background: 'linear-gradient(135deg, #0a1628 0%, #0d2b1f 40%, #1a3a2a 70%, #0f1f2e 100%)'}}>
+        <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden px-4 pt-20 lg:pt-16" style={{background: 'linear-gradient(135deg, #0a1628 0%, #0d2b1f 40%, #1a3a2a 70%, #0f1f2e 100%)'}}>
           {/* Particle background */}
           <ParticleBackground />
           {/* Animated background elements */}
@@ -127,7 +127,7 @@ export default function LandingPage() {
             {/* Logo + tagline */}
             <div
               ref={heroRef}
-              className="text-center mb-14 transition-all duration-1000"
+              className="text-center mb-10 sm:mb-14 transition-all duration-1000 w-full px-2"
               style={{ opacity: heroVisible ? 1 : 0, transform: heroVisible ? 'translateY(0)' : 'translateY(40px)' }}
             >
               <img
@@ -153,17 +153,17 @@ export default function LandingPage() {
             {/* Profile cards */}
              <div
                ref={cardRef}
-               className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-3xl mx-auto px-4 transition-all duration-1000 delay-300"
+               className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full max-w-3xl mx-auto transition-all duration-1000 delay-300"
                style={{ opacity: cardVisible ? 1 : 0, transform: cardVisible ? 'translateY(0)' : 'translateY(50px)' }}
              >
               {/* Produtor */}
               <button
                 onClick={() => setPerfil('produtor')}
-                className="group relative text-left rounded-3xl overflow-hidden border border-white/10 hover:border-emerald-400/50 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-emerald-900/60"
+                className="group relative text-left rounded-2xl sm:rounded-3xl overflow-hidden border border-white/10 hover:border-emerald-400/50 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-emerald-900/60"
                 style={{background: 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(16,185,129,0.03) 100%)'}}
               >
                 <div className="h-1 w-full bg-gradient-to-r from-emerald-400 to-teal-500 group-hover:h-1.5 transition-all duration-300" />
-                <div className="p-5 sm:p-8">
+                <div className="p-4 sm:p-8">
                   <div className="flex items-start justify-between mb-4 sm:mb-6">
                     <div className="text-4xl sm:text-5xl">🌾</div>
                     <div className="opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300 bg-emerald-500/20 text-emerald-300 text-xs font-bold px-2 py-0.5 sm:px-3 sm:py-1 rounded-full border border-emerald-400/30">
@@ -185,11 +185,11 @@ export default function LandingPage() {
               {/* Consultor */}
               <button
                 onClick={() => setPerfil('consultor')}
-                className="group relative text-left rounded-3xl overflow-hidden border border-white/10 hover:border-amber-400/50 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-amber-900/40"
+                className="group relative text-left rounded-2xl sm:rounded-3xl overflow-hidden border border-white/10 hover:border-amber-400/50 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-amber-900/40"
                 style={{background: 'linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(245,158,11,0.03) 100%)'}}
               >
                 <div className="h-1 w-full bg-gradient-to-r from-amber-400 to-orange-500 group-hover:h-1.5 transition-all duration-300" />
-                <div className="p-5 sm:p-8">
+                <div className="p-4 sm:p-8">
                   <div className="flex items-start justify-between mb-4 sm:mb-6">
                     <div className="text-4xl sm:text-5xl">🧑‍💼</div>
                     <div className="opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300 bg-amber-500/20 text-amber-300 text-xs font-bold px-2 py-0.5 sm:px-3 sm:py-1 rounded-full border border-amber-400/30">

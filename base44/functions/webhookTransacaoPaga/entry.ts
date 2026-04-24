@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
   const token = req.headers.get('x-webhook-token') || new URL(req.url).searchParams.get('token');
   const expectedToken = Deno.env.get('WEBHOOK_TOKEN_PAGO');
   
-  if (!expectedToken || token !== expectedToken) {
+  if (expectedToken && token !== expectedToken) {
     console.warn('[webhookTransacaoPaga] FALHA: Token inválido ou ausente');
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }

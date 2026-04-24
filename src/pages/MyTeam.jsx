@@ -56,11 +56,19 @@ export default function MyTeam() {
   const [editPerms, setEditPerms] = useState(null);
   const queryClient = useQueryClient();
 
+  const [userMeta, setUserMeta] = useState(null);
   const isAdmin = user?.role === 'admin';
   const isConsultor = user?.user_type === 'consultor';
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
+    base44.auth.me().then(u => {
+      setUser(u);
+      if (u?.email) {
+        base44.entities.UserMetadata.filter({ user_email: u.email }, '-created_date', 1)
+          .then(list => { if (list?.length > 0) setUserMeta(list[0]); })
+          .catch(() => {});
+      }
+    }).catch(() => {});
   }, []);
 
   // Todos os membros cadastrados (admin vê tudo, consultor vê os seus)
@@ -97,11 +105,19 @@ export default function MyTeam() {
     onError: (err) => toast.error(err?.message || 'Erro ao vincular membro.'),
   });
 
+  // Limite de usuários do plano
+  const maxUsers = userMeta?.max_users ?? 99;
+  const activeMembers = allMembers.filter(m => m.status !== 'Inativo' && m.pending_user_type === 'equipe').length;
+  const atUserLimit = !isAdmin && isConsultor && activeMembers >= maxUsers;
+
   // Envia convite de novo usuário
   const inviteMutation = useMutation({
     mutationFn: async (form) => {
       if (!isConsultor && !isAdmin) {
         throw new Error('Você não tem permissão para enviar convites');
+      }
+      if (form.target_user_type === 'equipe' && atUserLimit) {
+        throw new Error(`Seu plano permite até ${maxUsers} usuário(s) de equipe. Faça upgrade para adicionar mais.`);
       }
 
       // Criar registro TeamMember com status pendente
@@ -190,10 +206,19 @@ export default function MyTeam() {
         </div>
         <div className="flex gap-2">
           {(isConsultor || isAdmin) && (
-            <Button onClick={() => setShowInviteDialog(true)} className="bg-emerald-700 hover:bg-emerald-800">
-              <Send className="w-4 h-4 mr-2" />
-              Convidar Membro
-            </Button>
+            <div className="flex flex-col items-end gap-1">
+              <Button
+                onClick={() => setShowInviteDialog(true)}
+                className="bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50"
+                disabled={atUserLimit}
+              >
+                <Send className="w-4 h-4 mr-2" />
+                Convidar Membro
+              </Button>
+              {atUserLimit && (
+                <p className="text-xs text-red-600">Limite de {maxUsers} usuário(s) atingido. Faça upgrade do plano.</p>
+              )}
+            </div>
           )}
           {isAdmin && (
             <Button onClick={() => setShowLinkDialog(true)} className="bg-blue-700 hover:bg-blue-800">

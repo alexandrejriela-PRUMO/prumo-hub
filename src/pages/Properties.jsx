@@ -34,14 +34,26 @@ export default function Properties() {
   
   const queryClient = useQueryClient();
   const { effectiveEmail, isEquipe, isConsultor: isConsultorType, isProdutor, memberRole, loading: effectiveLoading, user: effectiveUser } = useEffectiveUser();
-  const canCreate = !isEquipe || memberRole === 'Administrador';
   const [user, setUser] = useState(effectiveUser || null);
+  const [userMeta, setUserMeta] = useState(null);
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
+    base44.auth.me().then(u => {
+      setUser(u);
+      if (u?.email) {
+        base44.entities.UserMetadata.filter({ user_email: u.email }, '-created_date', 1)
+          .then(list => { if (list?.length > 0) setUserMeta(list[0]); })
+          .catch(() => {});
+      }
+    }).catch(() => {});
   }, []);
 
   const isConsultor = isConsultorType || isEquipe; // consultor ou equipe gerencia pelo consultor_email
+
+  // Limite de propriedades por plano
+  const maxProperties = userMeta?.max_properties ?? 9999;
+  const canCreate = (!isEquipe || memberRole === 'Administrador') && properties.length < maxProperties;
+  const atPropertyLimit = !isEquipe && properties.length >= maxProperties && maxProperties < 9999;
 
   const { data: ownerProperties = [] } = useQuery({
     queryKey: ['properties-owner', effectiveEmail],
@@ -205,17 +217,22 @@ export default function Properties() {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Propriedades e Empreendimentos</h1>
           <p className="text-gray-500 mt-1 text-sm sm:text-base">Gerencie suas propriedades rurais e empreendimentos</p>
         </div>
-        {canCreate && <Button 
-          onClick={() => {
-            setEditingProperty(null);
-            setFormDialogOpen(true);
-          }}
-          className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto whitespace-nowrap"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          <span className="hidden sm:inline">Nova Propriedade ou Empreendimento</span>
-          <span className="sm:hidden">Nova Prop.</span>
-        </Button>}
+        <div className="flex flex-col items-end gap-1">
+          {canCreate && <Button 
+            onClick={() => {
+              setEditingProperty(null);
+              setFormDialogOpen(true);
+            }}
+            className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto whitespace-nowrap"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            <span className="hidden sm:inline">Nova Propriedade ou Empreendimento</span>
+            <span className="sm:hidden">Nova Prop.</span>
+          </Button>}
+          {atPropertyLimit && (
+            <p className="text-xs text-red-600">Limite de {maxProperties} propriedade(s) atingido. Faça upgrade do plano.</p>
+          )}
+        </div>
       </div>
 
       {isLoading ? (

@@ -305,11 +305,17 @@ export default function Layout({ children, currentPageName }) {
   const queryClient = useQueryClient();
   const { hasPermission, canAccessModule } = useEffectiveUserPermissions(user);
 
+  const [userMeta, setUserMeta] = useState(null);
+
   useEffect(() => {
     const loadUser = async () => {
       try {
         const userData = await base44.auth.me();
         setUser(userData);
+        if (userData?.email) {
+          const metaList = await base44.entities.UserMetadata.filter({ user_email: userData.email }, '-created_date', 1);
+          if (metaList?.length > 0) setUserMeta(metaList[0]);
+        }
       } catch (e) {
         console.log('User not logged in');
       }
@@ -581,6 +587,10 @@ export default function Layout({ children, currentPageName }) {
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             {(() => {
+              // Plano do consultor: Enterprise tem acesso completo; Start/Pro têm restrições
+              const plano = userMeta?.plano || user?.plano || 'start';
+              const isEnterprise = plano === 'enterprise';
+
               // Seleciona o menu correto com base no tipo de usuário
               let menuItems = [];
               const ut = user?.user_type;
@@ -589,7 +599,16 @@ export default function Layout({ children, currentPageName }) {
               } else if (ut === 'equipe') {
                 menuItems = equipeNavItems;
               } else if (ut === 'consultor') {
-                menuItems = [...consultorNavItems, ...navItems];
+                // Páginas exclusivas do plano Enterprise para consultores
+                const enterpriseOnlyPages = ['CRMBoard', 'Agenda', 'FinancialDashboard', 'FinancialTransactions', 'PaymentSettings', 'NFeManagement'];
+                const filterByPlan = (items) => items.map(item => {
+                  if (!item.children) return item;
+                  return {
+                    ...item,
+                    children: item.children.filter(child => isEnterprise || !enterpriseOnlyPages.includes(child.page))
+                  };
+                }).filter(item => !item.children || item.children.length > 0);
+                menuItems = [...filterByPlan(consultorNavItems), ...navItems];
               } else {
                 // produtor ou padrão
                 menuItems = produtorNavItems;

@@ -79,6 +79,17 @@ const AuthenticatedApp = () => {
           console.warn('[App] Erro ao verificar convite de equipe:', inviteErr.message);
         }
 
+        // Buscar user_type real do UserMetadata (fonte da verdade, não o cache do auth.me)
+        let effectiveUserType = user.user_type;
+        try {
+          const metaList = await base44.entities.UserMetadata.filter({ user_email: user.email }, '-created_date', 1);
+          if (metaList?.length > 0 && metaList[0].user_type) {
+            effectiveUserType = metaList[0].user_type;
+          }
+        } catch (metaErr) {
+          console.warn('[App] Erro ao buscar UserMetadata:', metaErr.message);
+        }
+
         const activeTerms = await base44.entities.TermsOfUse.filter({ is_active: true }, '-version', 1);
         if (!activeTerms || activeTerms.length === 0) {
           setTermsChecked(true);
@@ -89,7 +100,7 @@ const AuthenticatedApp = () => {
           setNeedsTerms(true);
         } else {
           // Termos ok — verificar contrato SaaS (apenas para consultor e produtor)
-          const requiresContract = user.user_type === 'consultor' || user.user_type === 'produtor';
+          const requiresContract = effectiveUserType === 'consultor' || effectiveUserType === 'produtor';
           if (requiresContract && !user.accepted_saas_contract_version) {
             setNeedsContract(true);
           }
@@ -133,9 +144,14 @@ const AuthenticatedApp = () => {
       <Suspense fallback={<LoadingSpinner />}>
         <TermsOfUsePage onAccepted={async () => {
           setNeedsTerms(false);
-          // Só exige contrato para consultor e produtor — nunca para equipe ou client_consultor
+          // Só exige contrato para consultor e produtor — busca UserMetadata para garantir user_type atualizado
           const currentUser = await base44.auth.me();
-          const requiresContract = currentUser?.user_type === 'consultor' || currentUser?.user_type === 'produtor';
+          let effectiveType = currentUser?.user_type;
+          try {
+            const metaList = await base44.entities.UserMetadata.filter({ user_email: currentUser?.email }, '-created_date', 1);
+            if (metaList?.length > 0 && metaList[0].user_type) effectiveType = metaList[0].user_type;
+          } catch {}
+          const requiresContract = effectiveType === 'consultor' || effectiveType === 'produtor';
           if (requiresContract && !currentUser?.accepted_saas_contract_version) {
             setNeedsContract(true);
           }

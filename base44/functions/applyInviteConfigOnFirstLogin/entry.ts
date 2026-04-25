@@ -13,17 +13,9 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Se o usuário já tem user_type definido, não é primeiro login
-    if (user.user_type) {
-      return Response.json({ 
-        applied: false, 
-        reason: 'User already has user_type configured' 
-      });
-    }
-
-    // Procura por TeamMember pendente com este email
+    // Procura por TeamMember pendente (user_type_applied=false) com este email
     const teamMembers = await base44.asServiceRole.entities.TeamMember.filter(
-      { member_email: user.email, status: 'Pendente' },
+      { member_email: user.email, user_type_applied: false },
       '-invited_at',
       1
     );
@@ -37,24 +29,34 @@ Deno.serve(async (req) => {
 
     const tm = teamMembers[0];
 
-    // Extrai as configurações do convite
-    const configToApply = {
-      user_type: tm.pending_user_type || 'consultor',
-      plano: tm.pending_user_type === 'produtor' ? 'unico' : 'start',
-    };
+    // Verificar expiração do convite
+    if (tm.expires_at && new Date(tm.expires_at) < new Date()) {
+      return Response.json({
+        applied: false,
+        reason: 'Invite expired'
+      });
+    }
 
-    // Aplica as configurações no User via updateMe
-    await base44.auth.updateMe(configToApply);
+    const userType = tm.pending_user_type || 'equipe';
+    const now = new Date().toISOString();
 
-    // Marca o TeamMember como "aplicado" para evitar reprocessamento
+    // Aplica user_type correto via updateMe
+    await base44.auth.updateMe({ user_type: userType });
+
+    // Marca o TeamMember como aplicado e ativo
     await base44.asServiceRole.entities.TeamMember.update(tm.id, {
       user_type_applied: true,
+      status: 'Ativo',
+      activated_at: now,
+      accepted_at: now,
     });
+
+    console.log(`[applyInviteConfigOnFirstLogin] user_type '${userType}' aplicado para ${user.email}`);
 
     return Response.json({ 
       applied: true, 
-      config: configToApply,
-      message: `User ${user.email} configured as ${configToApply.user_type} with plan ${configToApply.plano}`
+      user_type: userType,
+      message: `User ${user.email} configured as ${userType}`
     });
 
   } catch (error) {

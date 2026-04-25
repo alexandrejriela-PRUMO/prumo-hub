@@ -65,6 +65,19 @@ const AuthenticatedApp = () => {
       try {
         const user = await base44.auth.me();
         if (!user) return;
+
+        // Verificar automaticamente se há convite de equipe pendente e aplicar user_type
+        try {
+          const inviteRes = await base44.functions.invoke('applyInviteConfigOnFirstLogin', {});
+          if (inviteRes.data?.applied) {
+            console.log('[App] user_type de equipe aplicado automaticamente:', inviteRes.data.user_type);
+            // Recarregar a página para aplicar o novo user_type na sessão
+            window.location.reload();
+            return;
+          }
+        } catch (inviteErr) {
+          console.warn('[App] Erro ao verificar convite de equipe:', inviteErr.message);
+        }
         const activeTerms = await base44.entities.TermsOfUse.filter({ is_active: true }, '-version', 1);
         if (!activeTerms || activeTerms.length === 0) {
           setTermsChecked(true);

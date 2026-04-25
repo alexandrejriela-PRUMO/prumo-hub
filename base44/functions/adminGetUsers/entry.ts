@@ -17,8 +17,13 @@ Deno.serve(async (req) => {
     const { type } = body;
 
     if (type === 'leads') {
-      const leads = await base44.asServiceRole.entities.LeadFormSubmission.list('-submitted_at', 200);
-      return Response.json({ leads });
+      const [leads, users] = await Promise.all([
+        base44.asServiceRole.entities.LeadFormSubmission.list('-submitted_at', 200),
+        base44.asServiceRole.entities.User.list('-created_date', 200),
+      ]);
+      const activeEmails = new Set(users.map(u => u.email?.toLowerCase()).filter(Boolean));
+      const filteredLeads = leads.filter(l => !activeEmails.has(l.email?.toLowerCase()));
+      return Response.json({ leads: filteredLeads });
     }
 
     if (type === 'clients') {

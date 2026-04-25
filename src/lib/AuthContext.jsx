@@ -125,6 +125,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const refreshUser = async () => {
+    try {
+      const currentUser = await base44.auth.me();
+      if (currentUser && currentUser.email) {
+        setUser(currentUser);
+        setIsAuthenticated(true);
+      }
+    } catch (error) {
+      console.error('refreshUser failed:', error);
+    }
+  };
+
   const logout = (shouldRedirect = true) => {
     setUser(null);
     setIsAuthenticated(false);
@@ -145,7 +157,8 @@ export const AuthProvider = ({ children }) => {
       appPublicSettings,
       logout,
       navigateToLogin,
-      checkAppState
+      checkAppState,
+      refreshUser
     }}>
       {children}
     </AuthContext.Provider>

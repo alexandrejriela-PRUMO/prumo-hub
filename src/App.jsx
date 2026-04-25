@@ -42,7 +42,7 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   : <>{children}</>;
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated, refreshUser } = useAuth();
   const { isOnline, syncInProgress, syncStats } = useOfflineSync();
   const [termsChecked, setTermsChecked] = useState(false);
   const [needsTerms, setNeedsTerms] = useState(false);
@@ -71,8 +71,8 @@ const AuthenticatedApp = () => {
           const inviteRes = await base44.functions.invoke('applyInviteConfigOnFirstLogin', {});
           if (inviteRes.data?.applied) {
             console.log('[App] user_type de equipe aplicado automaticamente:', inviteRes.data.user_type);
-            // Recarregar após pequeno delay para garantir que o React terminou de montar
-            setTimeout(() => window.location.reload(), 500);
+            // Atualiza o usuário no contexto sem recarregar a página
+            await refreshUser();
             return;
           }
         } catch (inviteErr) {

@@ -14,7 +14,7 @@ export default defineConfig({
     react(),
   ],
   resolve: {
-    dedupe: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
+    dedupe: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query', 'scheduler'],
     alias: {
       '@': path.resolve(__dirname, './src'),
       'react': reactPath,
@@ -25,6 +25,6 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
-    force: true,
+    exclude: ['@base44/sdk'],
   },
 });

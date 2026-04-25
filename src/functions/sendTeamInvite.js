@@ -1,8 +1,7 @@
 // @ts-nocheck
-// deno-lint-ignore no-undef
+/* global Deno */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-// deno-lint-ignore no-undef
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);

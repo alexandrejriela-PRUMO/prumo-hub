@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffectiveUser } from '../../hooks/useEffectiveUser';
@@ -40,8 +41,8 @@ const INTERACTION_ICONS = {
 export default function ClientCRMPanel({ property, onClose }) {
   const queryClient = useQueryClient();
   const { effectiveEmail: hookEffectiveEmail, isEquipe, consultorName: hookConsultorName } = useEffectiveUser();
-  const [currentUser, setCurrentUser] = React.useState(null);
-  React.useEffect(() => { base44.auth.me().then(setCurrentUser).catch(() => {}); }, []);
+  const [currentUser, setCurrentUser] = useState(null);
+  useEffect(() => { base44.auth.me().then(setCurrentUser).catch(() => {}); }, []);
 
   // ── Estado dos formulários ───────────────────────────────────────────────
   const [showInteractionForm, setShowInteractionForm] = useState(false);

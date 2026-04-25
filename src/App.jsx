@@ -47,6 +47,7 @@ const AuthenticatedApp = () => {
   const [termsChecked, setTermsChecked] = useState(false);
   const [needsTerms, setNeedsTerms] = useState(false);
   const [needsContract, setNeedsContract] = useState(false);
+  const [resolvedUserType, setResolvedUserType] = useState(null);
 
   // Inicializar offline DB
   useEffect(() => {
@@ -96,6 +97,8 @@ const AuthenticatedApp = () => {
           return;
         }
         const latestVersion = activeTerms[0].version;
+        // Salva o tipo resolvido para usar no callback onAccepted sem re-buscar
+        setResolvedUserType(effectiveUserType);
         if (!user.accepted_terms_version || user.accepted_terms_version < latestVersion) {
           setNeedsTerms(true);
         } else {
@@ -142,17 +145,11 @@ const AuthenticatedApp = () => {
   if (needsTerms) {
     return (
       <Suspense fallback={<LoadingSpinner />}>
-        <TermsOfUsePage onAccepted={async () => {
+        <TermsOfUsePage onAccepted={() => {
           setNeedsTerms(false);
-          // Só exige contrato para consultor e produtor — busca UserMetadata para garantir user_type atualizado
-          const currentUser = await base44.auth.me();
-          let effectiveType = currentUser?.user_type;
-          try {
-            const metaList = await base44.entities.UserMetadata.filter({ user_email: currentUser?.email }, '-created_date', 1);
-            if (metaList?.length > 0 && metaList[0].user_type) effectiveType = metaList[0].user_type;
-          } catch {}
-          const requiresContract = effectiveType === 'consultor' || effectiveType === 'produtor';
-          if (requiresContract && !currentUser?.accepted_saas_contract_version) {
+          // Usa o tipo já resolvido no checkTerms (inclui UserMetadata + applyInvite)
+          const requiresContract = resolvedUserType === 'consultor' || resolvedUserType === 'produtor';
+          if (requiresContract) {
             setNeedsContract(true);
           }
         }} />

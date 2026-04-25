@@ -199,6 +199,22 @@ const equipeNavItems = [
       { name: 'ESG para o Agro', page: 'ESGAgro', icon: TrendingUp },
     ]
   },
+  {
+    name: 'Controle Financeiro',
+    icon: Wallet,
+    children: [
+      { name: 'Painel Financeiro', page: 'FinancialDashboard', icon: BarChart3 },
+      { name: 'Transações Consolidadas', page: 'FinancialTransactions', icon: ReceiptText },
+    ]
+  },
+  {
+    name: 'Crédito e Safra',
+    icon: Sprout,
+    children: [
+      { name: 'Gestão de Crédito Rural', page: 'RuralCredit', icon: Building2 },
+      { name: 'Frustração de Safra', page: 'HarvestLoss', icon: Wheat },
+    ]
+  },
   { name: 'Relatórios', page: 'Reports', icon: FileText },
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
   { name: 'Chat IA Rute', page: 'ChatRute', icon: MessageCircle },
@@ -654,6 +670,8 @@ export default function Layout({ children, currentPageName }) {
                   'FinancialTransactions': 'financial',
                   'PaymentSettings': 'financial',
                   'NFeManagement': 'financial',
+                  'RuralCredit': 'advanced_modules',
+                  'HarvestLoss': 'advanced_modules',
                 };
                 return pageToModule[pageName];
               };

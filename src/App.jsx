@@ -71,8 +71,8 @@ const AuthenticatedApp = () => {
           const inviteRes = await base44.functions.invoke('applyInviteConfigOnFirstLogin', {});
           if (inviteRes.data?.applied) {
             console.log('[App] user_type de equipe aplicado automaticamente:', inviteRes.data.user_type);
-            // Recarregar a página para aplicar o novo user_type na sessão
-            window.location.reload();
+            // Recarregar após pequeno delay para garantir que o React terminou de montar
+            setTimeout(() => window.location.reload(), 500);
             return;
           }
         } catch (inviteErr) {

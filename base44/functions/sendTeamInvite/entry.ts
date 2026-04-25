@@ -82,12 +82,9 @@ Deno.serve(async (req) => {
       </html>
     `;
 
-    await base44.integrations.Core.SendEmail({
-      to: email,
-      subject: subject,
-      body: htmlBody,
-      from_name: 'PRUMO Hub'
-    });
+    // Convidar usuário na plataforma (cria conta e envia email oficial)
+    // role "user" pois equipe/client_consultor não são admins da plataforma
+    await base44.users.inviteUser(email, 'user');
 
     return Response.json({ success: true, message: 'Convite enviado com sucesso' });
   } catch (error) {

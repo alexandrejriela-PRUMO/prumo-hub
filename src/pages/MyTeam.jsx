@@ -138,6 +138,14 @@ export default function MyTeam() {
 
       const teamMember = await base44.entities.TeamMember.create(teamMemberData);
 
+      // Aplicar imediatamente se o usuário já existir no sistema
+      await base44.functions.invoke('applyTeamMemberOnInvite', {
+        member_email: form.email,
+        team_member_id: teamMember.id,
+        primary_consultor_email: user.email,
+        user_type: form.target_user_type,
+      });
+
       // Enviar email de convite
       const invite_link = `${window.location.origin}/AcceptInvite?token=${teamMember.invite_token}`;
       

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
@@ -17,13 +17,13 @@ import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 function AgendaContent() {
   const { user, effectiveEmail, isLoading: effectiveLoading } = useEffectiveUser();
-  const [selectedDate, setSelectedDate] = React.useState(null);
-  const [showModal, setShowModal] = React.useState(false);
-  const [editingEvent, setEditingEvent] = React.useState(null);
-  const [detailEvent, setDetailEvent] = React.useState(null);
-  const [filterAssignee, setFilterAssignee] = React.useState('all');
-  const [filterType, setFilterType] = React.useState('all');
-  const [search, setSearch] = React.useState('');
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
+  const [detailEvent, setDetailEvent] = useState(null);
+  const [filterAssignee, setFilterAssignee] = useState('all');
+  const [filterType, setFilterType] = useState('all');
+  const [search, setSearch] = useState('');
 
   const qc = useQueryClient();
 
@@ -65,7 +65,7 @@ function AgendaContent() {
   });
 
   // Extract CRM events (tasks + interactions with next_action_date)
-  const crmEvents = React.useMemo(() => {
+  const crmEvents = useMemo(() => {
     const evs = [];
     (crmRecords || []).forEach(crm => {
       const prop = properties?.find(p => p?.id === crm?.property_id);
@@ -112,7 +112,7 @@ function AgendaContent() {
   }, [crmRecords, properties]);
 
   // All events merged
-  const allEvents = React.useMemo(() => {
+  const allEvents = useMemo(() => {
     return [
       ...(agendaEvents || []).map(e => ({ ...e, _source: 'agenda' })),
       ...crmEvents,
@@ -120,7 +120,7 @@ function AgendaContent() {
   }, [agendaEvents, crmEvents]);
 
   // Filtered events
-  const filteredEvents = React.useMemo(() => {
+  const filteredEvents = useMemo(() => {
     return (allEvents || []).filter(ev => {
       if (filterAssignee !== 'all' && ev?.assigned_to_email !== filterAssignee) return false;
       if (filterType !== 'all') {
@@ -134,7 +134,7 @@ function AgendaContent() {
   }, [allEvents, filterAssignee, filterType, search]);
 
   // Stats
-  const stats = React.useMemo(() => {
+  const stats = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
     return {
       total: (allEvents || []).length,
@@ -193,7 +193,7 @@ function AgendaContent() {
     qc.invalidateQueries(['agendaEvents']);
   };
 
-  const allAssignees = React.useMemo(() => {
+  const allAssignees = useMemo(() => {
     const seen = new Set();
     const arr = [];
     (allEvents || []).forEach(e => {

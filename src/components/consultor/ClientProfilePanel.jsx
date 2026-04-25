@@ -1,4 +1,4 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
@@ -69,19 +69,19 @@ export default function ClientProfilePanel({ client, onUpdate }) {
     };
   };
 
-  const [editingPersonal, setEditingPersonal] = React.useState(false);
-  const [personalData, setPersonalData] = React.useState(() => buildPersonalData(client));
+  const [editingPersonal, setEditingPersonal] = useState(false);
+  const [personalData, setPersonalData] = useState(() => buildPersonalData(client));
 
   // Reinicializa estado quando muda de cliente
-  React.useEffect(() => {
+  useEffect(() => {
     setPersonalData(buildPersonalData(client));
     setEditingPersonal(false);
   }, [client?.id]);
 
-  const [editingProperty, setEditingProperty] = React.useState(null);
-  const [propertyForm, setPropertyForm] = React.useState({});
-  const [addingProperty, setAddingProperty] = React.useState(false);
-  const [newPropertyForm, setNewPropertyForm] = React.useState({
+  const [editingProperty, setEditingProperty] = useState(null);
+  const [propertyForm, setPropertyForm] = useState({});
+  const [addingProperty, setAddingProperty] = useState(false);
+  const [newPropertyForm, setNewPropertyForm] = useState({
     property_name: '', property_type: 'rural', location: '', city: '', state: '',
     total_hectares: '', app_hectares: '', legal_reserve_hectares: '',
     total_area_m2: '', built_area_m2: '', main_activity: '', activities: '',

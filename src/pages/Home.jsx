@@ -1,4 +1,3 @@
-import React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
 import HomeContent from './HomeContent';

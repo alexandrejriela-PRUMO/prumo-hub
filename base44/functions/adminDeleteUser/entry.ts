@@ -20,7 +20,18 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'userId é obrigatório' }, { status: 400 });
     }
 
-    // Deletar usuário
+    // Se for um convite pendente (id começa com "pending_"), deletar o TeamMember
+    if (String(userId).startsWith('pending_')) {
+      const teamMemberId = String(userId).replace('pending_', '');
+      await base44.asServiceRole.entities.TeamMember.delete(teamMemberId);
+      return Response.json({
+        received: true,
+        message: 'Convite pendente removido com sucesso.',
+        userId,
+      }, { status: 200 });
+    }
+
+    // Deletar usuário real
     await base44.asServiceRole.entities.User.delete(userId);
 
     return Response.json({

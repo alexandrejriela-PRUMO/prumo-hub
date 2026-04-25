@@ -31,10 +31,16 @@ export default function AccessBlockedGuard({ children }) {
           return;
         }
 
+        // Equipe e visualizadores (client_consultor) nunca são bloqueados por pagamento
+        if (user.user_type === 'equipe' || user.user_type === 'client_consultor') {
+          setChecked(true);
+          return;
+        }
+
         // Buscar UserMetadata para verificar subscription_status
         const metaList = await base44.entities.UserMetadata.filter({ user_email: user.email }, '-created_date', 1);
 
-        // Se não existe UserMetadata, verificar se veio do Nexano (já pagou)
+        // Se não existe UserMetadata, verificar user_type no metadata antes de bloquear
         if (!metaList || metaList.length === 0) {
           // Verificar se há lead do Nexano com pagamento confirmado
           const leads = await base44.entities.LeadFormSubmission.filter({ email: user.email }, '-created_date', 1);
@@ -61,6 +67,14 @@ export default function AccessBlockedGuard({ children }) {
             return;
           }
 
+          // Verificar se é membro de equipe convidado (TeamMember pendente)
+          const teamMembers = await base44.entities.TeamMember.filter({ member_email: user.email }, '-created_date', 1);
+          if (teamMembers && teamMembers.length > 0) {
+            // É membro de equipe — não bloquear
+            setChecked(true);
+            return;
+          }
+
           // Nenhum pagamento encontrado → bloquear com pending_payment
           try {
             await base44.entities.UserMetadata.create({
@@ -76,6 +90,13 @@ export default function AccessBlockedGuard({ children }) {
         }
 
         const meta = metaList[0];
+
+        // Equipe e visualizadores nunca são bloqueados por pagamento (verificar também no metadata)
+        if (meta.user_type === 'equipe' || meta.user_type === 'client_consultor') {
+          setChecked(true);
+          return;
+        }
+
         const subscriptionStatus = meta.subscription_status;
 
         if (BLOCKED_STATUSES.includes(subscriptionStatus)) {

@@ -131,7 +131,15 @@ const AuthenticatedApp = () => {
   if (needsTerms) {
     return (
       <Suspense fallback={<LoadingSpinner />}>
-        <TermsOfUsePage onAccepted={() => { setNeedsTerms(false); setNeedsContract(true); }} />
+        <TermsOfUsePage onAccepted={async () => {
+          setNeedsTerms(false);
+          // Só exige contrato para consultor e produtor — nunca para equipe ou client_consultor
+          const currentUser = await base44.auth.me();
+          const requiresContract = currentUser?.user_type === 'consultor' || currentUser?.user_type === 'produtor';
+          if (requiresContract && !currentUser?.accepted_saas_contract_version) {
+            setNeedsContract(true);
+          }
+        }} />
       </Suspense>
     );
   }

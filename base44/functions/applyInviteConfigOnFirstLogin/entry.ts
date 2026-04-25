@@ -13,21 +13,25 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Procura por TeamMember pendente (user_type_applied=false) com este email
+    // Procura por TeamMember pendente com este email (sem filtrar user_type_applied
+    // pois o campo pode não ter sido salvo explicitamente como false)
     const teamMembers = await base44.asServiceRole.entities.TeamMember.filter(
-      { member_email: user.email, user_type_applied: false },
+      { member_email: user.email },
       '-invited_at',
-      1
+      10
     );
 
-    if (!teamMembers || teamMembers.length === 0) {
+    // Filtra: apenas os que ainda não foram aplicados
+    const pending = (teamMembers || []).filter(tm => tm.user_type_applied !== true);
+
+    if (pending.length === 0) {
       return Response.json({ 
         applied: false, 
         reason: 'No pending team member found for this email' 
       });
     }
 
-    const tm = teamMembers[0];
+    const tm = pending[0];
 
     // Verificar expiração do convite
     if (tm.expires_at && new Date(tm.expires_at) < new Date()) {
@@ -40,10 +44,35 @@ Deno.serve(async (req) => {
     const userType = tm.pending_user_type || 'equipe';
     const now = new Date().toISOString();
 
-    // Aplica user_type correto via updateMe
+    // 1. Atualiza user_type na sessão/User
     await base44.auth.updateMe({ user_type: userType });
 
-    // Marca o TeamMember como aplicado e ativo
+    // 2. Persiste no UserMetadata (fonte da verdade usada pelo app)
+    const existingMeta = await base44.asServiceRole.entities.UserMetadata.filter(
+      { user_email: user.email },
+      '-created_date',
+      1
+    );
+
+    if (existingMeta && existingMeta.length > 0) {
+      await base44.asServiceRole.entities.UserMetadata.update(existingMeta[0].id, {
+        user_type: userType,
+        subscription_status: 'active',
+        primary_consultor_email: tm.primary_user_email || tm.consultor_email,
+      });
+    } else {
+      await base44.asServiceRole.entities.UserMetadata.create({
+        user_email: user.email,
+        user_type: userType,
+        subscription_status: 'active',
+        primary_consultor_email: tm.primary_user_email || tm.consultor_email,
+        plano: 'start',
+        max_properties: 0,
+        max_users: 0,
+      });
+    }
+
+    // 3. Marca o TeamMember como aplicado e ativo
     await base44.asServiceRole.entities.TeamMember.update(tm.id, {
       user_type_applied: true,
       status: 'Ativo',
@@ -51,7 +80,7 @@ Deno.serve(async (req) => {
       accepted_at: now,
     });
 
-    console.log(`[applyInviteConfigOnFirstLogin] user_type '${userType}' aplicado para ${user.email}`);
+    console.log(`[applyInviteConfigOnFirstLogin] user_type '${userType}' aplicado para ${user.email}, consultor: ${tm.primary_user_email || tm.consultor_email}`);
 
     return Response.json({ 
       applied: true, 

@@ -1,4 +1,4 @@
-import React from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
@@ -28,9 +28,9 @@ import PullToRefresh from '../components/mobile/PullToRefresh';
 // Component que recebe hooks já resolvidos via props
 export default function HomeContent({ queryClient, user, effectiveEmail, isEquipe, isConsultor, effectiveLoading }) {
   const navigate = useNavigate();
-  const [selectedPropertyId, setSelectedPropertyId] = React.useState(null);
-  const [ruteChatOpen, setRuteChatOpen] = React.useState(false);
-  const [filters, setFilters] = React.useState({
+  const [selectedPropertyId, setSelectedPropertyId] = useState(null);
+  const [ruteChatOpen, setRuteChatOpen] = useState(false);
+  const [filters, setFilters] = useState({
     period: 'all',
     licenseStatus: 'all',
     alertSeverity: 'all',
@@ -112,14 +112,14 @@ export default function HomeContent({ queryClient, user, effectiveEmail, isEquip
   const isLoading = effectiveLoading || loadingProperties || loadingLicenses || loadingInvoices || loadingDocuments || loadingProcesses || loadingAlerts;
 
   // Auto-select first property when properties load
-  React.useEffect(() => {
+  useEffect(() => {
     if (properties.length > 0 && !selectedPropertyId) {
       setSelectedPropertyId(properties[0].id);
     }
   }, [properties, selectedPropertyId]);
 
   // Se vem com property_id da URL, usa esse; senão, auto-seleciona o primeiro
-  React.useEffect(() => {
+  useEffect(() => {
     if (propertyIdFromUrl) {
       setSelectedPropertyId(propertyIdFromUrl);
     } else if (properties.length > 0 && !selectedPropertyId) {
@@ -132,7 +132,7 @@ export default function HomeContent({ queryClient, user, effectiveEmail, isEquip
   const isDashboardView = !!propertyIdFromUrl; // Se tem property_id na URL, é o dashboard detalhado
   
   // Apply filters
-  const filteredData = React.useMemo(() => {
+  const filteredData = useMemo(() => {
     let filteredLicenses = (licenses || []).filter(l => l?.property_id === selectedPropertyId);
     let filteredDocuments = (documents || []).filter(d => d?.property_id === selectedPropertyId);
     let filteredAlerts = (environmentalAlerts || []).filter(a => a?.property_id === selectedPropertyId);
@@ -209,7 +209,7 @@ export default function HomeContent({ queryClient, user, effectiveEmail, isEquip
   };
 
   // Redireciona client_consultor para o portal dedicado
-  React.useEffect(() => {
+  useEffect(() => {
     if (user?.user_type === 'client_consultor' && navigate) {
       navigate(createPageUrl('ClientConsultorPortal'));
     }

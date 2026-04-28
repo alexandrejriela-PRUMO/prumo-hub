@@ -1,6 +1,44 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { jsPDF } from 'npm:jspdf@2.5.2';
 
+// Normaliza caracteres especiais do português para compatibilidade com Helvetica no jsPDF
+function normalizeText(text) {
+  if (!text) return '';
+  return text
+    .replace(/[\u00C0-\u00C5]/g, 'A')
+    .replace(/[\u00E0-\u00E5]/g, 'a')
+    .replace(/[\u00C6]/g, 'AE')
+    .replace(/[\u00E6]/g, 'ae')
+    .replace(/[\u00C7]/g, 'C')
+    .replace(/[\u00E7]/g, 'c')
+    .replace(/[\u00C8-\u00CB]/g, 'E')
+    .replace(/[\u00E8-\u00EB]/g, 'e')
+    .replace(/[\u00CC-\u00CF]/g, 'I')
+    .replace(/[\u00EC-\u00EF]/g, 'i')
+    .replace(/[\u00D1]/g, 'N')
+    .replace(/[\u00F1]/g, 'n')
+    .replace(/[\u00D2-\u00D6\u00D8]/g, 'O')
+    .replace(/[\u00F2-\u00F6\u00F8]/g, 'o')
+    .replace(/[\u00D9-\u00DC]/g, 'U')
+    .replace(/[\u00F9-\u00FC]/g, 'u')
+    .replace(/[\u00DD]/g, 'Y')
+    .replace(/[\u00FD\u00FF]/g, 'y')
+    .replace(/[\u00E3]/g, 'a')
+    .replace(/[\u00C3]/g, 'A')
+    .replace(/[\u00F5]/g, 'o')
+    .replace(/[\u00D5]/g, 'O')
+    .replace(/[\u2019\u2018]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2013\u2014]/g, '-')
+    .replace(/[^\x00-\x7F]/g, '?');
+}
+
+// Normaliza um objeto ou array recursivamente
+function n(val) {
+  if (typeof val === 'string') return normalizeText(val);
+  return val;
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -33,9 +71,8 @@ function generateTermsProof(user) {
   const contentWidth = pageWidth - 2 * margin;
   let yPosition = margin;
 
-  // Header
   doc.setFontSize(18);
-  doc.setTextColor(27, 67, 50); // Cor primária
+  doc.setTextColor(27, 67, 50);
   doc.text('COMPROVANTE DE ACEITE', margin, yPosition);
   yPosition += 8;
 
@@ -44,37 +81,34 @@ function generateTermsProof(user) {
   doc.text('Termos de Uso - PRUMO HUB', margin, yPosition);
   yPosition += 12;
 
-  // Info box
   doc.setDrawColor(200, 220, 200);
   doc.setFillColor(245, 255, 245);
   doc.rect(margin, yPosition, contentWidth, 25, 'F');
   doc.setFontSize(9);
   doc.setTextColor(30, 100, 60);
-  doc.text(`Usuário: ${user.full_name || user.email}`, margin + 3, yPosition + 6);
-  doc.text(`E-mail: ${user.email}`, margin + 3, yPosition + 12);
-  doc.text(`Data/Hora: ${new Date().toLocaleString('pt-BR')}`, margin + 3, yPosition + 18);
+  doc.text(n(`Usuario: ${user.full_name || user.email}`), margin + 3, yPosition + 6);
+  doc.text(n(`E-mail: ${user.email}`), margin + 3, yPosition + 12);
+  doc.text(n(`Data/Hora: ${new Date().toLocaleString('pt-BR')}`), margin + 3, yPosition + 18);
   yPosition += 30;
 
-  // Content
   doc.setFontSize(11);
   doc.setTextColor(0, 0, 0);
-  doc.text('CONFIRMAÇÃO DE ACEITE', margin, yPosition);
+  doc.text('CONFIRMACAO DE ACEITE', margin, yPosition);
   yPosition += 8;
 
   doc.setFontSize(9);
   doc.setTextColor(80, 80, 80);
   const contentLines = doc.splitTextToSize(
-    `O usuário acima identificado declara que leu e aceitou integralmente os Termos de Uso da plataforma PRUMO HUB. Este documento comprova o aceite eletrônico realizado na plataforma em conformidade com a legislação brasileira.\n\nO aceite foi registrado no sistema com timestamp e identificação única, constituindo prova válida de consentimento às condições de uso da plataforma.`,
+    n('O usuario acima identificado declara que leu e aceitou integralmente os Termos de Uso da plataforma PRUMO HUB. Este documento comprova o aceite eletronico realizado na plataforma em conformidade com a legislacao brasileira.\n\nO aceite foi registrado no sistema com timestamp e identificacao unica, constituindo prova valida de consentimento as condicoes de uso da plataforma.'),
     contentWidth
   );
   doc.text(contentLines, margin, yPosition);
   yPosition += contentLines.length * 5 + 10;
 
-  // Footer
   doc.setFontSize(8);
   doc.setTextColor(150, 150, 150);
   doc.text(
-    `Documento gerado automaticamente em ${new Date().toLocaleString('pt-BR')} | ID: ${user.id} | Protocolo: ${generateProtocol()}`,
+    n(`Documento gerado automaticamente em ${new Date().toLocaleString('pt-BR')} | ID: ${user.id} | Protocolo: ${generateProtocol()}`),
     margin,
     pageHeight - 10
   );
@@ -98,6 +132,7 @@ function generateSaasContractProof(user, contractorData) {
   const contentWidth = pageWidth - 2 * margin;
   const now = new Date();
   const protocol = generateProtocol();
+  const halfW = contentWidth / 2 - 5;
 
   // ── PÁGINA 1: Comprovante de Aceite ──────────────────────────────────────
   let y = margin;
@@ -109,7 +144,7 @@ function generateSaasContractProof(user, contractorData) {
 
   doc.setFontSize(11);
   doc.setTextColor(27, 67, 50);
-  doc.text('Comprovante de Assinatura Eletrônica', margin, y);
+  doc.text('Comprovante de Assinatura Eletronica', margin, y);
   y += 6;
 
   doc.setFontSize(9);
@@ -122,16 +157,14 @@ function generateSaasContractProof(user, contractorData) {
   doc.line(margin, y, pageWidth - margin, y);
   y += 10;
 
-  // Badge de assinatura
   doc.setFillColor(212, 237, 218);
   doc.setDrawColor(21, 87, 36);
   doc.rect(margin, y, contentWidth, 10, 'FD');
   doc.setFontSize(9);
   doc.setTextColor(21, 87, 36);
-  doc.text('✓  Documento Assinado Eletronicamente — Válido conforme Lei 14.063/2020', margin + 4, y + 6.5);
+  doc.text('Documento Assinado Eletronicamente - Valido conforme Lei 14.063/2020', margin + 4, y + 6.5);
   y += 16;
 
-  // Dados do aceite
   doc.setFontSize(10);
   doc.setTextColor(27, 67, 50);
   doc.text('DADOS DO ACEITE', margin, y);
@@ -140,15 +173,14 @@ function generateSaasContractProof(user, contractorData) {
   doc.setFontSize(9);
   doc.setTextColor(60, 60, 60);
   const acceptLines = [
-    `Usuário Cadastrado: ${user.full_name || user.email}`,
-    `E-mail Cadastrado: ${user.email}`,
-    `Data e Hora do Aceite: ${now.toLocaleString('pt-BR')}`,
-    `Protocolo: ${protocol}`,
+    n(`Usuario Cadastrado: ${user.full_name || user.email}`),
+    n(`E-mail Cadastrado: ${user.email}`),
+    n(`Data e Hora do Aceite: ${now.toLocaleString('pt-BR')}`),
+    n(`Protocolo: ${protocol}`),
   ];
   doc.text(acceptLines, margin, y);
   y += acceptLines.length * 5 + 8;
 
-  // Dados do contratante
   doc.setFontSize(10);
   doc.setTextColor(27, 67, 50);
   doc.text('DADOS DO CONTRATANTE', margin, y);
@@ -157,59 +189,55 @@ function generateSaasContractProof(user, contractorData) {
   doc.setFontSize(9);
   doc.setTextColor(60, 60, 60);
   const contractorLines = [
-    `Nome/Razão Social: ${contractorData?.name || '—'}`,
-    `CPF/CNPJ: ${contractorData?.document || '—'}`,
-    `Endereço: ${contractorData?.address || '—'}`,
-    `Telefone: ${contractorData?.phone || '—'}`,
-    `E-mail: ${contractorData?.email || '—'}`,
+    n(`Nome/Razao Social: ${contractorData?.name || '-'}`),
+    n(`CPF/CNPJ: ${contractorData?.document || '-'}`),
+    n(`Endereco: ${contractorData?.address || '-'}`),
+    n(`Telefone: ${contractorData?.phone || '-'}`),
+    n(`E-mail: ${contractorData?.email || '-'}`),
   ];
   doc.text(contractorLines, margin, y);
   y += contractorLines.length * 5 + 10;
 
-  // Confirmação de aceite
   doc.setFontSize(10);
   doc.setTextColor(27, 67, 50);
-  doc.text('DECLARAÇÃO DE ACEITE', margin, y);
+  doc.text('DECLARACAO DE ACEITE', margin, y);
   y += 7;
 
   doc.setFontSize(9);
   doc.setTextColor(40, 40, 40);
   const confirmLines = doc.splitTextToSize(
     'O(a) contratante acima identificado(a) declara que: (1) leu integralmente o Contrato de ' +
-    'Assinatura SaaS - PRUMO HUB; (2) compreendeu e aceita todas as cláusulas e condições; ' +
-    '(3) forneceu dados verdadeiros para identificação; (4) autoriza o processamento de dados ' +
-    'conforme a LGPD; (5) realiza o aceite de forma voluntária, consciente e sem coerção.',
+    'Assinatura SaaS - PRUMO HUB; (2) compreendeu e aceita todas as clausulas e condicoes; ' +
+    '(3) forneceu dados verdadeiros para identificacao; (4) autoriza o processamento de dados ' +
+    'conforme a LGPD; (5) realiza o aceite de forma voluntaria, consciente e sem coercao.',
     contentWidth
   );
   doc.text(confirmLines, margin, y);
   y += confirmLines.length * 5 + 15;
 
-  // Linhas de assinatura
-  const halfW = contentWidth / 2 - 5;
   doc.setDrawColor(100, 100, 100);
   doc.line(margin, y, margin + halfW, y);
   doc.line(margin + halfW + 10, y, margin + contentWidth, y);
   y += 5;
   doc.setFontSize(8);
   doc.setTextColor(100, 100, 100);
-  doc.text(`${contractorData?.name || 'Contratante'}`, margin, y);
+  doc.text(n(`${contractorData?.name || 'Contratante'}`), margin, y);
   doc.text('PRUMO HUB', margin + halfW + 10, y);
   y += 4;
-  doc.text(`Data: ${now.toLocaleDateString('pt-BR')}`, margin, y);
+  doc.text(n(`Data: ${now.toLocaleDateString('pt-BR')}`), margin, y);
   doc.text('Aceite Digital', margin + halfW + 10, y);
 
-  // Footer pág 1
   doc.setFontSize(7);
   doc.setTextColor(150, 150, 150);
-  doc.text(`Protocolo: ${protocol} | Gerado em ${now.toLocaleString('pt-BR')} | hub.prumo.site`, margin, pageHeight - 8);
+  doc.text(n(`Protocolo: ${protocol} | Gerado em ${now.toLocaleString('pt-BR')} | hub.prumo.site`), margin, pageHeight - 8);
 
-  // ── PÁGINA 2+: Contrato Completo com Dados do Contratante ─────────────────
+  // ── PÁGINA 2+: Contrato Completo ──────────────────────────────────────────
   doc.addPage();
   y = margin;
 
   doc.setFontSize(15);
   doc.setTextColor(27, 67, 50);
-  doc.text('CONTRATO DE ASSINATURA SAAS — PRUMO HUB', margin, y);
+  doc.text('CONTRATO DE ASSINATURA SAAS - PRUMO HUB', margin, y);
   y += 7;
 
   doc.setFontSize(9);
@@ -221,59 +249,56 @@ function generateSaasContractProof(user, contractorData) {
   doc.line(margin, y, pageWidth - margin, y);
   y += 10;
 
-  // Qualificação das partes
   doc.setFontSize(10);
   doc.setTextColor(27, 67, 50);
-  doc.text('QUALIFICAÇÃO DAS PARTES', margin, y);
+  doc.text('QUALIFICACAO DAS PARTES', margin, y);
   y += 7;
 
   doc.setFontSize(9);
   doc.setTextColor(40, 40, 40);
   const partsText = doc.splitTextToSize(
-    'CONTRATADA: PRUMO HUB, plataforma digital de gestão voltada ao setor agroambiental, ' +
-    'representada pela Santa Rute Engenharia LTDA, CNPJ n.º 62.807.412/0001-95, com sede na ' +
-    'Rua José Antônio Saraiva n.º 340, bairro Pindorama, Três Passos/RS – CEP 98600-000.\n\n' +
-    `CONTRATANTE: ${contractorData?.name || '—'}, CPF/CNPJ: ${contractorData?.document || '—'}, ` +
-    `endereço: ${contractorData?.address || '—'}, telefone: ${contractorData?.phone || '—'}, ` +
-    `e-mail: ${contractorData?.email || '—'}.`,
+    n('CONTRATADA: PRUMO HUB, plataforma digital de gestao voltada ao setor agroambiental, ' +
+    'representada pela Santa Rute Engenharia LTDA, CNPJ n.o 62.807.412/0001-95, com sede na ' +
+    'Rua Jose Antonio Saraiva n.o 340, bairro Pindorama, Tres Passos/RS - CEP 98600-000.\n\n' +
+    `CONTRATANTE: ${contractorData?.name || '-'}, CPF/CNPJ: ${contractorData?.document || '-'}, ` +
+    `endereco: ${contractorData?.address || '-'}, telefone: ${contractorData?.phone || '-'}, ` +
+    `e-mail: ${contractorData?.email || '-'}.`),
     contentWidth
   );
   doc.text(partsText, margin, y);
   y += partsText.length * 5 + 8;
 
-  // Conteúdo das cláusulas (texto puro extraído do HTML)
   const clausulas = [
-    ['OBS.: ADEQUAÇÃO AO PLANO CONTRATADO', 'As condições comerciais, limites operacionais e funcionalidades aplicáveis ao CONTRATANTE serão aqueles correspondentes ao plano efetivamente contratado no momento do checkout NEXANO.'],
-    ['CLÁUSULA 1 — OBJETO', 'Concessão de licença de uso da plataforma PRUMO HUB, na modalidade SaaS, destinada à gestão de propriedades rurais, clientes, processos técnicos, documentos e atividades relacionadas à consultoria ambiental e rural.'],
-    ['CLÁUSULA 2 — FUNCIONALIDADES DO PLANO', 'O Plano contratado disponibiliza ao CONTRATANTE funcionalidades conforme descrito na página de planos hub.prumo.site/landing. As funcionalidades poderão ser atualizadas, ampliadas ou aprimoradas ao longo do tempo.'],
-    ['CLÁUSULA 3 — VALOR DA ASSINATURA', 'O valor da assinatura é aquele correspondente ao plano efetivamente contratado no checkout, conforme indicado na plataforma no momento da contratação.'],
-    ['CLÁUSULA 4 — PRAZO E FIDELIDADE', 'Prazo mínimo de fidelidade de 12 (doze) meses a partir da ativação. Cancelamento antecipado implica multa de 30% das mensalidades restantes. Após o prazo mínimo, contrato por prazo indeterminado com aviso de 30 dias.'],
-    ['CLÁUSULA 5 — LIMITES DO PLANO', 'Os limites operacionais (usuários e propriedades) são os definidos no plano contratado. Ultrapassados, poderá ser necessário upgrade ou contratação adicional.'],
-    ['CLÁUSULA 6 — FASE INICIAL DA PLATAFORMA', 'O CONTRATANTE reconhece que a plataforma encontra-se em desenvolvimento contínuo. Poderão ocorrer falhas técnicas temporárias, que não configuram descumprimento contratual.'],
-    ['CLÁUSULA 7 — EARLY ADOPTERS', 'O CONTRATANTE poderá integrar o programa de usuários iniciais (Early Adopters), com funcionalidades em fase de testes ou evolução.'],
-    ['CLÁUSULA 8 — TREINAMENTO', 'O CONTRATANTE terá direito a período inicial de treinamento de 3 meses, com até 2 reuniões mensais remotas, previamente agendadas.'],
-    ['CLÁUSULA 9 — RESPONSABILIDADE PELOS DADOS', 'O CONTRATANTE é responsável pelos dados inseridos. A PRUMO HUB não se responsabiliza pela veracidade das informações ou decisões técnicas dos usuários.'],
-    ['CLÁUSULA 10 — USO DE DADOS AGREGADOS', 'A plataforma poderá usar dados de forma agregada e anonimizada para melhoria do sistema, seguindo as disposições da LGPD.'],
-    ['CLÁUSULA 11 — PROTEÇÃO DA BASE DE CLIENTES', 'A PRUMO HUB compromete-se a não compartilhar, comercializar ou transferir dados de clientes dos consultores a terceiros.'],
-    ['CLÁUSULA 12 — EVOLUÇÃO PARA MARKETPLACE', 'A plataforma poderá evoluir para incluir funcionalidades de marketplace, sujeitas a termos adicionais específicos.'],
-    ['CLÁUSULA 13 — PROPRIEDADE INTELECTUAL', 'Todo o software, design e marca PRUMO HUB são propriedade intelectual exclusiva da plataforma. É proibido copiar ou explorar comercialmente sem autorização.'],
-    ['CLÁUSULA 14 — DISPONIBILIDADE', 'A plataforma envidará esforços para manter o sistema disponível, podendo ocorrer interrupções por manutenção ou falhas de infraestrutura.'],
-    ['CLÁUSULA 15 — LIMITAÇÃO DE RESPONSABILIDADE', 'A plataforma não se responsabiliza por danos indiretos, perdas financeiras ou decisões técnicas dos usuários.'],
-    ['CLÁUSULA 16 — INFRAESTRUTURA TECNOLÓGICA', 'A plataforma utiliza ferramentas modernas e serviços de terceiros. A PRUMO HUB reserva-se o direito de alterar provedores de infraestrutura.'],
-    ['CLÁUSULA 17 — RESCISÃO', 'A plataforma poderá suspender ou encerrar contas em caso de inadimplência, violação contratual ou uso indevido.'],
-    ['CLÁUSULA 18 — LEGISLAÇÃO APLICÁVEL', 'Regido pelas leis do Brasil. Foro eleito: comarca de Três Passos/RS.'],
-    ['CLÁUSULA 19 — ACEITE DIGITAL', 'O aceite eletrônico possui plena validade jurídica conforme a legislação brasileira.'],
-    ['CLÁUSULA 20 — CONTRATAÇÃO DIGITAL', `A identificação do CONTRATANTE foi realizada pelos dados informados no cadastro. Nome: ${contractorData?.name || '—'} | CPF/CNPJ: ${contractorData?.document || '—'} | E-mail: ${contractorData?.email || '—'} | Aceite registrado em: ${now.toLocaleString('pt-BR')}`],
+    ['OBS.: ADEQUACAO AO PLANO CONTRATADO', 'As condicoes comerciais, limites operacionais e funcionalidades aplicaveis ao CONTRATANTE serao aqueles correspondentes ao plano efetivamente contratado no momento do checkout NEXANO.'],
+    ['CLAUSULA 1 - OBJETO', 'Concessao de licenca de uso da plataforma PRUMO HUB, na modalidade SaaS, destinada a gestao de propriedades rurais, clientes, processos tecnicos, documentos e atividades relacionadas a consultoria ambiental e rural.'],
+    ['CLAUSULA 2 - FUNCIONALIDADES DO PLANO', 'O Plano contratado disponibiliza ao CONTRATANTE funcionalidades conforme descrito na pagina de planos hub.prumo.site/landing. As funcionalidades poderao ser atualizadas, ampliadas ou aprimoradas ao longo do tempo.'],
+    ['CLAUSULA 3 - VALOR DA ASSINATURA', 'O valor da assinatura e aquele correspondente ao plano efetivamente contratado no checkout, conforme indicado na plataforma no momento da contratacao.'],
+    ['CLAUSULA 4 - PRAZO E FIDELIDADE', 'Prazo minimo de fidelidade de 12 (doze) meses a partir da ativacao. Cancelamento antecipado implica multa de 30% das mensalidades restantes. Apos o prazo minimo, contrato por prazo indeterminado com aviso de 30 dias.'],
+    ['CLAUSULA 5 - LIMITES DO PLANO', 'Os limites operacionais (usuarios e propriedades) sao os definidos no plano contratado. Ultrapassados, podera ser necessario upgrade ou contratacao adicional.'],
+    ['CLAUSULA 6 - FASE INICIAL DA PLATAFORMA', 'O CONTRATANTE reconhece que a plataforma encontra-se em desenvolvimento continuo. Poderao ocorrer falhas tecnicas temporarias, que nao configuram descumprimento contratual.'],
+    ['CLAUSULA 7 - EARLY ADOPTERS', 'O CONTRATANTE podera integrar o programa de usuarios iniciais (Early Adopters), com funcionalidades em fase de testes ou evolucao.'],
+    ['CLAUSULA 8 - TREINAMENTO', 'O CONTRATANTE tera direito a periodo inicial de treinamento de 3 meses, com ate 2 reunioes mensais remotas, previamente agendadas.'],
+    ['CLAUSULA 9 - RESPONSABILIDADE PELOS DADOS', 'O CONTRATANTE e responsavel pelos dados inseridos. A PRUMO HUB nao se responsabiliza pela veracidade das informacoes ou decisoes tecnicas dos usuarios.'],
+    ['CLAUSULA 10 - USO DE DADOS AGREGADOS', 'A plataforma podera usar dados de forma agregada e anonimizada para melhoria do sistema, seguindo as disposicoes da LGPD.'],
+    ['CLAUSULA 11 - PROTECAO DA BASE DE CLIENTES', 'A PRUMO HUB compromete-se a nao compartilhar, comercializar ou transferir dados de clientes dos consultores a terceiros.'],
+    ['CLAUSULA 12 - EVOLUCAO PARA MARKETPLACE', 'A plataforma podera evoluir para incluir funcionalidades de marketplace, sujeitas a termos adicionais especificos.'],
+    ['CLAUSULA 13 - PROPRIEDADE INTELECTUAL', 'Todo o software, design e marca PRUMO HUB sao propriedade intelectual exclusiva da plataforma. E proibido copiar ou explorar comercialmente sem autorizacao.'],
+    ['CLAUSULA 14 - DISPONIBILIDADE', 'A plataforma envidara esforcos para manter o sistema disponivel, podendo ocorrer interrupcoes por manutencao ou falhas de infraestrutura.'],
+    ['CLAUSULA 15 - LIMITACAO DE RESPONSABILIDADE', 'A plataforma nao se responsabiliza por danos indiretos, perdas financeiras ou decisoes tecnicas dos usuarios.'],
+    ['CLAUSULA 16 - INFRAESTRUTURA TECNOLOGICA', 'A plataforma utiliza ferramentas modernas e servicos de terceiros. A PRUMO HUB reserva-se o direito de alterar provedores de infraestrutura.'],
+    ['CLAUSULA 17 - RESCISAO', 'A plataforma podera suspender ou encerrar contas em caso de inadimplencia, violacao contratual ou uso indevido.'],
+    ['CLAUSULA 18 - LEGISLACAO APLICAVEL', 'Regido pelas leis do Brasil. Foro eleito: comarca de Tres Passos/RS.'],
+    ['CLAUSULA 19 - ACEITE DIGITAL', 'O aceite eletronico possui plena validade juridica conforme a legislacao brasileira.'],
+    ['CLAUSULA 20 - CONTRATACAO DIGITAL', n(`A identificacao do CONTRATANTE foi realizada pelos dados informados no cadastro. Nome: ${contractorData?.name || '-'} | CPF/CNPJ: ${contractorData?.document || '-'} | E-mail: ${contractorData?.email || '-'} | Aceite registrado em: ${now.toLocaleString('pt-BR')}`)],
   ];
 
   for (const [titulo, texto] of clausulas) {
-    // Verificar se precisa de nova página
     if (y > pageHeight - 40) {
       doc.addPage();
       y = margin;
       doc.setFontSize(7);
       doc.setTextColor(150, 150, 150);
-      doc.text(`Contrato SaaS PRUMO HUB | ${contractorData?.name || '—'} | Protocolo: ${protocol}`, margin, 8);
+      doc.text(n(`Contrato SaaS PRUMO HUB | ${contractorData?.name || '-'} | Protocolo: ${protocol}`), margin, 8);
     }
 
     doc.setFontSize(9);
@@ -290,7 +315,6 @@ function generateSaasContractProof(user, contractorData) {
     y += lines.length * 4.5 + 5;
   }
 
-  // Bloco de assinatura final
   if (y > pageHeight - 60) {
     doc.addPage();
     y = margin;
@@ -304,19 +328,18 @@ function generateSaasContractProof(user, contractorData) {
   doc.setFontSize(8);
   doc.setTextColor(60, 60, 60);
   doc.setFont(undefined, 'normal');
-  doc.text(`${contractorData?.name || 'Contratante'}`, margin, y);
+  doc.text(n(`${contractorData?.name || 'Contratante'}`), margin, y);
   doc.text('Santa Rute Engenharia LTDA', margin + halfW + 10, y);
   y += 4;
-  doc.text(`CPF/CNPJ: ${contractorData?.document || '—'}`, margin, y);
+  doc.text(n(`CPF/CNPJ: ${contractorData?.document || '-'}`), margin, y);
   doc.text('CNPJ: 62.807.412/0001-95', margin + halfW + 10, y);
   y += 4;
-  doc.text(`Data: ${now.toLocaleDateString('pt-BR')}`, margin, y);
-  doc.text(`Data: ${now.toLocaleDateString('pt-BR')}`, margin + halfW + 10, y);
+  doc.text(n(`Data: ${now.toLocaleDateString('pt-BR')}`), margin, y);
+  doc.text(n(`Data: ${now.toLocaleDateString('pt-BR')}`), margin + halfW + 10, y);
 
-  // Footer última página
   doc.setFontSize(7);
   doc.setTextColor(150, 150, 150);
-  doc.text(`Protocolo: ${protocol} | Válido conforme Lei 14.063/2020 | hub.prumo.site`, margin, pageHeight - 8);
+  doc.text(n(`Protocolo: ${protocol} | Valido conforme Lei 14.063/2020 | hub.prumo.site`), margin, pageHeight - 8);
 
   const pdfBuffer = doc.output('arraybuffer');
   return new Response(pdfBuffer, {
@@ -332,8 +355,4 @@ function generateProtocol() {
   const timestamp = Date.now().toString();
   const random = Math.random().toString(36).substr(2, 9).toUpperCase();
   return `PRUMO-${random}-${timestamp.slice(-8)}`;
-}
-
-function getClientInfo() {
-  return 'Sistema Automatizado';
 }

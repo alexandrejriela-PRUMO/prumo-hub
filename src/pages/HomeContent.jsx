@@ -118,6 +118,12 @@ export default function HomeContent({ queryClient, user, effectiveEmail, isEquip
 
   const isLoading = effectiveLoading || loadingProperties || loadingLicenses || loadingInvoices || loadingDocuments || loadingProcesses || loadingAlerts;
 
+  // Dados de requerimentos para o painel do produtor
+  const openRequests = requests.filter(r => r.status === 'Aberto' || r.status === 'Em Análise');
+  const respondedRequests = requests.filter(r => r.status === 'Respondido');
+  const totalRequests = requests.length;
+  const hasUrgent = requests.some(r => r.priority === 'Urgente' || r.priority === 'Alta');
+
   // Auto-select first property when properties load
   useEffect(() => {
     if (properties.length > 0 && !selectedPropertyId) {
@@ -289,12 +295,7 @@ export default function HomeContent({ queryClient, user, effectiveEmail, isEquip
       <QuickActions userType={user?.user_type} />
 
       {/* Consultoria e Requerimentos - Para Produtores */}
-      {!isConsultorView && (() => {
-        const openRequests = requests.filter(r => r.status === 'Aberto' || r.status === 'Em Análise');
-        const respondedRequests = requests.filter(r => r.status === 'Respondido');
-        const totalRequests = requests.length;
-        const hasUrgent = requests.some(r => r.priority === 'Urgente' || r.priority === 'Alta');
-        return (
+      {!isConsultorView && (
           <div className="space-y-4">
             {/* Banner de destaque */}
             <div className="flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-emerald-900 to-emerald-700 rounded-2xl">
@@ -404,8 +405,7 @@ export default function HomeContent({ queryClient, user, effectiveEmail, isEquip
               </div>
             </div>
           </div>
-        );
-      })()}
+      )}
 
       {/* Tabs for Overview and Analytics */}
       <Tabs defaultValue="overview" className="space-y-6 mt-8">

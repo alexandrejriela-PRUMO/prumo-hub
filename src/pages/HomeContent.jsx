@@ -19,7 +19,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { MapPin, BarChart3, Briefcase, CheckCircle2, TrendingUp, Clock, Users, MessageSquare } from 'lucide-react';
+import { MapPin, BarChart3, Briefcase, CheckCircle2, TrendingUp, Clock, Users, MessageSquare, AlertCircle, FileQuestion, ArrowRight } from 'lucide-react';
 import { subDays, isAfter, isBefore } from 'date-fns';
 import { createPageUrl } from '@/utils';
 import ConsultorOverview from '../components/dashboard/ConsultorOverview';
@@ -99,6 +99,13 @@ export default function HomeContent({ queryClient, user, effectiveEmail, isEquip
     queryKey: ['carManagements', selectedPropertyId],
     queryFn: () => base44.entities.CARManagement.filter({ property_id: selectedPropertyId }),
     enabled: !!selectedPropertyId,
+    initialData: []
+  });
+
+  const { data: requests = [] } = useQuery({
+    queryKey: ['requests-dashboard', user?.email],
+    queryFn: () => base44.entities.Request.filter({ client_email: user.email }, '-created_date'),
+    enabled: !!user?.email && user?.user_type === 'produtor',
     initialData: []
   });
 
@@ -282,79 +289,123 @@ export default function HomeContent({ queryClient, user, effectiveEmail, isEquip
       <QuickActions userType={user?.user_type} />
 
       {/* Consultoria e Requerimentos - Para Produtores */}
-      {!isConsultorView && user?.user_type === 'produtor' && (
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Consultoria Card */}
-          <div className="group relative bg-gradient-to-br from-emerald-50 via-white to-emerald-50/30 border-2 border-emerald-200 rounded-2xl p-6 sm:p-8 hover:shadow-2xl hover:border-emerald-400 transition-all duration-300 overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-200 to-emerald-100 rounded-full -mr-12 -mt-12 opacity-40 group-hover:opacity-60 transition-opacity" />
-            <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
-                  <Briefcase className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-xl sm:text-2xl font-bold text-emerald-900">Consultoria Especializada</h3>
-                  <p className="text-emerald-600 text-xs font-semibold">Orientação de Especialistas</p>
-                </div>
-              </div>
-              <p className="text-gray-700 text-sm sm:text-base mb-6 leading-relaxed">
-                Acesse consultores ambientais certificados para orientação sobre regularização ambiental, licenciamento e sustentabilidade da sua propriedade.
-              </p>
-              <div className="space-y-3 mb-6">
-                {[
-                  { icon: CheckCircle2, text: 'Análise completa da propriedade' },
-                  { icon: TrendingUp, text: 'Otimização de processos' },
-                  { icon: Users, text: 'Consultores especializados' }
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <item.icon className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-                    <span className="text-gray-700 text-sm">{item.text}</span>
-                  </div>
-                ))}
-              </div>
-              <Button onClick={() => navigate && navigate(createPageUrl('Requests'))} className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-semibold group/btn">
-                <MessageSquare className="w-4 h-4 mr-2 group-hover/btn:scale-110 transition-transform" />
-                Solicitar Consultoria
-              </Button>
+      {!isConsultorView && user?.user_type === 'produtor' && (() => {
+        const openRequests = requests.filter(r => r.status === 'Aberto' || r.status === 'Em Análise');
+        const respondedRequests = requests.filter(r => r.status === 'Respondido');
+        const totalRequests = requests.length;
+        const hasUrgent = requests.some(r => r.priority === 'Urgente' || r.priority === 'Alta');
+        return (
+          <div className="space-y-4">
+            {/* Banner de destaque */}
+            <div className="flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-emerald-900 to-emerald-700 rounded-2xl">
+              <Briefcase className="w-5 h-5 text-amber-400 flex-shrink-0" />
+              <p className="text-white font-semibold text-sm flex-1">Sua Central de Consultoria e Suporte Técnico</p>
+              <span className="text-amber-300 text-xs font-bold uppercase tracking-widest">Exclusivo Produtor</span>
             </div>
-          </div>
 
-          {/* Requerimentos Card */}
-          <div className="group relative bg-gradient-to-br from-amber-50 via-white to-amber-50/30 border-2 border-amber-200 rounded-2xl p-6 sm:p-8 hover:shadow-2xl hover:border-amber-400 transition-all duration-300 overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-200 to-amber-100 rounded-full -mr-12 -mt-12 opacity-40 group-hover:opacity-60 transition-opacity" />
-            <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg">
-                  <Clock className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-xl sm:text-2xl font-bold text-amber-900">Requerimentos Processados</h3>
-                  <p className="text-amber-600 text-xs font-semibold">Acompanhamento em Tempo Real</p>
-                </div>
-              </div>
-              <p className="text-gray-700 text-sm sm:text-base mb-6 leading-relaxed">
-                Monitore o status de todos os seus requerimentos ambientais, licenças e autorizações em um único lugar. Notificações automáticas de atualizações.
-              </p>
-              <div className="space-y-3 mb-6">
-                {[
-                  { icon: Clock, text: 'Acompanhamento 24/7' },
-                  { icon: TrendingUp, text: 'Status em tempo real' },
-                  { icon: CheckCircle2, text: 'Documentação organizada' }
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <item.icon className="w-5 h-5 text-amber-600 flex-shrink-0" />
-                    <span className="text-gray-700 text-sm">{item.text}</span>
+            <div className="grid lg:grid-cols-2 gap-6">
+              {/* Consultoria Card */}
+              <div className="group relative bg-gradient-to-br from-emerald-50 via-white to-emerald-50/30 border-2 border-emerald-200 rounded-2xl p-6 sm:p-8 hover:shadow-2xl hover:border-emerald-400 transition-all duration-300 overflow-hidden cursor-pointer" onClick={() => navigate && navigate(createPageUrl('Requests'))}>
+                <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-emerald-200 to-emerald-100 rounded-full -mr-16 -mt-16 opacity-30 group-hover:opacity-50 transition-opacity" />
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between mb-5">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl shadow-lg">
+                        <MessageSquare className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl sm:text-2xl font-bold text-emerald-900">Consultoria Especializada</h3>
+                        <p className="text-emerald-600 text-xs font-semibold">Ambiental · Jurídica · Técnica</p>
+                      </div>
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-emerald-400 group-hover:translate-x-1 transition-transform mt-1 flex-shrink-0" />
                   </div>
-                ))}
+                  <p className="text-gray-600 text-sm mb-5 leading-relaxed">
+                    Envie dúvidas e solicitações para nossos consultores certificados. Respostas sobre regularização ambiental, licenciamento e direitos do produtor rural.
+                  </p>
+                  <div className="grid grid-cols-3 gap-3 mb-5">
+                    {[
+                      { label: 'Jurídico', color: 'bg-purple-100 text-purple-700' },
+                      { label: 'Ambiental', color: 'bg-emerald-100 text-emerald-700' },
+                      { label: 'Licenciamento', color: 'bg-blue-100 text-blue-700' },
+                    ].map((tag) => (
+                      <span key={tag.label} className={`text-center text-xs font-semibold py-1.5 px-2 rounded-lg ${tag.color}`}>{tag.label}</span>
+                    ))}
+                  </div>
+                  <Button className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-semibold">
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Novo Requerimento
+                  </Button>
+                </div>
               </div>
-              <Button onClick={() => navigate && navigate(createPageUrl('Requests'))} className="w-full bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-semibold group/btn">
-                <TrendingUp className="w-4 h-4 mr-2 group-hover/btn:scale-110 transition-transform" />
-                Ver Requerimentos
-              </Button>
+
+              {/* Requerimentos Status Card */}
+              <div className="group relative bg-gradient-to-br from-amber-50 via-white to-amber-50/30 border-2 border-amber-200 rounded-2xl p-6 sm:p-8 hover:shadow-2xl hover:border-amber-400 transition-all duration-300 overflow-hidden cursor-pointer" onClick={() => navigate && navigate(createPageUrl('Requests'))}>
+                <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-amber-200 to-amber-100 rounded-full -mr-16 -mt-16 opacity-30 group-hover:opacity-50 transition-opacity" />
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between mb-5">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-gradient-to-br from-amber-500 to-amber-700 rounded-xl shadow-lg">
+                        <FileQuestion className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl sm:text-2xl font-bold text-amber-900">Meus Requerimentos</h3>
+                        <p className="text-amber-600 text-xs font-semibold">Acompanhamento em Tempo Real</p>
+                      </div>
+                    </div>
+                    {hasUrgent && (
+                      <span className="flex items-center gap-1 bg-red-100 text-red-700 text-xs font-bold px-2 py-1 rounded-full animate-pulse">
+                        <AlertCircle className="w-3 h-3" /> Urgente
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Stats reais */}
+                  {totalRequests === 0 ? (
+                    <div className="text-center py-4 mb-5">
+                      <FileQuestion className="w-10 h-10 text-amber-300 mx-auto mb-2" />
+                      <p className="text-gray-500 text-sm">Nenhum requerimento enviado ainda.</p>
+                      <p className="text-gray-400 text-xs mt-1">Clique em "Novo Requerimento" para começar.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-3 mb-5">
+                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-center">
+                        <p className="text-2xl font-extrabold text-blue-700">{openRequests.length}</p>
+                        <p className="text-xs text-blue-600 font-medium mt-0.5">Em Aberto</p>
+                      </div>
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
+                        <p className="text-2xl font-extrabold text-emerald-700">{respondedRequests.length}</p>
+                        <p className="text-xs text-emerald-600 font-medium mt-0.5">Respondidos</p>
+                      </div>
+                      <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-center">
+                        <p className="text-2xl font-extrabold text-gray-700">{totalRequests}</p>
+                        <p className="text-xs text-gray-500 font-medium mt-0.5">Total</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Últimos requerimentos */}
+                  {requests.slice(0, 2).map((req) => (
+                    <div key={req.id} className="flex items-center justify-between py-2 border-b border-amber-100 last:border-0">
+                      <p className="text-xs text-gray-700 truncate flex-1">{req.subject}</p>
+                      <span className={`ml-2 text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${
+                        req.status === 'Respondido' ? 'bg-emerald-100 text-emerald-700' :
+                        req.status === 'Em Análise' ? 'bg-amber-100 text-amber-700' :
+                        'bg-blue-100 text-blue-700'
+                      }`}>{req.status}</span>
+                    </div>
+                  ))}
+
+                  <Button className="w-full mt-4 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-semibold">
+                    <ArrowRight className="w-4 h-4 mr-2" />
+                    Ver Todos os Requerimentos
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Tabs for Overview and Analytics */}
       <Tabs defaultValue="overview" className="space-y-6 mt-8">

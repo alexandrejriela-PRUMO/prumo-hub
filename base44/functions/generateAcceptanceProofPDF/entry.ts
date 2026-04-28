@@ -48,10 +48,10 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { type, contractorData } = await req.json();
+    const { type, contractorData, logData } = await req.json();
 
     if (type === 'terms') {
-      return generateTermsProof(user);
+      return generateTermsProof(user, logData);
     } else if (type === 'saas_contract') {
       return generateSaasContractProof(user, contractorData);
     } else {
@@ -62,55 +62,103 @@ Deno.serve(async (req) => {
   }
 });
 
-function generateTermsProof(user) {
+function generateTermsProof(user, logData) {
+  // Se logData for fornecido (download pelo admin), usa os dados do log; caso contrário usa o user autenticado
+  const targetName = logData?.user_name || user.full_name || user.email;
+  const targetEmail = logData?.user_email || user.email;
+  const targetDate = logData?.accepted_at
+    ? new Date(logData.accepted_at).toLocaleString('pt-BR')
+    : new Date().toLocaleString('pt-BR');
+  const termsVersion = logData?.terms_version ? `v${logData.terms_version}` : '';
+
   const doc = new jsPDF({ compress: false });
   doc.setFont('Helvetica');
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 15;
   const contentWidth = pageWidth - 2 * margin;
-  let yPosition = margin;
+  const protocol = generateProtocol();
+  let y = margin;
 
-  doc.setFontSize(18);
+  // Header
+  doc.setFontSize(16);
   doc.setTextColor(27, 67, 50);
-  doc.text('COMPROVANTE DE ACEITE', margin, yPosition);
-  yPosition += 8;
+  doc.text('COMPROVANTE DE ACEITE DOS TERMOS DE USO', margin, y);
+  y += 7;
 
+  doc.setFontSize(9);
+  doc.setTextColor(100, 100, 100);
+  doc.text('PRUMO HUB | Santa Rute Engenharia LTDA | CNPJ: 62.807.412/0001-95', margin, y);
+  y += 5;
+
+  doc.setLineWidth(0.5);
+  doc.setDrawColor(27, 67, 50);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 10;
+
+  // Badge
+  doc.setFillColor(212, 237, 218);
+  doc.setDrawColor(21, 87, 36);
+  doc.rect(margin, y, contentWidth, 10, 'FD');
+  doc.setFontSize(9);
+  doc.setTextColor(21, 87, 36);
+  doc.text('Aceite registrado eletronicamente - Valido conforme legislacao brasileira', margin + 4, y + 6.5);
+  y += 16;
+
+  // Dados do usuário
   doc.setFontSize(10);
-  doc.setTextColor(80, 80, 80);
-  doc.text('Termos de Uso - PRUMO HUB', margin, yPosition);
-  yPosition += 12;
-
-  doc.setDrawColor(200, 220, 200);
-  doc.setFillColor(245, 255, 245);
-  doc.rect(margin, yPosition, contentWidth, 25, 'F');
-  doc.setFontSize(9);
-  doc.setTextColor(30, 100, 60);
-  doc.text(n(`Usuario: ${user.full_name || user.email}`), margin + 3, yPosition + 6);
-  doc.text(n(`E-mail: ${user.email}`), margin + 3, yPosition + 12);
-  doc.text(n(`Data/Hora: ${new Date().toLocaleString('pt-BR')}`), margin + 3, yPosition + 18);
-  yPosition += 30;
-
-  doc.setFontSize(11);
-  doc.setTextColor(0, 0, 0);
-  doc.text('CONFIRMACAO DE ACEITE', margin, yPosition);
-  yPosition += 8;
+  doc.setTextColor(27, 67, 50);
+  doc.text('DADOS DO USUARIO', margin, y);
+  y += 7;
 
   doc.setFontSize(9);
-  doc.setTextColor(80, 80, 80);
-  const contentLines = doc.splitTextToSize(
-    n('O usuario acima identificado declara que leu e aceitou integralmente os Termos de Uso da plataforma PRUMO HUB. Este documento comprova o aceite eletronico realizado na plataforma em conformidade com a legislacao brasileira.\n\nO aceite foi registrado no sistema com timestamp e identificacao unica, constituindo prova valida de consentimento as condicoes de uso da plataforma.'),
+  doc.setTextColor(60, 60, 60);
+  const infoLines = [
+    n(`Nome: ${targetName}`),
+    n(`E-mail: ${targetEmail}`),
+    n(`Data e Hora do Aceite: ${targetDate}`),
+    ...(termsVersion ? [n(`Versao dos Termos: ${termsVersion}`)] : []),
+    n(`Protocolo: ${protocol}`),
+  ];
+  doc.text(infoLines, margin, y);
+  y += infoLines.length * 5 + 10;
+
+  // Declaração
+  doc.setFontSize(10);
+  doc.setTextColor(27, 67, 50);
+  doc.text('DECLARACAO DE ACEITE', margin, y);
+  y += 7;
+
+  doc.setFontSize(9);
+  doc.setTextColor(40, 40, 40);
+  const declLines = doc.splitTextToSize(
+    n('O usuario acima identificado declara que leu e aceitou integralmente os Termos de Uso da plataforma PRUMO HUB. Este documento comprova o aceite eletronico realizado na plataforma em conformidade com a legislacao brasileira. O aceite foi registrado no sistema com timestamp e identificacao unica, constituindo prova valida de consentimento as condicoes de uso da plataforma.'),
     contentWidth
   );
-  doc.text(contentLines, margin, yPosition);
-  yPosition += contentLines.length * 5 + 10;
+  doc.text(declLines, margin, y);
+  y += declLines.length * 5 + 15;
 
+  // Linha de assinatura
+  const halfW = contentWidth / 2 - 5;
+  doc.setDrawColor(100, 100, 100);
+  doc.line(margin, y, margin + halfW, y);
+  doc.line(margin + halfW + 10, y, margin + contentWidth, y);
+  y += 5;
   doc.setFontSize(8);
+  doc.setTextColor(100, 100, 100);
+  doc.text(n(targetName), margin, y);
+  doc.text('PRUMO HUB', margin + halfW + 10, y);
+  y += 4;
+  doc.text(n(`Aceite em: ${targetDate}`), margin, y);
+  doc.text('Aceite Digital', margin + halfW + 10, y);
+
+  // Footer
+  doc.setFontSize(7);
   doc.setTextColor(150, 150, 150);
   doc.text(
-    n(`Documento gerado automaticamente em ${new Date().toLocaleString('pt-BR')} | ID: ${user.id} | Protocolo: ${generateProtocol()}`),
+    n(`Protocolo: ${protocol} | Gerado em ${new Date().toLocaleString('pt-BR')} | hub.prumo.site`),
     margin,
-    pageHeight - 10
+    pageHeight - 8
   );
 
   const pdfBuffer = doc.output('arraybuffer');
@@ -118,7 +166,7 @@ function generateTermsProof(user) {
     status: 200,
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="Comprovante_Termos_${user.email}_${new Date().getTime()}.pdf"`,
+      'Content-Disposition': `attachment; filename="Comprovante_Termos_${targetEmail.replace(/\W/g,'_')}_${new Date().getTime()}.pdf"`,
     },
   });
 }

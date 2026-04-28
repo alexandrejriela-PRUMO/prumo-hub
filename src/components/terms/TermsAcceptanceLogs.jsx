@@ -4,14 +4,48 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, User, Calendar, Shield, Monitor } from 'lucide-react';
+import { Search, User, Calendar, Shield, Monitor, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 export default function TermsAcceptanceLogs() {
   const [search, setSearch] = useState('');
   const [filterVersion, setFilterVersion] = useState('all');
+  const [downloading, setDownloading] = useState({});
+
+  const handleDownload = async (log) => {
+    setDownloading(prev => ({ ...prev, [log.id]: true }));
+    try {
+      const response = await base44.functions.invoke('generateAcceptanceProofPDF', {
+        type: 'terms',
+        logData: {
+          user_name: log.user_name || '',
+          user_email: log.user_email || '',
+          accepted_at: log.accepted_at || '',
+          terms_version: log.terms_version,
+        },
+      });
+      if (response?.data) {
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Comprovante_Termos_PRUMO_${(log.user_email || 'user').replace(/\W/g, '_')}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast.success('Comprovante baixado!');
+      }
+    } catch (e) {
+      console.error('Erro ao baixar comprovante:', e);
+      toast.error('Erro ao gerar comprovante.');
+    }
+    setDownloading(prev => ({ ...prev, [log.id]: false }));
+  };
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ['termsAcceptanceLogs'],
@@ -121,9 +155,21 @@ export default function TermsAcceptanceLogs() {
                       </p>
                     )}
                   </div>
-                  <Badge className="bg-emerald-100 text-emerald-700 text-xs flex-shrink-0">
-                    v{log.terms_version}
-                  </Badge>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Badge className="bg-emerald-100 text-emerald-700 text-xs">
+                      v{log.terms_version}
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1 h-7 text-xs px-2"
+                      onClick={() => handleDownload(log)}
+                      disabled={downloading[log.id]}
+                    >
+                      <Download className="w-3 h-3" />
+                      {downloading[log.id] ? '...' : 'PDF'}
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

@@ -289,7 +289,7 @@ export default function HomeContent({ queryClient, user, effectiveEmail, isEquip
       <QuickActions userType={user?.user_type} />
 
       {/* Consultoria e Requerimentos - Para Produtores */}
-      {!isConsultorView && user?.user_type === 'produtor' && (() => {
+      {!isConsultorView && (() => {
         const openRequests = requests.filter(r => r.status === 'Aberto' || r.status === 'Em Análise');
         const respondedRequests = requests.filter(r => r.status === 'Respondido');
         const totalRequests = requests.length;

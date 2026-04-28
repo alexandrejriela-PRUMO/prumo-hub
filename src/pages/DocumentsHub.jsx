@@ -65,9 +65,9 @@ export default function DocumentsHub() {
   }, []);
 
   const { data: allDocuments = [], isLoading } = useQuery({
-    queryKey: ['unifiedDocuments'],
+    queryKey: ['unifiedDocuments', effectiveEmail, userType],
     queryFn: () => base44.entities.UnifiedDocument.list('-upload_date', 1000),
-    enabled: !!user
+    enabled: !!user && !effectiveLoading
   });
 
   const isConsultorFamily = userType === 'consultor' || userType === 'equipe';
@@ -183,8 +183,29 @@ export default function DocumentsHub() {
     setOrderedIds(newOrder);
   };
 
+  // Conjunto de IDs de propriedades autorizadas para o usuário
+  const allEffectiveProperties = isClientConsultor ? clientConsultorProperties : effectiveProperties;
+  const authorizedPropertyIds = new Set(allEffectiveProperties.map(p => p.id));
+
   // Filter and search documents
   const filteredDocuments = allDocuments.filter(doc => {
+    // Admins veem tudo
+    if (user?.role === 'admin') {
+      // ainda aplica filtro de propriedade selecionada se houver
+    } else {
+      // Documentos vinculados a uma propriedade devem pertencer ao ecossistema do usuário
+      if (doc.entity_id && doc.entity_id !== '') {
+        if (!authorizedPropertyIds.has(doc.entity_id)) return false;
+      } else {
+        // Documento sem entity_id: só vê se foi uploaded_by alguém do mesmo ecossistema
+        // Para simplificar: produtor só vê documentos sem entity_id se ele mesmo fez upload
+        // Consultor/equipe vê os que uploaded_by = effectiveEmail ou algum membro da equipe
+        // Mantém visible se uploaded_by é o próprio usuário ou effectiveEmail
+        const uploaderMatch = doc.uploaded_by === user?.email || doc.uploaded_by === effectiveEmail;
+        if (!uploaderMatch) return false;
+      }
+    }
+
     const searchMatch = !searchTerm || 
       doc.document_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       doc.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||

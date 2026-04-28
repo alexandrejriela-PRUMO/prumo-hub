@@ -117,7 +117,7 @@ O Plano Produtor Único integra o ecossistema da plataforma PRUMO HUB, permitind
 `;
 
 export default function SaasContractPage({ onAccepted }) {
-  const [step, setStep] = useState('contract'); // 'contract' | 'form' | 'done'
+  const [step, setStep] = useState('form'); // 'form' | 'contract' | 'done'
   const [accepted, setAccepted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [downloadingPDF, setDownloadingPDF] = useState(false);
@@ -215,16 +215,16 @@ export default function SaasContractPage({ onAccepted }) {
         {/* Step indicators */}
         {step !== 'done' && (
           <div className="flex border-b border-gray-100">
-            <div className={`flex-1 py-3 text-center text-xs font-semibold flex items-center justify-center gap-1.5 ${step === 'contract' ? 'text-emerald-700 border-b-2 border-emerald-600' : 'text-gray-400'}`}>
-              <FileCheck className="w-3.5 h-3.5" /> 1. Leitura do Contrato
-            </div>
             <div className={`flex-1 py-3 text-center text-xs font-semibold flex items-center justify-center gap-1.5 ${step === 'form' ? 'text-emerald-700 border-b-2 border-emerald-600' : 'text-gray-400'}`}>
-              <User className="w-3.5 h-3.5" /> 2. Dados do Contratante
+              <User className="w-3.5 h-3.5" /> 1. Dados do Contratante
+            </div>
+            <div className={`flex-1 py-3 text-center text-xs font-semibold flex items-center justify-center gap-1.5 ${step === 'contract' ? 'text-emerald-700 border-b-2 border-emerald-600' : 'text-gray-400'}`}>
+              <FileCheck className="w-3.5 h-3.5" /> 2. Leitura e Assinatura
             </div>
           </div>
         )}
 
-        {/* STEP 1 — Contrato */}
+        {/* STEP 2 — Contrato */}
         {step === 'contract' && (
           <div className="p-6 space-y-5">
             <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
@@ -253,18 +253,19 @@ export default function SaasContractPage({ onAccepted }) {
 
             <div className="flex gap-3">
               <Button
-                onClick={() => base44.auth.logout()}
+                onClick={() => setStep('form')}
                 variant="outline"
-                className="flex-1 border-gray-300 text-gray-600 hover:bg-gray-50"
+                className="gap-2 border-gray-300 text-gray-600 hover:bg-gray-50"
               >
-                Sair
+                <ArrowLeft className="w-4 h-4" /> Voltar
               </Button>
               <Button
-                onClick={() => setStep('form')}
-                disabled={!accepted}
+                onClick={handleAccept}
+                disabled={!accepted || saving}
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
               >
-                Prosseguir <ArrowRight className="w-4 h-4" />
+                <CheckCircle className="w-4 h-4" />
+                {saving ? 'Salvando...' : 'Assinar e Continuar'}
               </Button>
             </div>
           </div>
@@ -307,12 +308,12 @@ export default function SaasContractPage({ onAccepted }) {
           </div>
         )}
 
-        {/* STEP 2 — Formulário do contratante */}
+        {/* STEP 1 — Formulário do contratante */}
          {step === 'form' && (
            <div className="p-6 space-y-5">
              <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-sm">
                <User className="w-4 h-4 flex-shrink-0" />
-               <span>Preencha os dados de quem está contratando. Essas informações serão vinculadas ao contrato.</span>
+               <span>Preencha os dados de quem está contratando. Essas informações serão incluídas no contrato e no PDF de comprovante.</span>
              </div>
 
              <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs">
@@ -368,19 +369,18 @@ export default function SaasContractPage({ onAccepted }) {
 
             <div className="flex gap-3 pt-1">
               <Button
-                onClick={() => setStep('contract')}
+                onClick={() => base44.auth.logout()}
                 variant="outline"
                 className="gap-2 border-gray-300 text-gray-600"
               >
-                <ArrowLeft className="w-4 h-4" /> Voltar
+                Sair
               </Button>
               <Button
-                onClick={handleAccept}
-                disabled={!contractorValid || saving}
+                onClick={() => setStep('contract')}
+                disabled={!contractorValid}
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
               >
-                <CheckCircle className="w-4 h-4" />
-                {saving ? 'Salvando...' : 'Assinar e Continuar'}
+                Prosseguir <ArrowRight className="w-4 h-4" />
               </Button>
             </div>
           </div>

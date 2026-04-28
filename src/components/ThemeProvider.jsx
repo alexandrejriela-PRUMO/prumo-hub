@@ -1,24 +1,24 @@
-import React from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 
-const ThemeContext = React.createContext({ theme: 'light' });
-export const useTheme = () => React.useContext(ThemeContext);
+const ThemeContext = createContext({ theme: 'light' });
+export const useTheme = () => useContext(ThemeContext);
 
 export default function ThemeProvider({ children }) {
-  const [theme, setTheme] = React.useState(() => {
+  const [theme, setTheme] = useState(() => {
     if (typeof window !== 'undefined') {
       return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
     return 'light';
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const handler = (e) => setTheme(e.matches ? 'dark' : 'light');
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {

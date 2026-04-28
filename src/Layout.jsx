@@ -137,6 +137,7 @@ const produtorNavItems = [
       { name: 'Frustração de Safra', page: 'HarvestLoss', icon: Wheat },
     ]
   },
+  { name: 'Requerimentos', page: 'Requests', icon: ClipboardList },
   { name: 'Relatórios', page: 'Reports', icon: FileText },
   { name: 'Configurar Notificações', page: 'NotificationSettings', icon: Bell },
   { name: 'Minha Equipe', page: 'MyTeam', icon: Users, separator: true },

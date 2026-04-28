@@ -219,7 +219,7 @@ export default function ErrorLogsAdmin() {
                       <span>•</span>
                       <span>Ocorrências: {error?.frequency || 1}</span>
                       <span>•</span>
-                      <span>Última: {format(parseISO(error?.last_occurrence), 'dd/MM HH:mm')}</span>
+                      <span>Última: {error?.last_occurrence ? format(parseISO(error.last_occurrence), 'dd/MM HH:mm') : '-'}</span>
                       {error?.user_email && (
                         <>
                           <span>•</span>

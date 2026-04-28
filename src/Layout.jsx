@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { getMenuItems } from '@/lib/accessControl';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import ErrorBoundary from './components/ErrorBoundary';
 import PullToRefresh from './components/mobile/PullToRefresh';
 import BottomTabBar from './components/BottomTabBar';
 import ThemeProvider from './components/ThemeProvider';
 import RouteTransition from './components/mobile/RouteTransition';
-import NotificationCenter from './components/notifications/NotificationCenter';
 import RealtimeNotificationCenter from './components/notifications/RealtimeNotificationCenter';
 import { useRealtimeNotifications } from '@/components/notifications/useRealtimeNotifications';
 import { Badge } from '@/components/ui/badge';

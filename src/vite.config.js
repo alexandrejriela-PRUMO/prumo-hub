@@ -26,5 +26,8 @@ export default defineConfig({
   optimizeDeps: {
     include: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
     force: true,
+    esbuildOptions: {
+      target: 'es2020',
+    },
   },
 });

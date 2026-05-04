@@ -5,8 +5,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const reactPath = path.resolve(__dirname, 'node_modules/react');
-const reactDomPath = path.resolve(__dirname, 'node_modules/react-dom');
 
 export default defineConfig({
   plugins: [
@@ -17,17 +15,15 @@ export default defineConfig({
     dedupe: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query', 'scheduler'],
     alias: {
       '@': path.resolve(__dirname, './src'),
-      'react': reactPath,
-      'react-dom': reactDomPath,
-      'react/jsx-runtime': path.resolve(__dirname, 'node_modules/react/jsx-runtime'),
-      'react/jsx-dev-runtime': path.resolve(__dirname, 'node_modules/react/jsx-dev-runtime'),
     },
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
-    force: true,
-    esbuildOptions: {
-      target: 'es2020',
-    },
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      '@tanstack/react-query',
+      '@base44/sdk',
+    ],
   },
 });

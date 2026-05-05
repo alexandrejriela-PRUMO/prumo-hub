@@ -1,42 +1,44 @@
 /**
- * React singleton enforcer.
+ * React singleton enforcer — must run before any SDK or lazy page import.
  *
- * The @base44/sdk ships with a bundled copy of React inside chunk-CMM6OKGN.js.
- * When that chunk initializes, it calls useState() on its own null-initialized
- * React instance before the app's React is ready.
+ * Problem: @base44/sdk bundles its own React copy in chunk-CMM6OKGN.js.
+ * That chunk initializes React with ReactCurrentDispatcher = null.
+ * When a lazy page mounts, it calls useState() on that null dispatcher → crash.
  *
- * Fix: we grab the app's React internals object and store it on `window.__react_internals`.
- * Then we override `Object.defineProperty` temporarily so that when the SDK chunk
- * tries to define its own ReactCurrentDispatcher (the thing that holds useState),
- * it gets redirected to the app's dispatcher instead.
+ * Fix: We grab the real React internals and use Object.defineProperty to make
+ * ReactCurrentDispatcher on ANY object always point to the real one.
  */
 import React from 'react';
-import ReactDOM from 'react-dom';
 
-const internals = React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+const realInternals = React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
 
-// Store the canonical dispatcher reference globally
+// Keep a strong reference so GC doesn't collect it
 if (typeof window !== 'undefined') {
-  window.__REACT_INTERNALS__ = internals;
-  window.__REACT_CURRENT_OWNER__ = internals;
-
-  // Patch: any object that tries to set ReactCurrentDispatcher gets the real one
-  const _defineProperty = Object.defineProperty.bind(Object);
-  Object.defineProperty = function(obj, prop, descriptor) {
-    if (
-      prop === 'ReactCurrentDispatcher' ||
-      prop === 'ReactCurrentBatchConfig' ||
-      prop === 'ReactCurrentOwner'
-    ) {
-      // Redirect to the app's internals instead of the bundled one
-      return _defineProperty(obj, prop, {
-        get: () => internals[prop],
-        set: (v) => { internals[prop] = v; },
-        configurable: true,
-      });
-    }
-    return _defineProperty(obj, prop, descriptor);
-  };
+  window.__REAL_REACT__ = React;
+  window.__REAL_REACT_INTERNALS__ = realInternals;
 }
 
-export { React as default, ReactDOM };
+// Intercept Object.defineProperty so when the bundled SDK React tries to
+// set up its own dispatcher slots, they get redirected to the real ones.
+const _origDefineProperty = Object.defineProperty;
+Object.defineProperty = function patchedDefineProperty(target, prop, descriptor) {
+  if (
+    prop === 'ReactCurrentDispatcher' ||
+    prop === 'ReactCurrentBatchConfig' ||
+    prop === 'ReactCurrentActQueue' ||
+    prop === 'ReactCurrentOwner'
+  ) {
+    // Only intercept if target is NOT the real internals (i.e. it's the SDK's copy)
+    if (target !== realInternals && typeof realInternals[prop] !== 'undefined') {
+      return _origDefineProperty(target, prop, {
+        get() { return realInternals[prop]; },
+        set(v) { realInternals[prop] = v; },
+        configurable: true,
+        enumerable: true,
+      });
+    }
+  }
+  return _origDefineProperty(target, prop, descriptor);
+};
+
+export default React;

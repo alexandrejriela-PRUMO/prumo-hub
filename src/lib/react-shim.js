@@ -28,8 +28,8 @@ Object.defineProperty = function patchedDefineProperty(target, prop, descriptor)
     prop === 'ReactCurrentActQueue' ||
     prop === 'ReactCurrentOwner'
   ) {
-    // Only intercept if target is NOT the real internals (i.e. it's the SDK's copy)
-    if (target !== realInternals && realInternals[prop] != null) {
+    // Always intercept if target is NOT the real internals (i.e. it's the SDK's copy)
+    if (target !== realInternals) {
       return _origDefineProperty(target, prop, {
         get() { return realInternals[prop]; },
         set(v) { realInternals[prop] = v; },

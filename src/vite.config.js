@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// Cache bust: 2026-05-05
 const reactPath = path.resolve(__dirname, './node_modules/react');
 const reactDomPath = path.resolve(__dirname, './node_modules/react-dom');
 

@@ -319,8 +319,8 @@ export default function Layout({ children, currentPageName }) {
  const location = useLocation();
 const queryClient = useQueryClient();
 
-  const { unreadCount = 0, notifications = [], markAsRead, markAllAsRead, deleteNotification } = useRealtimeNotifications(user?.email);
-  const { hasPermission, canAccessModule } = useEffectiveUserPermissions(user);
+const { unreadCount = 0, ... } = useRealtimeNotifications(user?.email ?? '');
+const { hasPermission, canAccessModule } = useEffectiveUserPermissions(user ?? {});
 
   const [userMeta, setUserMeta] = useState(null);
 

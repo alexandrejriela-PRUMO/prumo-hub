@@ -10,7 +10,7 @@ const reactPath = path.resolve(__dirname, 'node_modules/react');
 const reactDomPath = path.resolve(__dirname, 'node_modules/react-dom');
 const schedulerPath = path.resolve(__dirname, 'node_modules/scheduler');
 
-// Cache bust: 2026-05-05m
+// Cache bust: 2026-05-05n
 export default defineConfig({
   plugins: [
     base44(),
@@ -39,8 +39,14 @@ export default defineConfig({
             build.onResolve({ filter: /^react$/ }, () => ({
               path: reactPath,
             }));
+            build.onResolve({ filter: /^react\/.*/ }, (args) => ({
+              path: path.resolve(__dirname, 'node_modules', args.path),
+            }));
             build.onResolve({ filter: /^react-dom$/ }, () => ({
               path: reactDomPath,
+            }));
+            build.onResolve({ filter: /^react-dom\/.*/ }, (args) => ({
+              path: path.resolve(__dirname, 'node_modules', args.path),
             }));
             build.onResolve({ filter: /^scheduler$/ }, () => ({
               path: schedulerPath,

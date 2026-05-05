@@ -29,6 +29,11 @@ function normalizeStatus(s) {
   return s;
 }
 
+function SortIcon({ field, sortField, sortDir }) {
+  if (sortField !== field) return null;
+  return sortDir === 'asc' ? <ChevronUp className="w-3 h-3 inline ml-0.5"/> : <ChevronDown className="w-3 h-3 inline ml-0.5"/>;
+}
+
 export default function FinancialTransactions() {
   const [user, setUser] = useState(null);
   const [filterMonth,  setFilterMonth]  = useState(format(new Date(),'yyyy-MM'));
@@ -147,7 +152,6 @@ export default function FinancialTransactions() {
   const totalDespesas = filtered.filter(t=>t.type==='despesa').reduce((s,t)=>s+t.amount,0);
   const resultado = totalReceitas-totalDespesas;
   const fmt = (v)=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-  const SortIcon = ({field})=>{ if(sortField!==field)return null; return sortDir==='asc'?<ChevronUp className="w-3 h-3 inline ml-0.5"/>:<ChevronDown className="w-3 h-3 inline ml-0.5"/>; };
 
   const exportCSV = ()=>{
     const header='Tipo,Origem,Descrição,Cliente,Conta,Competência,Data,Valor,Status,Forma Pagamento';
@@ -235,13 +239,13 @@ export default function FinancialTransactions() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={()=>toggleSort('type')}>Tipo <SortIcon field="type"/></th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={()=>toggleSort('type')}>Tipo <SortIcon field="type" sortField={sortField} sortDir={sortDir}/></th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Origem</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={()=>toggleSort('description')}>Descrição <SortIcon field="description"/></th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={()=>toggleSort('description')}>Descrição <SortIcon field="description" sortField={sortField} sortDir={sortDir}/></th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Conta</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={()=>toggleSort('client')}>Cliente <SortIcon field="client"/></th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={()=>toggleSort('date')}>Data <SortIcon field="date"/></th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={()=>toggleSort('amount')}>Valor <SortIcon field="amount"/></th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={()=>toggleSort('client')}>Cliente <SortIcon field="client" sortField={sortField} sortDir={sortDir}/></th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={()=>toggleSort('date')}>Data <SortIcon field="date" sortField={sortField} sortDir={sortDir}/></th>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={()=>toggleSort('amount')}>Valor <SortIcon field="amount" sortField={sortField} sortDir={sortDir}/></th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-4 py-3 w-16"></th>
               </tr>

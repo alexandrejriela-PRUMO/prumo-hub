@@ -12,18 +12,23 @@ export default defineConfig({
     react(),
   ],
   resolve: {
-    dedupe: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query', 'scheduler'],
+    dedupe: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query', 'scheduler', '@radix-ui/react-direction'],
     alias: {
       '@': path.resolve(__dirname, './src'),
+      'react': path.resolve(__dirname, './node_modules/react'),
+      'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
     },
   },
   optimizeDeps: {
+    force: true,
     include: [
       'react',
       'react-dom',
       'react-router-dom',
       '@tanstack/react-query',
       '@base44/sdk',
+      '@radix-ui/react-tabs',
+      '@radix-ui/react-direction',
     ],
   },
 });

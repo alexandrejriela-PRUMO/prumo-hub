@@ -316,13 +316,31 @@ export default function Layout({ children, currentPageName }) {
   const [expandedMenus, setExpandedMenus] = useState({});
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
- const location = useLocation();
-const queryClient = useQueryClient();
+  const location = useLocation();
+  const queryClient = useQueryClient();
 
-const { unreadCount = 0, notifications = [], markAsRead, markAllAsRead, deleteNotification } = useRealtimeNotifications(user?.email ?? '');
-const { hasPermission, canAccessModule } = useEffectiveUserPermissions(user ?? {});
+  // Hooks always called unconditionally with safe fallback values
+  const userEmail = user?.email ?? '';
+  const safeUser = user ?? {};
+  const { unreadCount = 0, notifications = [], markAsRead, markAllAsRead, deleteNotification } = useRealtimeNotifications(userEmail);
+  const { hasPermission, canAccessModule } = useEffectiveUserPermissions(safeUser);
 
   const [userMeta, setUserMeta] = useState(null);
+
+  // Load user data on mount
+  useEffect(() => {
+    base44.auth.me().then((u) => {
+      if (u) setUser(u);
+    }).catch(() => {});
+  }, []);
+
+  // Load userMeta when user email is available
+  useEffect(() => {
+    if (!user?.email) return;
+    base44.entities.UserMetadata.filter({ user_email: user.email }, '-created_date', 1)
+      .then((data) => { if (data?.length > 0) setUserMeta(data[0]); })
+      .catch(() => {});
+  }, [user?.email]);
 
   // Auto-expand menus that contain the current active page
   useEffect(() => {

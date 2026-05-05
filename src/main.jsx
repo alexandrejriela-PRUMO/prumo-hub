@@ -1,5 +1,5 @@
+// MUST be first — patches React dispatcher before any SDK chunk loads
 import '@/lib/react-shim.js'
-import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from '@/App.jsx'
 import '@/index.css'

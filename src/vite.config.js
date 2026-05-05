@@ -6,29 +6,46 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Cache bust: 2026-05-05e
-const reactPath = path.resolve(__dirname, './node_modules/react');
-const reactDomPath = path.resolve(__dirname, './node_modules/react-dom');
-const reactDomClientPath = path.resolve(__dirname, './node_modules/react-dom/client');
-const schedulerPath = path.resolve(__dirname, './node_modules/scheduler');
-
+// Cache bust: 2026-05-05f
 export default defineConfig({
   plugins: [
     base44(),
-    react(),
+    react({
+      // Force React to be treated as a singleton across all chunks
+      jsxRuntime: 'automatic',
+    }),
   ],
   resolve: {
-    dedupe: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query', 'scheduler'],
+    dedupe: [
+      'react',
+      'react-dom',
+      'react-dom/client',
+      'react/jsx-runtime',
+      'react/jsx-dev-runtime',
+      'react-router-dom',
+      '@tanstack/react-query',
+      'scheduler',
+    ],
     alias: {
       '@': path.resolve(__dirname, './src'),
-      'react': reactPath,
-      'react-dom': reactDomPath,
-      'react-dom/client': reactDomClientPath,
-      'scheduler': schedulerPath,
+      'react': path.resolve(__dirname, 'node_modules/react'),
+      'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
+      'react-dom/client': path.resolve(__dirname, 'node_modules/react-dom/client'),
+      'react/jsx-runtime': path.resolve(__dirname, 'node_modules/react/jsx-runtime'),
+      'react/jsx-dev-runtime': path.resolve(__dirname, 'node_modules/react/jsx-dev-runtime'),
+      'scheduler': path.resolve(__dirname, 'node_modules/scheduler'),
     },
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-dom/client', 'scheduler', '@base44/sdk'],
+    include: [
+      'react',
+      'react-dom',
+      'react-dom/client',
+      'react/jsx-runtime',
+      'react/jsx-dev-runtime',
+      'scheduler',
+      '@base44/sdk',
+    ],
     force: true,
     esbuildOptions: {
       define: {
@@ -38,10 +55,13 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
-      external: [],
       output: {
         manualChunks(id) {
-          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/scheduler/')) {
+          if (
+            id.includes('node_modules/react/') ||
+            id.includes('node_modules/react-dom/') ||
+            id.includes('node_modules/scheduler/')
+          ) {
             return 'react-vendor';
           }
         },

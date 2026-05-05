@@ -43,6 +43,8 @@ Deno.serve(async (req) => {
       }
     }
 
+    const todayStr = now.toISOString().split('T')[0];
+
     // Send notifications for each alert
     for (const alert of alerts) {
       try {
@@ -56,7 +58,7 @@ Deno.serve(async (req) => {
 
         if (alert.days_until_due < 0) {
           severity = 'error';
-          messageTitle = `Condicionante com Prazo Vencido`;
+          messageTitle = `Prazo de Condicionante Vencido`;
           messageBody = `A condicionante "${alert.condition_text}" (${alert.license_type} ${alert.license_number}) teve prazo vencido há ${Math.abs(alert.days_until_due)} dias.`;
         } else if (alert.days_until_due === 0) {
           severity = 'error';
@@ -69,6 +71,23 @@ Deno.serve(async (req) => {
         } else {
           severity = 'warning';
           messageBody = `A condicionante "${alert.condition_text}" (${alert.license_type} ${alert.license_number}) vence em ${alert.days_until_due} dias.`;
+        }
+
+        // Deduplicação: verificar se já foi enviada notificação hoje para este license+condition
+        const dedupeKey = `${alert.license_id}_${alert.condition_index}`;
+        const recentNotifs = await base44.asServiceRole.entities.InAppNotification.filter(
+          { user_email: alert.owner_email, event_type: 'documento_vencendo' },
+          '-created_date',
+          100
+        );
+        const alreadySentToday = recentNotifs.some(n =>
+          n.metadata?.entity_id === alert.license_id &&
+          n.metadata?.condition_index === alert.condition_index &&
+          n.metadata?.checked_date === todayStr
+        );
+        if (alreadySentToday) {
+          console.log(`⏭ Notificação já enviada hoje para condicionante: ${alert.condition_text}`);
+          continue;
         }
 
         // Create internal notification
@@ -85,26 +104,29 @@ Deno.serve(async (req) => {
             entity_id: alert.license_id,
             condition_index: alert.condition_index,
             property_name: property?.property_name || 'Propriedade',
+            checked_date: todayStr,
             timestamp: new Date().toISOString(),
           }
         });
 
-        // Send external email notification
-        await base44.asServiceRole.integrations.Core.SendEmail({
-          to: alert.owner_email,
-          subject: messageTitle,
-          body: `
-            <h2>${messageTitle}</h2>
-            <p>${messageBody}</p>
-            <hr/>
-            <p><strong>Propriedade:</strong> ${property?.property_name || 'N/A'}</p>
-            <p><strong>Licença:</strong> ${alert.license_type} ${alert.license_number || ''}</p>
-            <p><strong>Data de Cumprimento:</strong> ${alert.due_date}</p>
-            <p><strong>Condicionante:</strong> ${alert.condition_text}</p>
-            <hr/>
-            <p><a href="https://prumo.app/Licenses?property_id=${alert.property_id}">Ver Licença no Sistema</a></p>
-          `
-        });
+        // Send external email only once per alert (not daily for overdue)
+        if (alert.days_until_due >= 0) {
+          await base44.asServiceRole.integrations.Core.SendEmail({
+            to: alert.owner_email,
+            subject: messageTitle,
+            body: `
+              <h2>${messageTitle}</h2>
+              <p>${messageBody}</p>
+              <hr/>
+              <p><strong>Propriedade:</strong> ${property?.property_name || 'N/A'}</p>
+              <p><strong>Licença:</strong> ${alert.license_type} ${alert.license_number || ''}</p>
+              <p><strong>Data de Cumprimento:</strong> ${alert.due_date}</p>
+              <p><strong>Condicionante:</strong> ${alert.condition_text}</p>
+              <hr/>
+              <p><a href="https://prumo.app/Licenses?property_id=${alert.property_id}">Ver Licença no Sistema</a></p>
+            `
+          });
+        }
 
         console.log(`✓ Notificações enviadas para condicionante: ${alert.condition_text} (${alert.days_until_due} dias)`);
       } catch (notifError) {

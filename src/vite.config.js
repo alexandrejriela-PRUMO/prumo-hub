@@ -6,68 +6,31 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Cache bust: 2026-05-05g
+const reactPath = path.resolve(__dirname, 'node_modules/react');
+const reactDomPath = path.resolve(__dirname, 'node_modules/react-dom');
+const schedulerPath = path.resolve(__dirname, 'node_modules/scheduler');
 
-// Plugin to intercept React imports from @base44/sdk and redirect to the app's React instance
-function reactSingletonPlugin() {
-  return {
-    name: 'react-singleton',
-    config() {
-      return {
-        resolve: {
-          dedupe: ['react', 'react-dom', 'scheduler'],
-        },
-      };
-    },
-  };
-}
-
+// Cache bust: 2026-05-05h
 export default defineConfig({
   plugins: [
-    reactSingletonPlugin(),
     base44(),
-    react({
-      // Force React to be treated as a singleton across all chunks
-      jsxRuntime: 'automatic',
-    }),
+    react(),
   ],
   resolve: {
-    dedupe: [
-      'react',
-      'react-dom',
-      'react-dom/client',
-      'react/jsx-runtime',
-      'react/jsx-dev-runtime',
-      'react-router-dom',
-      '@tanstack/react-query',
-      'scheduler',
-    ],
     alias: {
       '@': path.resolve(__dirname, './src'),
-      'react': path.resolve(__dirname, 'node_modules/react'),
-      'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
+      'react': reactPath,
+      'react-dom': reactDomPath,
       'react-dom/client': path.resolve(__dirname, 'node_modules/react-dom/client'),
       'react/jsx-runtime': path.resolve(__dirname, 'node_modules/react/jsx-runtime'),
       'react/jsx-dev-runtime': path.resolve(__dirname, 'node_modules/react/jsx-dev-runtime'),
-      'scheduler': path.resolve(__dirname, 'node_modules/scheduler'),
+      'scheduler': schedulerPath,
     },
+    dedupe: ['react', 'react-dom', 'react-dom/client', 'scheduler'],
   },
   optimizeDeps: {
-    include: [
-      'react',
-      'react-dom',
-      'react-dom/client',
-      'react/jsx-runtime',
-      'react/jsx-dev-runtime',
-      'scheduler',
-      '@base44/sdk',
-    ],
+    include: ['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime', 'scheduler'],
     force: true,
-    esbuildOptions: {
-      define: {
-        global: 'globalThis',
-      },
-    },
   },
   build: {
     rollupOptions: {

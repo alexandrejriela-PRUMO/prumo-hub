@@ -201,7 +201,31 @@ export default function FinancialDashboard() {
       });
     });
 
-    let accSaldo = historico.reduce((s,h)=>s+h.resultado, 0);
+    // Calcula saldo acumulado histórico independentemente (sem referenciar o useMemo historico)
+    const histMonths12 = Array.from({ length: 12 }, (_, i) => format(subMonths(now, 11-i), 'yyyy-MM'));
+    const histByMonth = {};
+    histMonths12.forEach(m => { histByMonth[m] = { receita: 0, despesa: 0 }; });
+    effectiveCharges.forEach(c => {
+      const month = (c.due_date || c.paid_at || '')?.substring(0,7);
+      if (histByMonth[month] && normalizeStatus(c.status) === 'Pago') histByMonth[month].receita += c.amount || 0;
+    });
+    effectiveManual.forEach(e => {
+      const month = e.competencia || e.date?.substring(0,7);
+      if (histByMonth[month]) {
+        if (e.transaction_type === 'receita') histByMonth[month].receita += e.amount || 0;
+        else histByMonth[month].despesa += e.amount || 0;
+      }
+    });
+    crms.forEach(crm => {
+      if (!crm.services) return;
+      crm.services.forEach(svc => {
+        if (!svc.received) return;
+        const month = svc.received_at?.substring(0,7);
+        if (histByMonth[month]) histByMonth[month].receita += parseFloat(svc.value) || 0;
+      });
+    });
+    let accSaldo = histMonths12.reduce((s, m) => s + (histByMonth[m].receita - histByMonth[m].despesa), 0);
+
     return months.map((m,i) => {
       const projReceita = byMonth[m].receita + avgInc;
       const projDespesa = byMonth[m].despesa + avgExp;
@@ -211,7 +235,7 @@ export default function FinancialDashboard() {
         receita: Math.round(projReceita), despesa: Math.round(projDespesa),
         resultado: Math.round(resultado), saldoAcumulado: Math.round(accSaldo), isCurrent: i===0 };
     });
-    }, [charges, effectiveManual, contracts, historico, filterAccount, crms]);
+    }, [charges, effectiveManual, contracts, filterAccount, crms]);
 
   const kpis = useMemo(() => {
     const totalReceita12 = historico.reduce((s,h)=>s+h.receita, 0);

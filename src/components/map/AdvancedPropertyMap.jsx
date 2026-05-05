@@ -101,6 +101,103 @@ function getGeometryStats(geojson) {
   return { area: `${area.toFixed(2)} ha`, vertices: coords.length - 1 };
 }
 
+// ── MapContent extracted as a module-level component to preserve React fiber identity ──
+function MapContent({ 
+  activeLayers, carGeoJson, carLayers, kmlLayers, propertyAreas,
+  drawnGeometry, isDrawing, handleAddPolygon, featureGroupRef,
+  parseGeoJson, LAYER_STYLES, isFullscreen, mapRef
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (map) mapRef.current = map;
+    if (isFullscreen && map) map.invalidateSize();
+  }, [isFullscreen, map, mapRef]);
+
+  return (
+    <>
+      {activeLayers.satellite ? (
+        <TileLayer
+          url="https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
+          attribution='&copy; Google Earth'
+          maxZoom={20}
+        />
+      ) : (
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; OpenStreetMap'
+        />
+      )}
+
+      {activeLayers.car && carGeoJson && (
+        <GeoJSON data={carGeoJson} style={LAYER_STYLES.car} />
+      )}
+
+      {activeLayers.app && carLayers?.app_layer_url && (() => {
+        const gj = parseGeoJson(carLayers.app_layer_url);
+        return gj ? <GeoJSON data={gj} style={LAYER_STYLES.app} /> : null;
+      })()}
+
+      {activeLayers.legalReserve && carLayers?.legal_reserve_url && (() => {
+        const gj = parseGeoJson(carLayers.legal_reserve_url);
+        return gj ? <GeoJSON data={gj} style={LAYER_STYLES.legalReserve} /> : null;
+      })()}
+
+      {propertyAreas?.map(area => {
+        const geojson = {
+          type: 'Feature',
+          geometry: { type: 'Polygon', coordinates: [area.coordinates] },
+          properties: { name: area.name, type: area.type }
+        };
+        return (
+          <GeoJSON
+            key={area.id}
+            data={geojson}
+            style={{ color: area.color, weight: 2.5, fillOpacity: 0.2, fillColor: area.color }}
+            onEachFeature={(feature, layer) => {
+              layer.on('click', () => {
+                if (!map) return;
+                const bounds = L.latLngBounds(area.coordinates.map(([lng, lat]) => [lat, lng]));
+                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+              });
+            }}
+          />
+        );
+      })}
+
+      {kmlLayers?.filter(l => l.visible).map(layer => (
+        <GeoJSON
+          key={layer.id}
+          data={layer.geojson}
+          style={{ color: layer.color, weight: 2, fillOpacity: 0.18, fillColor: layer.color }}
+          onEachFeature={(feature, geoJsonLayer) => {
+            geoJsonLayer.on('click', () => {
+              if (!map || !layer.geojson?.geometry?.coordinates) return;
+              const coords = layer.geojson.geometry.coordinates[0];
+              const bounds = L.latLngBounds(coords.map(([lng, lat]) => [lat, lng]));
+              map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+            });
+          }}
+        />
+      ))}
+
+      {drawnGeometry && (
+        <GeoJSON
+          data={drawnGeometry}
+          style={{ color: '#10b981', weight: 3, fillOpacity: 0.25, fillColor: '#10b981' }}
+        />
+      )}
+
+      {isDrawing && (
+        <DrawingLayer
+          onPolygonCreated={handleAddPolygon}
+          featureGroupRef={featureGroupRef}
+        />
+      )}
+    </>
+  );
+}
+
 export default function AdvancedPropertyMap({ 
   property, 
   onSave, 
@@ -284,117 +381,6 @@ export default function AdvancedPropertyMap({
     return [-15.7801, -47.9292]; // Brasília como fallback
   };
 
-  const MapContent = () => {
-    const map = useMap();
-    
-    useEffect(() => {
-      if (map) {
-        mapRef.current = map;
-      }
-      if (isFullscreen && map) {
-        map.invalidateSize();
-      }
-    }, [isFullscreen, map]);
-
-    return (
-      <>
-        {/* Base layers */}
-        {activeLayers.satellite ? (
-          <TileLayer
-            url="https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
-            attribution='&copy; Google Earth'
-            maxZoom={20}
-          />
-        ) : (
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; OpenStreetMap'
-          />
-        )}
-
-        {/* CAR boundary */}
-        {activeLayers.car && carGeoJson && (
-          <GeoJSON data={carGeoJson} style={LAYER_STYLES.car} />
-        )}
-
-        {/* APP */}
-        {activeLayers.app && carLayers?.app_layer_url && (() => {
-          const gj = parseGeoJson(carLayers.app_layer_url);
-          return gj ? <GeoJSON data={gj} style={LAYER_STYLES.app} /> : null;
-        })()}
-
-        {/* Legal Reserve */}
-        {activeLayers.legalReserve && carLayers?.legal_reserve_url && (() => {
-          const gj = parseGeoJson(carLayers.legal_reserve_url);
-          return gj ? <GeoJSON data={gj} style={LAYER_STYLES.legalReserve} /> : null;
-        })()}
-
-        {/* Property Areas */}
-        {propertyAreas?.map(area => {
-          const geojson = {
-            type: 'Feature',
-            geometry: {
-              type: 'Polygon',
-              coordinates: [area.coordinates]
-            },
-            properties: { name: area.name, type: area.type }
-          };
-          return (
-            <GeoJSON
-              key={area.id}
-              data={geojson}
-              style={{ color: area.color, weight: 2.5, fillOpacity: 0.2, fillColor: area.color }}
-              onEachFeature={(feature, layer) => {
-                layer.on('click', () => {
-                  if (!map) return;
-                  const bounds = L.latLngBounds(
-                    area.coordinates.map(([lng, lat]) => [lat, lng])
-                  );
-                  map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
-                });
-              }}
-            />
-          );
-        })}
-
-        {/* KML layers */}
-        {kmlLayers?.filter(l => l.visible).map(layer => (
-          <GeoJSON
-            key={layer.id}
-            data={layer.geojson}
-            style={{ color: layer.color, weight: 2, fillOpacity: 0.18, fillColor: layer.color }}
-            onEachFeature={(feature, geoJsonLayer) => {
-              geoJsonLayer.on('click', () => {
-                if (!map || !layer.geojson?.geometry?.coordinates) return;
-                const coords = layer.geojson.geometry.coordinates[0];
-                const bounds = L.latLngBounds(
-                  coords.map(([lng, lat]) => [lat, lng])
-                );
-                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
-              });
-            }}
-          />
-        ))}
-
-        {/* Drawn geometry */}
-        {drawnGeometry && (
-          <GeoJSON
-            data={drawnGeometry}
-            style={{ color: '#10b981', weight: 3, fillOpacity: 0.25, fillColor: '#10b981' }}
-          />
-        )}
-
-        {/* Drawing handler */}
-        {isDrawing && (
-          <DrawingLayer 
-            onPolygonCreated={handleAddPolygon}
-            featureGroupRef={featureGroupRef}
-          />
-        )}
-      </>
-    );
-  };
-
   return (
     <div className={`relative rounded-2xl overflow-hidden border border-gray-200 shadow-lg ${
       isFullscreen ? 'fixed inset-0 z-50 rounded-none' : ''
@@ -406,7 +392,21 @@ export default function AdvancedPropertyMap({
         style={{ height: '100%', width: '100%' }}
         zoomControl={false}
       >
-        <MapContent />
+        <MapContent
+          activeLayers={activeLayers}
+          carGeoJson={carGeoJson}
+          carLayers={carLayers}
+          kmlLayers={kmlLayers}
+          propertyAreas={propertyAreas}
+          drawnGeometry={drawnGeometry}
+          isDrawing={isDrawing}
+          handleAddPolygon={handleAddPolygon}
+          featureGroupRef={featureGroupRef}
+          parseGeoJson={parseGeoJson}
+          LAYER_STYLES={LAYER_STYLES}
+          isFullscreen={isFullscreen}
+          mapRef={mapRef}
+        />
       </MapContainer>
 
       {/* Toolbar */}

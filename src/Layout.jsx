@@ -319,13 +319,10 @@ export default function Layout({ children, currentPageName }) {
  const location = useLocation();
 const queryClient = useQueryClient();
 
-const { unreadCount, notifications, markAsRead, markAllAsRead, deleteNotification } = useRealtimeNotifications(user?.email);
+  const { unreadCount = 0, notifications = [], markAsRead, markAllAsRead, deleteNotification } = useRealtimeNotifications(user?.email);
   const { hasPermission, canAccessModule } = useEffectiveUserPermissions(user);
 
   const [userMeta, setUserMeta] = useState(null);
-
- /*
-
 
   // Auto-expand menus that contain the current active page
   useEffect(() => {
@@ -337,14 +334,6 @@ const { unreadCount, notifications, markAsRead, markAllAsRead, deleteNotificatio
       }
     });
   }, [currentPageName]);
-
-const {
-  unreadCount = 0,
-  notifications = [],
-  markAsRead,
-  markAllAsRead,
-  deleteNotification
-} = useRealtimeNotifications(user?.email || null);
 
   const handleLogout = () => {
     base44.auth.logout('/landing');

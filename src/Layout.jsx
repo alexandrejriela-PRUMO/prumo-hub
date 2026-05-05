@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { base44 } from '@/api/base44Client';
@@ -379,6 +379,63 @@ export default function Layout({ children, currentPageName }) {
   // Check if on root page
   const isRootPage = currentPageName === 'Home' || !currentPageName;
 
+  // Mapeamento estático (fora do render)
+  const pageToModule = useMemo(() => ({
+    'Home': 'office', 'Agenda': 'office', 'CRMBoard': 'office',
+    'ConsultorClients': 'office', 'Properties': 'office', 'Contracts': 'office',
+    'ContractGenerator': 'office', 'BudgetGenerator': 'office',
+    'MyTeam': 'team_management',
+    'PropertyCentral': 'property_center', 'DocumentsHub': 'property_center',
+    'Licenses': 'property_center', 'CARModule': 'property_center',
+    'PropertyMapView': 'property_center', 'Processes': 'property_center',
+    'EnvironmentalAlerts': 'property_center', 'RegularityReport': 'property_center',
+    'PRAD': 'property_center', 'Georeferencing': 'property_center',
+    'Mappings': 'advanced_modules', 'ClimateMonitoring': 'advanced_modules',
+    'CommodityAnalysis': 'advanced_modules', 'CarbonCredits': 'advanced_modules',
+    'PSAContracts': 'advanced_modules', 'EnvironmentalAssets': 'advanced_modules',
+    'EnvironmentalEasements': 'advanced_modules', 'ESGAgro': 'advanced_modules',
+    'RuralCredit': 'advanced_modules', 'HarvestLoss': 'advanced_modules',
+    'Reports': 'reports', 'ChatRute': 'ai_chat',
+    'FinancialDashboard': 'financial', 'FinancialTransactions': 'financial',
+    'PaymentSettings': 'financial', 'NFeManagement': 'financial',
+  }), []);
+
+  const getModuleKey = useCallback((pageName) => pageName ? pageToModule[pageName] || null : null, [pageToModule]);
+
+  // Memoiza a lista de itens de menu filtrados
+  const filteredMenuItems = useMemo(() => {
+    const plano = userMeta?.plano || user?.plano || 'start';
+    const isEnterprise = plano === 'enterprise';
+    const ut = user?.user_type;
+
+    let menuItems = [];
+    if (ut === 'client_consultor') {
+      menuItems = clientConsultorNavItems;
+    } else if (ut === 'equipe') {
+      menuItems = equipeNavItems;
+    } else if (ut === 'consultor') {
+      const enterpriseOnlyPages = ['CRMBoard', 'Agenda', 'FinancialDashboard', 'FinancialTransactions', 'PaymentSettings', 'NFeManagement'];
+      const filterByPlan = (items) => items.map(item => {
+        if (!item.children) return item;
+        return { ...item, children: item.children.filter(child => isEnterprise || !enterpriseOnlyPages.includes(child.page)) };
+      }).filter(item => !item.children || item.children.length > 0);
+      menuItems = [...filterByPlan(consultorNavItems), ...navItems];
+    } else {
+      menuItems = produtorNavItems;
+    }
+
+    return menuItems.filter(item => {
+      if (item.adminOnly && user?.role !== 'admin') return false;
+      if (ut === 'equipe') {
+        if (!item.page && !item.children) return true;
+        const moduleKey = getModuleKey(item.page);
+        if (!moduleKey) return true;
+        return canAccessModule(moduleKey);
+      }
+      return true;
+    });
+  }, [user?.user_type, user?.role, userMeta?.plano, user?.plano, getModuleKey, canAccessModule]);
+
   return (
     <ThemeProvider>
     <div className="min-h-screen bg-gradient-to-br from-stone-50 via-white to-emerald-50/30">
@@ -601,97 +658,7 @@ export default function Layout({ children, currentPageName }) {
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-            {(() => {
-              // Plano do consultor: Enterprise tem acesso completo; Start/Pro têm restrições
-              const plano = userMeta?.plano || user?.plano || 'start';
-              const isEnterprise = plano === 'enterprise';
-
-              // Seleciona o menu correto com base no tipo de usuário
-              let menuItems = [];
-              const ut = user?.user_type;
-              if (ut === 'client_consultor') {
-                menuItems = clientConsultorNavItems;
-              } else if (ut === 'equipe') {
-                menuItems = equipeNavItems;
-              } else if (ut === 'consultor') {
-                // Páginas exclusivas do plano Enterprise para consultores
-                const enterpriseOnlyPages = ['CRMBoard', 'Agenda', 'FinancialDashboard', 'FinancialTransactions', 'PaymentSettings', 'NFeManagement'];
-                const filterByPlan = (items) => items.map(item => {
-                  if (!item.children) return item;
-                  return {
-                    ...item,
-                    children: item.children.filter(child => isEnterprise || !enterpriseOnlyPages.includes(child.page))
-                  };
-                }).filter(item => !item.children || item.children.length > 0);
-                menuItems = [...filterByPlan(consultorNavItems), ...navItems];
-              } else {
-                // produtor ou padrão
-                menuItems = produtorNavItems;
-              }
-
-              // Função para mapear page name para module key
-              const getModuleKey = (pageName) => {
-                if (!pageName) return null;
-                // Mapeamento de páginas para módulos
-                const pageToModule = {
-                  'Home': 'office',
-                  'Agenda': 'office',
-                  'CRMBoard': 'office',
-                  'ConsultorClients': 'office',
-                  'Properties': 'office',
-                  'Contracts': 'office',
-                  'ContractGenerator': 'office',
-                  'BudgetGenerator': 'office',
-                  'MyTeam': 'team_management',
-                  'PropertyCentral': 'property_center',
-                  'DocumentsHub': 'property_center',
-                  'Licenses': 'property_center',
-                  'CARModule': 'property_center',
-                  'PropertyMapView': 'property_center',
-                  'Processes': 'property_center',
-                  'EnvironmentalAlerts': 'property_center',
-                  'RegularityReport': 'property_center',
-                  'PRAD': 'property_center',
-                  'Georeferencing': 'property_center',
-                  'Mappings': 'advanced_modules',
-                  'ClimateMonitoring': 'advanced_modules',
-                  'CommodityAnalysis': 'advanced_modules',
-                  'CarbonCredits': 'advanced_modules',
-                  'PSAContracts': 'advanced_modules',
-                  'EnvironmentalAssets': 'advanced_modules',
-                  'EnvironmentalEasements': 'advanced_modules',
-                  'ESGAgro': 'advanced_modules',
-                  'RuralCredit': 'advanced_modules',
-                  'HarvestLoss': 'advanced_modules',
-                  'Reports': 'reports',
-                  'ChatRute': 'ai_chat',
-                  'FinancialDashboard': 'financial',
-                  'FinancialTransactions': 'financial',
-                  'PaymentSettings': 'financial',
-                  'NFeManagement': 'financial',
-                  'RuralCredit': 'advanced_modules',
-                  'HarvestLoss': 'advanced_modules',
-                };
-                return pageToModule[pageName];
-              };
-
-              // Filtra itens baseado em permissões
-               const filteredItems = menuItems.filter(item => {
-                 // Filtro adminOnly: apenas usuários admin
-                 if (item.adminOnly && user?.role !== 'admin') {
-                   return false;
-                 }
-                 // Filtro de equipe: verifica permissões por módulo
-                 if (user?.user_type === 'equipe') {
-                   if (!item.page && !item.children) return true;
-                   const moduleKey = getModuleKey(item.page);
-                   if (!moduleKey) return true;
-                   return canAccessModule(moduleKey);
-                 }
-                 return true;
-               });
-
-              return filteredItems.map((item, index) => {
+            {filteredMenuItems.map((item, index) => {
                 const itemKey = item.page || `${item.name}-${index}`;
                 if (item.children) {
                   const isExpanded = expandedMenus[item.name];
@@ -727,9 +694,9 @@ export default function Layout({ children, currentPageName }) {
                         <div className="mt-1 ml-3 pl-3 border-l-2 border-emerald-700/50 space-y-0.5 py-1">
                           {item.children.filter(child => {
                             if (user?.user_type !== 'equipe') return true;
-                            const moduleKey = getModuleKey(child.page);
-                            if (!moduleKey) return true;
-                            return canAccessModule(moduleKey);
+                            const mk = getModuleKey(child.page);
+                            if (!mk) return true;
+                            return canAccessModule(mk);
                           }).map((child) => {
                             const isActive = currentPageName === child.page;
                             const ChildIcon = child.icon;
@@ -782,8 +749,7 @@ export default function Layout({ children, currentPageName }) {
                     {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white flex-shrink-0" />}
                   </Link>
                 );
-              });
-            })()}
+            })}
           </nav>
 
 

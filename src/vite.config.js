@@ -6,9 +6,25 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Cache bust: 2026-05-05f
+// Cache bust: 2026-05-05g
+
+// Plugin to intercept React imports from @base44/sdk and redirect to the app's React instance
+function reactSingletonPlugin() {
+  return {
+    name: 'react-singleton',
+    config() {
+      return {
+        resolve: {
+          dedupe: ['react', 'react-dom', 'scheduler'],
+        },
+      };
+    },
+  };
+}
+
 export default defineConfig({
   plugins: [
+    reactSingletonPlugin(),
     base44(),
     react({
       // Force React to be treated as a singleton across all chunks

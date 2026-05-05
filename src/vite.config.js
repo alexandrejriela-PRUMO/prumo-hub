@@ -10,7 +10,7 @@ const reactPath = path.resolve(__dirname, 'node_modules/react');
 const reactDomPath = path.resolve(__dirname, 'node_modules/react-dom');
 const schedulerPath = path.resolve(__dirname, 'node_modules/scheduler');
 
-// Cache bust: 2026-05-05i
+// Cache bust: 2026-05-05j
 export default defineConfig({
   plugins: [
     base44(),

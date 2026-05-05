@@ -355,7 +355,7 @@ useEffect(() => {
     });
   }, [currentPageName]);
 
-  const { unreadCount, notifications, markAsRead, markAllAsRead, deleteNotification } = useRealtimeNotifications(user?.email);
+// const { unreadCount, notifications, markAsRead, markAllAsRead, deleteNotification } = useRealtimeNotifications(user?.email);
 
   const handleLogout = () => {
     base44.auth.logout('/landing');
@@ -587,17 +587,18 @@ useEffect(() => {
       </div>
 
       {/* Notification Center */}
-            <RealtimeNotificationCenter 
-              user={user}
-              isOpen={notificationOpen}
-              onClose={() => setNotificationOpen(false)}
-              notifications={notifications}
-              unreadCount={unreadCount}
-              markAsRead={markAsRead}
-              markAllAsRead={markAllAsRead}
-              deleteNotification={deleteNotification}
-            />
-
+            {/*
+<RealtimeNotificationCenter 
+  user={user}
+  isOpen={notificationOpen}
+  onClose={() => setNotificationOpen(false)}
+  notifications={notifications}
+  unreadCount={unreadCount}
+  markAsRead={markAsRead}
+  markAllAsRead={markAllAsRead}
+  deleteNotification={deleteNotification}
+/>
+*/}
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div

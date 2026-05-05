@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { createPageUrl } from './utils';
-// import { base44 } from '@/api/base44Client';
+import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import ErrorBoundary from './components/ErrorBoundary';
 import PullToRefresh from './components/mobile/PullToRefresh';

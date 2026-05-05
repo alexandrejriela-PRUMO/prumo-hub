@@ -10,7 +10,7 @@ const reactPath = path.resolve(__dirname, 'node_modules/react');
 const reactDomPath = path.resolve(__dirname, 'node_modules/react-dom');
 const schedulerPath = path.resolve(__dirname, 'node_modules/scheduler');
 
-// Cache bust: 2026-05-05j
+// Cache bust: 2026-05-05k
 export default defineConfig({
   plugins: [
     base44(),
@@ -31,6 +31,24 @@ export default defineConfig({
   optimizeDeps: {
     include: ['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime', 'react/jsx-dev-runtime', 'scheduler'],
     exclude: ['@base44/sdk'],
+    esbuildOptions: {
+      plugins: [
+        {
+          name: 'force-react-singleton',
+          setup(build) {
+            build.onResolve({ filter: /^react$/ }, () => ({
+              path: reactPath,
+            }));
+            build.onResolve({ filter: /^react-dom$/ }, () => ({
+              path: reactDomPath,
+            }));
+            build.onResolve({ filter: /^scheduler$/ }, () => ({
+              path: schedulerPath,
+            }));
+          },
+        },
+      ],
+    },
     force: true,
   },
   build: {

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { base44 } from '@/api/base44Client';
+// import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import ErrorBoundary from './components/ErrorBoundary';
 import PullToRefresh from './components/mobile/PullToRefresh';
@@ -322,21 +322,27 @@ export default function Layout({ children, currentPageName }) {
 
   const [userMeta, setUserMeta] = useState(null);
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-        if (userData?.email) {
-          const metaList = await base44.entities.UserMetadata.filter({ user_email: userData.email }, '-created_date', 1);
-          if (metaList?.length > 0) setUserMeta(metaList[0]);
-        }
-      } catch (e) {
-        console.log('User not logged in');
+ /*
+useEffect(() => {
+  const loadUser = async () => {
+    try {
+      const userData = await base44.auth.me();
+      setUser(userData);
+      if (userData?.email) {
+        const metaList = await base44.entities.UserMetadata.filter(
+          { user_email: userData.email }, 
+          '-created_date', 
+          1
+        );
+        if (metaList?.length > 0) setUserMeta(metaList[0]);
       }
-    };
-    loadUser();
-  }, []);
+    } catch (e) {
+      console.log('User not logged in');
+    }
+  };
+  loadUser();
+}, []);
+*/
 
   // Auto-expand menus that contain the current active page
   useEffect(() => {

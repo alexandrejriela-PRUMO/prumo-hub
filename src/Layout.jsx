@@ -316,8 +316,10 @@ export default function Layout({ children, currentPageName }) {
   const [expandedMenus, setExpandedMenus] = useState({});
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const location = useLocation();
-  const queryClient = useQueryClient();
+ const location = useLocation();
+const queryClient = useQueryClient();
+
+const { unreadCount, notifications, markAsRead, markAllAsRead, deleteNotification } = useRealtimeNotifications(user?.email);
   const { hasPermission, canAccessModule } = useEffectiveUserPermissions(user);
 
   const [userMeta, setUserMeta] = useState(null);

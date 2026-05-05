@@ -325,26 +325,7 @@ const { unreadCount, notifications, markAsRead, markAllAsRead, deleteNotificatio
   const [userMeta, setUserMeta] = useState(null);
 
  /*
-useEffect(() => {
-  const loadUser = async () => {
-    try {
-      const userData = await base44.auth.me();
-      setUser(userData);
-      if (userData?.email) {
-        const metaList = await base44.entities.UserMetadata.filter(
-          { user_email: userData.email }, 
-          '-created_date', 
-          1
-        );
-        if (metaList?.length > 0) setUserMeta(metaList[0]);
-      }
-    } catch (e) {
-      console.log('User not logged in');
-    }
-  };
-  loadUser();
-}, []);
-*/
+
 
   // Auto-expand menus that contain the current active page
   useEffect(() => {
@@ -357,7 +338,13 @@ useEffect(() => {
     });
   }, [currentPageName]);
 
-// const { unreadCount, notifications, markAsRead, markAllAsRead, deleteNotification } = useRealtimeNotifications(user?.email);
+const {
+  unreadCount = 0,
+  notifications = [],
+  markAsRead,
+  markAllAsRead,
+  deleteNotification
+} = useRealtimeNotifications(user?.email || null);
 
   const handleLogout = () => {
     base44.auth.logout('/landing');
@@ -490,7 +477,7 @@ useEffect(() => {
             className="relative p-2 rounded-xl hover:bg-emerald-50 transition-colors"
           >
             <Bell className="w-6 h-6 text-emerald-900" />
-            {unreadCount > 0 && (
+            {(unreadCount || 0) > 0 && (
               <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </Badge>

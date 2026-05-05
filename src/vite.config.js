@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Cache bust: 2026-05-05b
+// Cache bust: 2026-05-05c
 const reactPath = path.resolve(__dirname, './node_modules/react');
 const reactDomPath = path.resolve(__dirname, './node_modules/react-dom');
 
@@ -24,7 +24,7 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    include: ['react', 'react-dom'],
+    include: ['react', 'react-dom', '@base44/sdk'],
     force: true,
   },
 });

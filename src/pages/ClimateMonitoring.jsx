@@ -45,38 +45,39 @@ export default function ClimateMonitoring() {
 
   const updateClimateDataMutation = useMutation({
     mutationFn: async () => {
-      // 🔴 CRÍTICO #1: Validação de coordenadas
-      if (!selectedProperty?.coordinates || typeof selectedProperty.coordinates !== 'string') {
-        toast.error('Propriedade sem coordenadas válidas. Configure antes de atualizar.');
-        console.warn('[CLIMATE] Coordenadas inválidas:', selectedProperty?.coordinates);
-        return;
-      }
+      const prop = selectedProperty;
+      let locationLabel = '';
 
-      const parts = selectedProperty.coordinates.split(',');
-      if (parts.length !== 2) {
-        toast.error('Formato de coordenadas inválido. Use: latitude,longitude');
-        console.warn('[CLIMATE] Formato de coordenadas errado:', selectedProperty.coordinates);
-        return;
-      }
+      // Tentar usar coordenadas primeiro, depois fallback para cidade/estado
+      let lat, lng, hasCoords = false;
 
-      let lat, lng;
-      try {
-        lat = parseFloat(parts[0].trim());
-        lng = parseFloat(parts[1].trim());
-        if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-          throw new Error('Coordenadas fora do intervalo válido');
+      if (prop?.coordinates && typeof prop.coordinates === 'string') {
+        const parts = prop.coordinates.split(',');
+        if (parts.length === 2) {
+          const parsedLat = parseFloat(parts[0].trim());
+          const parsedLng = parseFloat(parts[1].trim());
+          if (!isNaN(parsedLat) && !isNaN(parsedLng) && parsedLat >= -90 && parsedLat <= 90 && parsedLng >= -180 && parsedLng <= 180) {
+            lat = parsedLat;
+            lng = parsedLng;
+            hasCoords = true;
+            locationLabel = `coordenadas ${lat},${lng}`;
+          }
         }
-        console.log('[CLIMATE] Coordenadas validadas:', { lat, lng });
-      } catch (e) {
-        toast.error('Coordenadas inválidas. Verifique: latitude (-90 a 90), longitude (-180 a 180)');
-        console.error('[CLIMATE] Erro ao parsear coordenadas:', e);
-        return;
       }
-      
+
+      if (!hasCoords) {
+        const city = prop?.city;
+        const state = prop?.state;
+        if (!city && !state) {
+          toast.error('Propriedade sem coordenadas nem cidade/estado. Configure a localização antes de atualizar.');
+          return;
+        }
+        locationLabel = [city, state].filter(Boolean).join(', ') + ', Brasil';
+      }
+
       try {
-        // 🔴 CRÍTICO #2: Tratamento de erro API robusto
         const response = await base44.integrations.Core.InvokeLLM({
-          prompt: `Forneça dados climáticos atuais e previsão de 7 dias para as coordenadas ${lat},${lng}. 
+          prompt: `Forneça dados climáticos atuais e previsão de 7 dias para ${locationLabel}. 
           Inclua: temperatura atual (número), umidade (0-100%), precipitação (mm), velocidade do vento (km/h), 
           direção do vento, índice UV (0-11), umidade do solo (0-100%), e previsão detalhada para cada dia dos próximos 7 dias.`,
           add_context_from_internet: true,
@@ -143,7 +144,7 @@ export default function ClimateMonitoring() {
           await base44.entities.ClimateMonitoring.create({
             property_id: selectedProperty.id,
             location_name: `Principal - ${selectedProperty.property_name}`,
-            coordinates: selectedProperty.coordinates,
+            coordinates: selectedProperty.coordinates || locationLabel,
             ...cleanedResponse,
             last_update: new Date().toISOString(),
             data_source: 'API Pública',
@@ -243,23 +244,31 @@ export default function ClimateMonitoring() {
         <>
           {/* Botão Atualizar */}
           <div className="flex gap-2 flex-wrap">
-            {!currentProperty?.coordinates && (
+            {!currentProperty?.coordinates && (currentProperty?.city || currentProperty?.state) && (
+              <Card className="w-full border-blue-200 bg-blue-50">
+                <CardContent className="p-4 flex items-center gap-3">
+                  <MapPin className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                  <p className="text-sm text-blue-900"><strong>Info:</strong> Sem coordenadas GPS — usando cidade/estado <strong>{[currentProperty.city, currentProperty.state].filter(Boolean).join(', ')}</strong> para buscar dados climáticos.</p>
+                </CardContent>
+              </Card>
+            )}
+            {!currentProperty?.coordinates && !currentProperty?.city && !currentProperty?.state && (
               <Card className="w-full border-amber-200 bg-amber-50">
                 <CardContent className="p-4 flex items-center gap-3">
                   <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
-                  <p className="text-sm text-amber-900"><strong>Aviso:</strong> Esta propriedade não possui coordenadas GPS. Configure as coordenadas antes de atualizar.</p>
+                  <p className="text-sm text-amber-900"><strong>Aviso:</strong> Esta propriedade não possui coordenadas GPS nem cidade/estado. Configure a localização para ativar o monitoramento.</p>
                 </CardContent>
               </Card>
             )}
             <Button
               onClick={() => {
-                if (!currentProperty?.coordinates) {
-                  toast.error('Propriedade sem coordenadas. Configure antes de atualizar.');
+                if (!currentProperty?.coordinates && !currentProperty?.city && !currentProperty?.state) {
+                  toast.error('Propriedade sem localização. Configure coordenadas ou cidade/estado.');
                   return;
                 }
                 updateClimateDataMutation.mutate();
               }}
-              disabled={updateClimateDataMutation.isPending || !currentProperty?.coordinates}
+              disabled={updateClimateDataMutation.isPending || (!currentProperty?.coordinates && !currentProperty?.city && !currentProperty?.state)}
               className="bg-blue-600 hover:bg-blue-700"
             >
               {updateClimateDataMutation.isPending ? (

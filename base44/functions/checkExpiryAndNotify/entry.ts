@@ -124,6 +124,15 @@ Deno.serve(async (req) => {
     // ─── PRAD ────────────────────────────────────────────────────────────
     const prads = await base44.asServiceRole.entities.PRAD.list('-updated_date', 1000);
     for (const prad of prads) {
+      // Ignorar PRADs órfãos (sem propriedade vinculada válida)
+      if (prad.property_id) {
+        try {
+          await base44.asServiceRole.entities.Property.get(prad.property_id);
+        } catch (e) {
+          console.warn(`[ExpiryLegacy] PRAD "${prad.project_name}" ignorado — propriedade ${prad.property_id} não encontrada.`);
+          continue;
+        }
+      }
       const schedule = prad.execution_schedule || [];
       const consultorEmail = await getConsultorEmail(prad.property_id);
       for (const stage of schedule) {

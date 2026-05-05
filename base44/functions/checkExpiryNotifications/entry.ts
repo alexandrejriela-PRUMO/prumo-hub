@@ -245,6 +245,15 @@ Deno.serve(async (req) => {
     const prads = await base44.asServiceRole.entities.PRAD.list();
     for (const prad of prads) {
       if (!prad.owner_email || prad.status === 'Concluído') continue;
+      // Ignorar PRADs órfãos (sem propriedade válida)
+      if (prad.property_id) {
+        try {
+          await base44.asServiceRole.entities.Property.get(prad.property_id);
+        } catch (e) {
+          console.warn(`[Expiry] PRAD "${prad.project_name}" ignorado — propriedade ${prad.property_id} não encontrada.`);
+          continue;
+        }
+      }
       const consultorEmail = await getConsultor(prad.property_id);
       for (const stage of (prad.execution_schedule || [])) {
         if (stage.status === 'Concluído' || !stage.deadline) continue;

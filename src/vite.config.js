@@ -6,10 +6,11 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Cache bust: 2026-05-05d
+// Cache bust: 2026-05-05e
 const reactPath = path.resolve(__dirname, './node_modules/react');
 const reactDomPath = path.resolve(__dirname, './node_modules/react-dom');
 const reactDomClientPath = path.resolve(__dirname, './node_modules/react-dom/client');
+const schedulerPath = path.resolve(__dirname, './node_modules/scheduler');
 
 export default defineConfig({
   plugins: [
@@ -23,10 +24,28 @@ export default defineConfig({
       'react': reactPath,
       'react-dom': reactDomPath,
       'react-dom/client': reactDomClientPath,
+      'scheduler': schedulerPath,
     },
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-dom/client', '@base44/sdk'],
+    include: ['react', 'react-dom', 'react-dom/client', 'scheduler', '@base44/sdk'],
     force: true,
+    esbuildOptions: {
+      define: {
+        global: 'globalThis',
+      },
+    },
+  },
+  build: {
+    rollupOptions: {
+      external: [],
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/scheduler/')) {
+            return 'react-vendor';
+          }
+        },
+      },
+    },
   },
 });

@@ -25,6 +25,86 @@ import PropertyMap from '../components/properties/PropertyMap';
 import PropertyUsers from '../components/properties/PropertyUsers';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
+function PropertyCard({ property, isConsultor, onEdit, onDelete, onManageUsers }) {
+  return (
+    <Card className="hover:shadow-lg transition-shadow">
+      <CardContent className="p-3 sm:p-6">
+        <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-200 flex items-center justify-center flex-shrink-0">
+            <MapPin className="w-6 sm:w-7 h-6 sm:h-7 text-emerald-700" />
+          </div>
+          
+          <div className="flex-1 min-w-0">
+            <h3 className="font-bold text-gray-900 text-base sm:text-lg line-clamp-2">{property.property_name}</h3>
+            {(property.client_name || property.owner_email) && (
+              <p className="text-xs sm:text-sm text-emerald-700 font-medium mt-0.5 flex items-center gap-1 line-clamp-1">
+                <User className="w-3 h-3 flex-shrink-0" />
+                <span className="truncate">{property.client_name || property.owner_email}</span>
+              </p>
+            )}
+            <p className="text-xs sm:text-sm text-gray-500 mt-0.5 line-clamp-1">
+              {property.city}{property.city && property.state ? ', ' : ''}{property.state}
+            </p>
+            
+            <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2 sm:mt-3">
+              {property.total_hectares && (
+                <Badge variant="outline" className="text-xs">
+                  <TreePine className="w-3 h-3 mr-0.5" />
+                  <span className="hidden sm:inline">{property.total_hectares} ha</span>
+                  <span className="sm:hidden">{property.total_hectares}ha</span>
+                </Badge>
+              )}
+              {property.main_activity && (
+                <Badge variant="outline" className="text-xs">
+                  <Briefcase className="w-3 h-3 mr-0.5" />
+                  <span className="hidden sm:inline">{property.main_activity}</span>
+                  <span className="sm:hidden truncate">{property.main_activity.substring(0, 8)}</span>
+                </Badge>
+              )}
+              {property.boundaries && (
+                <Badge className="bg-emerald-100 text-emerald-700 text-xs">
+                  <span className="hidden sm:inline">Limites Definidos</span>
+                  <span className="sm:hidden">Limites</span>
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          <div className="flex gap-1.5 sm:gap-2 w-full sm:w-auto sm:flex-col flex-shrink-0">
+            {isConsultor && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onManageUsers(property)}
+                title="Gerenciar usuários"
+                className="flex-1 sm:flex-none"
+              >
+                <Users className="w-4 h-4" />
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onEdit(property)}
+              className="flex-1 sm:flex-none"
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onDelete(property.id)}
+              className="flex-1 sm:flex-none text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Properties() {
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [mapDialogOpen, setMapDialogOpen] = useState(false);
@@ -117,94 +197,6 @@ export default function Properties() {
     }
   });
 
-  const PropertyCard = ({ property }) => (
-    <Card className="hover:shadow-lg transition-shadow">
-      <CardContent className="p-3 sm:p-6">
-        <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-200 flex items-center justify-center flex-shrink-0">
-            <MapPin className="w-6 sm:w-7 h-6 sm:h-7 text-emerald-700" />
-          </div>
-          
-          <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-gray-900 text-base sm:text-lg line-clamp-2">{property.property_name}</h3>
-            {(property.client_name || property.owner_email) && (
-              <p className="text-xs sm:text-sm text-emerald-700 font-medium mt-0.5 flex items-center gap-1 line-clamp-1">
-                <User className="w-3 h-3 flex-shrink-0" />
-                <span className="truncate">{property.client_name || property.owner_email}</span>
-              </p>
-            )}
-            <p className="text-xs sm:text-sm text-gray-500 mt-0.5 line-clamp-1">
-              {property.city}{property.city && property.state ? ', ' : ''}{property.state}
-            </p>
-            
-            <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2 sm:mt-3">
-              {property.total_hectares && (
-                <Badge variant="outline" className="text-xs">
-                  <TreePine className="w-3 h-3 mr-0.5" />
-                  <span className="hidden sm:inline">{property.total_hectares} ha</span>
-                  <span className="sm:hidden">{property.total_hectares}ha</span>
-                </Badge>
-              )}
-              {property.main_activity && (
-                <Badge variant="outline" className="text-xs">
-                  <Briefcase className="w-3 h-3 mr-0.5" />
-                  <span className="hidden sm:inline">{property.main_activity}</span>
-                  <span className="sm:hidden truncate">{property.main_activity.substring(0, 8)}</span>
-                </Badge>
-              )}
-              {property.boundaries && (
-                <Badge className="bg-emerald-100 text-emerald-700 text-xs">
-                  <span className="hidden sm:inline">Limites Definidos</span>
-                  <span className="sm:hidden">Limites</span>
-                </Badge>
-              )}
-            </div>
-          </div>
-
-          <div className="flex gap-1.5 sm:gap-2 w-full sm:w-auto sm:flex-col flex-shrink-0">
-            {isConsultor && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSelectedProperty(property);
-                  setUsersDialogOpen(true);
-                }}
-                title="Gerenciar usuários"
-                className="flex-1 sm:flex-none"
-              >
-                <Users className="w-4 h-4" />
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setEditingProperty(property);
-                setFormDialogOpen(true);
-              }}
-              className="flex-1 sm:flex-none"
-            >
-              <Edit className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (confirm('Deseja realmente excluir esta propriedade?')) {
-                  deleteMutation.mutate(property.id);
-                }
-              }}
-              className="flex-1 sm:flex-none text-red-600 hover:text-red-700 hover:bg-red-50"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
   return (
     <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
       <Link
@@ -255,7 +247,14 @@ export default function Properties() {
       ) : (
         <div className="grid gap-4">
           {properties.map(property => (
-            <PropertyCard key={property.id} property={property} />
+            <PropertyCard
+              key={property.id}
+              property={property}
+              isConsultor={isConsultor}
+              onEdit={(p) => { setEditingProperty(p); setFormDialogOpen(true); }}
+              onDelete={(id) => { if (confirm('Deseja realmente excluir esta propriedade?')) deleteMutation.mutate(id); }}
+              onManageUsers={(p) => { setSelectedProperty(p); setUsersDialogOpen(true); }}
+            />
           ))}
         </div>
       )}

@@ -10,7 +10,7 @@ const reactPath = path.resolve(__dirname, 'node_modules/react');
 const reactDomPath = path.resolve(__dirname, 'node_modules/react-dom');
 const schedulerPath = path.resolve(__dirname, 'node_modules/scheduler');
 
-// Cache bust: 2026-05-05k
+// Cache bust: 2026-05-05m
 export default defineConfig({
   plugins: [
     base44(),
@@ -26,10 +26,10 @@ export default defineConfig({
       'react/jsx-dev-runtime': path.resolve(__dirname, 'node_modules/react/jsx-dev-runtime'),
       'scheduler': schedulerPath,
     },
-    dedupe: ['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime', 'react/jsx-dev-runtime', 'scheduler'],
+    dedupe: ['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime', 'react/jsx-dev-runtime', 'scheduler', '@tanstack/react-query'],
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime', 'react/jsx-dev-runtime', 'scheduler'],
+    include: ['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime', 'react/jsx-dev-runtime', 'scheduler', '@tanstack/react-query'],
     exclude: ['@base44/sdk'],
     esbuildOptions: {
       plugins: [

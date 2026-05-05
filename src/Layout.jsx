@@ -769,7 +769,11 @@ useEffect(() => {
       <main className="lg:ml-72 pt-20 lg:pt-16 min-h-screen bg-gradient-to-br from-stone-50 via-white to-emerald-50/20">
         <PullToRefresh onRefresh={handleRefresh}>
           <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 pb-safe lg:pb-8">
-            <div>TESTE</div>
+            <ErrorBoundary>
+  <RouteTransition>
+    {children}
+  </RouteTransition>
+</ErrorBoundary>
           </div>
         </PullToRefresh>
       </main>

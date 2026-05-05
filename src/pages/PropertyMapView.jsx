@@ -204,18 +204,17 @@ export default function PropertyMapView() {
     }
   }, [properties]);
 
-  // Carregar areas e KML layers ao trocar propriedade
-   useEffect(() => {
-     if (!selectedProperty) return;
-     const areas = selectedProperty.areas || [];
-     const saved = selectedProperty.kml_layers || [];
-     setPropertyAreas(areas);
-     setKmlLayers(saved);
-     setDrawnGeometry(null);
-     console.log(`[PropertyMapView] Carregadas ${areas.length} áreas e ${saved.length} KML layers`);
-   }, [selectedPropertyId]);
-
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
+
+  // Carregar areas e KML layers ao trocar propriedade
+  useEffect(() => {
+    if (!selectedProperty) return;
+    const areas = selectedProperty.areas || [];
+    const saved = selectedProperty.kml_layers || [];
+    setPropertyAreas(areas);
+    setKmlLayers(saved);
+    setDrawnGeometry(null);
+  }, [selectedPropertyId]);
 
   const { data: carData } = useQuery({
     queryKey: ['carManagement', selectedPropertyId],
@@ -594,24 +593,16 @@ export default function PropertyMapView() {
       </div>
 
       {/* NDVI GEE Panel */}
-      {selectedProperty && (() => {
-        const kmlGeom = kmlLayers.find(l => l.visible && l.geojson)?.geojson;
-        const carGeom = carGeoJson;
-        const geometry = kmlGeom || carGeom;
-        const carData = {
-          car_polygon: carGeoJson,
-          app: null,
-          legal_reserve: null
-        };
-        return <NDVIPanel 
-          geometry={geometry} 
-          coordinates={selectedProperty.coordinates} 
+      {selectedProperty && (
+        <NDVIPanel
+          geometry={kmlLayers.find(l => l.visible && l.geojson)?.geojson || carGeoJson}
+          coordinates={selectedProperty.coordinates}
           propertyName={selectedProperty.property_name}
           kmlLayers={kmlLayers}
-          carData={carData}
+          carData={{ car_polygon: carGeoJson, app: null, legal_reserve: null }}
           propertyAreas={propertyAreas}
-        />;
-      })()}
+        />
+      )}
 
       {/* Help & Instructions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">

@@ -53,9 +53,14 @@ export default function CARModule() {
 
   const { data: properties = [], isLoading: propsLoading } = useQuery({
     queryKey: ['properties', effectiveEmail, userType],
-    queryFn: () => isConsultor
-      ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
-      : base44.entities.Property.filter({ owner_email: effectiveEmail }),
+    queryFn: async () => {
+      if (isConsultor) {
+        return base44.entities.Property.filter({ consultor_email: effectiveEmail });
+      }
+      // Produtor: busca por owner_email OU por authorized_users (via owner_email)
+      const byOwner = await base44.entities.Property.filter({ owner_email: effectiveEmail });
+      return byOwner;
+    },
     enabled: !!effectiveEmail,
     initialData: [],
   });
@@ -154,7 +159,7 @@ export default function CARModule() {
           </h1>
           <p className="text-gray-500 mt-1">Cadastro Ambiental Rural e Regularização Ambiental</p>
         </div>
-        {effectivePropertyId && canEdit && (
+        {(!isConsultor || effectivePropertyId) && canEdit && (
           <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => { setEditingCarId(null); setEditOpen(true); }}>
             <Plus className="w-4 h-4 mr-2" />Adicionar CAR
           </Button>

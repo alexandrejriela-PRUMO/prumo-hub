@@ -195,6 +195,8 @@ const AuthenticatedApp = () => {
         ))}
         <Route path="/AcceptInvite" element={<Suspense fallback={<LoadingSpinner />}><AcceptInvite /></Suspense>} />
         <Route path="/AccessBlocked" element={<Suspense fallback={<LoadingSpinner />}><AccessBlocked /></Suspense>} />
+        <Route path="/ErrorLogsAdmin" element={<Suspense fallback={<LoadingSpinner />}><ErrorLogsAdmin /></Suspense>} />
+        <Route path="/admin" element={<Suspense fallback={<LoadingSpinner />}><AdminPanel /></Suspense>} />
         <Route path="*" element={<PageNotFound />} />
       </Routes>
       </AccessBlockedGuard>
@@ -213,8 +215,6 @@ function AppContent() {
         <Route path="/landing" element={<Suspense fallback={<LoadingSpinner />}><LandingPage /></Suspense>} />
         <Route path="/LandingPage" element={<Suspense fallback={<LoadingSpinner />}><LandingPage /></Suspense>} />
         <Route path="/Parceiros" element={<Suspense fallback={<LoadingSpinner />}><Parceiros /></Suspense>} />
-        <Route path="/ErrorLogsAdmin" element={<Suspense fallback={<LoadingSpinner />}><ErrorLogsAdmin /></Suspense>} />
-        <Route path="/admin" element={<Suspense fallback={<LoadingSpinner />}><AdminPanel /></Suspense>} />
         <Route path="*" element={<AuthenticatedApp />} />
       </Routes>
     </>

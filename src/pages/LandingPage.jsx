@@ -122,26 +122,32 @@ export default function LandingPage() {
           <div className="relative z-10 w-full max-w-5xl mx-auto">
             {/* Logo + tagline */}
             <div
-              ref={heroRef}
-              className="text-center mb-10 sm:mb-14 transition-all duration-1000 w-full px-2"
-              style={{ opacity: heroVisible ? 1 : 0, transform: heroVisible ? 'translateY(0)' : 'translateY(40px)' }}
+             ref={heroRef}
+             className="text-center mb-10 sm:mb-14 transition-all duration-1000 w-full px-2"
+             style={{ opacity: heroVisible ? 1 : 0, transform: heroVisible ? 'translateY(0)' : 'translateY(40px)' }}
             >
-              <img
-                src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/9e64158f0_PRUMO1.png"
-                alt="PRUMO Hub"
-                className="h-24 sm:h-44 w-auto object-contain mx-auto mb-4 drop-shadow-2xl"
-              />
-              <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-400/20 text-emerald-400 text-xs font-semibold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
-                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
-                <span className="hidden sm:inline">Plataforma Agroambiental Inteligente</span>
-                <span className="sm:hidden">Agroambiental</span>
-              </div>
-              <h1 className="text-2xl sm:text-6xl font-black text-white leading-snug mb-2 sm:mb-3 px-2">
-                Gestão ambiental que protege quem produz.
-              </h1>
-              <p className="text-xs sm:text-lg text-slate-300 max-w-xl mx-auto px-3 mb-6 sm:mb-8">
-                Escolha seu perfil e veja como o PRUMO Hub transforma sua gestão.
-              </p>
+             <img
+               src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/9e64158f0_PRUMO1.png"
+               alt="PRUMO Hub"
+               className="h-24 sm:h-44 w-auto object-contain mx-auto mb-4 drop-shadow-2xl"
+             />
+             <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-400/20 text-emerald-400 text-xs font-semibold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
+               <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
+               <span className="hidden sm:inline">Plataforma Agroambiental Inteligente</span>
+               <span className="sm:hidden">Agroambiental</span>
+             </div>
+             <h1 className="text-2xl sm:text-6xl font-black text-white leading-snug mb-2 sm:mb-3 px-2">
+               Gestão ambiental que protege quem produz.
+             </h1>
+             <p className="text-xs sm:text-lg text-slate-300 max-w-xl mx-auto px-3 mb-3 sm:mb-5">
+               Escolha seu perfil e veja como o PRUMO Hub transforma sua gestão.
+             </p>
+             {/* CTA instrução de clique */}
+             <div className="inline-flex items-center gap-2 bg-amber-400/20 border border-amber-400/50 text-amber-300 text-sm font-bold px-4 py-2 rounded-full animate-bounce">
+               <span>👇</span>
+               <span>Clique no seu perfil para começar</span>
+               <span>👇</span>
+             </div>
             </div>
 
 
@@ -155,24 +161,27 @@ export default function LandingPage() {
               {/* Produtor */}
               <button
                 onClick={() => setPerfil('produtor')}
-                className="group relative text-left rounded-2xl sm:rounded-3xl overflow-hidden border border-white/10 hover:border-emerald-400/50 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-emerald-900/60"
+                className="group relative text-left rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-emerald-500/30 hover:border-amber-400 transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl hover:shadow-amber-500/30 active:scale-[0.98]"
                 style={{background: 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(16,185,129,0.03) 100%)'}}
               >
-                <div className="h-1 w-full bg-gradient-to-r from-emerald-400 to-teal-500 group-hover:h-1.5 transition-all duration-300" />
-                <div className="p-4 sm:p-8">
+                {/* Overlay amarelo ao hover */}
+                <div className="absolute inset-0 bg-amber-400/0 group-hover:bg-amber-400/10 transition-all duration-300 pointer-events-none rounded-2xl sm:rounded-3xl" />
+                <div className="h-1.5 w-full bg-gradient-to-r from-emerald-400 to-teal-500 group-hover:from-amber-400 group-hover:to-amber-500 group-hover:h-2 transition-all duration-300" />
+                <div className="p-4 sm:p-8 relative z-10">
                   <div className="flex items-start justify-between mb-4 sm:mb-6">
                     <div className="text-4xl sm:text-5xl">🌾</div>
-                    <div className="opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300 bg-emerald-500/20 text-emerald-300 text-xs font-bold px-2 py-0.5 sm:px-3 sm:py-1 rounded-full border border-emerald-400/30">
-                      Entrar →
+                    <div className="bg-amber-400/20 group-hover:bg-amber-400 text-amber-300 group-hover:text-emerald-900 text-xs font-bold px-3 py-1.5 rounded-full border border-amber-400/50 transition-all duration-300 flex items-center gap-1">
+                      <span>Clique aqui</span>
+                      <span className="group-hover:translate-x-1 transition-transform duration-300 inline-block">→</span>
                     </div>
                   </div>
-                  <h2 className="text-lg sm:text-2xl font-bold text-white mb-1.5 sm:mb-3">Produtor Rural</h2>
+                  <h2 className="text-lg sm:text-2xl font-bold text-white mb-1.5 sm:mb-3 group-hover:text-amber-200 transition-colors">Produtor Rural</h2>
                   <p className="text-xs sm:text-sm leading-relaxed mb-3 sm:mb-6 text-slate-300">
                     Organize e proteja sua propriedade.
                   </p>
                   <div className="flex flex-wrap gap-1 sm:gap-2">
                     {['CAR', 'Alertas', 'Licenças', 'IA'].map(tag => (
-                      <span key={tag} className="text-[10px] sm:text-xs bg-emerald-500/15 border border-emerald-400/30 text-emerald-200 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full">{tag}</span>
+                      <span key={tag} className="text-[10px] sm:text-xs bg-emerald-500/15 border border-emerald-400/30 text-emerald-200 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full group-hover:border-amber-400/40 group-hover:text-amber-200 transition-colors">{tag}</span>
                     ))}
                   </div>
                 </div>
@@ -181,24 +190,27 @@ export default function LandingPage() {
               {/* Consultor */}
               <button
                 onClick={() => setPerfil('consultor')}
-                className="group relative text-left rounded-2xl sm:rounded-3xl overflow-hidden border border-white/10 hover:border-amber-400/50 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-amber-900/40"
+                className="group relative text-left rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-amber-500/30 hover:border-amber-400 transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl hover:shadow-amber-500/30 active:scale-[0.98]"
                 style={{background: 'linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(245,158,11,0.03) 100%)'}}
               >
-                <div className="h-1 w-full bg-gradient-to-r from-amber-400 to-orange-500 group-hover:h-1.5 transition-all duration-300" />
-                <div className="p-4 sm:p-8">
+                {/* Overlay amarelo ao hover */}
+                <div className="absolute inset-0 bg-amber-400/0 group-hover:bg-amber-400/10 transition-all duration-300 pointer-events-none rounded-2xl sm:rounded-3xl" />
+                <div className="h-1.5 w-full bg-gradient-to-r from-amber-400 to-orange-500 group-hover:h-2 transition-all duration-300" />
+                <div className="p-4 sm:p-8 relative z-10">
                   <div className="flex items-start justify-between mb-4 sm:mb-6">
                     <div className="text-4xl sm:text-5xl">🧑‍💼</div>
-                    <div className="opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300 bg-amber-500/20 text-amber-300 text-xs font-bold px-2 py-0.5 sm:px-3 sm:py-1 rounded-full border border-amber-400/30">
-                      Entrar →
+                    <div className="bg-amber-400/20 group-hover:bg-amber-400 text-amber-300 group-hover:text-emerald-900 text-xs font-bold px-3 py-1.5 rounded-full border border-amber-400/50 transition-all duration-300 flex items-center gap-1">
+                      <span>Clique aqui</span>
+                      <span className="group-hover:translate-x-1 transition-transform duration-300 inline-block">→</span>
                     </div>
                   </div>
-                  <h2 className="text-lg sm:text-2xl font-bold text-white mb-1.5 sm:mb-3">Consultor Ambiental</h2>
+                  <h2 className="text-lg sm:text-2xl font-bold text-white mb-1.5 sm:mb-3 group-hover:text-amber-200 transition-colors">Consultor Ambiental</h2>
                   <p className="text-xs sm:text-sm leading-relaxed mb-3 sm:mb-6 text-slate-300">
                     Gerencie consultoria com CRM e financeiro.
                   </p>
                   <div className="flex flex-wrap gap-1 sm:gap-2">
                     {['CRM', 'Contratos', 'Financeiro', 'Equipe'].map(tag => (
-                      <span key={tag} className="text-[10px] sm:text-xs bg-amber-500/15 border border-amber-400/30 text-amber-200 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full">{tag}</span>
+                      <span key={tag} className="text-[10px] sm:text-xs bg-amber-500/15 border border-amber-400/30 text-amber-200 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full group-hover:border-amber-400/60 transition-colors">{tag}</span>
                     ))}
                   </div>
                 </div>

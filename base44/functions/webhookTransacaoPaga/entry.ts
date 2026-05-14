@@ -222,7 +222,10 @@ Deno.serve(async (req) => {
     }
 
     // ── PASSO 3: Novo usuário — convidar ──
+    // inviteUser está disponível no cliente raiz (não no asServiceRole)
+    // mas funciona pois o webhook é chamado com o app-id no header pelo Base44
     await base44.users.inviteUser(email, 'user');
+    console.log(`[webhookTransacaoPaga] Convite enviado para: ${email}`);
     console.log(`[webhookTransacaoPaga] Convite enviado para: ${email}`);
 
     // Aguardar com retry para o usuário ser criado (até 10s)

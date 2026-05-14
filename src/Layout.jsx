@@ -464,14 +464,18 @@ export default function Layout({ children, currentPageName }) {
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 h-20 bg-white/80 backdrop-blur-xl border-b border-emerald-100 z-50 flex items-center justify-between px-4">
         <button
-          onClick={() => setSidebarOpen(true)}
-          className="p-2 rounded-xl hover:bg-emerald-50 transition-colors"
+        onClick={() => setSidebarOpen(true)}
+        className="relative p-2 rounded-xl hover:bg-emerald-50 transition-colors"
         >
-          {!isRootPage ? (
-            <ChevronLeft className="w-6 h-6 text-emerald-900" onClick={(e) => { e.stopPropagation(); window.history.back(); }} />
-          ) : (
+        {!isRootPage ? (
+          <ChevronLeft className="w-6 h-6 text-emerald-900" onClick={(e) => { e.stopPropagation(); window.history.back(); }} />
+        ) : (
+          <>
             <Menu className="w-6 h-6 text-emerald-900" />
-          )}
+            <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
+            <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full" />
+          </>
+        )}
         </button>
         <img 
           src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/9e64158f0_PRUMO1.png" 
@@ -763,7 +767,7 @@ export default function Layout({ children, currentPageName }) {
       {/* Main Content */}
       <main className="lg:ml-72 pt-20 lg:pt-16 min-h-screen bg-gradient-to-br from-stone-50 via-white to-emerald-50/20">
         <PullToRefresh onRefresh={handleRefresh}>
-          <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 pb-safe lg:pb-8">
+          <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
             <ErrorBoundary>
   <RouteTransition>
     {children}

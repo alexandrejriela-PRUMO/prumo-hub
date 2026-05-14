@@ -41,39 +41,5 @@ export default function BottomTabBar({ currentPageName, userType }) {
     }
   };
 
-  return (
-    <nav
-      className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-emerald-100 z-50 flex"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
-    >
-      {tabList.map((tab) => {
-        const isActive = currentPageName === tab.page;
-        const Icon = tab.icon;
-        return (
-          <Link
-            key={tab.page}
-            to={createPageUrl(tab.page)}
-            onClick={(e) => {
-              if (isActive) {
-                e.preventDefault();
-                handleTabClick(tab.page);
-              }
-            }}
-            className={cn(
-              'flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors',
-              isActive ? 'text-emerald-700' : 'text-gray-400'
-            )}
-          >
-            <Icon className={cn('w-5 h-5', isActive && 'text-emerald-700')} strokeWidth={isActive ? 2.5 : 1.8} />
-            <span className={cn('text-[10px] font-medium', isActive ? 'text-emerald-700' : 'text-gray-400')}>
-              {tab.label}
-            </span>
-            {isActive && (
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-emerald-600 rounded-full" />
-            )}
-          </Link>
-        );
-      })}
-    </nav>
-  );
+  return null;
 }

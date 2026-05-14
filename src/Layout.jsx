@@ -583,18 +583,16 @@ export default function Layout({ children, currentPageName }) {
       </div>
 
       {/* Notification Center */}
-            {/*
-<RealtimeNotificationCenter 
-  user={user}
-  isOpen={notificationOpen}
-  onClose={() => setNotificationOpen(false)}
-  notifications={notifications}
-  unreadCount={unreadCount}
-  markAsRead={markAsRead}
-  markAllAsRead={markAllAsRead}
-  deleteNotification={deleteNotification}
-/>
-*/}
+      <RealtimeNotificationCenter 
+        user={user}
+        isOpen={notificationOpen}
+        onClose={() => setNotificationOpen(false)}
+        notifications={notifications}
+        unreadCount={unreadCount}
+        markAsRead={markAsRead}
+        markAllAsRead={markAllAsRead}
+        deleteNotification={deleteNotification}
+      />
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div

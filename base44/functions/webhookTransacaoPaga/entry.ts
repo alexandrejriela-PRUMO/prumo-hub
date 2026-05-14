@@ -12,7 +12,6 @@ function cleanDocument(doc = '') {
 }
 
 function extractBuyer(body) {
-  // Nexano envia em body.client; outros gateways podem usar customer/buyer
   const buyer =
     body?.client ||
     body?.data?.customer ||
@@ -41,12 +40,6 @@ function extractBuyer(body) {
   return { email, fullName, document, phone };
 }
 
-/**
- * Identifica o plano e user_type a partir do payload do Nexano.
- * O Nexano geralmente envia o nome da oferta/produto em campos como:
- *   body.product.name, body.offer.name, body.data.product_name, etc.
- * Ajuste os campos conforme o payload real do seu Nexano.
- */
 function extractPlan(body) {
   const productName =
     body?.orderItems?.[0]?.product?.name ||
@@ -72,18 +65,11 @@ function extractPlan(body) {
 
   const productNameLower = (productName + ' ' + offerId).toLowerCase();
 
-  // Mapeamento de planos do Nexano → user_type + plano_interno
-  // SEMPRE checar pelo offerId primeiro (mais confiável que o nome)
-
-  // Produtor - Plano Único (checar ANTES do 'pro' para evitar falso positivo)
-  if (offerId === 'GNJXUCE') {
+  // Produtor - Plano Único
+  if (offerId === 'GNJXUCE' || productNameLower.includes('único') || productNameLower.includes('unico')) {
     return { perfil: 'produtor', plano: 'unico', user_type: 'produtor', max_properties: 1, max_users: 1 };
   }
-  // Consultor - Start
-  if (offerId === 'GYXWU5X' || productNameLower.includes('start')) {
-    return { perfil: 'consultor', plano: 'start', user_type: 'consultor', max_properties: 5, max_users: 1 };
-  }
-  // Consultor - Enterprise (checar antes do 'pro' pois 'enterprise' não contém 'pro')
+  // Consultor - Enterprise (checar antes do 'pro')
   if (offerId === 'EQL1OTT' || productNameLower.includes('enterprise')) {
     return { perfil: 'consultor', plano: 'enterprise', user_type: 'consultor', max_properties: 200, max_users: 3 };
   }
@@ -91,14 +77,37 @@ function extractPlan(body) {
   if (offerId === '8QA4VR2' || productNameLower.includes('consultor pro')) {
     return { perfil: 'consultor', plano: 'pro', user_type: 'consultor', max_properties: 10, max_users: 2 };
   }
-  // Fallback por nome para produtor
-  if (productNameLower.includes('produtor') || productNameLower.includes('rural') || productNameLower.includes('único') || productNameLower.includes('unico')) {
+  // Consultor - Start
+  if (offerId === 'GYXWU5X' || productNameLower.includes('start')) {
+    return { perfil: 'consultor', plano: 'start', user_type: 'consultor', max_properties: 5, max_users: 1 };
+  }
+  // Fallback produtor por nome
+  if (productNameLower.includes('produtor') || productNameLower.includes('rural')) {
     return { perfil: 'produtor', plano: 'unico', user_type: 'produtor', max_properties: 1, max_users: 1 };
   }
 
-  // Fallback: se não reconheceu, salva como produtor básico
   console.warn('[webhookTransacaoPaga] Plano não reconhecido. ProductName:', productName, 'OfferId:', offerId);
   return { perfil: 'produtor', plano: 'desconhecido', user_type: 'produtor', max_properties: 1, max_users: 1 };
+}
+
+async function upsertUserMetadata(base44, email, userId, planInfo) {
+  const existingMeta = await base44.asServiceRole.entities.UserMetadata.filter({ user_email: email });
+  const metaData = {
+    user_email: email,
+    user_id: userId,
+    plano: planInfo.plano,
+    user_type: planInfo.user_type,
+    max_properties: planInfo.max_properties,
+    max_users: planInfo.max_users,
+    subscription_status: 'active',
+  };
+  if (existingMeta && existingMeta.length > 0) {
+    await base44.asServiceRole.entities.UserMetadata.update(existingMeta[0].id, metaData);
+    console.log(`[webhookTransacaoPaga] UserMetadata atualizado para ${email}`);
+  } else {
+    await base44.asServiceRole.entities.UserMetadata.create(metaData);
+    console.log(`[webhookTransacaoPaga] UserMetadata criado para ${email}`);
+  }
 }
 
 Deno.serve(async (req) => {
@@ -110,10 +119,9 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
   }
 
-  // Validação de token (Nexano deve enviar como header ou query param)
+  // Validação de token
   const token = req.headers.get('x-webhook-token') || new URL(req.url).searchParams.get('token');
   const expectedToken = Deno.env.get('WEBHOOK_TOKEN_PAGO');
-  
   if (expectedToken && token !== expectedToken) {
     console.warn('[webhookTransacaoPaga] FALHA: Token inválido ou ausente');
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -139,11 +147,14 @@ Deno.serve(async (req) => {
   console.log('[webhookTransacaoPaga] Plano identificado:', planInfo);
 
   const cleanDoc = cleanDocument(document || '');
+  // Senha temporária = CPF/CNPJ limpo; fallback se não vier o documento
+  const tempPasswordPlain = cleanDoc || 'prumo2024';
+  const hashedTempPassword = await hashPassword(tempPasswordPlain);
 
   try {
     const base44 = createClientFromRequest(req);
 
-    // Verificar se usuário já existe
+    // ── IDEMPOTÊNCIA: usuário já existe? ──
     const existingUsers = await base44.asServiceRole.entities.User.filter({ email });
     if (existingUsers && existingUsers.length > 0) {
       const existingUser = existingUsers[0];
@@ -155,170 +166,93 @@ Deno.serve(async (req) => {
         max_users: planInfo.max_users,
         subscription_status: 'active',
         subscription_updated_at: new Date().toISOString(),
+        // Atualizar documento se veio no novo webhook e não estava salvo
+        ...(cleanDoc && !existingUser.document ? {
+          document: cleanDoc,
+          hashed_temp_password: hashedTempPassword,
+          must_change_password: true,
+        } : {}),
       });
-
-      // Atualizar ou criar UserMetadata (usado pelo AccessBlockedGuard)
-      try {
-        const existingMeta = await base44.asServiceRole.entities.UserMetadata.filter({ user_email: email });
-        if (existingMeta && existingMeta.length > 0) {
-          await base44.asServiceRole.entities.UserMetadata.update(existingMeta[0].id, {
-            plano: planInfo.plano,
-            user_type: planInfo.user_type,
-            max_properties: planInfo.max_properties,
-            max_users: planInfo.max_users,
-            subscription_status: 'active',
-          });
-          console.log(`[webhookTransacaoPaga] UserMetadata atualizado para ${email}`);
-        } else {
-          await base44.asServiceRole.entities.UserMetadata.create({
-            user_email: email,
-            user_id: existingUser.id,
-            plano: planInfo.plano,
-            user_type: planInfo.user_type,
-            max_properties: planInfo.max_properties,
-            max_users: planInfo.max_users,
-            subscription_status: 'active',
-          });
-          console.log(`[webhookTransacaoPaga] UserMetadata criado para ${email}`);
-        }
-      } catch (metaError) {
-        console.error(`[webhookTransacaoPaga] ERRO ao atualizar metadata para ${email}:`, metaError.message);
-        throw metaError;
-      }
-
+      await upsertUserMetadata(base44, email, existingUser.id, planInfo);
       console.log(`[webhookTransacaoPaga] Usuário existente atualizado: ${email} → plano ${planInfo.plano}`);
-      return Response.json({ received: true, message: 'Usuário existente atualizado com o novo plano.', email, plano: planInfo.plano }, { status: 200 });
+      return Response.json({ received: true, message: 'Usuário existente atualizado.', email, plano: planInfo.plano }, { status: 200 });
     }
 
-    // Verificar se já existe lead pendente
-    const existingLeads = await base44.asServiceRole.entities.LeadFormSubmission.filter({ email });
+    // ── NOVO USUÁRIO: convidar ──
+    await base44.users.inviteUser(email, 'user');
+    console.log(`[webhookTransacaoPaga] Convite enviado para: ${email}`);
 
-    if (existingLeads && existingLeads.length > 0) {
-      // Atualizar o lead existente com info do plano
-      await base44.asServiceRole.entities.LeadFormSubmission.update(existingLeads[0].id, {
-        plano: planInfo.plano,
+    // Aguardar o usuário ser criado na plataforma
+    await new Promise(r => setTimeout(r, 2500));
+
+    const newUsers = await base44.asServiceRole.entities.User.filter({ email });
+    if (newUsers && newUsers.length > 0) {
+      const newUser = newUsers[0];
+      // Salvar todos os dados: plano, tipo, documento, senha hasheada, flag de troca obrigatória
+      await base44.asServiceRole.entities.User.update(newUser.id, {
+        full_name: fullName || email.split('@')[0],
         user_type: planInfo.user_type,
-        parceiro: `nexano_${planInfo.plano}`,
-        subscription_status: 'pending_invite',
+        plano: planInfo.plano,
         max_properties: planInfo.max_properties,
         max_users: planInfo.max_users,
+        subscription_status: 'active',
+        subscription_updated_at: new Date().toISOString(),
+        document: cleanDoc,
+        hashed_temp_password: hashedTempPassword,
+        must_change_password: true,  // exige troca no primeiro login
+        created_via_webhook: true,
+        webhook_source: 'nexano_purchase',
       });
-      console.log(`[webhookTransacaoPaga] Lead existente atualizado com plano: ${email}`);
-      return Response.json({ received: true, message: 'Lead existente atualizado com plano.', email, plano: planInfo.plano }, { status: 200 });
-    }
+      console.log(`[webhookTransacaoPaga] Dados do usuário aplicados: ${email}`);
 
-    // Criar novo lead com todas as informações do plano
-    await base44.asServiceRole.entities.LeadFormSubmission.create({
-      perfil: planInfo.perfil,
-      nome: fullName || email,
-      email,
-      telefone: phone || '',
-      submitted_at: new Date().toISOString(),
-      parceiro: `nexano_${planInfo.plano}`,
-      plano: planInfo.plano,
-      user_type: planInfo.user_type,
-      subscription_status: 'pending_invite',
-      document: cleanDoc || '',
-      max_properties: planInfo.max_properties,
-      max_users: planInfo.max_users,
-    });
+      await upsertUserMetadata(base44, email, newUser.id, planInfo);
 
-    console.log(`[webhookTransacaoPaga] Novo lead criado: ${email} | Plano: ${planInfo.plano} | Tipo: ${planInfo.user_type}`);
-
-    // Enviar convite automático
-    try {
-      await base44.users.inviteUser(email, 'user');
-      console.log(`[webhookTransacaoPaga] Convite enviado automaticamente para: ${email}`);
-
-      // Enviar e-mail customizado com link de acesso correto
-      try {
-        await base44.asServiceRole.functions.invoke('sendCustomInviteEmail', {
+      // Atualizar lead se existir
+      const leads = await base44.asServiceRole.entities.LeadFormSubmission.filter({ email });
+      if (leads && leads.length > 0) {
+        await base44.asServiceRole.entities.LeadFormSubmission.update(leads[0].id, { subscription_status: 'active' });
+      } else {
+        // Criar lead para rastreabilidade
+        await base44.asServiceRole.entities.LeadFormSubmission.create({
+          perfil: planInfo.perfil,
+          nome: fullName || email,
           email,
-          name: fullName || email.split('@')[0],
-          type: planInfo.user_type,
-          plan: planInfo.plano,
-        });
-        console.log(`[webhookTransacaoPaga] E-mail customizado enviado para: ${email}`);
-      } catch (emailError) {
-        console.warn(`[webhookTransacaoPaga] Erro ao enviar e-mail customizado (não crítico): ${emailError.message}`);
-      }
-
-      // Aguardar um momento e então aplicar o plano ao usuário recém-criado
-      await new Promise(r => setTimeout(r, 2000));
-
-      const newUsers = await base44.asServiceRole.entities.User.filter({ email });
-      if (newUsers && newUsers.length > 0) {
-        await base44.asServiceRole.entities.User.update(newUsers[0].id, {
-          user_type: planInfo.user_type,
+          telefone: phone || '',
+          submitted_at: new Date().toISOString(),
+          parceiro: `nexano_${planInfo.plano}`,
           plano: planInfo.plano,
+          user_type: planInfo.user_type,
+          subscription_status: 'active',
+          document: cleanDoc || '',
           max_properties: planInfo.max_properties,
           max_users: planInfo.max_users,
-          subscription_status: 'active',
-          subscription_updated_at: new Date().toISOString(),
         });
-
-        // Atualizar ou criar UserMetadata (usado pelo AccessBlockedGuard)
-        try {
-          const newMeta = await base44.asServiceRole.entities.UserMetadata.filter({ user_email: email });
-          if (newMeta && newMeta.length > 0) {
-            await base44.asServiceRole.entities.UserMetadata.update(newMeta[0].id, {
-              plano: planInfo.plano,
-              user_type: planInfo.user_type,
-              max_properties: planInfo.max_properties,
-              max_users: planInfo.max_users,
-              subscription_status: 'active',
-            });
-            console.log(`[webhookTransacaoPaga] UserMetadata atualizado para novo usuário ${email}`);
-          } else {
-            await base44.asServiceRole.entities.UserMetadata.create({
-              user_email: email,
-              user_id: newUsers[0].id,
-              plano: planInfo.plano,
-              user_type: planInfo.user_type,
-              max_properties: planInfo.max_properties,
-              max_users: planInfo.max_users,
-              subscription_status: 'active',
-            });
-            console.log(`[webhookTransacaoPaga] UserMetadata criado para novo usuário ${email}`);
-          }
-        } catch (metaError) {
-          console.error(`[webhookTransacaoPaga] ERRO ao processar metadata para novo usuário ${email}:`, metaError.message);
-          throw metaError;
-        }
-
-        console.log(`[webhookTransacaoPaga] Plano aplicado ao novo usuário: ${email} → ${planInfo.plano}`);
-
-        // Atualizar lead para refletir que o usuário foi criado
-        const leads = await base44.asServiceRole.entities.LeadFormSubmission.filter({ email });
-        if (leads && leads.length > 0) {
-          await base44.asServiceRole.entities.LeadFormSubmission.update(leads[0].id, {
-            subscription_status: 'active',
-          });
-        }
-      } else {
-        console.warn(`[webhookTransacaoPaga] Usuário não encontrado após convite para aplicar plano: ${email}`);
       }
-
-      return Response.json({
-        received: true,
-        message: 'Lead registrado, convite enviado e plano aplicado automaticamente.',
-        email,
-        plano: planInfo.plano,
-        perfil: planInfo.perfil,
-        convite_enviado: true,
-      }, { status: 201 });
-    } catch (inviteError) {
-      console.error(`[webhookTransacaoPaga] Erro ao enviar convite para ${email}:`, inviteError.message);
-      return Response.json({
-        received: true,
-        message: 'Lead registrado, mas houve erro ao enviar convite.',
-        email,
-        plano: planInfo.plano,
-        perfil: planInfo.perfil,
-        convite_enviado: false,
-        erro_convite: inviteError.message,
-      }, { status: 201 });
+    } else {
+      console.warn(`[webhookTransacaoPaga] Usuário não encontrado após convite: ${email}`);
     }
+
+    // Enviar e-mail de boas-vindas com instrução de senha temporária
+    try {
+      await base44.asServiceRole.functions.invoke('sendCustomInviteEmail', {
+        email,
+        name: fullName || email.split('@')[0],
+        type: planInfo.user_type,
+        plan: planInfo.plano,
+        document: cleanDoc,
+      });
+      console.log(`[webhookTransacaoPaga] E-mail de boas-vindas enviado para: ${email}`);
+    } catch (emailError) {
+      console.warn(`[webhookTransacaoPaga] Erro ao enviar e-mail (não crítico): ${emailError.message}`);
+    }
+
+    return Response.json({
+      received: true,
+      message: 'Usuário criado, plano aplicado e e-mail de boas-vindas enviado.',
+      email,
+      plano: planInfo.plano,
+      perfil: planInfo.perfil,
+    }, { status: 201 });
 
   } catch (error) {
     console.error('[webhookTransacaoPaga] Erro:', error.message);

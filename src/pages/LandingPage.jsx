@@ -142,12 +142,7 @@ export default function LandingPage() {
              <p className="text-xs sm:text-lg text-slate-300 max-w-xl mx-auto px-3 mb-3 sm:mb-5">
                Escolha seu perfil e veja como o PRUMO Hub transforma sua gestão.
              </p>
-             {/* CTA instrução de clique */}
-             <div className="inline-flex items-center gap-2 bg-amber-400/20 border border-amber-400/50 text-amber-300 text-sm font-bold px-4 py-2 rounded-full animate-bounce">
-               <span>👇</span>
-               <span>Clique no seu perfil para começar</span>
-               <span>👇</span>
-             </div>
+
             </div>
 
 

@@ -1,4 +1,4 @@
-import { createClient } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 async function hashPassword(plain) {
   const encoder = new TextEncoder();
@@ -181,7 +181,7 @@ Deno.serve(async (req) => {
   const hashedTempPassword = await hashPassword(tempPasswordPlain);
 
   try {
-    const base44 = createClient({ appId: Deno.env.get('BASE44_APP_ID') });
+    const base44 = createClientFromRequest(req);
 
     // ── PASSO 1: Sempre fazer upsert do Lead (fonte da verdade do pagamento) ──
     // Isso garante que o AccessBlockedGuard consiga verificar o pagamento mesmo

@@ -1,4 +1,4 @@
-import { createClient } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 function extractBuyer(body) {
   const buyer =
@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const base44 = createClient({ appId: Deno.env.get('BASE44_APP_ID') });
+    const base44 = createClientFromRequest(req);
 
     // Atualizar UserMetadata
     const metas = await base44.asServiceRole.entities.UserMetadata.filter({ user_email: email });

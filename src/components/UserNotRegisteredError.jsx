@@ -31,6 +31,15 @@ const UserNotRegisteredError = () => {
 
           {/* Content */}
           <div className="px-6 py-6 space-y-5">
+            {/* Hint primeiro acesso — estilo da referência */}
+            <div className="flex items-start gap-2.5 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+              <HelpCircle className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-gray-600 leading-relaxed">
+                <span className="font-semibold text-gray-800">Primeiro acesso?</span>{' '}
+                Use o e-mail e o número de documento (CPF ou CNPJ) utilizado na compra como senha.
+              </p>
+            </div>
+
             <p className="text-gray-700 text-sm leading-relaxed">
               Sua conta ainda não foi ativada ou o e-mail utilizado não está cadastrado na plataforma PRUMO Hub.
             </p>

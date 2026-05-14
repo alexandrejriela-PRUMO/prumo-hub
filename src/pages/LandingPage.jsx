@@ -40,12 +40,8 @@ export default function LandingPage() {
       {/* NAV */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-b border-emerald-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
-          <button onClick={() => setPerfil(null)} className="flex-shrink-0">
-            <img
-              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/9e64158f0_PRUMO1.png"
-              alt="PRUMO Hub"
-              className="h-10 w-auto object-contain"
-            />
+          <button onClick={() => setPerfil(null)} className="flex-shrink-0 text-sm font-semibold text-emerald-700 hover:text-emerald-900 transition-colors px-2 py-1">
+            Início
           </button>
 
           {/* Perfil switcher na nav */}

@@ -2,7 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 
-const BLOCKED_STATUSES = ['suspended', 'cancelled', 'payment_failed', 'chargeback', 'inactive', 'pending_payment'];
+// Apenas statuses que representam falha/cancelamento real de pagamento bloqueiam o acesso.
+// 'pending_payment' sozinho NÃO bloqueia — usuário pode ter acabado de ser criado via webhook
+// e ainda não teve o UserMetadata confirmado. O bloqueio só ocorre se não houver nenhum
+// indício de pagamento (lead Nexano ativo, TeamMember ou metadata confirmado).
+const BLOCKED_STATUSES = ['suspended', 'cancelled', 'payment_failed', 'chargeback', 'inactive'];
 const EXEMPT_PATHS = ['/AccessBlocked', '/AcceptInvite', '/landing', '/TermsOfUsePage'];
 
 export default function AccessBlockedGuard({ children }) {
@@ -40,16 +44,22 @@ export default function AccessBlockedGuard({ children }) {
         // Buscar UserMetadata para verificar subscription_status
         const metaList = await base44.entities.UserMetadata.filter({ user_email: user.email }, '-created_date', 1);
 
-        // Se não existe UserMetadata, verificar user_type no metadata antes de bloquear
+        // Se não existe UserMetadata, investigar antes de bloquear
         if (!metaList || metaList.length === 0) {
-          // Verificar se há lead do Nexano com pagamento confirmado
+          // 1. Usuário criado pelo webhook da Nexano tem created_via_webhook = true → liberar
+          if (user.created_via_webhook || user.subscription_status === 'active') {
+            setChecked(true);
+            return;
+          }
+
+          // 2. Verificar lead Nexano com pagamento confirmado
           const leads = await base44.entities.LeadFormSubmission.filter({ email: user.email }, '-created_date', 1);
           const nexanoLead = leads && leads.find(l =>
             l.parceiro && l.parceiro.startsWith('nexano_') && l.plano && l.plano !== 'desconhecido'
           );
 
           if (nexanoLead) {
-            // Usuário já pagou via Nexano → liberar direto com o plano correto
+            // Usuário já pagou via Nexano → criar metadata e liberar
             try {
               await base44.entities.UserMetadata.create({
                 user_email: user.email,
@@ -60,31 +70,26 @@ export default function AccessBlockedGuard({ children }) {
                 max_users: nexanoLead.max_users || 1,
                 subscription_status: 'active',
               });
-            } catch (e) {
-              // Ignora erro de criação duplicada
-            }
+            } catch (e) { /* ignora duplicata */ }
             setChecked(true);
             return;
           }
 
-          // Verificar se é membro de equipe convidado (TeamMember pendente)
+          // 3. Verificar se é membro de equipe ou visualizador (TeamMember)
           const teamMembers = await base44.entities.TeamMember.filter({ member_email: user.email }, '-created_date', 1);
           if (teamMembers && teamMembers.length > 0) {
-            // É membro de equipe — não bloquear
             setChecked(true);
             return;
           }
 
-          // Nenhum pagamento encontrado → bloquear com pending_payment
+          // 4. Nenhum pagamento ou vínculo encontrado → bloquear
           try {
             await base44.entities.UserMetadata.create({
               user_email: user.email,
               user_id: user.id,
               subscription_status: 'pending_payment',
             });
-          } catch (e) {
-            // Ignora erro de criação duplicada
-          }
+          } catch (e) { /* ignora duplicata */ }
           navigate('/AccessBlocked', { replace: true });
           return;
         }
@@ -100,6 +105,28 @@ export default function AccessBlockedGuard({ children }) {
         const subscriptionStatus = meta.subscription_status;
 
         if (BLOCKED_STATUSES.includes(subscriptionStatus)) {
+          // Última verificação: se o user foi criado via webhook da Nexano, nunca bloquear
+          if (user.created_via_webhook || user.subscription_status === 'active') {
+            // Corrigir o metadata desatualizado
+            try {
+              await base44.entities.UserMetadata.update(meta.id, { subscription_status: 'active' });
+            } catch (e) { /* ignora */ }
+            setChecked(true);
+            return;
+          }
+          // Verificar lead Nexano antes de bloquear definitivamente
+          const leads = await base44.entities.LeadFormSubmission.filter({ email: user.email }, '-created_date', 1);
+          const nexanoLead = leads && leads.find(l =>
+            l.parceiro && l.parceiro.startsWith('nexano_') &&
+            (l.subscription_status === 'active' || (l.plano && l.plano !== 'desconhecido'))
+          );
+          if (nexanoLead && nexanoLead.subscription_status === 'active') {
+            try {
+              await base44.entities.UserMetadata.update(meta.id, { subscription_status: 'active' });
+            } catch (e) { /* ignora */ }
+            setChecked(true);
+            return;
+          }
           navigate('/AccessBlocked', { replace: true });
         } else {
           setChecked(true);

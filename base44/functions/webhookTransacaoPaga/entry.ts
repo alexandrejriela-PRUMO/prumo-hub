@@ -221,49 +221,10 @@ Deno.serve(async (req) => {
       }, { status: 200 });
     }
 
-    // ── PASSO 3: Novo usuário — convidar ──
-    // inviteUser está disponível no cliente raiz (não no asServiceRole)
-    // mas funciona pois o webhook é chamado com o app-id no header pelo Base44
-    await base44.users.inviteUser(email, 'user');
-    console.log(`[webhookTransacaoPaga] Convite enviado para: ${email}`);
-    console.log(`[webhookTransacaoPaga] Convite enviado para: ${email}`);
-
-    // Aguardar com retry para o usuário ser criado (até 10s)
-    let newUser = null;
-    for (let attempt = 0; attempt < 4; attempt++) {
-      await new Promise(r => setTimeout(r, 2500));
-      const found = await base44.asServiceRole.entities.User.filter({ email });
-      if (found && found.length > 0) {
-        newUser = found[0];
-        break;
-      }
-      console.log(`[webhookTransacaoPaga] Aguardando criação do usuário (tentativa ${attempt + 1}/4)...`);
-    }
-
-    if (newUser) {
-      await base44.asServiceRole.entities.User.update(newUser.id, {
-        full_name: fullName || email.split('@')[0],
-        user_type: planInfo.user_type,
-        plano: planInfo.plano,
-        max_properties: planInfo.max_properties,
-        max_users: planInfo.max_users,
-        subscription_status: 'active',
-        subscription_updated_at: new Date().toISOString(),
-        document: cleanDoc,
-        hashed_temp_password: hashedTempPassword,
-        must_change_password: true,
-        created_via_webhook: true,
-        webhook_source: 'nexano_purchase',
-      });
-      console.log(`[webhookTransacaoPaga] Dados aplicados ao novo usuário: ${email}`);
-
-      await upsertUserMetadata(base44, email, newUser.id, planInfo);
-    } else {
-      // Usuário ainda não existe na plataforma — mas o Lead já foi criado no Passo 1
-      // O AccessBlockedGuard vai detectar o lead nexano_* com active e liberar o acesso
-      // quando o usuário fizer login e criar a conta
-      console.warn(`[webhookTransacaoPaga] Usuário ${email} não encontrado após convite. Lead já salvo — acesso será liberado no primeiro login.`);
-    }
+    // ── PASSO 3: Novo usuário — Lead já salvo com status active (Passo 1) ──
+    // O AccessBlockedGuard detecta o lead nexano_* com active e libera o acesso no primeiro login.
+    // Não é necessário convidar via plataforma — o usuário se registra normalmente em hub.prumo.site.
+    console.log(`[webhookTransacaoPaga] Novo usuário. Lead salvo com status active para: ${email}`);
 
     // ── PASSO 4: E-mail de boas-vindas ──
     try {
@@ -281,13 +242,10 @@ Deno.serve(async (req) => {
 
     return Response.json({
       received: true,
-      message: newUser
-        ? 'Usuário criado, plano aplicado e e-mail enviado.'
-        : 'Convite enviado. Acesso será liberado automaticamente no primeiro login.',
+      message: 'Pagamento registrado. E-mail enviado. Acesso liberado no primeiro login em hub.prumo.site.',
       email,
       plano: planInfo.plano,
       perfil: planInfo.perfil,
-      user_created: !!newUser,
     }, { status: 201 });
 
   } catch (error) {

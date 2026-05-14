@@ -299,51 +299,9 @@ function LeadForm() {
   );
 }
 
-function CardModal({ card, onClose }) {
-  if (!card) return null;
-  const Icon = card.icon;
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      onClick={onClose}
-      style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)' }}
-    >
-      <div
-        className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 relative animate-in fade-in zoom-in-95 duration-200"
-        onClick={e => e.stopPropagation()}
-      >
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition-colors text-xl font-bold">✕</button>
-        {card.comingSoon && (
-          <div className="inline-flex items-center gap-1 bg-orange-100 text-orange-600 text-xs font-bold uppercase px-3 py-1 rounded-full mb-4">
-            🚧 Em Construção
-          </div>
-        )}
-        {card.highlight && (
-          <div className="inline-flex items-center gap-1 bg-purple-100 text-purple-700 text-xs font-bold uppercase px-3 py-1 rounded-full mb-4">
-            ⭐ Destaque
-          </div>
-        )}
-        <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${card.color} flex items-center justify-center mb-5`}>
-          <Icon className="w-8 h-8 text-white" />
-        </div>
-        <h3 className="text-xl font-bold text-gray-900 mb-3">{card.title}</h3>
-        <p className="text-gray-600 leading-relaxed">{card.desc}</p>
-        <button
-          onClick={onClose}
-          className="mt-6 w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-colors"
-        >
-          Entendido
-        </button>
-      </div>
-    </div>
-  );
-}
-
 export default function LandingConsultor({ onLogin }) {
-  const [selectedCard, setSelectedCard] = useState(null);
   return (
     <div className="pt-16">
-      <CardModal card={selectedCard} onClose={() => setSelectedCard(null)} />
       <section className="py-12 sm:py-20 bg-gradient-to-br from-amber-950 via-amber-900 to-orange-900 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-10 left-10 w-96 h-96 bg-amber-400 rounded-full blur-3xl" />
@@ -394,16 +352,11 @@ export default function LandingConsultor({ onLogin }) {
               const Icon = f.icon;
               return (
                 <FadeIn key={f.title} delay={i * 60}>
-                <div
-                  onClick={() => setSelectedCard(f)}
-                  className={`group relative p-6 rounded-2xl border-2 transition-all cursor-pointer hover:scale-[1.03] active:scale-[0.98] ${
-                    f.highlight
-                      ? 'border-purple-300 bg-purple-50/40 hover:border-amber-400 hover:shadow-xl shadow-md ring-1 ring-purple-200 hover:ring-amber-300'
-                      : 'border-gray-100 bg-white hover:border-amber-400 hover:shadow-lg'
-                  }`}
-                  style={{}}
-                >
-                  <div className="absolute inset-0 rounded-2xl bg-amber-400/0 group-hover:bg-amber-400/5 transition-all duration-300 pointer-events-none" />
+                <div className={`group relative p-6 rounded-2xl border-2 transition-all ${
+                   f.highlight
+                     ? 'border-purple-300 bg-purple-50/40 hover:border-purple-400 hover:shadow-xl shadow-md ring-1 ring-purple-200'
+                     : 'border-gray-100 bg-white hover:border-amber-200 hover:shadow-lg'
+                 }`}>
                   {f.comingSoon && (
                     <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
                       <div className="absolute top-3 right-3 bg-orange-500 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-md z-10 flex items-center gap-1">

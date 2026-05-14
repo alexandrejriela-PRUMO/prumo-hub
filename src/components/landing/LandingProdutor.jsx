@@ -239,38 +239,7 @@ function LeadForm() {
   );
 }
 
-function CardModal({ card, onClose }) {
-  if (!card) return null;
-  const Icon = card.icon;
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      onClick={onClose}
-      style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)' }}
-    >
-      <div
-        className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 relative"
-        onClick={e => e.stopPropagation()}
-      >
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition-colors text-xl font-bold">✕</button>
-        <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${card.color} flex items-center justify-center mb-5`}>
-          <Icon className="w-8 h-8 text-white" />
-        </div>
-        <h3 className="text-xl font-bold text-gray-900 mb-3">{card.title}</h3>
-        <p className="text-gray-600 leading-relaxed">{card.desc}</p>
-        <button
-          onClick={onClose}
-          className="mt-6 w-full py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl transition-colors"
-        >
-          Entendido
-        </button>
-      </div>
-    </div>
-  );
-}
-
 export default function LandingProdutor({ onLogin }) {
-  const [selectedCard, setSelectedCard] = useState(null);
   return (
     <div className="pt-16">
       {/* HERO */}
@@ -307,7 +276,6 @@ export default function LandingProdutor({ onLogin }) {
         </div>
       </section>
 
-      <CardModal card={selectedCard} onClose={() => setSelectedCard(null)} />
       <section id="diferenciais" className="py-12 sm:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
@@ -327,11 +295,7 @@ export default function LandingProdutor({ onLogin }) {
               const Icon = f.icon;
               return (
                 <FadeIn key={f.title} delay={i * 60}>
-                <div
-                  onClick={() => setSelectedCard(f)}
-                  className="group relative p-6 rounded-2xl border border-gray-100 hover:border-amber-400 hover:shadow-lg transition-all bg-white cursor-pointer hover:scale-[1.03] active:scale-[0.98]"
-                >
-                  <div className="absolute inset-0 rounded-2xl bg-amber-400/0 group-hover:bg-amber-400/5 transition-all duration-300 pointer-events-none" />
+                <div className="group p-6 rounded-2xl border border-gray-100 hover:border-emerald-200 hover:shadow-lg transition-all bg-white">
                   <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${f.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
                     <Icon className="w-6 h-6 text-white" />
                   </div>

@@ -129,7 +129,7 @@ export default function LandingPage() {
              <img
                src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/9e64158f0_PRUMO1.png"
                alt="PRUMO Hub"
-               className="h-24 sm:h-44 w-auto object-contain mx-auto mb-4 drop-shadow-2xl"
+               className="h-32 sm:h-56 w-auto object-contain mx-auto mb-4 drop-shadow-2xl"
              />
              <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-400/20 text-emerald-400 text-xs font-semibold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>

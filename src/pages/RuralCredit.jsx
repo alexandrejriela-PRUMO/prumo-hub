@@ -236,7 +236,7 @@ export default function RuralCreditPage() {
         </Button>
       </div>
 
-      {properties.length > 0 && (
+      {isConsultor && properties.length > 0 && (
         <ConsultorPropertySelector
           properties={properties}
           selectedPropertyId={selectedPropertyId}

@@ -17,6 +17,7 @@ const SaasContractPage = lazy(() => import('./pages/SaasContractPage'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const AccessBlocked = lazy(() => import('./pages/AccessBlocked'));
 const Parceiros = lazy(() => import('./pages/Parceiros'));
+const CompraConfirmada = lazy(() => import('./pages/CompraConfirmada'));
 const ErrorLogsAdmin = lazy(() => import('./pages/ErrorLogsAdmin'));
 const AdminPanel = lazy(() => import('./pages/AdminPanel'));
 
@@ -215,6 +216,7 @@ function AppContent() {
         <Route path="/landing" element={<Suspense fallback={<LoadingSpinner />}><LandingPage /></Suspense>} />
         <Route path="/LandingPage" element={<Suspense fallback={<LoadingSpinner />}><LandingPage /></Suspense>} />
         <Route path="/Parceiros" element={<Suspense fallback={<LoadingSpinner />}><Parceiros /></Suspense>} />
+        <Route path="/CompraConfirmada" element={<Suspense fallback={<LoadingSpinner />}><CompraConfirmada /></Suspense>} />
         <Route path="*" element={<AuthenticatedApp />} />
       </Routes>
     </>

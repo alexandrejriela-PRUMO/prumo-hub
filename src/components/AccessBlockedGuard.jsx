@@ -58,8 +58,8 @@ export default function AccessBlockedGuard({ children }) {
             l.parceiro && l.parceiro.startsWith('nexano_') && l.plano && l.plano !== 'desconhecido'
           );
 
-          if (nexanoLead) {
-            // Usuário já pagou via Nexano → criar metadata e liberar
+          if (nexanoLead && nexanoLead.subscription_status === 'active') {
+            // Usuário já pagou via Nexano e não cancelou → criar metadata e liberar
             try {
               await base44.entities.UserMetadata.create({
                 user_email: user.email,
@@ -130,8 +130,8 @@ export default function AccessBlockedGuard({ children }) {
             l.plano && l.plano !== 'desconhecido'
           );
 
-          if (nexanoLead) {
-            // Usuário pagou via Nexano → corrigir metadata e liberar acesso
+          if (nexanoLead && nexanoLead.subscription_status === 'active') {
+            // Usuário pagou via Nexano e não cancelou → corrigir metadata e liberar acesso
             try {
               await base44.entities.UserMetadata.update(meta.id, {
                 subscription_status: 'active',

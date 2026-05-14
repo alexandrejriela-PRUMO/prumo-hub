@@ -104,29 +104,45 @@ export default function AccessBlockedGuard({ children }) {
 
         const subscriptionStatus = meta.subscription_status;
 
-        if (BLOCKED_STATUSES.includes(subscriptionStatus)) {
-          // Última verificação: se o user foi criado via webhook da Nexano, nunca bloquear
+        // pending_payment OU statuses bloqueados → verificar lead Nexano antes de bloquear
+        if (BLOCKED_STATUSES.includes(subscriptionStatus) || subscriptionStatus === 'pending_payment') {
+          // Se o user foi criado via webhook da Nexano, nunca bloquear
           if (user.created_via_webhook || user.subscription_status === 'active') {
-            // Corrigir o metadata desatualizado
             try {
               await base44.entities.UserMetadata.update(meta.id, { subscription_status: 'active' });
             } catch (e) { /* ignora */ }
             setChecked(true);
             return;
           }
-          // Verificar lead Nexano antes de bloquear definitivamente
+
+          // Verificar lead Nexano com pagamento confirmado
           const leads = await base44.entities.LeadFormSubmission.filter({ email: user.email }, '-created_date', 1);
           const nexanoLead = leads && leads.find(l =>
             l.parceiro && l.parceiro.startsWith('nexano_') &&
-            (l.subscription_status === 'active' || (l.plano && l.plano !== 'desconhecido'))
+            l.plano && l.plano !== 'desconhecido'
           );
-          if (nexanoLead && nexanoLead.subscription_status === 'active') {
+
+          if (nexanoLead) {
+            // Usuário pagou via Nexano → corrigir metadata e liberar acesso
             try {
-              await base44.entities.UserMetadata.update(meta.id, { subscription_status: 'active' });
+              await base44.entities.UserMetadata.update(meta.id, {
+                subscription_status: 'active',
+                plano: nexanoLead.plano || meta.plano,
+                user_type: nexanoLead.user_type || meta.user_type,
+                max_properties: nexanoLead.max_properties || meta.max_properties,
+                max_users: nexanoLead.max_users || meta.max_users,
+              });
             } catch (e) { /* ignora */ }
             setChecked(true);
             return;
           }
+
+          // Nenhum lead Nexano válido → bloquear apenas se não for pending_payment simples
+          if (BLOCKED_STATUSES.includes(subscriptionStatus)) {
+            navigate('/AccessBlocked', { replace: true });
+            return;
+          }
+          // pending_payment sem lead → bloquear também
           navigate('/AccessBlocked', { replace: true });
         } else {
           setChecked(true);

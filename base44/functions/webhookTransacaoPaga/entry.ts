@@ -87,7 +87,7 @@ function extractPlan(body) {
   }
 
   console.warn('[webhookTransacaoPaga] Plano não reconhecido. ProductName:', productName, 'OfferId:', offerId);
-  return { perfil: 'produtor', plano: 'desconhecido', user_type: 'produtor', max_properties: 1, max_users: 1 };
+  return { perfil: 'consultor', plano: 'start', user_type: 'consultor', max_properties: 5, max_users: 1 };
 }
 
 async function upsertUserMetadata(base44, email, userId, planInfo) {
@@ -103,11 +103,41 @@ async function upsertUserMetadata(base44, email, userId, planInfo) {
   };
   if (existingMeta && existingMeta.length > 0) {
     await base44.asServiceRole.entities.UserMetadata.update(existingMeta[0].id, metaData);
-    console.log(`[webhookTransacaoPaga] UserMetadata atualizado para ${email}`);
+    console.log(`[webhookTransacaoPaga] UserMetadata atualizado para ${email}: plano=${planInfo.plano}, status=active`);
   } else {
     await base44.asServiceRole.entities.UserMetadata.create(metaData);
-    console.log(`[webhookTransacaoPaga] UserMetadata criado para ${email}`);
+    console.log(`[webhookTransacaoPaga] UserMetadata criado para ${email}: plano=${planInfo.plano}, status=active`);
   }
+}
+
+async function upsertLead(base44, email, fullName, phone, planInfo, cleanDoc) {
+  const leads = await base44.asServiceRole.entities.LeadFormSubmission.filter({ email });
+  if (leads && leads.length > 0) {
+    await base44.asServiceRole.entities.LeadFormSubmission.update(leads[0].id, {
+      subscription_status: 'active',
+      plano: planInfo.plano,
+      user_type: planInfo.user_type,
+      parceiro: `nexano_${planInfo.plano}`,
+      max_properties: planInfo.max_properties,
+      max_users: planInfo.max_users,
+    });
+  } else {
+    await base44.asServiceRole.entities.LeadFormSubmission.create({
+      perfil: planInfo.perfil,
+      nome: fullName || email,
+      email,
+      telefone: phone || '',
+      submitted_at: new Date().toISOString(),
+      parceiro: `nexano_${planInfo.plano}`,
+      plano: planInfo.plano,
+      user_type: planInfo.user_type,
+      subscription_status: 'active',
+      document: cleanDoc || '',
+      max_properties: planInfo.max_properties,
+      max_users: planInfo.max_users,
+    });
+  }
+  console.log(`[webhookTransacaoPaga] Lead upserted para ${email}: plano=${planInfo.plano}`);
 }
 
 Deno.serve(async (req) => {
@@ -147,18 +177,24 @@ Deno.serve(async (req) => {
   console.log('[webhookTransacaoPaga] Plano identificado:', planInfo);
 
   const cleanDoc = cleanDocument(document || '');
-  // Senha temporária = CPF/CNPJ limpo; fallback se não vier o documento
   const tempPasswordPlain = cleanDoc || 'prumo2024';
   const hashedTempPassword = await hashPassword(tempPasswordPlain);
 
   try {
     const base44 = createClientFromRequest(req);
 
-    // ── IDEMPOTÊNCIA: usuário já existe? ──
+    // ── PASSO 1: Sempre fazer upsert do Lead (fonte da verdade do pagamento) ──
+    // Isso garante que o AccessBlockedGuard consiga verificar o pagamento mesmo
+    // antes do usuário existir na plataforma
+    await upsertLead(base44, email, fullName, phone, planInfo, cleanDoc);
+
+    // ── PASSO 2: Verificar se usuário já existe ──
     const existingUsers = await base44.asServiceRole.entities.User.filter({ email });
+
     if (existingUsers && existingUsers.length > 0) {
       const existingUser = existingUsers[0];
-      // Atualizar plano do usuário existente
+
+      // Atualizar dados do usuário existente
       await base44.asServiceRole.entities.User.update(existingUser.id, {
         user_type: planInfo.user_type,
         plano: planInfo.plano,
@@ -166,29 +202,42 @@ Deno.serve(async (req) => {
         max_users: planInfo.max_users,
         subscription_status: 'active',
         subscription_updated_at: new Date().toISOString(),
-        // Atualizar documento se veio no novo webhook e não estava salvo
         ...(cleanDoc && !existingUser.document ? {
           document: cleanDoc,
           hashed_temp_password: hashedTempPassword,
           must_change_password: true,
         } : {}),
       });
+
+      // Sempre fazer upsert do UserMetadata (pode estar com pending_payment)
       await upsertUserMetadata(base44, email, existingUser.id, planInfo);
-      console.log(`[webhookTransacaoPaga] Usuário existente atualizado: ${email} → plano ${planInfo.plano}`);
-      return Response.json({ received: true, message: 'Usuário existente atualizado.', email, plano: planInfo.plano }, { status: 200 });
+
+      console.log(`[webhookTransacaoPaga] Usuário existente atualizado e ativado: ${email} → plano ${planInfo.plano}`);
+      return Response.json({
+        received: true,
+        message: 'Usuário existente atualizado e ativado.',
+        email,
+        plano: planInfo.plano,
+      }, { status: 200 });
     }
 
-    // ── NOVO USUÁRIO: convidar ──
+    // ── PASSO 3: Novo usuário — convidar ──
     await base44.users.inviteUser(email, 'user');
     console.log(`[webhookTransacaoPaga] Convite enviado para: ${email}`);
 
-    // Aguardar o usuário ser criado na plataforma
-    await new Promise(r => setTimeout(r, 2500));
+    // Aguardar com retry para o usuário ser criado (até 10s)
+    let newUser = null;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      await new Promise(r => setTimeout(r, 2500));
+      const found = await base44.asServiceRole.entities.User.filter({ email });
+      if (found && found.length > 0) {
+        newUser = found[0];
+        break;
+      }
+      console.log(`[webhookTransacaoPaga] Aguardando criação do usuário (tentativa ${attempt + 1}/4)...`);
+    }
 
-    const newUsers = await base44.asServiceRole.entities.User.filter({ email });
-    if (newUsers && newUsers.length > 0) {
-      const newUser = newUsers[0];
-      // Salvar todos os dados: plano, tipo, documento, senha hasheada, flag de troca obrigatória
+    if (newUser) {
       await base44.asServiceRole.entities.User.update(newUser.id, {
         full_name: fullName || email.split('@')[0],
         user_type: planInfo.user_type,
@@ -199,40 +248,21 @@ Deno.serve(async (req) => {
         subscription_updated_at: new Date().toISOString(),
         document: cleanDoc,
         hashed_temp_password: hashedTempPassword,
-        must_change_password: true,  // exige troca no primeiro login
+        must_change_password: true,
         created_via_webhook: true,
         webhook_source: 'nexano_purchase',
       });
-      console.log(`[webhookTransacaoPaga] Dados do usuário aplicados: ${email}`);
+      console.log(`[webhookTransacaoPaga] Dados aplicados ao novo usuário: ${email}`);
 
       await upsertUserMetadata(base44, email, newUser.id, planInfo);
-
-      // Atualizar lead se existir
-      const leads = await base44.asServiceRole.entities.LeadFormSubmission.filter({ email });
-      if (leads && leads.length > 0) {
-        await base44.asServiceRole.entities.LeadFormSubmission.update(leads[0].id, { subscription_status: 'active' });
-      } else {
-        // Criar lead para rastreabilidade
-        await base44.asServiceRole.entities.LeadFormSubmission.create({
-          perfil: planInfo.perfil,
-          nome: fullName || email,
-          email,
-          telefone: phone || '',
-          submitted_at: new Date().toISOString(),
-          parceiro: `nexano_${planInfo.plano}`,
-          plano: planInfo.plano,
-          user_type: planInfo.user_type,
-          subscription_status: 'active',
-          document: cleanDoc || '',
-          max_properties: planInfo.max_properties,
-          max_users: planInfo.max_users,
-        });
-      }
     } else {
-      console.warn(`[webhookTransacaoPaga] Usuário não encontrado após convite: ${email}`);
+      // Usuário ainda não existe na plataforma — mas o Lead já foi criado no Passo 1
+      // O AccessBlockedGuard vai detectar o lead nexano_* com active e liberar o acesso
+      // quando o usuário fizer login e criar a conta
+      console.warn(`[webhookTransacaoPaga] Usuário ${email} não encontrado após convite. Lead já salvo — acesso será liberado no primeiro login.`);
     }
 
-    // Enviar e-mail de boas-vindas com instrução de senha temporária
+    // ── PASSO 4: E-mail de boas-vindas ──
     try {
       await base44.asServiceRole.functions.invoke('sendCustomInviteEmail', {
         email,
@@ -248,10 +278,13 @@ Deno.serve(async (req) => {
 
     return Response.json({
       received: true,
-      message: 'Usuário criado, plano aplicado e e-mail de boas-vindas enviado.',
+      message: newUser
+        ? 'Usuário criado, plano aplicado e e-mail enviado.'
+        : 'Convite enviado. Acesso será liberado automaticamente no primeiro login.',
       email,
       plano: planInfo.plano,
       perfil: planInfo.perfil,
+      user_created: !!newUser,
     }, { status: 201 });
 
   } catch (error) {

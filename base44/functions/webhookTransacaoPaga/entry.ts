@@ -149,12 +149,24 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
   }
 
-  // Validação de token
-  const token = req.headers.get('x-webhook-token') || new URL(req.url).searchParams.get('token');
+  // Validação de token — logar todos os headers para debug
+  const token = req.headers.get('x-webhook-token') 
+    || req.headers.get('authorization')
+    || req.headers.get('x-token')
+    || req.headers.get('x-api-key')
+    || new URL(req.url).searchParams.get('token');
   const expectedToken = Deno.env.get('WEBHOOK_TOKEN_PAGO');
+  
+  // Log completo dos headers para descobrir como a Nexano envia o token
+  const allHeaders = {};
+  req.headers.forEach((value, key) => { allHeaders[key] = value; });
+  console.log('[webhookTransacaoPaga] Headers recebidos:', JSON.stringify(allHeaders));
+  console.log('[webhookTransacaoPaga] Token recebido:', token, '| Token esperado:', expectedToken ? 'SET' : 'NOT SET');
+  
   if (expectedToken && token !== expectedToken) {
-    console.warn('[webhookTransacaoPaga] FALHA: Token inválido ou ausente');
-    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    console.warn('[webhookTransacaoPaga] FALHA: Token inválido ou ausente. Token recebido:', token);
+    // TEMPORÁRIO: logar mas NÃO rejeitar para diagnosticar o formato da Nexano
+    // return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   let body;

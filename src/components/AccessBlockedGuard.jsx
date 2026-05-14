@@ -104,13 +104,21 @@ export default function AccessBlockedGuard({ children }) {
 
         const subscriptionStatus = meta.subscription_status;
 
-        // pending_payment OU statuses bloqueados → verificar lead Nexano antes de bloquear
+        // pending_payment OU statuses bloqueados → verificar antes de bloquear
         if (BLOCKED_STATUSES.includes(subscriptionStatus) || subscriptionStatus === 'pending_payment') {
           // Se o user foi criado via webhook da Nexano, nunca bloquear
           if (user.created_via_webhook || user.subscription_status === 'active') {
             try {
               await base44.entities.UserMetadata.update(meta.id, { subscription_status: 'active' });
             } catch (e) { /* ignora */ }
+            setChecked(true);
+            return;
+          }
+
+          // Se o UserMetadata foi criado há menos de 30 minutos, liberar
+          // (webhook pode estar processando em background)
+          const metaAge = meta.created_date ? Date.now() - new Date(meta.created_date).getTime() : Infinity;
+          if (metaAge < 30 * 60 * 1000) {
             setChecked(true);
             return;
           }
@@ -137,12 +145,12 @@ export default function AccessBlockedGuard({ children }) {
             return;
           }
 
-          // Nenhum lead Nexano válido → bloquear apenas se não for pending_payment simples
+          // Statuses de falha real → bloquear
           if (BLOCKED_STATUSES.includes(subscriptionStatus)) {
             navigate('/AccessBlocked', { replace: true });
             return;
           }
-          // pending_payment sem lead → bloquear também
+          // pending_payment sem lead e UserMetadata antigo → bloquear
           navigate('/AccessBlocked', { replace: true });
         } else {
           setChecked(true);

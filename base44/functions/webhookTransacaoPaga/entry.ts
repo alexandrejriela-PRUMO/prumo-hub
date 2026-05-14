@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClient } from 'npm:@base44/sdk@0.8.25';
 
 async function hashPassword(plain) {
   const encoder = new TextEncoder();
@@ -149,31 +149,19 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
   }
 
-  // Validação de token — logar todos os headers para debug
-  const token = req.headers.get('x-webhook-token') 
-    || req.headers.get('authorization')
-    || req.headers.get('x-token')
-    || req.headers.get('x-api-key')
-    || new URL(req.url).searchParams.get('token');
-  const expectedToken = Deno.env.get('WEBHOOK_TOKEN_PAGO');
-  
-  // Log completo dos headers para descobrir como a Nexano envia o token
-  const allHeaders = {};
-  req.headers.forEach((value, key) => { allHeaders[key] = value; });
-  console.log('[webhookTransacaoPaga] Headers recebidos:', JSON.stringify(allHeaders));
-  console.log('[webhookTransacaoPaga] Token recebido:', token, '| Token esperado:', expectedToken ? 'SET' : 'NOT SET');
-  
-  if (expectedToken && token !== expectedToken) {
-    console.warn('[webhookTransacaoPaga] FALHA: Token inválido ou ausente. Token recebido:', token);
-    // TEMPORÁRIO: logar mas NÃO rejeitar para diagnosticar o formato da Nexano
-    // return Response.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   let body;
   try {
     body = await req.json();
   } catch {
     return Response.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+
+  // Validação do token — a Nexano envia no campo "token" do body
+  const receivedToken = body?.token;
+  const expectedToken = Deno.env.get('WEBHOOK_TOKEN_PAGO');
+  if (expectedToken && receivedToken !== expectedToken) {
+    console.warn('[webhookTransacaoPaga] Token inválido. Recebido:', receivedToken);
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   console.log('[webhookTransacaoPaga] PAYLOAD RECEBIDO:', JSON.stringify(body, null, 2));
@@ -193,7 +181,7 @@ Deno.serve(async (req) => {
   const hashedTempPassword = await hashPassword(tempPasswordPlain);
 
   try {
-    const base44 = createClientFromRequest(req);
+    const base44 = createClient({ appId: Deno.env.get('BASE44_APP_ID') });
 
     // ── PASSO 1: Sempre fazer upsert do Lead (fonte da verdade do pagamento) ──
     // Isso garante que o AccessBlockedGuard consiga verificar o pagamento mesmo

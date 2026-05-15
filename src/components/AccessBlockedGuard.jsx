@@ -105,6 +105,16 @@ export default function AccessBlockedGuard({ children }) {
 
         const meta = metaList[0];
 
+        // Sincronizar user_type do UserMetadata → User se estiver desatualizado
+        if (meta.user_type && meta.user_type !== user.user_type) {
+          try {
+            const syncData = { user_type: meta.user_type };
+            if (meta.plano) syncData.plano = meta.plano;
+            if (meta.subscription_status) syncData.subscription_status = meta.subscription_status;
+            await base44.auth.updateMe(syncData);
+          } catch (e) { /* ignora */ }
+        }
+
         // Equipe e visualizadores nunca são bloqueados por pagamento (verificar também no metadata)
         if (meta.user_type === 'equipe' || meta.user_type === 'client_consultor') {
           setChecked(true);

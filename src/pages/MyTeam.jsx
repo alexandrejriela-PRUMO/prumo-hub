@@ -59,6 +59,8 @@ export default function MyTeam() {
   const [userMeta, setUserMeta] = useState(null);
   const isAdmin = user?.role === 'admin';
   const isConsultor = user?.user_type === 'consultor';
+  const isProdutor = user?.user_type === 'produtor';
+  const canInvite = isConsultor || isProdutor || isAdmin;
 
   useEffect(() => {
     base44.auth.me().then(u => {
@@ -108,12 +110,12 @@ export default function MyTeam() {
   // Limite de usuários do plano
   const maxUsers = userMeta?.max_users ?? 99;
   const activeMembers = allMembers.filter(m => m.status !== 'Inativo' && m.pending_user_type === 'equipe').length;
-  const atUserLimit = !isAdmin && isConsultor && activeMembers >= maxUsers;
+  const atUserLimit = !isAdmin && (isConsultor || isProdutor) && activeMembers >= maxUsers;
 
   // Envia convite de novo usuário
   const inviteMutation = useMutation({
     mutationFn: async (form) => {
-      if (!isConsultor && !isAdmin) {
+      if (!canInvite) {
         throw new Error('Você não tem permissão para enviar convites');
       }
       if (form.target_user_type === 'equipe' && atUserLimit) {
@@ -213,7 +215,7 @@ export default function MyTeam() {
           </p>
         </div>
         <div className="flex gap-2">
-          {(isConsultor || isAdmin) && (
+          {canInvite && (
             <div className="flex flex-col items-end gap-1">
               <Button
                 onClick={() => setShowInviteDialog(true)}
@@ -326,7 +328,7 @@ export default function MyTeam() {
                         <Settings className="w-3 h-3 mr-1" />
                         Permissões
                       </Button>
-                      {(isAdmin || (isConsultor && member.primary_user_email === user.email)) && (
+                      {(isAdmin || ((isConsultor || isProdutor) && member.primary_user_email === user.email)) && (
                         <Button
                           variant="ghost" size="icon"
                           className="text-red-400 hover:text-red-600 hover:bg-red-50"

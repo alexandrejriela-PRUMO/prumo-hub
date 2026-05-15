@@ -60,17 +60,26 @@ export default function AccessBlockedGuard({ children }) {
 
           if (nexanoLead && nexanoLead.subscription_status === 'active') {
             // Usuário já pagou via Nexano e não cancelou → criar metadata e liberar
+            const resolvedType = nexanoLead.user_type || (nexanoLead.perfil === 'consultor' ? 'consultor' : 'produtor');
             try {
               await base44.entities.UserMetadata.create({
                 user_email: user.email,
                 user_id: user.id,
                 plano: nexanoLead.plano,
-                user_type: nexanoLead.user_type || (nexanoLead.perfil === 'consultor' ? 'consultor' : 'produtor'),
+                user_type: resolvedType,
                 max_properties: nexanoLead.max_properties || 5,
                 max_users: nexanoLead.max_users || 1,
                 subscription_status: 'active',
               });
             } catch (e) { /* ignora duplicata */ }
+            // Sincronizar user_type no User para o layout funcionar corretamente
+            try {
+              await base44.auth.updateMe({
+                user_type: resolvedType,
+                plano: nexanoLead.plano,
+                subscription_status: 'active',
+              });
+            } catch (e) { /* ignora */ }
             setChecked(true);
             return;
           }
@@ -132,13 +141,23 @@ export default function AccessBlockedGuard({ children }) {
 
           if (nexanoLead && nexanoLead.subscription_status === 'active') {
             // Usuário pagou via Nexano e não cancelou → corrigir metadata e liberar acesso
+            const resolvedType = nexanoLead.user_type || meta.user_type;
+            const resolvedPlano = nexanoLead.plano || meta.plano;
             try {
               await base44.entities.UserMetadata.update(meta.id, {
                 subscription_status: 'active',
-                plano: nexanoLead.plano || meta.plano,
-                user_type: nexanoLead.user_type || meta.user_type,
+                plano: resolvedPlano,
+                user_type: resolvedType,
                 max_properties: nexanoLead.max_properties || meta.max_properties,
                 max_users: nexanoLead.max_users || meta.max_users,
+              });
+            } catch (e) { /* ignora */ }
+            // Sincronizar user_type no User para o layout funcionar corretamente
+            try {
+              await base44.auth.updateMe({
+                user_type: resolvedType,
+                plano: resolvedPlano,
+                subscription_status: 'active',
               });
             } catch (e) { /* ignora */ }
             setChecked(true);

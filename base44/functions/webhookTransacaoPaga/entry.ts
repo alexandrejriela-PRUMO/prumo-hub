@@ -188,31 +188,19 @@ Deno.serve(async (req) => {
     // antes do usuário existir na plataforma
     await upsertLead(base44, email, fullName, phone, planInfo, cleanDoc);
 
-    // ── PASSO 2: Verificar se usuário já existe ──
-    const existingUsers = await base44.asServiceRole.entities.User.filter({ email });
+    // ── PASSO 2: Verificar se usuário já existe (pelo UserMetadata) ──
+    const existingMeta = await base44.asServiceRole.entities.UserMetadata.filter({ user_email: email });
 
-    if (existingUsers && existingUsers.length > 0) {
-      const existingUser = existingUsers[0];
-
-      // Atualizar dados do usuário existente
-      await base44.asServiceRole.entities.User.update(existingUser.id, {
-        user_type: planInfo.user_type,
+    if (existingMeta && existingMeta.length > 0) {
+      // Usuário já existe na plataforma — atualizar UserMetadata diretamente
+      await base44.asServiceRole.entities.UserMetadata.update(existingMeta[0].id, {
         plano: planInfo.plano,
+        user_type: planInfo.user_type,
         max_properties: planInfo.max_properties,
         max_users: planInfo.max_users,
         subscription_status: 'active',
-        subscription_updated_at: new Date().toISOString(),
-        ...(cleanDoc && !existingUser.document ? {
-          document: cleanDoc,
-          hashed_temp_password: hashedTempPassword,
-          must_change_password: true,
-        } : {}),
       });
-
-      // Sempre fazer upsert do UserMetadata (pode estar com pending_payment)
-      await upsertUserMetadata(base44, email, existingUser.id, planInfo);
-
-      console.log(`[webhookTransacaoPaga] Usuário existente atualizado e ativado: ${email} → plano ${planInfo.plano}`);
+      console.log(`[webhookTransacaoPaga] Usuário existente: UserMetadata atualizado para ${email} → plano ${planInfo.plano}, status=active`);
       return Response.json({
         received: true,
         message: 'Usuário existente atualizado e ativado.',
@@ -222,8 +210,8 @@ Deno.serve(async (req) => {
     }
 
     // ── PASSO 3: Novo usuário — Lead já salvo com status active (Passo 1) ──
-    // O AccessBlockedGuard detecta o lead nexano_* com active e libera o acesso no primeiro login.
-    // Não é necessário convidar via plataforma — o usuário se registra normalmente em hub.prumo.site.
+    // O AccessBlockedGuard detecta o lead nexano_* com active e libera o acesso no primeiro login
+    // e cria o UserMetadata automaticamente.
     console.log(`[webhookTransacaoPaga] Novo usuário. Lead salvo com status active para: ${email}`);
 
     // ── PASSO 4: E-mail de boas-vindas ──

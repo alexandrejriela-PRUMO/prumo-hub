@@ -80,10 +80,8 @@ export default function AccessBlocked() {
     base44.auth.logout('/landing');
   };
 
-  // Link de renovação: vai para a landing na seção de planos
-  const renewalUrl = user?.user_type === 'produtor'
-    ? 'https://checkout.nexano.com.br/checkout/cmo2vyei507261yldn9ynobbt?offer=GNJXUCE'
-    : 'https://checkout.nexano.com.br/checkout/cmo2vmthl06bp1yms3aaa35wv';
+  // Link de renovação: vai para a landing page para o usuário escolher seu plano
+  const renewalUrl = '/landing';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-900 px-4">
@@ -153,8 +151,6 @@ export default function AccessBlocked() {
               {/* Primary: Regularize or Contract */}
               <a
                 href={renewalUrl}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="w-full flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3.5 px-6 rounded-2xl transition-all hover:scale-[1.02] shadow-lg shadow-emerald-900/20"
               >
                 <CreditCard className="w-5 h-5" />

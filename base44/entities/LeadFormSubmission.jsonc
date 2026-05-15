@@ -46,6 +46,47 @@
       "type": "string",
       "format": "date-time",
       "description": "Data e hora do envio"
+    },
+    "plano": {
+      "type": "string",
+      "enum": [
+        "start",
+        "pro",
+        "enterprise",
+        "unico"
+      ],
+      "description": "Plano contratado"
+    },
+    "user_type": {
+      "type": "string",
+      "enum": [
+        "consultor",
+        "produtor",
+        "equipe",
+        "client_consultor"
+      ],
+      "description": "Tipo de usu\u00e1rio"
+    },
+    "subscription_status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "pending_payment",
+        "cancelled",
+        "payment_failed",
+        "chargeback",
+        "suspended"
+      ],
+      "description": "Status da assinatura"
+    },
+    "max_properties": {
+      "type": "integer",
+      "description": "M\u00e1ximo de propriedades"
+    },
+    "max_users": {
+      "type": "integer",
+      "description": "M\u00e1ximo de usu\u00e1rios"
     }
   },
   "required": [

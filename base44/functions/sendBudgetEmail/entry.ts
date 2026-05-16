@@ -1,5 +1,31 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+
+async function sendEmailViaResend({ to, subject, html, fromName, replyTo }) {
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: `${fromName} <onboarding@resend.dev>`,
+      to: [to],
+      subject,
+      html,
+      reply_to: replyTo,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Resend error: ${err}`);
+  }
+
+  return await res.json();
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -44,9 +70,6 @@ Deno.serve(async (req) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body { margin: 0; padding: 0; background: #f3f4f6; font-family: Arial, sans-serif; }
-    .ql-align-center { text-align: center !important; }
-    .ql-align-right { text-align: right !important; }
-    .ql-align-justify { text-align: justify !important; }
     table { border-collapse: collapse; width: 100%; }
   </style>
 </head>
@@ -104,9 +127,17 @@ Deno.serve(async (req) => {
         </table>
       </div>` : ''}
 
+      <!-- Nota reply-to -->
+      <div style="background:#ecfdf5; border:1px solid #d1fae5; border-radius:8px; padding:12px 16px; margin-bottom:20px;">
+        <p style="margin:0; font-size:13px; color:#065f46;">
+          💬 Para responder a este orçamento, basta responder diretamente a este e-mail — sua mensagem chegará ao consultor responsável.
+        </p>
+      </div>
+
       <!-- Rodapé -->
       <div style="margin-top:28px; padding-top:20px; border-top:1px solid #e5e7eb; font-size:12px; color:#9ca3af; text-align:center;">
         <p style="margin:0;">Enviado por <strong style="color:#1B4332;">${user.full_name || user.email}</strong> via PRUMO HUB</p>
+        <p style="margin:4px 0 0 0;">Dúvidas? Responda este e-mail ou entre em contato: <strong>${user.email}</strong></p>
       </div>
     </div>
 
@@ -117,16 +148,17 @@ Deno.serve(async (req) => {
     let emailSent = false;
     let sendError = null;
     try {
-      await base44.integrations.Core.SendEmail({
+      await sendEmailViaResend({
         to,
         subject,
-        body: emailBody,
-        from_name: user.full_name || 'Consultor PRUMO',
+        html: emailBody,
+        fromName: user.full_name || 'Consultor PRUMO',
+        replyTo: user.email,
       });
       emailSent = true;
     } catch (emailErr) {
       sendError = emailErr.message || 'Erro ao enviar e-mail';
-      console.error('Erro no SendEmail:', sendError);
+      console.error('Erro no sendEmailViaResend:', sendError);
     }
 
     // Salvar log do envio com status real

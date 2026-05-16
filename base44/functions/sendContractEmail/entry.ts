@@ -1,5 +1,31 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+
+async function sendEmailViaResend({ to, subject, html, fromName, replyTo }) {
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: `${fromName} <onboarding@resend.dev>`,
+      to: [to],
+      subject,
+      html,
+      reply_to: replyTo,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Resend error: ${err}`);
+  }
+
+  return await res.json();
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -46,19 +72,29 @@ Deno.serve(async (req) => {
           <div style="background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px;padding:28px 32px;">
             <p style="font-size:15px;line-height:1.7;color:#374151;">${customMessage}</p>
             ${pdfSection}
+
+            <!-- Nota reply-to -->
+            <div style="background:#ecfdf5; border:1px solid #d1fae5; border-radius:8px; padding:12px 16px; margin:20px 0;">
+              <p style="margin:0; font-size:13px; color:#065f46;">
+                💬 Para responder a este contrato, basta responder diretamente a este e-mail — sua mensagem chegará ao consultor responsável.
+              </p>
+            </div>
+
             <div style="margin-top:28px;padding-top:20px;border-top:1px solid #e5e7eb;font-size:12px;color:#9ca3af;text-align:center;">
               <p style="margin:0;">Enviado por <strong style="color:#1B4332;">${user.full_name || user.email}</strong> via PRUMO HUB</p>
+              <p style="margin:4px 0 0 0;">Dúvidas? Responda este e-mail ou entre em contato: <strong>${user.email}</strong></p>
             </div>
           </div>
         </div>
       </body></html>
     `;
 
-    await base44.integrations.Core.SendEmail({
+    await sendEmailViaResend({
       to,
       subject,
-      body: emailBody,
-      from_name: user.full_name || 'Consultor PRUMO',
+      html: emailBody,
+      fromName: user.full_name || 'Consultor PRUMO',
+      replyTo: user.email,
     });
 
     // Atualizar status do contrato para "Em Assinatura" se ainda for Proposta

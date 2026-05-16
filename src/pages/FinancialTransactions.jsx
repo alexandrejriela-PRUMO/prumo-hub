@@ -148,7 +148,7 @@ export default function FinancialTransactions() {
   }),[filtered,sortField,sortDir]);
 
   const toggleSort = (f) => { if(sortField===f)setSortDir(d=>d==='asc'?'desc':'asc'); else{setSortField(f);setSortDir('desc');} };
-  const totalReceitas = filtered.filter(t=>t.type==='receita').reduce((s,t)=>s+t.amount,0);
+  const totalReceitas = filtered.filter(t=>t.type==='receita' && t.status==='Pago').reduce((s,t)=>s+t.amount,0);
   const totalDespesas = filtered.filter(t=>t.type==='despesa').reduce((s,t)=>s+t.amount,0);
   const resultado = totalReceitas-totalDespesas;
   const fmt = (v)=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});

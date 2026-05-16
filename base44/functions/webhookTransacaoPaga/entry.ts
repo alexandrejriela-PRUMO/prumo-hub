@@ -200,12 +200,26 @@ Deno.serve(async (req) => {
         max_users: planInfo.max_users,
         subscription_status: 'active',
       });
-      console.log(`[webhookTransacaoPaga] Usuário existente: UserMetadata atualizado para ${email} → plano ${planInfo.plano}, status=active`);
+      // Sincronizar também o campo user_type no registro User para o layout funcionar corretamente
+      try {
+        const userList = await base44.asServiceRole.entities.User.filter({ email });
+        if (userList && userList.length > 0) {
+          await base44.asServiceRole.entities.User.update(userList[0].id, {
+            user_type: planInfo.user_type,
+            plano: planInfo.plano,
+            subscription_status: 'active',
+          });
+        }
+      } catch (userUpdateErr) {
+        console.warn(`[webhookTransacaoPaga] Erro ao sincronizar User (não crítico): ${userUpdateErr.message}`);
+      }
+      console.log(`[webhookTransacaoPaga] Usuário existente: UserMetadata + User atualizados para ${email} → plano ${planInfo.plano}, user_type=${planInfo.user_type}, status=active`);
       return Response.json({
         received: true,
         message: 'Usuário existente atualizado e ativado.',
         email,
         plano: planInfo.plano,
+        user_type: planInfo.user_type,
       }, { status: 200 });
     }
 

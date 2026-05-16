@@ -74,7 +74,6 @@ const AuthenticatedApp = () => {
           const inviteRes = await base44.functions.invoke('applyInviteConfigOnFirstLogin', {});
           if (inviteRes.data?.applied) {
             console.log('[App] user_type de equipe aplicado automaticamente:', inviteRes.data.user_type);
-            // Atualiza o contexto e re-busca o user atualizado para continuar a verificação
             await refreshUser();
             user = await base44.auth.me();
           }
@@ -88,6 +87,37 @@ const AuthenticatedApp = () => {
           const metaList = await base44.entities.UserMetadata.filter({ user_email: user.email }, '-created_date', 1);
           if (metaList?.length > 0 && metaList[0].user_type) {
             effectiveUserType = metaList[0].user_type;
+            // Se UserMetadata tem user_type diferente do User, sincronizar agora
+            if (metaList[0].user_type !== user.user_type) {
+              try {
+                const syncPayload = { user_type: metaList[0].user_type };
+                if (metaList[0].plano) syncPayload.plano = metaList[0].plano;
+                if (metaList[0].subscription_status) syncPayload.subscription_status = metaList[0].subscription_status;
+                await base44.auth.updateMe(syncPayload);
+                console.log('[App] user_type sincronizado do UserMetadata:', metaList[0].user_type);
+                await refreshUser();
+              } catch (syncErr) {
+                console.warn('[App] Erro ao sincronizar user_type:', syncErr.message);
+              }
+            }
+          } else if (!metaList || metaList.length === 0) {
+            // Sem UserMetadata — tentar recuperar do lead nexano para novos usuários pagantes
+            try {
+              const leads = await base44.entities.LeadFormSubmission.filter({ email: user.email }, '-created_date', 1);
+              const nexanoLead = leads?.find(l => l.parceiro?.startsWith('nexano_') && l.subscription_status === 'active');
+              if (nexanoLead?.user_type && nexanoLead.user_type !== user.user_type) {
+                effectiveUserType = nexanoLead.user_type;
+                await base44.auth.updateMe({
+                  user_type: nexanoLead.user_type,
+                  plano: nexanoLead.plano,
+                  subscription_status: 'active',
+                });
+                console.log('[App] user_type recuperado do lead nexano:', nexanoLead.user_type);
+                await refreshUser();
+              }
+            } catch (leadErr) {
+              console.warn('[App] Erro ao verificar lead nexano:', leadErr.message);
+            }
           }
         } catch (metaErr) {
           console.warn('[App] Erro ao buscar UserMetadata:', metaErr.message);

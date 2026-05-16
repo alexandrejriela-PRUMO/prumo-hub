@@ -9,11 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import {
   TrendingUp, TrendingDown, ArrowLeftRight, Download, Search,
-  ChevronUp, ChevronDown, Plus, Pencil, Trash2, Banknote, Paperclip
+  ChevronUp, ChevronDown, Plus, Pencil, Trash2, Banknote, Paperclip, FileText
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import TransactionForm from '../components/financial/TransactionForm';
+import { exportFinancialPDF } from '../components/financial/FinancialExportPDF';
 
 const STATUS_BADGES = {
   'Pago':     'bg-emerald-100 text-emerald-700',
@@ -117,8 +118,21 @@ export default function FinancialTransactions() {
     return txns;
   }, [charges, manualEntries, propertyMap, accountMap]);
 
-  const clients  = useMemo(()=>{ const s=new Set(); allTransactions.forEach(t=>{if(t.client)s.add(t.client);}); return Array.from(s).sort(); },[allTransactions]);
-  const propertyOptions = useMemo(() => { const s=new Set(); allTransactions.forEach(t=>{if(t.propertyId && t.propertyName) s.add(JSON.stringify({id:t.propertyId,name:t.propertyName}));}); return Array.from(s).map(j=>JSON.parse(j)); },[allTransactions]);
+  // Clientes: todos os cadastrados (via Property) + os que aparecem nas transações
+  const clients = useMemo(() => {
+    const s = new Set();
+    properties.forEach(p => { if (p.client_name) s.add(p.client_name); });
+    allTransactions.forEach(t => { if (t.client) s.add(t.client); });
+    return Array.from(s).sort();
+  }, [properties, allTransactions]);
+
+  // Propriedades: todas as cadastradas + as que aparecem nas transações
+  const propertyOptions = useMemo(() => {
+    const map = {};
+    properties.filter(p => !p.is_client_only).forEach(p => { map[p.id] = { id: p.id, name: p.property_name }; });
+    allTransactions.forEach(t => { if (t.propertyId && t.propertyName && !map[t.propertyId]) map[t.propertyId] = { id: t.propertyId, name: t.propertyName }; });
+    return Object.values(map).sort((a,b) => a.name.localeCompare(b.name));
+  }, [properties, allTransactions]);
   const accountOptions = useMemo(() => {
     // Usar contas cadastradas + aquelas que aparecem nas transações
     const s = new Set();
@@ -153,12 +167,50 @@ export default function FinancialTransactions() {
   const resultado = totalReceitas-totalDespesas;
   const fmt = (v)=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
-  const exportCSV = ()=>{
-    const header='Tipo,Origem,Descrição,Cliente,Conta,Competência,Data,Valor,Status,Forma Pagamento';
-    const rows=sorted.map(t=>[t.type,t.source,`"${t.description}"`,t.client||'',t.accountLabel||'',t.competencia||'',t.date||'',t.amount,t.status,t.payment_method||''].join(','));
-    const blob=new Blob(['\uFEFF'+[header,...rows].join('\n')],{type:'text/csv;charset=utf-8;'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');a.href=url;a.download=`transacoes_${filterMonth||'todas'}.csv`;a.click();
+  const exportCSV = () => {
+    const sep = ';';
+    const fmtCsv = (v) => (v ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+
+    const header = [
+      'Tipo', 'Origem / Categoria', 'Descrição', 'Cliente',
+      'Propriedade / Empreendimento', 'Conta', 'Competência', 'Data',
+      'Valor (R$)', 'Sinal', 'Status', 'Forma de Pagamento'
+    ].join(sep);
+
+    const rows = sorted.map(t => [
+      t.type === 'receita' ? 'Receita' : 'Despesa',
+      esc(t.source),
+      esc(t.description),
+      esc(t.client || ''),
+      esc(t.propertyName || ''),
+      esc(t.accountLabel || ''),
+      t.competencia || '',
+      t.date ? format(parseISO(t.date), 'dd/MM/yyyy') : '',
+      fmtCsv(t.amount),
+      t.type === 'receita' ? '+' : '-',
+      t.status || '',
+      esc(t.payment_method || ''),
+    ].join(sep));
+
+    const summary = [
+      '',
+      `${sep}${sep}RESUMO DO PERÍODO`,
+      `${sep}${sep}Receitas Confirmadas (Pago)${sep}${sep}${sep}${sep}${sep}${sep}${fmtCsv(totalReceitas)}`,
+      `${sep}${sep}Total de Despesas${sep}${sep}${sep}${sep}${sep}${sep}${fmtCsv(totalDespesas)}`,
+      `${sep}${sep}Resultado Líquido${sep}${sep}${sep}${sep}${sep}${sep}${fmtCsv(resultado)}`,
+    ];
+
+    const blob = new Blob(['\uFEFF' + [header, ...rows, ...summary].join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `transacoes_${filterMonth || 'todas'}.csv`;
+    a.click();
+  };
+
+  const handleExportPDF = () => {
+    exportFinancialPDF({ sorted, totalReceitas, totalDespesas, resultado, filterMonth, userName: user?.full_name });
   };
 
   return (
@@ -170,8 +222,9 @@ export default function FinancialTransactions() {
           </h1>
           <p className="text-gray-500 text-sm mt-0.5">Visão consolidada de receitas, despesas e resultado</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button variant="outline" onClick={exportCSV} className="gap-2"><Download className="w-4 h-4"/>Exportar CSV</Button>
+          <Button variant="outline" onClick={handleExportPDF} className="gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50"><FileText className="w-4 h-4"/>Exportar PDF</Button>
           <Button className="bg-emerald-600 hover:bg-emerald-700 gap-2" onClick={()=>handleOpen()}><Plus className="w-4 h-4"/>Nova Transação</Button>
         </div>
       </div>

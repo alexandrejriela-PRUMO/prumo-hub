@@ -20,69 +20,108 @@ function buildBudgetHtml(budgetData, consultorData) {
   const clientName = b.client_name || blank;
   const clientEmail = b.client_email || '';
   const budgetNumber = b.budget_number || `ORC-${Date.now().toString().slice(-8)}`;
-  const title = b.title || 'Orçamento de Serviços';
+  const title = b.title || 'Orçamento de Serviços Ambientais';
   const validityDays = b.validity_days || 30;
   const discount = parseFloat(b.discount_percentage) || 0;
   const travelCost = parseFloat(b.travel_cost) || 0;
   const fuelCost = parseFloat(b.fuel_cost) || 0;
   const notes = b.notes || '';
 
-  // Dados do consultor (prestador)
   const consultorName = c.full_name || blank;
   const consultorEmail = c.email || blank;
 
-  const servicesTotal = services.reduce((acc, s) => acc + (parseFloat(s.hours) * parseFloat(s.hourly_rate)), 0);
-  const feesTotal = fees.reduce((acc, f) => acc + parseFloat(f.amount), 0);
+  const fmt = (v) => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const servicesTotal = services.reduce((acc, s) => acc + ((parseFloat(s.hours) || 0) * (parseFloat(s.hourly_rate) || 0)), 0);
+  const feesTotal = fees.reduce((acc, f) => acc + (parseFloat(f.amount) || 0), 0);
   const subtotal = servicesTotal + travelCost + fuelCost + feesTotal;
   const discountValue = subtotal * (discount / 100);
   const total = subtotal - discountValue;
 
-  const fmt = (v) => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
+  // Linhas dos serviços — layout limpo, sem texto grudado
   const servicesRows = services.length > 0
-    ? services.map(s => {
-        const subtotalSvc = parseFloat(s.hours) * parseFloat(s.hourly_rate);
-        return `<tr style="border-bottom: 1px solid #eee;">
-          <td style="padding: 10px 8px;">${s.name}${s.description ? '<br><span style="font-size:12px;color:#666;">' + s.description + '</span>' : ''}</td>
-          <td style="text-align:center; padding: 10px 8px;">${s.hours}h</td>
-          <td style="text-align:right; padding: 10px 8px;">R$ ${fmt(s.hourly_rate)}/h</td>
-          <td style="text-align:right; padding: 10px 8px; font-weight:500;">R$ ${fmt(subtotalSvc)}</td>
+    ? services.map((s, idx) => {
+        const hrs = parseFloat(s.hours) || 0;
+        const rate = parseFloat(s.hourly_rate) || 0;
+        const subtotalSvc = hrs * rate;
+        const bg = idx % 2 === 0 ? '#f9fafb' : '#ffffff';
+        return `
+        <tr style="background:${bg}; border-bottom:1px solid #e5e7eb;">
+          <td style="padding:12px 14px; font-size:13px; color:#111827;">
+            <strong style="display:block; margin-bottom:2px;">${s.name || 'Serviço'}</strong>
+            ${s.description ? `<span style="font-size:12px; color:#6b7280; line-height:1.5;">${s.description}</span>` : ''}
+          </td>
+          <td style="text-align:center; padding:12px 10px; font-size:13px; color:#374151; white-space:nowrap;">${hrs > 0 ? hrs + 'h' : '—'}</td>
+          <td style="text-align:right; padding:12px 10px; font-size:13px; color:#374151; white-space:nowrap;">${rate > 0 ? 'R$ ' + fmt(rate) + '/h' : '—'}</td>
+          <td style="text-align:right; padding:12px 14px; font-size:13px; font-weight:700; color:#1B4332; white-space:nowrap;">R$ ${fmt(subtotalSvc)}</td>
         </tr>`;
       }).join('')
-    : `<tr><td colspan="4" style="padding:10px;color:#999;text-align:center;">Nenhum serviço informado</td></tr>`;
+    : `<tr><td colspan="4" style="padding:16px; color:#9ca3af; text-align:center; font-style:italic;">Nenhum serviço informado</td></tr>`;
 
-  const extraRows = [
-    travelCost > 0 ? `<tr><td colspan="3" style="padding:6px 8px;color:#555;">Deslocamento</td><td style="text-align:right;padding:6px 8px;">R$ ${fmt(travelCost)}</td></tr>` : '',
-    fuelCost > 0 ? `<tr><td colspan="3" style="padding:6px 8px;color:#555;">Combustível</td><td style="text-align:right;padding:6px 8px;">R$ ${fmt(fuelCost)}</td></tr>` : '',
-    ...fees.map(f => `<tr><td colspan="3" style="padding:6px 8px;color:#555;">${f.name}</td><td style="text-align:right;padding:6px 8px;">R$ ${fmt(f.amount)}</td></tr>`),
-  ].join('');
+  // Linhas de custos extras (separadas com destaque visual diferente)
+  const extraLines = [];
+  if (travelCost > 0) extraLines.push({ label: 'Deslocamento', value: travelCost });
+  if (fuelCost > 0) extraLines.push({ label: 'Combustível', value: fuelCost });
+  fees.forEach(f => { if (parseFloat(f.amount) > 0) extraLines.push({ label: f.name, value: parseFloat(f.amount) }); });
 
-  const discountRow = discount > 0
-    ? `<tr><td colspan="3" style="padding:6px 8px;color:#dc2626;">Desconto (${discount}%)</td><td style="text-align:right;padding:6px 8px;color:#dc2626;">- R$ ${fmt(discountValue)}</td></tr>`
-    : '';
+  const extraRows = extraLines.map(ex => `
+    <tr style="background:#fffbeb; border-bottom:1px solid #fde68a;">
+      <td colspan="3" style="padding:10px 14px; font-size:13px; color:#92400e;">${ex.label}</td>
+      <td style="text-align:right; padding:10px 14px; font-size:13px; font-weight:600; color:#92400e; white-space:nowrap;">R$ ${fmt(ex.value)}</td>
+    </tr>`).join('');
 
-  return `<div style="font-family: Calibri, Arial, sans-serif; line-height: 1.8; color: #333; max-width: 794px; margin: 0 auto;">
-  <div style="text-align:center; margin-bottom:40px; padding-bottom:20px; border-bottom:3px solid #1B4332;">
-    <h1 style="color:#1B4332; margin:0; font-size:28px; font-weight:bold;">ORÇAMENTO</h1>
-    <p style="margin:6px 0 0 0; color:#666; font-size:14px;">${title}</p>
-    <p style="margin:4px 0 0 0; color:#888; font-size:13px;">Nº ${budgetNumber} &nbsp;|&nbsp; Emitido em: ${dataHoje} &nbsp;|&nbsp; Válido por ${validityDays} dias</p>
+  const discountRow = discount > 0 ? `
+    <tr style="background:#fef2f2; border-bottom:1px solid #fecaca;">
+      <td colspan="3" style="padding:10px 14px; font-size:13px; color:#dc2626; font-weight:600;">Desconto (${discount}%)</td>
+      <td style="text-align:right; padding:10px 14px; font-size:13px; font-weight:700; color:#dc2626; white-space:nowrap;">- R$ ${fmt(discountValue)}</td>
+    </tr>` : '';
+
+  return `<div style="font-family: 'Segoe UI', Calibri, Arial, sans-serif; color:#1f2937; max-width:794px; margin:0 auto; line-height:1.6;">
+
+  <!-- CABEÇALHO -->
+  <div style="background:linear-gradient(135deg,#064e3b 0%,#1B4332 100%); color:#fff; padding:36px 40px 28px; margin-bottom:0;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+      <div>
+        <p style="margin:0 0 4px 0; font-size:11px; letter-spacing:3px; text-transform:uppercase; color:#6ee7b7; font-weight:600;">PRUMO HUB</p>
+        <h1 style="margin:0; font-size:30px; font-weight:800; letter-spacing:-0.5px;">ORÇAMENTO</h1>
+        <p style="margin:6px 0 0 0; font-size:14px; color:#a7f3d0;">${title}</p>
+      </div>
+      <div style="text-align:right; font-size:12px; color:#d1fae5; line-height:2;">
+        <div><strong style="color:#fff;">Nº ${budgetNumber}</strong></div>
+        <div>Emitido em: ${dataHoje}</div>
+        <div>Válido por: <strong style="color:#fde68a;">${validityDays} dias</strong></div>
+      </div>
+    </div>
   </div>
 
-  <div style="margin-bottom:28px;">
-    <h2 style="color:#1B4332; font-size:15px; margin:0 0 8px 0; text-transform:uppercase; letter-spacing:1px;">Cliente</h2>
-    <p style="margin:4px 0; font-size:15px;"><strong>${clientName}</strong></p>
-    ${clientEmail ? `<p style="margin:4px 0; font-size:13px; color:#555;">Email: ${clientEmail}</p>` : ''}
+  <!-- FAIXA VERDE CLARA -->
+  <div style="background:#ecfdf5; border-left:4px solid #10b981; padding:0; margin-bottom:28px;">
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0;">
+      <!-- Dados do Cliente -->
+      <div style="padding:20px 24px; border-right:1px solid #d1fae5;">
+        <p style="margin:0 0 8px 0; font-size:10px; text-transform:uppercase; letter-spacing:2px; font-weight:700; color:#065f46;">Cliente / Contratante</p>
+        <p style="margin:0 0 4px 0; font-size:16px; font-weight:700; color:#111827;">${clientName}</p>
+        ${clientEmail ? `<p style="margin:0; font-size:13px; color:#6b7280;">${clientEmail}</p>` : ''}
+      </div>
+      <!-- Dados do Consultor -->
+      <div style="padding:20px 24px;">
+        <p style="margin:0 0 8px 0; font-size:10px; text-transform:uppercase; letter-spacing:2px; font-weight:700; color:#065f46;">Prestador de Serviço</p>
+        <p style="margin:0 0 4px 0; font-size:16px; font-weight:700; color:#111827;">${consultorName}</p>
+        <p style="margin:0; font-size:13px; color:#6b7280;">${consultorEmail}</p>
+      </div>
+    </div>
   </div>
 
+  <!-- TABELA DE SERVIÇOS -->
   <div style="margin-bottom:28px;">
-    <h2 style="color:#1B4332; font-size:15px; margin:0 0 10px 0; text-transform:uppercase; letter-spacing:1px;">Serviços</h2>
-    <table style="width:100%; border-collapse:collapse; font-size:14px;">
+    <p style="margin:0 0 12px 0; font-size:11px; text-transform:uppercase; letter-spacing:2px; font-weight:700; color:#064e3b; padding:0 4px;">Serviços Contratados</p>
+    <table style="width:100%; border-collapse:collapse; font-size:13px; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.08);">
       <thead>
         <tr style="background:#1B4332; color:#fff;">
-          <th style="text-align:left; padding:10px 8px;">Descrição</th>
-          <th style="text-align:center; padding:10px 8px; width:80px;">Horas</th>
-          <th style="text-align:right; padding:10px 8px; width:120px;">Valor/Hora</th>
-          <th style="text-align:right; padding:10px 8px; width:120px;">Subtotal</th>
+          <th style="text-align:left; padding:12px 14px; font-weight:600; font-size:12px; letter-spacing:0.5px;">Descrição do Serviço</th>
+          <th style="text-align:center; padding:12px 10px; font-weight:600; font-size:12px; width:80px;">Horas</th>
+          <th style="text-align:right; padding:12px 10px; font-weight:600; font-size:12px; width:130px;">Valor/Hora</th>
+          <th style="text-align:right; padding:12px 14px; font-weight:600; font-size:12px; width:130px;">Subtotal</th>
         </tr>
       </thead>
       <tbody>
@@ -93,37 +132,61 @@ function buildBudgetHtml(budgetData, consultorData) {
     </table>
   </div>
 
-  <div style="margin-bottom:30px; text-align:right;">
-    <p style="margin:8px 0; font-size:14px; color:#555;"><strong>Subtotal:</strong> R$ ${fmt(subtotal)}</p>
-    ${discount > 0 ? `<p style="margin:8px 0; font-size:14px; color:#dc2626;"><strong>Desconto (${discount}%):</strong> - R$ ${fmt(discountValue)}</p>` : ''}
-    <p style="margin:12px 0 0 0; font-size:20px; font-weight:bold; color:#1B4332; border-top:2px solid #1B4332; padding-top:12px;">TOTAL: R$ ${fmt(total)}</p>
+  <!-- TOTALIZADOR -->
+  <div style="display:flex; justify-content:flex-end; margin-bottom:32px;">
+    <div style="min-width:280px; background:#f9fafb; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden;">
+      <div style="padding:12px 20px; display:flex; justify-content:space-between; border-bottom:1px solid #e5e7eb;">
+        <span style="font-size:13px; color:#6b7280;">Subtotal dos Serviços</span>
+        <span style="font-size:13px; font-weight:600; color:#374151;">R$ ${fmt(servicesTotal)}</span>
+      </div>
+      ${extraLines.length > 0 ? `<div style="padding:12px 20px; display:flex; justify-content:space-between; border-bottom:1px solid #e5e7eb;">
+        <span style="font-size:13px; color:#6b7280;">Custos Adicionais</span>
+        <span style="font-size:13px; font-weight:600; color:#374151;">R$ ${fmt(travelCost + fuelCost + feesTotal)}</span>
+      </div>` : ''}
+      ${discount > 0 ? `<div style="padding:12px 20px; display:flex; justify-content:space-between; border-bottom:1px solid #e5e7eb;">
+        <span style="font-size:13px; color:#dc2626;">Desconto (${discount}%)</span>
+        <span style="font-size:13px; font-weight:600; color:#dc2626;">- R$ ${fmt(discountValue)}</span>
+      </div>` : ''}
+      <div style="padding:16px 20px; display:flex; justify-content:space-between; background:#064e3b;">
+        <span style="font-size:15px; font-weight:700; color:#fff;">TOTAL</span>
+        <span style="font-size:18px; font-weight:800; color:#fde68a;">R$ ${fmt(total)}</span>
+      </div>
+    </div>
   </div>
 
-  ${notes ? `<div style="margin-bottom:28px; padding:16px; background:#f9fafb; border-left:4px solid #1B4332; border-radius:4px; font-size:13px;">
-    <strong>Observações:</strong><br>${notes}
+  ${notes ? `<!-- OBSERVAÇÕES -->
+  <div style="margin-bottom:28px; padding:16px 20px; background:#fffbeb; border:1px solid #fde68a; border-left:4px solid #f59e0b; border-radius:8px;">
+    <p style="margin:0 0 8px 0; font-size:11px; text-transform:uppercase; font-weight:700; color:#92400e; letter-spacing:1px;">Observações</p>
+    <p style="margin:0; font-size:13px; color:#78350f; line-height:1.7;">${notes}</p>
   </div>` : ''}
 
-  <div style="margin-top:60px; padding-top:20px; border-top:1px solid #ccc; font-size:12px; color:#888; text-align:center;">
-    <p>Este orçamento é válido por ${validityDays} dias a partir da data de emissão.</p>
-    <p style="margin-top:8px;">Em caso de dúvidas, entre em contato pelo email: <strong>${consultorEmail}</strong></p>
+  <!-- RODAPÉ DE VALIDADE -->
+  <div style="margin-bottom:40px; padding:14px 20px; background:#f0fdf4; border-radius:8px; text-align:center;">
+    <p style="margin:0; font-size:13px; color:#065f46;">
+      Este orçamento é válido por <strong>${validityDays} dias</strong> a partir da data de emissão (${dataHoje}).
+      Em caso de dúvidas, entre em contato pelo email: <strong>${consultorEmail}</strong>
+    </p>
   </div>
 
-  <table style="margin-top:60px; width:100%; border-collapse:collapse;">
+  <!-- ASSINATURAS -->
+  <table style="width:100%; border-collapse:collapse; margin-top:20px;">
     <tr>
-      <td style="width:50%; text-align:center; padding-right:20px;">
-        <div style="border-top:1px solid #000; padding-top:16px; margin-bottom:5px;"></div>
-        <p style="margin:0; font-size:13px;"><strong>${consultorName}</strong></p>
-        <p style="margin:4px 0 0 0; font-size:12px; color:#666;">Prestador de Serviço</p>
-        <p style="margin:4px 0 0 0; font-size:12px; color:#666;">Data: ___/___/_______</p>
+      <td style="width:48%; text-align:center; padding:0 16px 0 0;">
+        <div style="border-top:2px solid #1B4332; padding-top:14px;">
+          <p style="margin:0 0 2px 0; font-size:14px; font-weight:700; color:#111827;">${consultorName}</p>
+          <p style="margin:0; font-size:12px; color:#6b7280;">Prestador de Serviço &nbsp;|&nbsp; Data: ___/___/_______</p>
+        </div>
       </td>
-      <td style="width:50%; text-align:center; padding-left:20px;">
-        <div style="border-top:1px solid #000; padding-top:16px; margin-bottom:5px;"></div>
-        <p style="margin:0; font-size:13px;"><strong>${clientName}</strong></p>
-        <p style="margin:4px 0 0 0; font-size:12px; color:#666;">Contratante</p>
-        <p style="margin:4px 0 0 0; font-size:12px; color:#666;">Data: ___/___/_______</p>
+      <td style="width:4%;"></td>
+      <td style="width:48%; text-align:center; padding:0 0 0 16px;">
+        <div style="border-top:2px solid #1B4332; padding-top:14px;">
+          <p style="margin:0 0 2px 0; font-size:14px; font-weight:700; color:#111827;">${clientName}</p>
+          <p style="margin:0; font-size:12px; color:#6b7280;">Contratante &nbsp;|&nbsp; Data: ___/___/_______</p>
+        </div>
       </td>
     </tr>
   </table>
+
 </div>`;
 }
 

@@ -1,12 +1,13 @@
 import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import BudgetForm from '@/components/budget/BudgetForm';
 import BudgetEditorWYSIWYG from '@/components/budget/BudgetEditorWYSIWYG';
-import { ChevronLeft, Download, FileEdit } from 'lucide-react';
+import { ChevronLeft, Download, FileEdit, Trash2, Clock, User, DollarSign, FileText, Plus, Eye } from 'lucide-react';
 
 import { useNavigationGuard } from '../hooks/useNavigationGuard';
 
@@ -266,54 +267,120 @@ export default function BudgetGenerator() {
         )}
 
         {step === 'history' && (
-          <div className="space-y-4">
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-bold text-emerald-900">Orçamentos Salvos</h2>
+                <p className="text-sm text-gray-500 mt-0.5">{budgets.length} orçamento{budgets.length !== 1 ? 's' : ''} encontrado{budgets.length !== 1 ? 's' : ''}</p>
+              </div>
+              <Button onClick={() => setStep('form')} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
+                <Plus className="w-4 h-4" /> Novo Orçamento
+              </Button>
+            </div>
+
             {budgets.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-gray-600">Nenhum orçamento criado ainda</p>
+              <div className="text-center py-20 bg-white rounded-xl border border-dashed border-gray-200">
+                <FileText className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+                <p className="text-gray-500 font-medium">Nenhum orçamento salvo ainda</p>
+                <p className="text-gray-400 text-sm mt-1">Crie seu primeiro orçamento clicando em "Novo Orçamento"</p>
               </div>
             ) : (
-              budgets.map(budget => (
-                <div key={budget.id} className="border rounded-lg p-4 hover:bg-emerald-50/50 cursor-pointer" onClick={() => handleOpenBudget(budget)}>
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-emerald-900">{budget.budget_number} - {budget.client_name}</h3>
-                      <p className="text-sm text-gray-600 truncate">{budget.title}</p>
-                      <div className="flex flex-wrap gap-4 text-sm mt-2">
-                        <span className="text-gray-500">Email: {budget.client_email}</span>
-                        <span className="text-gray-500">Valor: <strong>R$ {budget.total_amount?.toFixed(2)}</strong></span>
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${budget.status === 'Aceito' ? 'bg-green-100 text-green-800' : budget.status === 'Enviado' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>{budget.status}</span>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="gap-1"
-                        onClick={(e) => handleDownloadPDF(e, budget)}
-                        title="Baixar PDF"
-                      >
-                        <Download className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="gap-1"
-                        onClick={() => handleOpenBudget(budget)}
-                        title="Abrir Editor"
-                      >
-                        <FileEdit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => deleteBudgetMutation.mutate(budget.id)}
-                      >
-                        Deletar
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))
+              <div className="grid gap-4">
+                {budgets.map(budget => {
+                  const statusColor = budget.status === 'Aceito'
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : budget.status === 'Enviado'
+                    ? 'bg-blue-100 text-blue-800'
+                    : budget.status === 'Recusado'
+                    ? 'bg-red-100 text-red-800'
+                    : 'bg-gray-100 text-gray-600';
+
+                  const createdAt = budget.created_date
+                    ? new Date(budget.created_date).toLocaleDateString('pt-BR')
+                    : '—';
+
+                  return (
+                    <Card key={budget.id} className="hover:shadow-md transition-shadow border-gray-100">
+                      <CardContent className="p-0">
+                        <div className="flex items-stretch">
+                          {/* Barra lateral colorida */}
+                          <div className="w-1.5 rounded-l-lg bg-emerald-600 flex-shrink-0" />
+                          <div className="flex-1 p-5">
+                            <div className="flex items-start justify-between gap-4 flex-wrap">
+                              {/* Info principal */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                  <span className="text-xs font-mono font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+                                    {budget.budget_number}
+                                  </span>
+                                  <Badge className={`text-xs border-0 ${statusColor}`}>{budget.status || 'Rascunho'}</Badge>
+                                </div>
+                                <h3 className="font-bold text-gray-900 text-base leading-snug truncate">
+                                  {budget.title || 'Orçamento de Serviços'}
+                                </h3>
+                                <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-500">
+                                  <span className="flex items-center gap-1.5">
+                                    <User className="w-3.5 h-3.5 text-gray-400" />
+                                    {budget.client_name || '—'}
+                                  </span>
+                                  <span className="flex items-center gap-1.5">
+                                    <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
+                                    <strong className="text-emerald-700">
+                                      R$ {(budget.total_amount ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    </strong>
+                                  </span>
+                                  <span className="flex items-center gap-1.5">
+                                    <Clock className="w-3.5 h-3.5 text-gray-400" />
+                                    {createdAt}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Ações */}
+                              <div className="flex gap-2 flex-shrink-0 items-center">
+                                {budget.document_html && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="gap-1.5 text-xs"
+                                    onClick={(e) => handleDownloadPDF(e, budget)}
+                                    title="Baixar PDF"
+                                  >
+                                    <Download className="w-3.5 h-3.5" /> PDF
+                                  </Button>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="gap-1.5 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                                  onClick={() => handleOpenBudget(budget)}
+                                  title="Abrir no Editor"
+                                >
+                                  <FileEdit className="w-3.5 h-3.5" /> Editar
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (window.confirm('Deseja deletar este orçamento?')) {
+                                      deleteBudgetMutation.mutate(budget.id);
+                                    }
+                                  }}
+                                  title="Deletar"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
             )}
           </div>
         )}

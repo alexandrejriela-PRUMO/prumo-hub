@@ -1,67 +1,77 @@
 import { useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
+/**
+ * Protege contra saída EFETIVA da página (troca de rota via React Router
+ * ou fechamento/refresh da aba). NÃO intercepta cliques dentro da própria página.
+ */
 export function useNavigationGuard(isDirty) {
-  // Proteger contra cliques em elementos de navegação
-  useEffect(() => {
-    const handleClick = (e) => {
-      const navElement = e.target.closest('a,button,[role="button"]');
-      if (!navElement) return;
+  const navigate = useNavigate();
+  const location = useLocation();
 
+  // Interceptar links <a> e Links do React Router que levam para OUTRA rota
+  useEffect(() => {
+    if (!isDirty) return;
+
+    const handleClick = (e) => {
+      // Ignorar se não está sujo
       if (!isDirty) return;
 
-      const confirmLeave = window.confirm(
-        'Você possui alterações não salvas. Deseja realmente sair?'
-      );
+      // Subir até o elemento clicável mais próximo
+      const anchor = e.target.closest('a');
+      if (!anchor) return; // Só intercepta <a>, não botões internos da página
 
-      if (!confirmLeave) {
-        e.preventDefault();
-        e.stopPropagation();
+      // Checar se é um link que leva para outra rota (href diferente da atual)
+      const href = anchor.getAttribute('href');
+      if (!href) return;
+
+      // Ignorar links externos, âncoras, javascript: etc.
+      if (href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('#') || href.startsWith('javascript:')) return;
+
+      // Verificar se o destino é diferente da página atual
+      const currentPath = location.pathname;
+      // Normalizar: remover trailing slash
+      const normalize = (p) => p.replace(/\/+$/, '') || '/';
+      if (normalize(href) === normalize(currentPath)) return;
+
+      // É uma navegação real para outra página → perguntar
+      e.preventDefault();
+      e.stopPropagation();
+      const confirmed = window.confirm('Você possui alterações não salvas. Deseja realmente sair?');
+      if (confirmed) {
+        navigate(href);
       }
     };
 
     document.addEventListener('click', handleClick, true);
+    return () => document.removeEventListener('click', handleClick, true);
+  }, [isDirty, location.pathname, navigate]);
 
-    return () => {
-      document.removeEventListener('click', handleClick, true);
-    };
-  }, [isDirty]);
-
-  // Proteger contra navegação via botão voltar ou popstate
+  // Proteger contra botão voltar do browser
   useEffect(() => {
-    const handlePopstate = (e) => {
-      if (!isDirty) return;
+    if (!isDirty) return;
 
-      const confirmLeave = window.confirm(
-        'Você possui alterações não salvas. Deseja realmente sair?'
-      );
-
-      if (!confirmLeave) {
-        e.preventDefault();
-        // Push o estado novamente para manter na mesma página
-        window.history.pushState(null, null, window.location.href);
+    const handlePopstate = () => {
+      const confirmed = window.confirm('Você possui alterações não salvas. Deseja realmente sair?');
+      if (!confirmed) {
+        window.history.pushState(null, '', window.location.href);
       }
     };
 
     window.addEventListener('popstate', handlePopstate);
-
-    return () => {
-      window.removeEventListener('popstate', handlePopstate);
-    };
+    return () => window.removeEventListener('popstate', handlePopstate);
   }, [isDirty]);
 
-  // Proteger contra fechamento da aba ou refresh
+  // Proteger contra fechamento da aba / refresh
   useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      if (!isDirty) return;
+    if (!isDirty) return;
 
+    const handleBeforeUnload = (e) => {
       e.preventDefault();
       e.returnValue = '';
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isDirty]);
 }

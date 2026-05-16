@@ -107,8 +107,13 @@ export default function FinancialDashboard() {
       effectiveManual.forEach(e => {
         const month = e.competencia || e.date?.substring(0,7);
         if (byMonth[month]) {
-          if (e.transaction_type === 'receita') byMonth[month].receita += e.amount || 0;
-          else byMonth[month].despesa += e.amount || 0;
+          if (e.transaction_type === 'receita') {
+            // Só conta receita manual se estiver paga
+            if (normalizeStatus(e.status) === 'Pago') byMonth[month].receita += e.amount || 0;
+          } else {
+            // Despesas contam independente do status (já foram lançadas)
+            byMonth[month].despesa += e.amount || 0;
+          }
         }
       });
       // Adicionar receitas de serviços parcelados e avista do CRM
@@ -212,8 +217,11 @@ export default function FinancialDashboard() {
     effectiveManual.forEach(e => {
       const month = e.competencia || e.date?.substring(0,7);
       if (histByMonth[month]) {
-        if (e.transaction_type === 'receita') histByMonth[month].receita += e.amount || 0;
-        else histByMonth[month].despesa += e.amount || 0;
+        if (e.transaction_type === 'receita') {
+          if (normalizeStatus(e.status) === 'Pago') histByMonth[month].receita += e.amount || 0;
+        } else {
+          histByMonth[month].despesa += e.amount || 0;
+        }
       }
     });
     crms.forEach(crm => {

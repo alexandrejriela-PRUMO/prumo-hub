@@ -37,9 +37,6 @@ Deno.serve(async (req) => {
 
     const fmt = (v) => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
-    // Usar o document_html salvo no banco (já gerado e salvo antes do envio)
-    const docHtml = budget.document_html || '';
-
     const emailBody = `<!DOCTYPE html>
 <html>
 <head>
@@ -77,15 +74,35 @@ Deno.serve(async (req) => {
         </table>
       </div>
 
-      ${docHtml ? `
-      <!-- Documento completo do orçamento -->
-      <div style="border-top:2px solid #e5e7eb; padding-top:24px; margin-top:8px;">
-        <p style="font-size:11px; color:#6b7280; margin:0 0 16px 0; text-transform:uppercase; letter-spacing:1px; font-weight:700;">Orçamento Detalhado</p>
-        <div style="border:1px solid #e5e7eb; border-radius:8px; padding:32px; background:#ffffff;">
-          ${docHtml}
-        </div>
-      </div>
-      ` : ''}
+      <!-- Serviços detalhados -->
+      ${budget.services && budget.services.length > 0 ? `
+      <div style="border-top:2px solid #e5e7eb; padding-top:20px; margin-top:8px; margin-bottom:20px;">
+        <p style="font-size:11px; color:#6b7280; margin:0 0 12px 0; text-transform:uppercase; letter-spacing:1px; font-weight:700;">Serviços Detalhados</p>
+        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+          <thead>
+            <tr style="background:#1B4332; color:#fff;">
+              <th style="text-align:left; padding:10px 12px; font-weight:600;">Serviço</th>
+              <th style="text-align:center; padding:10px 8px; font-weight:600; width:60px;">Horas</th>
+              <th style="text-align:right; padding:10px 8px; font-weight:600; width:110px;">Valor/h</th>
+              <th style="text-align:right; padding:10px 12px; font-weight:600; width:110px;">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${budget.services.map((s, i) => {
+              const hrs = parseFloat(s.hours) || 0;
+              const rate = parseFloat(s.hourly_rate) || 0;
+              const sub = hrs * rate;
+              const bg = i % 2 === 0 ? '#f9fafb' : '#ffffff';
+              return `<tr style="background:${bg}; border-bottom:1px solid #e5e7eb;">
+                <td style="padding:10px 12px; font-size:13px; color:#111827;"><strong>${s.name || 'Serviço'}</strong>${s.description ? `<br><span style="font-size:12px;color:#6b7280;">${s.description}</span>` : ''}</td>
+                <td style="text-align:center; padding:10px 8px; color:#374151;">${hrs > 0 ? hrs + 'h' : '—'}</td>
+                <td style="text-align:right; padding:10px 8px; color:#374151;">${rate > 0 ? 'R$ ' + fmt(rate) + '/h' : '—'}</td>
+                <td style="text-align:right; padding:10px 12px; font-weight:700; color:#1B4332;">R$ ${fmt(sub)}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>` : ''}
 
       <!-- Rodapé -->
       <div style="margin-top:28px; padding-top:20px; border-top:1px solid #e5e7eb; font-size:12px; color:#9ca3af; text-align:center;">
@@ -97,14 +114,22 @@ Deno.serve(async (req) => {
 </body>
 </html>`;
 
-    await base44.integrations.Core.SendEmail({
-      to,
-      subject,
-      body: emailBody,
-      from_name: user.full_name || 'Consultor PRUMO',
-    });
+    let emailSent = false;
+    let sendError = null;
+    try {
+      await base44.integrations.Core.SendEmail({
+        to,
+        subject,
+        body: emailBody,
+        from_name: user.full_name || 'Consultor PRUMO',
+      });
+      emailSent = true;
+    } catch (emailErr) {
+      sendError = emailErr.message || 'Erro ao enviar e-mail';
+      console.error('Erro no SendEmail:', sendError);
+    }
 
-    // Salvar log do envio
+    // Salvar log do envio com status real
     await base44.entities.BudgetEmailLog.create({
       budget_id,
       budget_number: budget.budget_number || '',
@@ -113,8 +138,12 @@ Deno.serve(async (req) => {
       subject,
       message: message || '',
       sent_at: new Date().toISOString(),
-      status: 'sent',
+      status: emailSent ? 'sent' : 'error',
     });
+
+    if (!emailSent) {
+      return Response.json({ error: `Falha ao enviar e-mail: ${sendError}` }, { status: 500 });
+    }
 
     // Atualizar status do orçamento para "Enviado"
     await base44.entities.Budget.update(budget_id, {

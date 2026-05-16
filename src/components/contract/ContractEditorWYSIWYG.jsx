@@ -7,6 +7,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
+import SendEmailModal from '@/components/shared/SendEmailModal';
 
 const ReactQuill = lazy(() => import('react-quill'));
 
@@ -114,6 +115,8 @@ export default function ContractEditorWYSIWYG({
   const [zoom, setZoom] = useState(100);
   const [logoBase64, setLogoBase64] = useState('');
   const [loadingLogo, setLoadingLogo] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const fileInputRef = useRef(null);
 
   // Inject quill CSS dynamically to avoid duplicate React instance from direct CSS import
@@ -197,6 +200,36 @@ export default function ContractEditorWYSIWYG({
   const duplicateTemplate = (template) => {
     setDocumentHtml(template.html_template);
     toast.success('Modelo duplicado para edição');
+  };
+
+  const handleSendEmail = async ({ to, subject, message }) => {
+    if (!contractData?.id) {
+      toast.error('Salve o contrato antes de enviar por e-mail.');
+      return;
+    }
+    setIsSendingEmail(true);
+    try {
+      toast.info('Gerando PDF...');
+      const pdf = await buildPdfFromHtml(generateCompleteHTML());
+      const blob = pdf.output('blob');
+      const file = new File([blob], `contrato-${contractData.id}.pdf`, { type: 'application/pdf' });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+
+      await base44.functions.invoke('sendContractEmail', {
+        contract_id: contractData.id,
+        to,
+        subject,
+        message,
+        pdf_url: file_url,
+      });
+
+      toast.success('E-mail enviado com sucesso!');
+      setShowEmailModal(false);
+    } catch (error) {
+      toast.error('Erro ao enviar e-mail: ' + error.message);
+    } finally {
+      setIsSendingEmail(false);
+    }
   };
 
   const handleLogoUpload = async (e) => {
@@ -417,12 +450,30 @@ export default function ContractEditorWYSIWYG({
           <Save className="w-4 h-4" /> Salvar Contrato
         </Button>
         <Button
+          onClick={() => setShowEmailModal(true)}
+          variant="outline"
+          className="gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+        >
+          <Mail className="w-4 h-4" /> Enviar por E-mail
+        </Button>
+        <Button
           onClick={() => onSendToSign({ documentHtml: generateCompleteHTML(), selectedTemplate, logoBase64 })}
           className="bg-emerald-600 hover:bg-emerald-700 gap-2"
         >
           <Mail className="w-4 h-4" /> Enviar para Assinatura
         </Button>
       </div>
+
+      <SendEmailModal
+        isOpen={showEmailModal}
+        onClose={() => setShowEmailModal(false)}
+        onSend={handleSendEmail}
+        isSending={isSendingEmail}
+        defaultTo={contractData?.client_email || ''}
+        defaultSubject={`Contrato - ${contractData?.contract_type || 'Serviços'} | ${contractData?.client_name || ''}`}
+        defaultMessage={`Prezado(a) ${contractData?.client_name || 'Cliente'},\n\nSegue em anexo o contrato para sua apreciação.\n\nQualquer dúvida, estou à disposição.\n\nAtenciosamente.`}
+        documentLabel={`${contractData?.contract_type || 'Contrato'} — ${contractData?.client_name || ''}`}
+      />
     </div>
   );
 }

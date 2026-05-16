@@ -8,6 +8,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
+import SendEmailModal from '@/components/shared/SendEmailModal';
 
 function buildBudgetHtml(budgetData, consultorData) {
   const b = budgetData || {};
@@ -206,6 +207,8 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
   const [htmlContent, setHtmlContent] = useState(() => budgetData.document_html || buildBudgetHtml(budgetData, consultorData));
   const [logoBase64, setLogoBase64] = useState('');
   const [loadingLogo, setLoadingLogo] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const fileInputRef = useRef(null);
   const previewRef = useRef(null);
 
@@ -295,12 +298,56 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
     });
   };
 
-  const handleSend = () => {
-    onSend({
-      documentHtml: generateCompleteHTML(),
-      logoBase64,
-      rawHtml: htmlContent,
-    });
+  // Gera PDF como Blob a partir do conteúdo da preview
+  const generatePdfBlob = async () => {
+    const element = previewRef.current;
+    if (!element) throw new Error('Preview não encontrada');
+    const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#fff', logging: false, useCORS: true });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const imgWidth = 210;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
+    while (heightLeft > 0) {
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= 297;
+      position -= 297;
+      if (heightLeft > 0) pdf.addPage();
+    }
+    return pdf.output('blob');
+  };
+
+  const handleSendEmail = async ({ to, subject, message }) => {
+    if (!budgetData?.id) {
+      toast.error('Salve o orçamento antes de enviar por e-mail.');
+      return;
+    }
+    setIsSendingEmail(true);
+    try {
+      // 1. Gerar PDF e fazer upload
+      toast.info('Gerando PDF...');
+      const blob = await generatePdfBlob();
+      const file = new File([blob], `orcamento-${budgetData.budget_number || 'novo'}.pdf`, { type: 'application/pdf' });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+
+      // 2. Enviar e-mail via backend
+      await base44.functions.invoke('sendBudgetEmail', {
+        budget_id: budgetData.id,
+        to,
+        subject,
+        message,
+        pdf_url: file_url,
+      });
+
+      toast.success('E-mail enviado com sucesso!');
+      setShowEmailModal(false);
+      if (onSend) onSend({ documentHtml: generateCompleteHTML(), logoBase64, rawHtml: htmlContent });
+    } catch (error) {
+      toast.error('Erro ao enviar e-mail: ' + error.message);
+    } finally {
+      setIsSendingEmail(false);
+    }
   };
 
   const resetDocument = () => {
@@ -393,11 +440,22 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
           <Button onClick={handleSave} variant="outline" className="gap-2">
             Salvar Orçamento
           </Button>
-          <Button onClick={handleSend} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
-            <Mail className="w-4 h-4" /> Enviar por Email
+          <Button onClick={() => setShowEmailModal(true)} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
+            <Mail className="w-4 h-4" /> Enviar por E-mail
           </Button>
         </div>
       </div>
+
+      <SendEmailModal
+        isOpen={showEmailModal}
+        onClose={() => setShowEmailModal(false)}
+        onSend={handleSendEmail}
+        isSending={isSendingEmail}
+        defaultTo={budgetData?.client_email || ''}
+        defaultSubject={`Orçamento ${budgetData?.budget_number || ''} - ${budgetData?.title || 'Serviços'}`}
+        defaultMessage={`Prezado(a) ${budgetData?.client_name || 'Cliente'},\n\nSegue em anexo o orçamento referente aos serviços solicitados.\n\nQualquer dúvida, estou à disposição.\n\nAtenciosamente,\n${consultorData?.full_name || ''}`}
+        documentLabel={`Orçamento Nº ${budgetData?.budget_number || ''}`}
+      />
 
       {/* CSS para Quill e Preview */}
       <style>{`

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,22 +7,24 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import BudgetForm from '@/components/budget/BudgetForm';
 import BudgetEditorWYSIWYG from '@/components/budget/BudgetEditorWYSIWYG';
-import { ChevronLeft, Download, FileEdit, Trash2, Clock, User, DollarSign, FileText, Plus, Eye } from 'lucide-react';
+import { ChevronLeft, Download, FileEdit, Trash2, Clock, User, DollarSign, FileText, Plus, Mail } from 'lucide-react';
+import BudgetEmailHistory from '@/components/budget/BudgetEmailHistory';
 
 import { useNavigationGuard } from '../hooks/useNavigationGuard';
 
 export default function BudgetGenerator() {
-  const [step, setStep] = React.useState('form'); // form, editor, history
-  const [budgetData, setBudgetData] = React.useState(null);
-  const [user, setUser] = React.useState(null);
-  const [selectedBudget, setSelectedBudget] = React.useState(null);
-  const [isDirty, setIsDirty] = React.useState(false);
+  const [step, setStep] = useState('form'); // form, editor, history
+  const [historyTab, setHistoryTab] = useState('budgets'); // budgets, emails
+  const [budgetData, setBudgetData] = useState(null);
+  const [user, setUser] = useState(null);
+  const [selectedBudget, setSelectedBudget] = useState(null);
+  const [isDirty, setIsDirty] = useState(false);
   const queryClient = useQueryClient();
 
   // Proteger contra saída do gerador sem salvar
   useNavigationGuard(isDirty);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const loadUser = async () => {
       try {
         const userData = await base44.auth.me();
@@ -64,36 +66,31 @@ export default function BudgetGenerator() {
     }
   });
 
-  const sendBudgetMutation = useMutation({
-    mutationFn: async (data) => {
-      const budget = await base44.entities.Budget.create({
-        ...budgetData,
-        document_html: data.documentHtml,
-        logo_url: data.logoUrl,
-        template_id: data.selectedTemplate,
-        status: 'Enviado',
-        sent_at: new Date().toISOString()
-      });
-      
-      // Enviar email
-      await base44.functions.invoke('sendBudgetEmail', {
-        budget_id: budget.id,
-        client_email: budgetData.client_email,
-        client_name: budgetData.client_name,
-        document_html: data.documentHtml
-      });
-
-      return budget;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['budgets'] });
-      toast.success('Orçamento enviado por email com sucesso!');
-      setTimeout(() => setStep('history'), 2000);
-    },
-    onError: (error) => {
-      toast.error('Erro ao enviar orçamento: ' + error.message);
+  // onSend: o editor já enviou o email — aqui só salvamos o documento e navegamos
+  const handleEditorSend = async (editorData) => {
+    const services = (budgetData.services || []).map(s => ({ ...s, id: String(s.id) }));
+    const additional_fees = (budgetData.additional_fees || []).map(f => ({ ...f, id: String(f.id) }));
+    const fullData = {
+      ...budgetData,
+      services,
+      additional_fees,
+      document_html: editorData.documentHtml,
+      logo_url: editorData.logoBase64 || budgetData.logo_url,
+      status: 'Enviado',
+      sent_at: new Date().toISOString(),
+    };
+    if (fullData.id) {
+      const { id, ...rest } = fullData;
+      await base44.entities.Budget.update(id, rest);
+    } else {
+      await base44.entities.Budget.create(fullData);
     }
-  });
+    queryClient.invalidateQueries({ queryKey: ['budgets'] });
+    setIsDirty(false);
+    setBudgetData(null);
+    setHistoryTab('emails');
+    setStep('history');
+  };
 
   const deleteBudgetMutation = useMutation({
     mutationFn: (budgetId) => base44.entities.Budget.delete(budgetId),
@@ -131,15 +128,8 @@ export default function BudgetGenerator() {
   };
 
   const handleSaveDocument = async (editorData) => {
-    // Garantir que IDs dos serviços sejam strings (validação da API)
-    const services = (budgetData.services || []).map(s => ({
-      ...s,
-      id: String(s.id),
-    }));
-    const additional_fees = (budgetData.additional_fees || []).map(f => ({
-      ...f,
-      id: String(f.id),
-    }));
+    const services = (budgetData.services || []).map(s => ({ ...s, id: String(s.id) }));
+    const additional_fees = (budgetData.additional_fees || []).map(f => ({ ...f, id: String(f.id) }));
 
     const fullData = {
       ...budgetData,
@@ -148,14 +138,30 @@ export default function BudgetGenerator() {
       document_html: editorData.documentHtml,
       logo_url: editorData.logoBase64 || budgetData.logo_url,
     };
+
+    // Se chamado com returnSaved=true (pelo editor antes de enviar email), retorna o budget salvo
+    if (editorData.returnSaved) {
+      let saved;
+      if (fullData.id) {
+        const { id, ...rest } = fullData;
+        saved = await base44.entities.Budget.update(id, rest);
+        // update retorna undefined; retornar o próprio objeto com id
+        setBudgetData(fullData);
+        queryClient.invalidateQueries({ queryKey: ['budgets'] });
+        return fullData;
+      } else {
+        saved = await base44.entities.Budget.create(fullData);
+        setBudgetData(saved);
+        queryClient.invalidateQueries({ queryKey: ['budgets'] });
+        return saved;
+      }
+    }
+
     saveBudgetMutation.mutate(fullData);
     setIsDirty(false);
   };
 
-  const handleSendDocument = async (editorData) => {
-    sendBudgetMutation.mutate(editorData);
-    setIsDirty(false);
-  };
+
 
   // Abre o editor com um orçamento do histórico
   const handleOpenBudget = (budget) => {
@@ -262,7 +268,7 @@ export default function BudgetGenerator() {
             budgetData={budgetData}
             consultorData={user}
             onSave={handleSaveDocument}
-            onSend={handleSendDocument}
+            onSend={handleEditorSend}
           />
         )}
 
@@ -270,14 +276,45 @@ export default function BudgetGenerator() {
           <div>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-xl font-bold text-emerald-900">Orçamentos Salvos</h2>
-                <p className="text-sm text-gray-500 mt-0.5">{budgets.length} orçamento{budgets.length !== 1 ? 's' : ''} encontrado{budgets.length !== 1 ? 's' : ''}</p>
+                <h2 className="text-xl font-bold text-emerald-900">Histórico de Orçamentos</h2>
               </div>
               <Button onClick={() => setStep('form')} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
                 <Plus className="w-4 h-4" /> Novo Orçamento
               </Button>
             </div>
 
+            {/* Abas */}
+            <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl w-fit">
+              <button
+                onClick={() => setHistoryTab('budgets')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  historyTab === 'budgets'
+                    ? 'bg-white text-emerald-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <FileText className="w-4 h-4" />
+                Orçamentos ({budgets.length})
+              </button>
+              <button
+                onClick={() => setHistoryTab('emails')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  historyTab === 'emails'
+                    ? 'bg-white text-emerald-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <Mail className="w-4 h-4" />
+                E-mails Enviados
+              </button>
+            </div>
+
+            {historyTab === 'emails' && (
+              <BudgetEmailHistory consultorEmail={user?.email} />
+            )}
+
+            {historyTab === 'budgets' && (
+            <div>
             {budgets.length === 0 ? (
               <div className="text-center py-20 bg-white rounded-xl border border-dashed border-gray-200">
                 <FileText className="w-12 h-12 text-gray-200 mx-auto mb-3" />
@@ -382,6 +419,8 @@ export default function BudgetGenerator() {
                 })}
               </div>
             )}
+            </div>
+            )}
           </div>
         )}
 
@@ -396,16 +435,7 @@ export default function BudgetGenerator() {
           </div>
         )}
 
-        {sendBudgetMutation.isPending && (
-          <div className="fixed inset-0 bg-black/20 flex items-center justify-center">
-            <Card className="p-6">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-                <p>Enviando orçamento por email...</p>
-              </div>
-            </Card>
-          </div>
-        )}
+
       </div>
     </div>
   );

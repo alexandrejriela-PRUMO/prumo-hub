@@ -9,45 +9,48 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { budget_id, to, subject, message, document_html, pdf_url } = await req.json();
+    const body = await req.json();
+    const { budget_id, to, subject, message, document_html } = body;
 
     if (!budget_id || !to || !subject) {
       return Response.json({ error: 'Campos obrigatórios: budget_id, to, subject' }, { status: 400 });
     }
 
+    // Buscar orçamento
     const budget = await base44.entities.Budget.get(budget_id);
     if (!budget) {
       return Response.json({ error: 'Orçamento não encontrado' }, { status: 404 });
     }
+
+    // Verificação flexível: consultor OU membro da equipe com permissão
     if (budget.consultor_email !== user.email) {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
+      // Verificar se é equipe com permissão
+      const userMeta = await base44.entities.UserMetadata.filter({ user_email: user.email }, '-created_date', 1);
+      const primaryEmail = userMeta?.[0]?.primary_consultor_email;
+      if (!primaryEmail || budget.consultor_email !== primaryEmail) {
+        return Response.json({ error: 'Forbidden' }, { status: 403 });
+      }
     }
 
     const customMessage = message
       ? message.replace(/\n/g, '<br>')
       : `Prezado(a) ${budget.client_name || 'Cliente'},<br><br>Segue o orçamento referente ao serviço de <strong>${budget.title}</strong>.`;
 
-    // Seção do botão PDF (se tiver URL)
-    const pdfSection = pdf_url
-      ? `<div style="margin:24px 0; text-align:center;">
-          <a href="${pdf_url}" target="_blank" style="display:inline-block; background:#1B4332; color:#fff; padding:14px 32px; border-radius:8px; font-weight:700; font-size:15px; text-decoration:none;">
-            📄 Visualizar / Baixar Orçamento (PDF)
-          </a>
-        </div>`
-      : '';
-
     // Conteúdo do documento incorporado no e-mail
-    const documentSection = document_html
+    const docHtml = document_html || budget.document_html || '';
+    const documentSection = docHtml
       ? `<div style="margin-top:32px; padding-top:24px; border-top:2px solid #e5e7eb;">
-          <p style="font-size:12px;color:#6b7280;margin-bottom:16px;text-transform:uppercase;letter-spacing:1px;font-weight:600;">CONTEÚDO DO ORÇAMENTO</p>
-          <div style="border:1px solid #e5e7eb; border-radius:8px; padding:24px; background:#fafafa; font-size:13px; line-height:1.7;">
-            ${document_html}
+          <p style="font-size:11px;color:#6b7280;margin-bottom:16px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Conteúdo do Orçamento</p>
+          <div style="border:1px solid #e5e7eb; border-radius:8px; padding:24px; background:#ffffff; font-size:13px; line-height:1.7;">
+            ${docHtml}
           </div>
         </div>`
       : '';
 
+    const fmt = (v) => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+
     const emailBody = `
-      <html><body style="font-family:Arial,sans-serif;color:#333;margin:0;padding:0;">
+      <html><body style="font-family:Arial,sans-serif;color:#333;margin:0;padding:0;background:#f3f4f6;">
         <div style="max-width:700px;margin:0 auto;padding:20px;">
           <div style="background:linear-gradient(135deg,#064e3b,#1B4332);color:#fff;padding:28px 32px;border-radius:12px 12px 0 0;">
             <p style="margin:0 0 4px 0;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#6ee7b7;font-weight:600;">PRUMO HUB</p>
@@ -59,14 +62,13 @@ Deno.serve(async (req) => {
 
             <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px 20px;margin:20px 0;">
               <table style="width:100%;font-size:14px;border-collapse:collapse;">
-                <tr><td style="padding:4px 0;color:#6b7280;">Número</td><td style="text-align:right;font-weight:600;color:#111827;">${budget.budget_number || '-'}</td></tr>
-                <tr><td style="padding:4px 0;color:#6b7280;">Valor Total</td><td style="text-align:right;font-weight:700;color:#1B4332;">R$ ${(budget.total_amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td></tr>
-                <tr><td style="padding:4px 0;color:#6b7280;">Válido por</td><td style="text-align:right;font-weight:600;color:#111827;">${budget.validity_days || 30} dias</td></tr>
-                <tr><td style="padding:4px 0;color:#6b7280;">Data</td><td style="text-align:right;font-weight:600;color:#111827;">${new Date().toLocaleDateString('pt-BR')}</td></tr>
+                <tr><td style="padding:5px 0;color:#6b7280;">Número</td><td style="text-align:right;font-weight:600;color:#111827;">${budget.budget_number || '-'}</td></tr>
+                <tr><td style="padding:5px 0;color:#6b7280;">Valor Total</td><td style="text-align:right;font-weight:700;color:#1B4332;">R$ ${fmt(budget.total_amount)}</td></tr>
+                <tr><td style="padding:5px 0;color:#6b7280;">Válido por</td><td style="text-align:right;font-weight:600;color:#111827;">${budget.validity_days || 30} dias</td></tr>
+                <tr><td style="padding:5px 0;color:#6b7280;">Data</td><td style="text-align:right;font-weight:600;color:#111827;">${new Date().toLocaleDateString('pt-BR')}</td></tr>
               </table>
             </div>
 
-            ${pdfSection}
             ${documentSection}
 
             <div style="margin-top:28px;padding-top:20px;border-top:1px solid #e5e7eb;font-size:12px;color:#9ca3af;text-align:center;">
@@ -84,8 +86,23 @@ Deno.serve(async (req) => {
       from_name: user.full_name || 'Consultor PRUMO',
     });
 
+    // Salvar log do envio
+    await base44.entities.BudgetEmailLog.create({
+      budget_id,
+      budget_number: budget.budget_number || '',
+      consultor_email: user.email,
+      to,
+      subject,
+      message: message || '',
+      sent_at: new Date().toISOString(),
+      status: 'sent',
+    });
+
     // Atualizar status do orçamento para "Enviado"
-    await base44.entities.Budget.update(budget_id, { status: 'Enviado' });
+    await base44.entities.Budget.update(budget_id, {
+      status: 'Enviado',
+      sent_at: new Date().toISOString(),
+    });
 
     return Response.json({ success: true, message: 'E-mail enviado com sucesso' });
   } catch (error) {

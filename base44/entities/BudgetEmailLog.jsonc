@@ -1,0 +1,50 @@
+{
+  "name": "BudgetEmailLog",
+  "type": "object",
+  "properties": {
+    "budget_id": {
+      "type": "string",
+      "description": "ID do or\u00e7amento"
+    },
+    "budget_number": {
+      "type": "string",
+      "description": "N\u00famero do or\u00e7amento"
+    },
+    "consultor_email": {
+      "type": "string",
+      "description": "Email do consultor que enviou"
+    },
+    "to": {
+      "type": "string",
+      "description": "Email do destinat\u00e1rio"
+    },
+    "subject": {
+      "type": "string",
+      "description": "Assunto do e-mail"
+    },
+    "message": {
+      "type": "string",
+      "description": "Mensagem personalizada"
+    },
+    "sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data/hora do envio"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "sent",
+        "error"
+      ],
+      "default": "sent",
+      "description": "Status do envio"
+    }
+  },
+  "required": [
+    "budget_id",
+    "consultor_email",
+    "to",
+    "subject"
+  ]
+}

@@ -299,14 +299,29 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
   };
 
   const handleSendEmail = async ({ to, subject, message }) => {
-    if (!budgetData?.id) {
-      toast.error('Salve o orçamento antes de enviar por e-mail.');
-      return;
-    }
     setIsSendingEmail(true);
     try {
+      let budgetId = budgetData?.id;
+
+      // Se não tiver id, salva primeiro automaticamente
+      if (!budgetId) {
+        toast.info('Salvando orçamento antes de enviar...');
+        const saved = await onSave({
+          documentHtml: generateCompleteHTML(),
+          logoBase64,
+          rawHtml: htmlContent,
+          returnSaved: true,
+        });
+        budgetId = saved?.id;
+      }
+
+      if (!budgetId) {
+        toast.error('Não foi possível salvar o orçamento. Tente salvar manualmente primeiro.');
+        return;
+      }
+
       const response = await base44.functions.invoke('sendBudgetEmail', {
-        budget_id: budgetData.id,
+        budget_id: budgetId,
         to,
         subject,
         message,

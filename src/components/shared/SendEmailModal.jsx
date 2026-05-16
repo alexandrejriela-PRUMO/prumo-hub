@@ -36,13 +36,13 @@ export default function SendEmailModal({
     setMessage(defaultMessage);
   }, [defaultTo, defaultSubject, defaultMessage, isOpen]);
 
-  if (!isOpen) return null;
-
   const handleSend = () => {
     if (!to.trim()) { alert('Informe o e-mail do destinatário.'); return; }
     if (!subject.trim()) { alert('Informe o assunto do e-mail.'); return; }
     onSend({ to, subject, message });
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">

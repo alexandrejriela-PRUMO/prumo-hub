@@ -1,7 +1,5 @@
-import React, { useState, useRef, useEffect, lazy, Suspense } from 'react';
-
-// Lazy load ReactQuill to avoid duplicate React instance issue
-const ReactQuill = lazy(() => import('react-quill'));
+import React, { useState, useRef, useEffect } from 'react';
+import ReactQuill from 'react-quill';
 import { Button } from '@/components/ui/button';
 import { Download, Mail, Image as ImageIcon, RefreshCw } from 'lucide-react';
 import html2canvas from 'html2canvas';
@@ -391,15 +389,13 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
               <h2 className="font-semibold text-sm text-gray-900">Editor</h2>
             </div>
             <div style={{ height: '800px' }} className="overflow-hidden">
-              <Suspense fallback={<div className="p-4 text-gray-400 text-sm">Carregando editor...</div>}>
-                <ReactQuill
-                  value={htmlContent}
-                  onChange={setHtmlContent}
-                  modules={QUILL_MODULES}
-                  theme="snow"
-                  style={{ height: '100%' }}
-                />
-              </Suspense>
+              <ReactQuill
+                value={htmlContent}
+                onChange={setHtmlContent}
+                modules={QUILL_MODULES}
+                theme="snow"
+                style={{ height: '100%' }}
+              />
             </div>
           </div>
 

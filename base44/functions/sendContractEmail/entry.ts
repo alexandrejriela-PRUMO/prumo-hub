@@ -10,7 +10,7 @@ async function sendEmailViaResend({ to, subject, html, fromName, replyTo }) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: `${fromName} <onboarding@resend.dev>`,
+      from: `${fromName} <noreply@hub.prumo.site>`,
       to: [to],
       subject,
       html,

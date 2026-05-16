@@ -10,21 +10,20 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { budget_id, to, subject, message, document_html } = body;
+    const { budget_id, to, subject, message } = body;
 
     if (!budget_id || !to || !subject) {
       return Response.json({ error: 'Campos obrigatórios: budget_id, to, subject' }, { status: 400 });
     }
 
-    // Buscar orçamento
+    // Buscar orçamento no banco
     const budget = await base44.entities.Budget.get(budget_id);
     if (!budget) {
       return Response.json({ error: 'Orçamento não encontrado' }, { status: 404 });
     }
 
-    // Verificação flexível: consultor OU membro da equipe com permissão
+    // Verificação: consultor dono OU membro da equipe
     if (budget.consultor_email !== user.email) {
-      // Verificar se é equipe com permissão
       const userMeta = await base44.entities.UserMetadata.filter({ user_email: user.email }, '-created_date', 1);
       const primaryEmail = userMeta?.[0]?.primary_consultor_email;
       if (!primaryEmail || budget.consultor_email !== primaryEmail) {
@@ -36,48 +35,67 @@ Deno.serve(async (req) => {
       ? message.replace(/\n/g, '<br>')
       : `Prezado(a) ${budget.client_name || 'Cliente'},<br><br>Segue o orçamento referente ao serviço de <strong>${budget.title}</strong>.`;
 
-    // Conteúdo do documento incorporado no e-mail
-    const docHtml = document_html || budget.document_html || '';
-    const documentSection = docHtml
-      ? `<div style="margin-top:32px; padding-top:24px; border-top:2px solid #e5e7eb;">
-          <p style="font-size:11px;color:#6b7280;margin-bottom:16px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Conteúdo do Orçamento</p>
-          <div style="border:1px solid #e5e7eb; border-radius:8px; padding:24px; background:#ffffff; font-size:13px; line-height:1.7;">
-            ${docHtml}
-          </div>
-        </div>`
-      : '';
-
     const fmt = (v) => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
-    const emailBody = `
-      <html><body style="font-family:Arial,sans-serif;color:#333;margin:0;padding:0;background:#f3f4f6;">
-        <div style="max-width:700px;margin:0 auto;padding:20px;">
-          <div style="background:linear-gradient(135deg,#064e3b,#1B4332);color:#fff;padding:28px 32px;border-radius:12px 12px 0 0;">
-            <p style="margin:0 0 4px 0;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#6ee7b7;font-weight:600;">PRUMO HUB</p>
-            <h2 style="margin:0;font-size:22px;font-weight:800;">Orçamento Recebido</h2>
-            <p style="margin:6px 0 0 0;font-size:14px;color:#a7f3d0;">Nº ${budget.budget_number || ''} — ${budget.title || ''}</p>
-          </div>
-          <div style="background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px;padding:28px 32px;">
-            <p style="font-size:15px;line-height:1.7;color:#374151;">${customMessage}</p>
+    // Usar o document_html salvo no banco (já gerado e salvo antes do envio)
+    const docHtml = budget.document_html || '';
 
-            <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px 20px;margin:20px 0;">
-              <table style="width:100%;font-size:14px;border-collapse:collapse;">
-                <tr><td style="padding:5px 0;color:#6b7280;">Número</td><td style="text-align:right;font-weight:600;color:#111827;">${budget.budget_number || '-'}</td></tr>
-                <tr><td style="padding:5px 0;color:#6b7280;">Valor Total</td><td style="text-align:right;font-weight:700;color:#1B4332;">R$ ${fmt(budget.total_amount)}</td></tr>
-                <tr><td style="padding:5px 0;color:#6b7280;">Válido por</td><td style="text-align:right;font-weight:600;color:#111827;">${budget.validity_days || 30} dias</td></tr>
-                <tr><td style="padding:5px 0;color:#6b7280;">Data</td><td style="text-align:right;font-weight:600;color:#111827;">${new Date().toLocaleDateString('pt-BR')}</td></tr>
-              </table>
-            </div>
+    const emailBody = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { margin: 0; padding: 0; background: #f3f4f6; font-family: Arial, sans-serif; }
+    .ql-align-center { text-align: center !important; }
+    .ql-align-right { text-align: right !important; }
+    .ql-align-justify { text-align: justify !important; }
+    table { border-collapse: collapse; width: 100%; }
+  </style>
+</head>
+<body>
+  <div style="max-width:700px; margin:0 auto; padding:20px;">
 
-            ${documentSection}
+    <!-- Cabeçalho do email -->
+    <div style="background:linear-gradient(135deg,#064e3b,#1B4332); color:#fff; padding:24px 32px; border-radius:12px 12px 0 0;">
+      <p style="margin:0 0 4px 0; font-size:11px; letter-spacing:3px; text-transform:uppercase; color:#6ee7b7; font-weight:600;">PRUMO HUB</p>
+      <h2 style="margin:0; font-size:20px; font-weight:800;">Orçamento Recebido</h2>
+      <p style="margin:6px 0 0 0; font-size:13px; color:#a7f3d0;">Nº ${budget.budget_number || ''} — ${budget.title || ''}</p>
+    </div>
 
-            <div style="margin-top:28px;padding-top:20px;border-top:1px solid #e5e7eb;font-size:12px;color:#9ca3af;text-align:center;">
-              <p style="margin:0;">Enviado por <strong style="color:#1B4332;">${user.full_name || user.email}</strong> via PRUMO HUB</p>
-            </div>
-          </div>
+    <!-- Mensagem personalizada -->
+    <div style="background:#fff; border:1px solid #e5e7eb; border-top:none; padding:24px 32px;">
+      <p style="font-size:15px; line-height:1.7; color:#374151; margin:0 0 20px 0;">${customMessage}</p>
+
+      <!-- Resumo financeiro -->
+      <div style="background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:16px 20px; margin-bottom:24px;">
+        <table style="width:100%; font-size:14px;">
+          <tr><td style="padding:5px 0; color:#6b7280;">Número do Orçamento</td><td style="text-align:right; font-weight:600; color:#111827;">${budget.budget_number || '-'}</td></tr>
+          <tr><td style="padding:5px 0; color:#6b7280;">Valor Total</td><td style="text-align:right; font-weight:700; color:#064e3b; font-size:16px;">R$ ${fmt(budget.total_amount)}</td></tr>
+          <tr><td style="padding:5px 0; color:#6b7280;">Válido por</td><td style="text-align:right; font-weight:600; color:#111827;">${budget.validity_days || 30} dias</td></tr>
+          <tr><td style="padding:5px 0; color:#6b7280;">Data de Emissão</td><td style="text-align:right; font-weight:600; color:#111827;">${new Date().toLocaleDateString('pt-BR')}</td></tr>
+        </table>
+      </div>
+
+      ${docHtml ? `
+      <!-- Documento completo do orçamento -->
+      <div style="border-top:2px solid #e5e7eb; padding-top:24px; margin-top:8px;">
+        <p style="font-size:11px; color:#6b7280; margin:0 0 16px 0; text-transform:uppercase; letter-spacing:1px; font-weight:700;">Orçamento Detalhado</p>
+        <div style="border:1px solid #e5e7eb; border-radius:8px; padding:32px; background:#ffffff;">
+          ${docHtml}
         </div>
-      </body></html>
-    `;
+      </div>
+      ` : ''}
+
+      <!-- Rodapé -->
+      <div style="margin-top:28px; padding-top:20px; border-top:1px solid #e5e7eb; font-size:12px; color:#9ca3af; text-align:center;">
+        <p style="margin:0;">Enviado por <strong style="color:#1B4332;">${user.full_name || user.email}</strong> via PRUMO HUB</p>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>`;
 
     await base44.integrations.Core.SendEmail({
       to,

@@ -301,31 +301,27 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
   const handleSendEmail = async ({ to, subject, message }) => {
     setIsSendingEmail(true);
     try {
-      let budgetId = budgetData?.id;
-
-      // Se não tiver id, salva primeiro automaticamente
-      if (!budgetId) {
-        toast.info('Salvando orçamento antes de enviar...');
-        const saved = await onSave({
-          documentHtml: generateCompleteHTML(),
-          logoBase64,
-          rawHtml: htmlContent,
-          returnSaved: true,
-        });
-        budgetId = saved?.id;
-      }
+      // Sempre salva antes de enviar para garantir que o backend tem o HTML mais recente
+      toast.info('Salvando orçamento antes de enviar...');
+      const saved = await onSave({
+        documentHtml: generateCompleteHTML(),
+        logoBase64,
+        rawHtml: htmlContent,
+        returnSaved: true,
+      });
+      const budgetId = saved?.id;
 
       if (!budgetId) {
         toast.error('Não foi possível salvar o orçamento. Tente salvar manualmente primeiro.');
         return;
       }
 
+      // Não envia document_html no payload — o backend usa o que está salvo no banco
       const response = await base44.functions.invoke('sendBudgetEmail', {
         budget_id: budgetId,
         to,
         subject,
         message,
-        document_html: generateCompleteHTML(),
       });
 
       if (response.data?.error) throw new Error(response.data.error);

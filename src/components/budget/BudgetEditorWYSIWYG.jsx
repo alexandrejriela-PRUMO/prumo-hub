@@ -298,59 +298,6 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
     });
   };
 
-  // Gera PDF como Blob renderizando o HTML em um elemento temporário fora da tela
-  const generatePdfBlob = async () => {
-    const html = generateCompleteHTML();
-    
-    // Criar um iframe oculto para renderizar o HTML isoladamente
-    const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:794px;height:1123px;border:none;visibility:hidden;';
-    document.body.appendChild(iframe);
-    
-    try {
-      const doc = iframe.contentDocument || iframe.contentWindow.document;
-      doc.open();
-      doc.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><style>
-        body { margin: 0; padding: 32px; font-family: Arial, sans-serif; font-size: 13px; background: #fff; }
-        * { box-sizing: border-box; }
-      </style></head><body>${html}</body></html>`);
-      doc.close();
-
-      // Aguardar carregamento
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      const canvas = await html2canvas(iframe.contentDocument.body, {
-        scale: 1.5,
-        backgroundColor: '#ffffff',
-        logging: false,
-        useCORS: true,
-        width: 794,
-        windowWidth: 794,
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const pdfWidth = 210;
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      let heightLeft = pdfHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
-      heightLeft -= 297;
-
-      while (heightLeft > 0) {
-        position -= 297;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
-        heightLeft -= 297;
-      }
-
-      return pdf.output('blob');
-    } finally {
-      document.body.removeChild(iframe);
-    }
-  };
-
   const handleSendEmail = async ({ to, subject, message }) => {
     if (!budgetData?.id) {
       toast.error('Salve o orçamento antes de enviar por e-mail.');
@@ -358,19 +305,12 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
     }
     setIsSendingEmail(true);
     try {
-      // 1. Gerar PDF e fazer upload
-      toast.info('Gerando PDF para envio...');
-      const blob = await generatePdfBlob();
-      const file = new File([blob], `orcamento-${budgetData.budget_number || 'novo'}.pdf`, { type: 'application/pdf' });
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-
-      // 2. Enviar e-mail via backend
       const response = await base44.functions.invoke('sendBudgetEmail', {
         budget_id: budgetData.id,
         to,
         subject,
         message,
-        pdf_url: file_url,
+        document_html: generateCompleteHTML(),
       });
 
       if (response.data?.error) throw new Error(response.data.error);

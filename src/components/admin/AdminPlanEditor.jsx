@@ -9,7 +9,7 @@ const PLANOS = [
   { value: 'start', label: 'Consultor Start', user_type: 'consultor', max_properties: 5, max_users: 1 },
   { value: 'pro', label: 'Consultor Pro', user_type: 'consultor', max_properties: 10, max_users: 2 },
   { value: 'enterprise', label: 'Consultor Enterprise', user_type: 'consultor', max_properties: 200, max_users: 3 },
-  { value: 'unico', label: 'Produtor Único', user_type: 'produtor', max_properties: 1, max_users: 1 },
+  { value: 'unico', label: 'Produtor Único', user_type: 'produtor', max_properties: 1, max_users: 3 },
 ];
 
 const USER_TYPES = ['consultor', 'produtor', 'equipe', 'client_consultor'];
@@ -43,13 +43,13 @@ export default function AdminPlanEditor({ user, onClose }) {
 
   const [form, setForm] = useState(initializeForm());
 
-  // Fetch consultors
+  // Fetch consultors e produtores (podem ser principal de equipe)
   const { data: consultors = [] } = useQuery({
     queryKey: ['admin-consultors'],
     queryFn: async () => {
       const res = await base44.functions.invoke('adminGetUsers', { type: 'users' });
       const allUsers = res.data.users || [];
-      return allUsers.filter(u => u.user_type === 'consultor');
+      return allUsers.filter(u => u.user_type === 'consultor' || u.user_type === 'produtor');
     },
   });
 
@@ -96,7 +96,9 @@ export default function AdminPlanEditor({ user, onClose }) {
       setForm(f => ({
         ...f,
         plano: plan.value,
-        user_type: plan.user_type,
+        // Só sobrescreve user_type se o usuário NÃO for membro de equipe
+        // (membro de equipe pode ter plano "unico" herdado sem virar "produtor")
+        user_type: f.user_type === 'equipe' ? 'equipe' : plan.user_type,
         max_properties: plan.max_properties,
         max_users: plan.max_users,
       }));
@@ -197,18 +199,18 @@ export default function AdminPlanEditor({ user, onClose }) {
             </select>
           </div>
 
-          {/* Consultor Principal (para equipe) */}
+          {/* Principal (para equipe) — pode ser consultor ou produtor */}
           {form.user_type === 'equipe' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Consultor Principal</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Usuário Principal (Consultor ou Produtor)</label>
               <select
                 value={form.primary_consultor_email}
                 onChange={e => setForm(f => ({ ...f, primary_consultor_email: e.target.value }))}
                 className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white"
               >
-                <option value="">Selecione um consultor...</option>
+                <option value="">Selecione o usuário principal...</option>
                 {consultors.map(c => (
-                  <option key={c.email} value={c.email}>{c.full_name || c.email}</option>
+                  <option key={c.email} value={c.email}>{c.full_name || c.email} ({c.user_type})</option>
                 ))}
               </select>
             </div>

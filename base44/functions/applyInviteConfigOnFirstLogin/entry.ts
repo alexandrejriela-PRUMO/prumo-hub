@@ -54,19 +54,34 @@ Deno.serve(async (req) => {
       1
     );
 
+    // Buscar plano do consultor/produtor principal para herdar
+    const primaryEmail = tm.primary_user_email || tm.consultor_email;
+    let primaryPlano = 'start';
+    try {
+      const primaryMeta = await base44.asServiceRole.entities.UserMetadata.filter(
+        { user_email: primaryEmail }, '-created_date', 1
+      );
+      if (primaryMeta && primaryMeta.length > 0 && primaryMeta[0].plano) {
+        primaryPlano = primaryMeta[0].plano;
+      }
+    } catch (e) {
+      console.warn('[applyInviteConfigOnFirstLogin] Não foi possível buscar plano do principal:', e.message);
+    }
+
     if (existingMeta && existingMeta.length > 0) {
       await base44.asServiceRole.entities.UserMetadata.update(existingMeta[0].id, {
         user_type: userType,
         subscription_status: 'active',
-        primary_consultor_email: tm.primary_user_email || tm.consultor_email,
+        primary_consultor_email: primaryEmail,
+        plano: primaryPlano,
       });
     } else {
       await base44.asServiceRole.entities.UserMetadata.create({
         user_email: user.email,
         user_type: userType,
         subscription_status: 'active',
-        primary_consultor_email: tm.primary_user_email || tm.consultor_email,
-        plano: 'start',
+        primary_consultor_email: primaryEmail,
+        plano: primaryPlano,
         max_properties: 0,
         max_users: 0,
       });

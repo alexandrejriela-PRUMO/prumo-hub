@@ -38,7 +38,7 @@ function extractPlan(body) {
 
   // Produtor - Plano Único
   if (offerId === 'GNJXUCE' || productNameLower.includes('único') || productNameLower.includes('unico')) {
-    return { perfil: 'produtor', plano: 'unico', user_type: 'produtor', max_properties: 1, max_users: 1 };
+    return { perfil: 'produtor', plano: 'unico', user_type: 'produtor', max_properties: 1, max_users: 3 };
   }
   // Consultor - Enterprise (checar antes do 'pro')
   if (offerId === 'EQL1OTT' || productNameLower.includes('enterprise')) {
@@ -54,7 +54,7 @@ function extractPlan(body) {
   }
   // Fallback produtor por nome
   if (productNameLower.includes('produtor') || productNameLower.includes('rural')) {
-    return { perfil: 'produtor', plano: 'unico', user_type: 'produtor', max_properties: 1, max_users: 1 };
+    return { perfil: 'produtor', plano: 'unico', user_type: 'produtor', max_properties: 1, max_users: 3 };
   }
   // Fallback por perfil no consultor (qualquer coisa com 'consultor' no nome)
   if (productNameLower.includes('consultor')) {
@@ -63,7 +63,7 @@ function extractPlan(body) {
 
   console.warn('[webhookPurchaseApproved] Plano não reconhecido. ProductName:', productName, 'OfferId:', offerId);
   // Sem fallback cego — logar para investigação. Padrão neutro sem user_type incorreto.
-  return { perfil: 'produtor', plano: 'unico', user_type: 'produtor', max_properties: 1, max_users: 1 };
+  return { perfil: 'produtor', plano: 'unico', user_type: 'produtor', max_properties: 1, max_users: 3 };
 }
 
 Deno.serve(async (req) => {

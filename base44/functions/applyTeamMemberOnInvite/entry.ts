@@ -30,12 +30,26 @@ Deno.serve(async (req) => {
       1
     );
 
+    // Buscar plano do consultor/produtor principal para herdar
+    let primaryPlano = 'start';
+    try {
+      const primaryMeta = await base44.asServiceRole.entities.UserMetadata.filter(
+        { user_email: consultorEmail }, '-created_date', 1
+      );
+      if (primaryMeta && primaryMeta.length > 0 && primaryMeta[0].plano) {
+        primaryPlano = primaryMeta[0].plano;
+      }
+    } catch (e) {
+      console.warn('[applyTeamMemberOnInvite] Não foi possível buscar plano do principal:', e.message);
+    }
+
     if (existingMeta && existingMeta.length > 0) {
       // Usuário já existe — atualiza imediatamente
       await base44.asServiceRole.entities.UserMetadata.update(existingMeta[0].id, {
         user_type: targetUserType,
         subscription_status: 'active',
         primary_consultor_email: consultorEmail,
+        plano: primaryPlano,
       });
 
       // Marca o TeamMember como já aplicado

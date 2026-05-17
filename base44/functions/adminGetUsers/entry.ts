@@ -48,11 +48,20 @@ Deno.serve(async (req) => {
         tm.status === 'Pendente'
       );
       
+      // Busca metadados dos principais para herdar plano nos convites pendentes
+      const allMetaForPending = await base44.asServiceRole.entities.UserMetadata.list('-updated_date', 500);
+      const metaByEmailForPending = {};
+      for (const m of allMetaForPending) {
+        if (m.user_email) metaByEmailForPending[m.user_email.toLowerCase()] = m;
+      }
+
       pendingInvites = pendingTeamMembers
         .map(tm => {
-          // Tenta usar pending_user_type ou default baseado em tipo
-          const userType = tm.pending_user_type || 'consultor';
-          const plan = userType === 'produtor' ? 'unico' : 'start';
+          const userType = tm.pending_user_type || 'equipe';
+          // Herdar plano do principal (consultor ou produtor)
+          const primaryEmail = (tm.primary_user_email || tm.consultor_email || '').toLowerCase();
+          const primaryMeta = metaByEmailForPending[primaryEmail];
+          const plan = primaryMeta?.plano || 'start';
           
           return {
             id: `pending_${tm.id}`,
@@ -64,6 +73,7 @@ Deno.serve(async (req) => {
             status: 'Pendente',
             subscription_status: 'pending_invite',
             is_pending_invite: true,
+            primary_consultor_email: tm.primary_user_email || tm.consultor_email,
             invite_data: {
               team_member_id: tm.id,
               invited_at: tm.invited_at,

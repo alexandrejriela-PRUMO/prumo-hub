@@ -111,8 +111,10 @@ export default function MyTeam() {
 
   // Limite de usuários do plano
   // Produtor tem limite padrão de 3; consultor sem max_users definido tem 99
+  // Trata max_users=0 como "não configurado" para produtor (usa o padrão do perfil)
   const defaultMaxUsers = isProdutor ? 3 : 99;
-  const maxUsers = userMeta?.max_users ?? defaultMaxUsers;
+  const rawMaxUsers = userMeta?.max_users;
+  const maxUsers = (isProdutor && (!rawMaxUsers || rawMaxUsers === 0)) ? defaultMaxUsers : (rawMaxUsers ?? defaultMaxUsers);
   const activeMembers = allMembers.filter(m => m.status !== 'Inativo' && m.pending_user_type === 'equipe').length;
   const atUserLimit = !isAdmin && (isConsultor || isProdutor) && activeMembers >= maxUsers;
 

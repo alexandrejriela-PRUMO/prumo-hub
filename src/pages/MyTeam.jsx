@@ -58,8 +58,10 @@ export default function MyTeam() {
 
   const [userMeta, setUserMeta] = useState(null);
   const isAdmin = user?.role === 'admin';
-  const isConsultor = user?.user_type === 'consultor';
-  const isProdutor = user?.user_type === 'produtor';
+  // Usa userMeta como fonte da verdade para user_type, com fallback para o user
+  const effectiveUserType = userMeta?.user_type ?? user?.user_type;
+  const isConsultor = effectiveUserType === 'consultor';
+  const isProdutor = effectiveUserType === 'produtor';
   const canInvite = isConsultor || isProdutor || isAdmin;
 
   useEffect(() => {

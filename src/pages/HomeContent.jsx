@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import PropertyCard from '../components/dashboard/PropertyCard';
 import QuickActions from '../components/dashboard/QuickActions';
 import LicenseAlerts from '../components/dashboard/LicenseAlerts';
@@ -26,8 +26,9 @@ import ConsultorOverview from '../components/dashboard/ConsultorOverview';
 import PullToRefresh from '../components/mobile/PullToRefresh';
 
 // Component que recebe hooks já resolvidos via props
-export default function HomeContent({ queryClient, user, effectiveEmail, isEquipe, isConsultor, effectiveLoading }) {
+export default function HomeContent({ user, effectiveEmail, isEquipe, isConsultor, effectiveLoading }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [selectedPropertyId, setSelectedPropertyId] = useState(null);
   const [ruteChatOpen, setRuteChatOpen] = useState(false);
   const [filters, setFilters] = useState({

@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Pencil, Trash2, Upload, FileText, X, Loader2, Wheat, AlertTriangle } from 'lucide-react';
+import { Plus, Pencil, Trash2, FileText, X, Loader2, Wheat, AlertTriangle } from 'lucide-react';
+import SupabaseFileUpload from '@/components/storage/SupabaseFileUpload';
 import ConsultorPropertySelector from '@/components/consultor/ConsultorPropertySelector';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
@@ -65,8 +66,7 @@ export default function HarvestLossPage() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(INITIAL_FORM);
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
-  const [uploading, setUploading] = useState(false);
-  const [uploadTarget, setUploadTarget] = useState('evidencias');
+
   const qc = useQueryClient();
 
   React.useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);
@@ -157,29 +157,14 @@ export default function HarvestLossPage() {
     setForm(INITIAL_FORM);
   };
 
-  const handleUpload = async (e, target) => {
-    const files = Array.from(e.target.files);
-    if (!files.length) return;
-    setUploading(true);
-    setUploadTarget(target);
-    try {
-      for (const file of files) {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
-        const entry = {
-          name: file.name,
-          url: file_url,
-          tipo: target === 'evidencias' ? 'Foto da Lavoura' : 'Relatório Técnico',
-          upload_date: new Date().toISOString()
-        };
-        setForm(p => ({
-          ...p,
-          [target]: [...(p[target] || []), entry]
-        }));
-      }
-    } finally {
-      setUploading(false);
-      e.target.value = '';
-    }
+  const handleUpload = (filePath, fileName, target) => {
+    const entry = {
+      name: fileName,
+      url: filePath,
+      tipo: target === 'evidencias' ? 'Foto da Lavoura' : 'Relatório Técnico',
+      upload_date: new Date().toISOString()
+    };
+    setForm(p => ({ ...p, [target]: [...(p[target] || []), entry] }));
   };
 
   const removeItem = (target, idx) => {
@@ -425,11 +410,12 @@ export default function HarvestLossPage() {
                   <button onClick={() => removeItem('evidencias', i)} className="p-1 hover:bg-gray-200 rounded"><X className="w-3.5 h-3.5" /></button>
                 </div>
               ))}
-              <label className={`flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-emerald-400 hover:bg-emerald-50 text-sm text-gray-500 ${uploading && uploadTarget === 'evidencias' ? 'opacity-50' : ''}`}>
-                {uploading && uploadTarget === 'evidencias' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                {uploading && uploadTarget === 'evidencias' ? 'Enviando...' : 'Anexar evidências'}
-                <input type="file" multiple accept="image/*,.pdf" className="hidden" onChange={e => handleUpload(e, 'evidencias')} disabled={uploading} />
-              </label>
+              <SupabaseFileUpload
+                folder="safra-evidencias"
+                accept="image/*,.pdf"
+                label="Anexar evidências"
+                onUploadDone={(fp, fn) => handleUpload(fp, fn, 'evidencias')}
+              />
             </TabsContent>
 
             <TabsContent value="documentos" className="space-y-3 mt-4">
@@ -446,11 +432,12 @@ export default function HarvestLossPage() {
                   <button onClick={() => removeItem('documentos', i)} className="p-1 hover:bg-gray-200 rounded"><X className="w-3.5 h-3.5" /></button>
                 </div>
               ))}
-              <label className={`flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-emerald-400 hover:bg-emerald-50 text-sm text-gray-500 ${uploading && uploadTarget === 'documentos' ? 'opacity-50' : ''}`}>
-                {uploading && uploadTarget === 'documentos' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                {uploading && uploadTarget === 'documentos' ? 'Enviando...' : 'Anexar documentos'}
-                <input type="file" multiple accept=".pdf,.doc,.docx" className="hidden" onChange={e => handleUpload(e, 'documentos')} disabled={uploading} />
-              </label>
+              <SupabaseFileUpload
+                folder="safra-documentos"
+                accept=".pdf,.doc,.docx"
+                label="Anexar documentos"
+                onUploadDone={(fp, fn) => handleUpload(fp, fn, 'documentos')}
+              />
             </TabsContent>
           </Tabs>
 

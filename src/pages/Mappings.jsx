@@ -23,6 +23,7 @@ import {
   Trees,
   Activity
 } from 'lucide-react';
+import SupabaseFileUpload from '../components/storage/SupabaseFileUpload';
 import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
 import { toast } from 'sonner';
@@ -110,52 +111,17 @@ export default function Mappings() {
     },
   });
 
-  const handleFileUpload = async (e, mapping) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
+  const handleSupabaseUpload = async (filePath, fileName, mapping) => {
+    const ext = fileName.toLowerCase().substring(fileName.lastIndexOf('.'));
+    let fileType = 'geoespacial';
+    if (ext === '.kml') fileType = 'kml';
+    else if (ext === '.tif' || ext === '.tiff') fileType = 'tif';
+    else if (ext === '.tfw') fileType = 'tfw';
 
-    // Validar tipos de arquivo (KML, TIF, TFW)
-    const allowedExtensions = ['.kml', '.tif', '.tiff', '.tfw'];
-    const invalidFiles = files.filter(f => {
-      const ext = f.name.toLowerCase().substring(f.name.lastIndexOf('.'));
-      return !allowedExtensions.includes(ext);
-    });
-
-    if (invalidFiles.length > 0) {
-      toast.error('Apenas arquivos KML, TIF e TFW são permitidos');
-      return;
-    }
-
-    setUploadingFile(true);
-    try {
-      const uploadedFiles = [];
-      for (const file of files) {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
-        const ext = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
-        let fileType = 'geoespacial';
-        if (ext === '.kml') fileType = 'kml';
-        else if (ext === '.tif' || ext === '.tiff') fileType = 'tif';
-        else if (ext === '.tfw') fileType = 'tfw';
-
-        uploadedFiles.push({
-          name: file.name,
-          url: file_url,
-          type: fileType,
-          upload_date: new Date().toISOString(),
-        });
-      }
-
-      const updatedFiles = [...(mapping.files || []), ...uploadedFiles];
-      await updateMutation.mutateAsync({
-        id: mapping.id,
-        data: { ...mapping, files: updatedFiles },
-      });
-      toast.success(`${uploadedFiles.length} arquivo(s) geoespacial(is) enviado(s)!`);
-    } catch (error) {
-      toast.error('Erro ao enviar arquivo');
-    } finally {
-      setUploadingFile(false);
-    }
+    const newFile = { name: fileName, url: filePath, type: fileType, upload_date: new Date().toISOString() };
+    const updatedFiles = [...(mapping.files || []), newFile];
+    await updateMutation.mutateAsync({ id: mapping.id, data: { ...mapping, files: updatedFiles } });
+    toast.success('Arquivo geoespacial enviado!');
   };
 
   const handleSubmit = (e) => {
@@ -599,28 +565,16 @@ export default function Mappings() {
                         <Eye className="w-4 h-4 mr-1" />
                         Ver
                       </Button>
-                      {canEdit && <label className="flex-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="w-full"
-                          disabled={uploadingFile}
-                          asChild
-                        >
-                          <div>
-                            <Upload className="w-4 h-4 mr-1" />
-                            {uploadingFile ? 'Enviando...' : 'KML/TIF'}
-                          </div>
-                        </Button>
-                        <input
-                          type="file"
-                          className="hidden"
-                          accept=".kml,.tif,.tiff,.tfw"
-                          multiple
-                          onChange={(e) => handleFileUpload(e, mapping)}
-                          disabled={uploadingFile}
-                        />
-                      </label>}
+                      {canEdit && (
+                        <div className="flex-1">
+                          <SupabaseFileUpload
+                            folder="mapeamentos"
+                            accept=".kml,.tif,.tiff,.tfw"
+                            label="KML/TIF"
+                            onUploadDone={(filePath, fileName) => handleSupabaseUpload(filePath, fileName, mapping)}
+                          />
+                        </div>
+                      )}
                       {canEdit && <Button
                         size="sm"
                         variant="destructive"

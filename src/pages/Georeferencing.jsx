@@ -31,6 +31,7 @@ import {
   Leaf,
   ChevronLeft
 } from 'lucide-react';
+import SupabaseFileUpload from '../components/storage/SupabaseFileUpload';
 import { format, parseISO } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
@@ -43,7 +44,7 @@ export default function Georeferencing() {
   const [consultorPropertyId, setConsultorPropertyId] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewingGeoId, setViewingGeoId] = useState(null);
-  const [uploading, setUploading] = useState(false);
+
 
   const queryClient = useQueryClient();
 
@@ -135,35 +136,15 @@ export default function Georeferencing() {
     },
   });
 
-  const handleFileUpload = async (e, geoId, docType) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const geo = georeferences.find(g => g.id === geoId);
-      const updatedDocs = [
-        ...(geo.documents || []),
-        {
-          type: docType,
-          name: file.name,
-          url: file_url,
-          upload_date: new Date().toISOString(),
-          uploaded_by: user.email,
-        },
-      ];
-      await base44.entities.Georeferencing.update(geoId, {
-        ...geo,
-        documents: updatedDocs,
-      });
-      queryClient.invalidateQueries(['georeferencing']);
-      toast.success('Arquivo enviado!');
-    } catch (error) {
-      toast.error('Erro ao enviar arquivo');
-    } finally {
-      setUploading(false);
-    }
+  const handleFileUpload = async (filePath, fileName, geoId, docType) => {
+    const geo = georeferences.find(g => g.id === geoId);
+    const updatedDocs = [
+      ...(geo.documents || []),
+      { type: docType, name: fileName, url: filePath, upload_date: new Date().toISOString(), uploaded_by: user.email },
+    ];
+    await base44.entities.Georeferencing.update(geoId, { ...geo, documents: updatedDocs });
+    queryClient.invalidateQueries(['georeferencing']);
+    toast.success('Arquivo enviado!');
   };
 
   const getStatusColor = (status) => {
@@ -407,7 +388,6 @@ export default function Georeferencing() {
             <GeoreferencingDetails 
               geo={viewingGeo} 
               onFileUpload={handleFileUpload}
-              uploading={uploading}
               user={user}
               onUpdate={(data) => updateMutation.mutate({ id: viewingGeo.id, data })}
             />
@@ -559,7 +539,7 @@ function GeoreferencingForm({ properties, user, isConsultor, preselectedProperty
 }
 
 // Details Component
-function GeoreferencingDetails({ geo, onFileUpload, uploading, user, onUpdate }) {
+function GeoreferencingDetails({ geo, onFileUpload, user, onUpdate }) {
   const [localGeo, setLocalGeo] = useState(geo);
   const [editingSection, setEditingSection] = useState(null); // 'general' | 'conflicts' | 'sigef' | 'technical' | 'envAreas' | 'envAlerts' | 'mapLayers' | 'history' | 'technician'
 
@@ -618,12 +598,12 @@ function GeoreferencingDetails({ geo, onFileUpload, uploading, user, onUpdate })
             <CardHeader>
               <CardTitle className="text-base flex items-center justify-between">
                 <span className="flex items-center gap-2"><FileText className="w-4 h-4" />{docType}</span>
-                <label>
-                  <Button variant="outline" size="sm" disabled={uploading} asChild>
-                    <div><Upload className="w-4 h-4 mr-2" />{uploading ? 'Enviando...' : 'Upload'}</div>
-                  </Button>
-                  <input type="file" className="hidden" accept=".pdf,.kml,.kmz,.shp,.zip,.dwg,.dxf" onChange={(e) => onFileUpload(e, localGeo.id, docType)} />
-                </label>
+                <SupabaseFileUpload
+                  folder="georreferenciamento"
+                  accept=".pdf,.kml,.kmz,.shp,.zip,.dwg,.dxf"
+                  label="Upload"
+                  onUploadDone={(fp, fn) => onFileUpload(fp, fn, localGeo.id, docType)}
+                />
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -1099,7 +1079,7 @@ function MapLayersCard({ localGeo, editingSection, setEditingSection, save }) {
     land_use_file: '',
     ...(localGeo.map_layers || {})
   });
-  const [uploading, setUploading] = useState({});
+
 
   useEffect(() => {
     setForm({
@@ -1117,13 +1097,8 @@ function MapLayersCard({ localGeo, editingSection, setEditingSection, save }) {
 
   const isEditing = editingSection === 'mapLayers';
 
-  const handleLayerUpload = async (e, fieldKey) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(p => ({ ...p, [fieldKey]: true }));
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    setForm(p => ({ ...p, [fieldKey]: file_url }));
-    setUploading(p => ({ ...p, [fieldKey]: false }));
+  const handleLayerUpload = (filePath, _fileName, fieldKey) => {
+    setForm(p => ({ ...p, [fieldKey]: filePath }));
   };
 
   const layers = [
@@ -1163,20 +1138,14 @@ function MapLayersCard({ localGeo, editingSection, setEditingSection, save }) {
                       placeholder="URL ou cole link..."
                     />
                   )}
-                  <label className="flex-shrink-0">
-                    <Button variant="outline" size="sm" asChild disabled={uploading[fileKey]} className="h-8 cursor-pointer">
-                      <div>
-                        <Upload className="w-3.5 h-3.5 mr-1" />
-                        {uploading[fileKey] ? 'Enviando...' : 'Upload'}
-                      </div>
-                    </Button>
-                    <input
-                      type="file"
-                      className="hidden"
+                  <div className="flex-shrink-0">
+                    <SupabaseFileUpload
+                      folder="georreferenciamento-camadas"
                       accept=".kml,.kmz,.shp,.zip,.geojson,.tif,.tiff,.png,.jpg,.jpeg,.pdf"
-                      onChange={e => handleLayerUpload(e, fileKey)}
+                      label="Upload"
+                      onUploadDone={(fp, fn) => handleLayerUpload(fp, fn, fileKey)}
                     />
-                  </label>
+                  </div>
                 </div>
                 {form[fileKey] && (
                   <a href={form[fileKey]} target="_blank" rel="noopener noreferrer"

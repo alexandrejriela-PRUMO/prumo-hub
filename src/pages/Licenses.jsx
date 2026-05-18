@@ -19,11 +19,11 @@ import {
   Clock, 
   ExternalLink,
   FileText,
-  Upload,
   Trash2,
   ChevronLeft,
   ClipboardList
 } from 'lucide-react';
+import SupabaseFileUpload from '../components/storage/SupabaseFileUpload';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { format, parseISO, differenceInDays } from 'date-fns';
@@ -305,31 +305,19 @@ export default function Licenses() {
     setEditDialogOpen(true);
   };
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setUploadingDoc(true);
-    try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const newDoc = {
-        name: file.name,
-        url: file_url,
-        type: docType,
-        uploaded_by: user.email,
-        uploaded_date: new Date().toISOString()
-      };
-      setFormData({
-        ...formData,
-        documents: [...formData.documents, newDoc]
-      });
-      toast.success('Documento adicionado!');
-      // Reset file input
-      e.target.value = null;
-    } catch (error) {
-      toast.error('Erro ao fazer upload do arquivo');
-    }
-    setUploadingDoc(false);
+  const handleSupabaseUpload = (filePath, fileName) => {
+    const newDoc = {
+      name: fileName,
+      url: filePath,
+      type: docType,
+      uploaded_by: user.email,
+      uploaded_date: new Date().toISOString()
+    };
+    setFormData(prev => ({
+      ...prev,
+      documents: [...prev.documents, newDoc]
+    }));
+    toast.success('Documento adicionado!');
   };
 
   const removeDocument = (index) => {
@@ -682,46 +670,24 @@ export default function Licenses() {
 
               <div className="space-y-2">
                 <Label>Documentos</Label>
-                <div className="space-y-3">
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="col-span-2">
-                      <Label className="text-xs">Tipo de Documento</Label>
-                      <Select value={docType} onValueChange={setDocType}>
-                        <SelectTrigger className="h-9">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Licença Principal">Licença Principal</SelectItem>
-                          <SelectItem value="Documento Complementar">Documento Complementar</SelectItem>
-                          <SelectItem value="Comprovante">Comprovante</SelectItem>
-                          <SelectItem value="Outro">Outro</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="text-xs">Upload</Label>
-                      <label 
-                        htmlFor="file-upload-form"
-                        className="flex items-center justify-center gap-1 h-9 px-3 border-2 border-emerald-300 rounded-lg cursor-pointer hover:bg-emerald-50 transition-colors"
-                      >
-                        <Upload className="w-4 h-4 text-emerald-600" />
-                        <span className="text-xs font-medium text-emerald-700">
-                          {uploadingDoc ? 'Enviando...' : 'Arquivo'}
-                        </span>
-                      </label>
-                      <Input
-                        id="file-upload-form"
-                        type="file"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                        disabled={uploadingDoc}
-                      />
-                    </div>
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    Selecione o tipo e clique em "Arquivo" para adicionar documentos (PDF, JPG, PNG)
-                  </p>
+                <div className="space-y-2">
+                  <Select value={docType} onValueChange={setDocType}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Licença Principal">Licença Principal</SelectItem>
+                      <SelectItem value="Documento Complementar">Documento Complementar</SelectItem>
+                      <SelectItem value="Comprovante">Comprovante</SelectItem>
+                      <SelectItem value="Outro">Outro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <SupabaseFileUpload
+                    folder="licencas"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    label="Selecionar Arquivo (PDF, JPG, PNG)"
+                    onUploadDone={handleSupabaseUpload}
+                  />
                 </div>
                 {formData.documents.length > 0 && (
                   <div className="space-y-2 mt-3">
@@ -732,14 +698,9 @@ export default function Licenses() {
                           <p className="text-sm font-medium text-gray-900">{doc.name}</p>
                           <p className="text-xs text-gray-600">{doc.type}</p>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:text-emerald-700">
-                            <FileText className="w-4 h-4" />
-                          </a>
-                          <button type="button" onClick={() => removeDocument(idx)} className="text-red-500 hover:text-red-700">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                        <button type="button" onClick={() => removeDocument(idx)} className="text-red-500 hover:text-red-700">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -1091,46 +1052,24 @@ export default function Licenses() {
 
             <div className="space-y-2">
               <Label>Documentos</Label>
-              <div className="space-y-3">
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="col-span-2">
-                    <Label className="text-xs">Tipo de Documento</Label>
-                    <Select value={docType} onValueChange={setDocType}>
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Licença Principal">Licença Principal</SelectItem>
-                        <SelectItem value="Documento Complementar">Documento Complementar</SelectItem>
-                        <SelectItem value="Comprovante">Comprovante</SelectItem>
-                        <SelectItem value="Outro">Outro</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-xs">Upload</Label>
-                    <label 
-                      htmlFor="file-upload-edit"
-                      className="flex items-center justify-center gap-1 h-9 px-3 border-2 border-emerald-300 rounded-lg cursor-pointer hover:bg-emerald-50 transition-colors"
-                    >
-                      <Upload className="w-4 h-4 text-emerald-600" />
-                      <span className="text-xs font-medium text-emerald-700">
-                        {uploadingDoc ? 'Enviando...' : 'Arquivo'}
-                      </span>
-                    </label>
-                    <Input
-                      id="file-upload-edit"
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                      disabled={uploadingDoc}
-                    />
-                  </div>
-                </div>
-                <p className="text-xs text-gray-500">
-                  Selecione o tipo e clique em "Arquivo" para adicionar documentos (PDF, JPG, PNG)
-                </p>
+              <div className="space-y-2">
+                <Select value={docType} onValueChange={setDocType}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Licença Principal">Licença Principal</SelectItem>
+                    <SelectItem value="Documento Complementar">Documento Complementar</SelectItem>
+                    <SelectItem value="Comprovante">Comprovante</SelectItem>
+                    <SelectItem value="Outro">Outro</SelectItem>
+                  </SelectContent>
+                </Select>
+                <SupabaseFileUpload
+                  folder="licencas"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  label="Selecionar Arquivo (PDF, JPG, PNG)"
+                  onUploadDone={handleSupabaseUpload}
+                />
               </div>
               {formData.documents.length > 0 && (
                 <div className="space-y-2 mt-3">
@@ -1141,14 +1080,9 @@ export default function Licenses() {
                         <p className="text-sm font-medium text-gray-900">{doc.name}</p>
                         <p className="text-xs text-gray-600">{doc.type}</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:text-emerald-700">
-                          <FileText className="w-4 h-4" />
-                        </a>
-                        <button type="button" onClick={() => removeDocument(idx)} className="text-red-500 hover:text-red-700">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                      <button type="button" onClick={() => removeDocument(idx)} className="text-red-500 hover:text-red-700">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   ))}
                 </div>

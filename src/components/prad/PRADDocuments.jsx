@@ -9,46 +9,38 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileText, Plus, Trash2, ExternalLink } from 'lucide-react';
+import SupabaseFileUpload from '@/components/storage/SupabaseFileUpload';
+import SupabaseFileLink from '@/components/storage/SupabaseFileLink';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export default function PRADDocuments({ prad, userEmail, onUpdate }) {
   const queryClient = useQueryClient();
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [formData, setFormData] = useState({ name: '', type: '', observations: '', file: null });
-  const [uploading, setUploading] = useState(false);
+  const [formData, setFormData] = useState({ name: '', type: '', observations: '', file_url: null, file_name: null });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.PRAD.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['prad']);
-      setShowAddDialog(false);
-      setFormData({ name: '', type: '', observations: '', file: null });
-      onUpdate?.();
+    queryClient.invalidateQueries(['prad']);
+    setShowAddDialog(false);
+    setFormData({ name: '', type: '', observations: '', file_url: null, file_name: null });
+    onUpdate?.();
     },
   });
 
-  const handleAddDocument = async () => {
-    if (!formData.file) return;
+  const handleAddDocument = () => {
+    if (!formData.file_url) return;
     
-    setUploading(true);
-    try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: formData.file });
-      
-      const documents = [...(prad.documents || []), {
-        name: formData.name,
-        type: formData.type,
-        observations: formData.observations,
-        url: file_url,
-        upload_date: new Date().toISOString(),
-        uploaded_by: userEmail,
-      }];
-      updateMutation.mutate({ id: prad.id, data: { documents } });
-    } catch (error) {
-      console.error('Erro ao fazer upload:', error);
-    } finally {
-      setUploading(false);
-    }
+    const documents = [...(prad.documents || []), {
+      name: formData.name,
+      type: formData.type,
+      observations: formData.observations,
+      url: formData.file_url,
+      upload_date: new Date().toISOString(),
+      uploaded_by: userEmail,
+    }];
+    updateMutation.mutate({ id: prad.id, data: { documents } });
   };
 
   const handleDeleteDocument = (index) => {
@@ -65,7 +57,7 @@ export default function PRADDocuments({ prad, userEmail, onUpdate }) {
         </CardTitle>
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
           <DialogTrigger asChild>
-            <Button size="sm" className="bg-green-600 hover:bg-green-700" disabled={uploading}>
+            <Button size="sm" className="bg-green-600 hover:bg-green-700">
               <Plus className="w-4 h-4 mr-1" />
               Adicionar Documento
             </Button>
@@ -101,12 +93,14 @@ export default function PRADDocuments({ prad, userEmail, onUpdate }) {
               </div>
               <div>
                 <label className="text-sm font-medium">Fazer Upload do Arquivo *</label>
-                <Input
-                  type="file"
-                  onChange={(e) => setFormData({ ...formData, file: e.target.files?.[0] || null })}
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-                />
-                <p className="text-xs text-gray-500 mt-1">PDF, DOC, XLS, JPG e PNG</p>
+                <div className="mt-1">
+                  <SupabaseFileUpload
+                    folder="prad"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                    onUploadDone={(filePath, fileName) => setFormData(f => ({ ...f, file_url: filePath, file_name: fileName }))}
+                    label="Selecionar Arquivo"
+                  />
+                </div>
               </div>
               <div>
                 <label className="text-sm font-medium">Observações</label>
@@ -118,13 +112,13 @@ export default function PRADDocuments({ prad, userEmail, onUpdate }) {
                 />
               </div>
               <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setShowAddDialog(false)} disabled={uploading}>Cancelar</Button>
+                <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancelar</Button>
                 <Button
                   className="bg-green-600 hover:bg-green-700"
                   onClick={handleAddDocument}
-                  disabled={!formData.name || !formData.type || !formData.file || uploading || updateMutation.isPending}
+                  disabled={!formData.name || !formData.type || !formData.file_url || updateMutation.isPending}
                 >
-                  {uploading ? 'Enviando...' : 'Adicionar'}
+                  Adicionar
                 </Button>
               </div>
             </div>
@@ -151,15 +145,7 @@ export default function PRADDocuments({ prad, userEmail, onUpdate }) {
                     </div>
                   </div>
                   <div className="flex gap-1 ml-2">
-                    <a
-                      href={doc.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2 hover:bg-gray-200 rounded transition-colors"
-                      title="Abrir documento"
-                    >
-                      <ExternalLink className="w-4 h-4 text-blue-600" />
-                    </a>
+                    <SupabaseFileLink filePath={doc.url} label="Abrir" asLink={true} />
                     <Button
                       size="sm"
                       variant="destructive"

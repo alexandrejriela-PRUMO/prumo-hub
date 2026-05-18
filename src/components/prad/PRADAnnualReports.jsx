@@ -8,7 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CheckCircle2, Clock, AlertCircle, FileText, Upload, CalendarDays, Leaf, Plus, Edit2 } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, FileText, CalendarDays, Leaf, Plus, Edit2 } from 'lucide-react';
+import SupabaseFileUpload from '@/components/storage/SupabaseFileUpload';
+import SupabaseFileLink from '@/components/storage/SupabaseFileLink';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -23,7 +25,7 @@ export default function PRADAnnualReports({ prad, onUpdate }) {
   const queryClient = useQueryClient();
   const [editingYear, setEditingYear] = useState(null);
   const [editData, setEditData] = useState({});
-  const [uploading, setUploading] = useState(false);
+
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.PRAD.update(id, data),
@@ -49,12 +51,7 @@ export default function PRADAnnualReports({ prad, onUpdate }) {
     updateMutation.mutate({ id: prad.id, data: { annual_reports: updated } });
   };
 
-  const handleFileUpload = async (file) => {
-    setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    setEditData(prev => ({ ...prev, file_url, file_name: file.name }));
-    setUploading(false);
-  };
+
 
   const getStatusConfig = (report) => {
     if (!report) return { label: 'Pendente', color: 'bg-gray-500', icon: <AlertCircle className="w-5 h-5 text-gray-400" />, bg: 'bg-gray-50 border-gray-200' };
@@ -137,15 +134,10 @@ export default function PRADAnnualReports({ prad, onUpdate }) {
                         </p>
                       )}
                       {report.file_url && (
-                        <a
-                          href={report.file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-blue-600 underline flex items-center gap-1"
-                        >
-                          <FileText className="w-3 h-3" />
-                          {report.file_name || 'Ver Relatório'}
-                        </a>
+                        <div className="flex items-center gap-1">
+                          <FileText className="w-3 h-3 text-emerald-600" />
+                          <SupabaseFileLink filePath={report.file_url} label={report.file_name || 'Ver Relatório'} asLink={true} />
+                        </div>
                       )}
                       {report.notes && (
                         <p className="text-xs text-gray-500 italic truncate">{report.notes}</p>
@@ -245,18 +237,12 @@ export default function PRADAnnualReports({ prad, onUpdate }) {
                             </button>
                           </div>
                         ) : (
-                          <label className="flex items-center gap-2 cursor-pointer border-2 border-dashed border-gray-300 rounded p-3 hover:border-green-400 transition-colors">
-                            <Upload className="w-4 h-4 text-gray-400" />
-                            <span className="text-xs text-gray-500">
-                              {uploading ? 'Enviando...' : 'Clique para enviar o PDF'}
-                            </span>
-                            <input
-                              type="file"
-                              accept=".pdf,.doc,.docx"
-                              className="hidden"
-                              onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])}
-                            />
-                          </label>
+                          <SupabaseFileUpload
+                            folder="prad-relatorios"
+                            accept=".pdf,.doc,.docx"
+                            onUploadDone={(filePath, fileName) => setEditData(prev => ({ ...prev, file_url: filePath, file_name: fileName }))}
+                            label="Enviar PDF do Relatório"
+                          />
                         )}
                       </div>
                     </div>
@@ -266,7 +252,7 @@ export default function PRADAnnualReports({ prad, onUpdate }) {
                       <Button
                         className="bg-emerald-600 hover:bg-emerald-700"
                         onClick={() => handleSave(year)}
-                        disabled={updateMutation.isPending || uploading}
+                        disabled={updateMutation.isPending}
                       >
                         Salvar Relatório
                       </Button>

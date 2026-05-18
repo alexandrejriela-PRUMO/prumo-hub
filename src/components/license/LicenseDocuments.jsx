@@ -6,32 +6,31 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { FileText, Upload, Trash2, ExternalLink, Plus } from 'lucide-react';
+import { FileText, Trash2, ExternalLink, Plus } from 'lucide-react';
+import SupabaseFileUpload from '@/components/storage/SupabaseFileUpload';
+import SupabaseFileLink from '@/components/storage/SupabaseFileLink';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
 
 export default function LicenseDocuments({ license, onUpdate }) {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [docType, setDocType] = useState('Documento Complementar');
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [pendingFilePath, setPendingFilePath] = useState(null);
+  const [pendingFileName, setPendingFileName] = useState(null);
 
   const handleUpload = async (e) => {
     e.preventDefault();
-    if (!selectedFile) {
-      toast.error('Por favor, selecione um arquivo');
+    if (!pendingFilePath) {
+      toast.error('Por favor, selecione e aguarde o envio do arquivo');
       return;
     }
 
-    setUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: selectedFile });
-      
       const user = await base44.auth.me();
       const newDoc = {
-        name: selectedFile.name,
-        url: file_url,
+        name: pendingFileName,
+        url: pendingFilePath,
         type: docType,
         uploaded_by: user.email,
         uploaded_date: new Date().toISOString()
@@ -45,12 +44,12 @@ export default function LicenseDocuments({ license, onUpdate }) {
       await onUpdate(updatedLicense);
       toast.success('Documento adicionado com sucesso!');
       setUploadDialogOpen(false);
-      setSelectedFile(null);
+      setPendingFilePath(null);
+      setPendingFileName(null);
       setDocType('Documento Complementar');
     } catch (error) {
-      toast.error('Erro ao fazer upload do documento');
+      toast.error('Erro ao salvar documento');
     }
-    setUploading(false);
   };
 
   const handleDelete = async (index) => {
@@ -102,32 +101,18 @@ export default function LicenseDocuments({ license, onUpdate }) {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="file-upload">Selecionar Arquivo do Computador</Label>
+                  <Label>Selecionar Arquivo</Label>
                   <div className="mt-2">
-                    <label 
-                      htmlFor="file-upload"
-                      className="flex items-center justify-center gap-2 w-full p-4 border-2 border-dashed border-emerald-300 rounded-lg cursor-pointer hover:bg-emerald-50 transition-colors"
-                    >
-                      <Upload className="w-5 h-5 text-emerald-600" />
-                      <span className="text-sm font-medium text-emerald-700">
-                        {selectedFile ? selectedFile.name : 'Clique aqui para buscar arquivo (PDF, JPG, PNG)'}
-                      </span>
-                    </label>
-                    <Input
-                      id="file-upload"
-                      type="file"
+                    <SupabaseFileUpload
+                      folder="licencas"
                       accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={(e) => setSelectedFile(e.target.files[0])}
-                      className="hidden"
-                      required
+                      onUploadDone={(filePath, fileName) => { setPendingFilePath(filePath); setPendingFileName(fileName); }}
+                      label="Selecionar Arquivo (PDF, JPG, PNG)"
                     />
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Formatos aceitos: PDF, JPG, PNG (máx. 10MB)
-                  </p>
                 </div>
-                <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={uploading}>
-                  {uploading ? 'Enviando...' : 'Fazer Upload'}
+                <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700">
+                  Adicionar Documento
                 </Button>
               </form>
             </DialogContent>
@@ -167,14 +152,7 @@ export default function LicenseDocuments({ license, onUpdate }) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <a
-                    href={doc.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
+                  <SupabaseFileLink filePath={doc.url} label="" asLink={true} />
                   <Button
                     variant="ghost"
                     size="icon"

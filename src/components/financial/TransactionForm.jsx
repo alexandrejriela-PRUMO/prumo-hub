@@ -8,9 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import {
-  TrendingUp, TrendingDown, Upload, X, FileText,
+  TrendingUp, TrendingDown, X, FileText,
   Image as ImageIcon, Plus, Search, UserPlus, Loader2, Layers, Calendar
 } from 'lucide-react';
+import SupabaseFileUpload from '@/components/storage/SupabaseFileUpload';
 import { format, addMonths, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -91,7 +92,7 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
   const [form, setForm] = useState(EMPTY_BASE);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [clientSearch, setClientSearch] = useState('');
-  const [uploadingIdx, setUploadingIdx] = useState(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
   const [saving, setSaving] = useState(false);
   const qc = useQueryClient();
 
@@ -168,19 +169,6 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
     });
   };
 
-  // File upload (for à vista only)
-  const handleFileUpload = async (e) => {
-    const files = Array.from(e.target.files);
-    if (!files.length) return;
-    for (const file of files) {
-      const idx = form.attachments.length;
-      setUploadingIdx(idx);
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setForm(p => ({ ...p, attachments: [...p.attachments, { name: file.name, url: file_url, type: file.type }] }));
-      setUploadingIdx(null);
-    }
-    e.target.value = '';
-  };
   const removeAttachment = (idx) => setForm(p => ({ ...p, attachments: p.attachments.filter((_, i) => i !== idx) }));
 
   const handleSubmit = async () => {
@@ -548,23 +536,24 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
 
               {/* Attachments */}
               <div>
-                <Label className="flex items-center gap-2 mb-2"><Upload className="w-3.5 h-3.5"/>Comprovantes</Label>
+                <Label className="flex items-center gap-2 mb-2"><FileText className="w-3.5 h-3.5"/>Comprovantes</Label>
                 {form.attachments.length > 0 && (
                   <div className="space-y-1.5 mb-2">
                     {form.attachments.map((att, i) => (
                       <div key={i} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
                         {att.type?.startsWith('image/') ? <ImageIcon className="w-4 h-4 text-blue-500 flex-shrink-0"/> : <FileText className="w-4 h-4 text-gray-500 flex-shrink-0"/>}
-                        <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline flex-1 truncate">{att.name}</a>
+                        <span className="text-xs text-gray-700 flex-1 truncate">{att.name}</span>
                         <button onClick={() => removeAttachment(i)}><X className="w-3 h-3 text-gray-400"/></button>
                       </div>
                     ))}
                   </div>
                 )}
-                <label className={`flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-emerald-400 hover:bg-emerald-50 transition-colors text-sm text-gray-500 ${uploadingIdx !== null ? 'opacity-50 pointer-events-none' : ''}`}>
-                  {uploadingIdx !== null ? <Loader2 className="w-4 h-4 animate-spin"/> : <Upload className="w-4 h-4"/>}
-                  {uploadingIdx !== null ? 'Enviando...' : 'Anexar comprovante'}
-                  <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" className="hidden" onChange={handleFileUpload}/>
-                </label>
+                <SupabaseFileUpload
+                  folder="financeiro"
+                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                  onUploadDone={(filePath, fileName) => setForm(p => ({ ...p, attachments: [...p.attachments, { name: fileName, url: filePath, type: '' }] }))}
+                  label="Anexar comprovante"
+                />
               </div>
 
               <div><Label>Observações</Label><Input value={form.notes} onChange={e => setF('notes', e.target.value)} placeholder="Notas adicionais"/></div>

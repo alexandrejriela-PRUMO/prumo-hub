@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import MobileSelect from '../mobile/MobileSelect';
-import { Upload, X, FileText, Image, FileCheck, Loader2 } from 'lucide-react';
+import { X, FileText, Image, FileCheck, Loader2 } from 'lucide-react';
+import SupabaseFileUpload from '@/components/storage/SupabaseFileUpload';
 import { Badge } from '@/components/ui/badge';
 
 export default function AlertForm({ alert, properties, user, onSubmit, onCancel }) {
@@ -32,34 +33,9 @@ export default function AlertForm({ alert, properties, user, onSubmit, onCancel 
     }
   });
   
-  const [uploading, setUploading] = useState(false);
   const [actionInput, setActionInput] = useState('');
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
 
-    setUploading(true);
-    try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      
-      const attachment = {
-        name: file.name,
-        url: file_url,
-        type: file.type.startsWith('image/') ? 'foto' : 'documento',
-        uploaded_date: new Date().toISOString(),
-        uploaded_by: user.email
-      };
-      
-      setFormData({
-        ...formData,
-        attachments: [...(formData.attachments || []), attachment]
-      });
-    } catch (error) {
-      console.error('Erro ao fazer upload:', error);
-    }
-    setUploading(false);
-  };
 
   const removeAttachment = (index) => {
     const newAttachments = [...formData.attachments];
@@ -303,18 +279,21 @@ export default function AlertForm({ alert, properties, user, onSubmit, onCancel 
       <div className="space-y-2">
         <Label>Anexos (Relatórios, Fotos)</Label>
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-          <Input
-            type="file"
-            onChange={handleFileUpload}
+          <SupabaseFileUpload
+            folder="alertas"
             accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-            className="mb-3"
+            onUploadDone={(filePath, fileName) => {
+              const attachment = {
+                name: fileName,
+                url: filePath,
+                type: fileName.match(/\.(jpg|jpeg|png)$/i) ? 'foto' : 'documento',
+                uploaded_date: new Date().toISOString(),
+                uploaded_by: user?.email
+              };
+              setFormData(f => ({ ...f, attachments: [...(f.attachments || []), attachment] }));
+            }}
+            label="Adicionar Anexo"
           />
-          {uploading && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Enviando arquivo...
-            </div>
-          )}
           {formData.attachments?.length > 0 && (
             <div className="space-y-2">
               {formData.attachments.map((att, idx) => (

@@ -4,10 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { base44 } from '@/api/base44Client';
-import { Upload, X, Loader2, FileText } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { MODULES, DOCUMENT_TYPES } from './documentConstants';
+import SupabaseFileUpload from '@/components/storage/SupabaseFileUpload';
 
 export default function DocumentUpload({ 
   entityType, 
@@ -17,7 +17,7 @@ export default function DocumentUpload({
   allowedTypes = DOCUMENT_TYPES,
   properties = []
 }) {
-  const [uploading, setUploading] = useState(false);
+  const [file_url, setFileUrl] = useState(null);
   const [file, setFile] = useState(null);
   const [selectedPropertyId, setSelectedPropertyId] = useState(entityId || '');
   const [metadata, setMetadata] = useState({
@@ -31,21 +31,11 @@ export default function DocumentUpload({
 
 
 
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      if (!metadata.document_name) {
-        setMetadata({ ...metadata, document_name: selectedFile.name });
-      }
-    }
-  };
-
-  const handleUpload = async (e) => {
+  const handleUpload = (e) => {
     e.preventDefault();
     
-    if (!file) {
-      toast.error('Selecione um arquivo');
+    if (!file_url) {
+      toast.error('Selecione e aguarde o envio do arquivo');
       return;
     }
 
@@ -54,36 +44,23 @@ export default function DocumentUpload({
       return;
     }
 
-    setUploading(true);
+    const documentData = {
+      entity_type: selectedPropertyId ? 'Property' : entityType,
+      entity_id: selectedPropertyId || entityId,
+      module: metadata.module || undefined,
+      document_type: metadata.document_type === 'Outro' && metadata.other_description
+        ? `Outro: ${metadata.other_description}`
+        : metadata.document_type,
+      document_name: metadata.document_name,
+      description: metadata.description,
+      file_url,
+      file_size: file?.size,
+      file_type: file?.type,
+      upload_date: metadata.date
+    };
 
-    try {
-      // Upload file
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-
-      // Prepare document data
-      const documentData = {
-        entity_type: selectedPropertyId ? 'Property' : entityType,
-        entity_id: selectedPropertyId || entityId,
-        module: metadata.module || undefined,
-        document_type: metadata.document_type === 'Outro' && metadata.other_description
-          ? `Outro: ${metadata.other_description}`
-          : metadata.document_type,
-        document_name: metadata.document_name,
-        description: metadata.description,
-        file_url,
-        file_size: file.size,
-        file_type: file.type,
-        upload_date: metadata.date
-      };
-
-      onSuccess(documentData);
-      toast.success('Documento enviado com sucesso!');
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast.error('Erro ao enviar documento');
-    } finally {
-      setUploading(false);
-    }
+    onSuccess(documentData);
+    toast.success('Documento enviado com sucesso!');
   };
 
   return (
@@ -91,7 +68,7 @@ export default function DocumentUpload({
       <Card className="w-full max-w-2xl">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Upload de Documento</CardTitle>
-          <Button variant="ghost" size="icon" onClick={onCancel} disabled={uploading}>
+          <Button variant="ghost" size="icon" onClick={onCancel}>
             <X className="w-4 h-4" />
           </Button>
         </CardHeader>
@@ -101,26 +78,15 @@ export default function DocumentUpload({
             <div>
               <Label>Arquivo *</Label>
               <div className="mt-2">
-                <input
-                  type="file"
-                  onChange={handleFileChange}
-                  disabled={uploading}
-                  className="block w-full text-sm text-gray-500
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-lg file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-blue-50 file:text-blue-700
-                    hover:file:bg-blue-100
-                    disabled:opacity-50"
+                <SupabaseFileUpload
+                  folder="documentos"
+                  onUploadDone={(filePath, fileName) => {
+                    setFileUrl(filePath);
+                    if (!metadata.document_name) setMetadata(m => ({ ...m, document_name: fileName }));
+                  }}
+                  label="Selecionar Arquivo"
                 />
               </div>
-              {file && (
-                <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
-                  <FileText className="w-4 h-4" />
-                  <span>{file.name}</span>
-                  <span className="text-gray-400">({(file.size / 1024).toFixed(2)} KB)</span>
-                </div>
-              )}
             </div>
 
             {/* Property Selector */}
@@ -130,7 +96,6 @@ export default function DocumentUpload({
                 <select
                   value={selectedPropertyId}
                   onChange={(e) => setSelectedPropertyId(e.target.value)}
-                  disabled={uploading}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 mt-1"
                 >
                   <option value="">Nenhuma (Documento Geral)</option>
@@ -148,7 +113,6 @@ export default function DocumentUpload({
                 required
                 value={metadata.module}
                 onChange={(e) => setMetadata({ ...metadata, module: e.target.value })}
-                disabled={uploading}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 mt-1"
               >
                 <option value="">Selecione o módulo</option>
@@ -165,7 +129,6 @@ export default function DocumentUpload({
                 required
                 value={metadata.document_type}
                 onChange={(e) => setMetadata({ ...metadata, document_type: e.target.value, other_description: '' })}
-                disabled={uploading}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Selecione o tipo</option>
@@ -184,7 +147,6 @@ export default function DocumentUpload({
                   value={metadata.other_description}
                   onChange={(e) => setMetadata({ ...metadata, other_description: e.target.value })}
                   placeholder="Ex: Contrato de Compra e Venda, Laudo de Avaliação..."
-                  disabled={uploading}
                 />
               </div>
             )}
@@ -197,7 +159,6 @@ export default function DocumentUpload({
                 value={metadata.document_name}
                 onChange={(e) => setMetadata({ ...metadata, document_name: e.target.value })}
                 placeholder="Ex: CAR - Propriedade São José"
-                disabled={uploading}
               />
             </div>
 
@@ -208,7 +169,6 @@ export default function DocumentUpload({
                 type="date"
                 value={metadata.date}
                 onChange={(e) => setMetadata({ ...metadata, date: e.target.value })}
-                disabled={uploading}
               />
             </div>
 
@@ -220,27 +180,16 @@ export default function DocumentUpload({
                 onChange={(e) => setMetadata({ ...metadata, description: e.target.value })}
                 placeholder="Informações adicionais sobre o documento..."
                 rows={3}
-                disabled={uploading}
               />
             </div>
 
             {/* Actions */}
             <div className="flex justify-end gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={onCancel} disabled={uploading}>
+              <Button type="button" variant="outline" onClick={onCancel}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={uploading} className="bg-blue-600 hover:bg-blue-700">
-                {uploading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Enviando...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4 mr-2" />
-                    Enviar Documento
-                  </>
-                )}
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                Enviar Documento
               </Button>
             </div>
           </form>

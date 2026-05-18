@@ -7,7 +7,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Clock, Plus, User, FileCheck, Calendar, Building, Upload, FileText, Download, Edit2, History, AlertCircle } from 'lucide-react';
+import { Clock, Plus, User, FileCheck, Calendar, Building, FileText, Edit2, History, AlertCircle } from 'lucide-react';
+import SupabaseFileUpload from '@/components/storage/SupabaseFileUpload';
+import SupabaseFileLink from '@/components/storage/SupabaseFileLink';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { base44 } from '@/api/base44Client';
@@ -15,7 +17,6 @@ import { base44 } from '@/api/base44Client';
 export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [editingIndex, setEditingIndex] = useState(null);
   const [newUpdate, setNewUpdate] = useState({
@@ -50,25 +51,7 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
     loadUser();
   }, []);
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
 
-    setUploading(true);
-    try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setNewUpdate({ 
-        ...newUpdate, 
-        file_url,
-        file_name: file.name
-      });
-    } catch (error) {
-      console.error('Erro ao fazer upload:', error);
-      alert('Erro ao fazer upload do arquivo');
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -141,25 +124,7 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
     setEditingIndex(null);
   };
 
-  const handleFileUploadEdit = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
 
-    setUploading(true);
-    try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setEditUpdate({ 
-        ...editUpdate, 
-        file_url,
-        file_name: file.name
-      });
-    } catch (error) {
-      console.error('Erro ao fazer upload:', error);
-      alert('Erro ao fazer upload do arquivo');
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const updates = license.updates || [];
 
@@ -283,18 +248,11 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
                 <div>
                   <Label>Anexar Documento (opcional)</Label>
                   <div className="mt-2">
-                    <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-emerald-300 rounded-lg hover:bg-emerald-50 cursor-pointer transition-colors">
-                      <Upload className="w-5 h-5 text-emerald-600" />
-                      <span className="text-sm text-emerald-700">
-                        {uploading ? 'Enviando...' : newUpdate.file_name || 'Clique para selecionar arquivo'}
-                      </span>
-                      <input
-                        type="file"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                        disabled={uploading}
-                      />
-                    </label>
+                    <SupabaseFileUpload
+                      folder="andamentos"
+                      onUploadDone={(filePath, fileName) => setNewUpdate(u => ({ ...u, file_url: filePath, file_name: fileName }))}
+                      label="Selecionar Arquivo"
+                    />
                   </div>
                 </div>
                 <div>
@@ -326,7 +284,7 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
                     </Select>
                   </div>
                 )}
-                <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={uploading}>
+                <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700">
                   Adicionar Andamento
                 </Button>
               </form>
@@ -371,18 +329,11 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
                 <div>
                   <Label>Anexar Documento (opcional)</Label>
                   <div className="mt-2">
-                    <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-emerald-300 rounded-lg hover:bg-emerald-50 cursor-pointer transition-colors">
-                      <Upload className="w-5 h-5 text-emerald-600" />
-                      <span className="text-sm text-emerald-700">
-                        {uploading ? 'Enviando...' : editUpdate.file_name || 'Clique para selecionar arquivo'}
-                      </span>
-                      <input
-                        type="file"
-                        onChange={handleFileUploadEdit}
-                        className="hidden"
-                        disabled={uploading}
-                      />
-                    </label>
+                    <SupabaseFileUpload
+                      folder="andamentos"
+                      onUploadDone={(filePath, fileName) => setEditUpdate(u => ({ ...u, file_url: filePath, file_name: fileName }))}
+                      label="Selecionar Arquivo"
+                    />
                   </div>
                 </div>
                 <div>
@@ -424,7 +375,7 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={uploading}>
+                <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700">
                   Salvar Alterações
                 </Button>
               </form>
@@ -493,16 +444,11 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
                       </p>
 
                       {update.file_url && (
-                        <a
-                          href={update.file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors text-sm text-emerald-700 mb-2"
-                        >
-                          <FileText className="w-4 h-4" />
-                          <span>{update.file_name || 'Documento anexo'}</span>
-                          <Download className="w-3 h-3" />
-                        </a>
+                        <div className="mb-2 flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-emerald-600" />
+                          <span className="text-sm text-emerald-700">{update.file_name || 'Documento anexo'}</span>
+                          <SupabaseFileLink filePath={update.file_url} label="Baixar" asLink={true} />
+                        </div>
                       )}
 
                       {update.deadline && (

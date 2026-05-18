@@ -422,11 +422,16 @@ export default function Mappings() {
                   <Textarea name="notes" defaultValue={currentMapping?.notes} />
                 </div>
 
+                {!selectedProperty && (
+                  <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm rounded-lg px-4 py-3">
+                    ⚠️ Selecione uma propriedade antes de criar o mapeamento.
+                  </div>
+                )}
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                     Cancelar
                   </Button>
-                  <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
+                  <Button type="submit" disabled={!selectedProperty} className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50">
                     {currentMapping ? 'Atualizar' : 'Criar'}
                   </Button>
                 </div>
@@ -436,15 +441,15 @@ export default function Mappings() {
         </div>
 
         {/* Property Selector */}
-        {!isClientConsultor && (effectiveProperties.length > 1 || isConsultor) && (
+        {!isClientConsultor && effectiveProperties.length > 0 && (
           <div className="mb-6">
             <Label>Propriedade ou Empreendimento</Label>
             <Select
-              value={selectedProperty?.id}
+              value={selectedProperty?.id || ''}
               onValueChange={(id) => setSelectedProperty(effectiveProperties.find((p) => p.id === id))}
             >
               <SelectTrigger className="max-w-md">
-                <SelectValue />
+                <SelectValue placeholder="Selecione uma propriedade" />
               </SelectTrigger>
               <SelectContent>
                 {effectiveProperties.map((property) => (

@@ -1,18 +1,44 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X, Download, ExternalLink, FileText, Image as ImageIcon, File } from 'lucide-react';
+import { X, Download, ExternalLink, File, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
+function isLegacyUrl(url) {
+  return url && (url.startsWith('http://') || url.startsWith('https://'));
+}
+
 export default function DocumentViewer({ document, onClose }) {
-  const isPDF = document.file_url?.toLowerCase().endsWith('.pdf') || document.file_type?.includes('pdf');
-  const isImage = document.file_type?.startsWith('image/') || 
-    /\.(jpg|jpeg|png|gif|webp)$/i.test(document.file_url || '');
+  const [resolvedUrl, setResolvedUrl] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const rawUrl = document.file_url;
+  const isPDF = rawUrl?.toLowerCase().endsWith('.pdf') || document.file_type?.includes('pdf');
+  const isImage = document.file_type?.startsWith('image/') ||
+    /\.(jpg|jpeg|png|gif|webp)$/i.test(rawUrl || '');
+
+  useEffect(() => {
+    if (!rawUrl) { setLoading(false); return; }
+
+    if (isLegacyUrl(rawUrl)) {
+      // URL base44 ou externa: usa diretamente
+      setResolvedUrl(rawUrl);
+      setLoading(false);
+    } else {
+      // Path Supabase: gera URL assinada (válida por 1h)
+      base44.functions.invoke('supabaseGetSignedUrl', { filePath: rawUrl, expiresIn: 3600 })
+        .then(res => {
+          setResolvedUrl(res.data?.signedUrl || null);
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [rawUrl]);
 
   const handleDownload = () => {
-    window.open(document.file_url, '_blank');
+    if (resolvedUrl) window.open(resolvedUrl, '_blank');
   };
 
   return (
@@ -36,11 +62,11 @@ export default function DocumentViewer({ document, onClose }) {
             </div>
           </div>
           <div className="flex items-center gap-2 ml-4">
-            <Button variant="outline" size="sm" onClick={handleDownload}>
+            <Button variant="outline" size="sm" onClick={handleDownload} disabled={loading || !resolvedUrl}>
               <Download className="w-4 h-4 mr-2" />
               Download
             </Button>
-            <Button variant="outline" size="sm" onClick={() => window.open(document.file_url, '_blank')}>
+            <Button variant="outline" size="sm" onClick={handleDownload} disabled={loading || !resolvedUrl}>
               <ExternalLink className="w-4 h-4" />
             </Button>
             <Button variant="ghost" size="icon" onClick={onClose}>
@@ -49,25 +75,32 @@ export default function DocumentViewer({ document, onClose }) {
           </div>
         </CardHeader>
         <CardContent className="flex-1 overflow-hidden p-0">
-          {/* Description */}
           {document.description && (
             <div className="p-4 bg-gray-50 border-b">
               <p className="text-sm text-gray-700">{document.description}</p>
             </div>
           )}
 
-          {/* Document Preview */}
           <div className="h-full overflow-auto">
-            {isPDF ? (
+            {loading ? (
+              <div className="flex items-center justify-center min-h-[400px]">
+                <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+              </div>
+            ) : !resolvedUrl ? (
+              <div className="flex flex-col items-center justify-center p-12 text-center">
+                <File className="w-16 h-16 text-gray-300 mb-4" />
+                <p className="text-gray-600">Arquivo não disponível</p>
+              </div>
+            ) : isPDF ? (
               <iframe
-                src={document.file_url}
+                src={resolvedUrl}
                 className="w-full h-full min-h-[600px]"
                 title="Document Preview"
               />
             ) : isImage ? (
               <div className="flex items-center justify-center p-8 bg-gray-50">
                 <img
-                  src={document.file_url}
+                  src={resolvedUrl}
                   alt={document.document_name}
                   className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
                 />

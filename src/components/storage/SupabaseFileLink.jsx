@@ -12,12 +12,23 @@ import { Download, Loader2, ExternalLink } from 'lucide-react';
  *   expiresIn  - segundos de validade do link (padrão: 3600 = 1h)
  *   asLink     - se true, renderiza como link em vez de botão
  */
+// Detecta se é URL legada do base44 ou URL externa (não é um path relativo do Supabase)
+function isLegacyUrl(filePath) {
+  return filePath && (filePath.startsWith('http://') || filePath.startsWith('https://'));
+}
+
 export default function SupabaseFileLink({ filePath, label = 'Baixar Arquivo', expiresIn = 3600, asLink = false }) {
   const [loading, setLoading] = useState(false);
 
   if (!filePath) return null;
 
   const handleClick = async () => {
+    // Arquivos legados (base44, URLs externas): abre diretamente
+    if (isLegacyUrl(filePath)) {
+      window.open(filePath, '_blank');
+      return;
+    }
+    // Arquivos novos no Supabase: gera URL assinada temporária
     setLoading(true);
     const res = await base44.functions.invoke('supabaseGetSignedUrl', { filePath, expiresIn });
     const { signedUrl } = res.data;

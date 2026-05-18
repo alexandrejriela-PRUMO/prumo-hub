@@ -28,6 +28,7 @@ import { ptBR } from 'date-fns/locale';
 import DocumentUpload from '../components/documents/DocumentUpload';
 import DocumentViewer from '../components/documents/DocumentViewer';
 import DocumentEditModal from '../components/documents/DocumentEditModal';
+import SupabaseFileLink from '../components/storage/SupabaseFileLink';
 import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
 import { MODULES, MODULE_COLORS } from '../components/documents/documentConstants';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
@@ -568,9 +569,7 @@ export default function DocumentsHub() {
                                 <Eye className="w-4 h-4 mr-1" />
                                 Ver
                               </Button>
-                              <Button variant="outline" size="sm" onClick={() => window.open(doc.file_url, '_blank')}>
-                                <Download className="w-4 h-4" />
-                              </Button>
+                              <SupabaseFileLink filePath={doc.file_url} label="" asLink={false} />
                               {canEdit && (
                                 <Button variant="outline" size="sm" onClick={() => setEditingDoc(doc)} className="text-blue-600 hover:text-blue-700">
                                   <Pencil className="w-4 h-4" />

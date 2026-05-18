@@ -108,7 +108,7 @@ const licenseTypes = [
 ];
 
 export default function Licenses() {
-  const { effectiveEmail, isEquipe, memberRole, loading: effectiveLoading } = useEffectiveUser();
+  const { effectiveEmail, isEquipe, isConsultor: isConsultorHook, userType, memberRole, loading: effectiveLoading } = useEffectiveUser();
   const canCreate = !isEquipe || memberRole === 'Administrador' || memberRole === 'Engenheiro';
   const [user, setUser] = useState(null);
   const [consultorPropertyId, setConsultorPropertyId] = useState(null);
@@ -169,8 +169,8 @@ export default function Licenses() {
     loadUser();
   }, []);
 
-  const isConsultor = user?.user_type === 'consultor' || isEquipe;
-  const isClientConsultor = user?.user_type === 'client_consultor';
+  const isConsultor = isConsultorHook || isEquipe || userType === 'consultor' || user?.user_type === 'consultor';
+  const isClientConsultor = userType === 'client_consultor' || user?.user_type === 'client_consultor';
   const canEdit = !isClientConsultor && canCreate;
   const queryEmail = effectiveEmail || user?.email;
 

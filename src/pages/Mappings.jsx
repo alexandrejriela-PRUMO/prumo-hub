@@ -33,7 +33,8 @@ export default function Mappings() {
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [currentMapping, setCurrentMapping] = useState(null);
-  const [uploadingFile, setUploadingFile] = useState(false);
+  const [mappingType, setMappingType] = useState('');
+  const [mappingStatus, setMappingStatus] = useState('Em Processamento');
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -126,22 +127,21 @@ export default function Mappings() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!selectedProperty) return;
+    if (!selectedProperty) { toast.error('Selecione uma propriedade primeiro'); return; }
+    if (!mappingType) { toast.error('Selecione o tipo de mapeamento'); return; }
     const formData = new FormData(e.target);
     const data = {
       property_id: selectedProperty.id,
       user_email: user.email,
-      mapping_type: formData.get('mapping_type'),
+      mapping_type: mappingType,
       title: formData.get('title'),
       description: formData.get('description'),
       mapping_date: formData.get('mapping_date'),
       area_hectares: parseFloat(formData.get('area_hectares')) || 0,
       coordinates: formData.get('coordinates'),
-      status: formData.get('status') || 'Em Processamento',
+      status: mappingStatus || 'Em Processamento',
       notes: formData.get('notes'),
     };
-
-    const mappingType = data.mapping_type;
     if (mappingType === 'Multiespectral') {
       data.multispectral_data = {
         ndvi: parseFloat(formData.get('ndvi')) || 0,
@@ -259,16 +259,12 @@ export default function Mappings() {
             </p>
           </div>
           {canEdit && <Dialog open={dialogOpen} onOpenChange={(open) => {
-              if (!open && !currentMapping) {
-                const confirmed = window.confirm('Você tem alterações não salvas. Deseja fechar sem salvar?');
-                if (!confirmed) return;
-              }
               setDialogOpen(open);
-              if (!open) setCurrentMapping(null);
+              if (!open) { setCurrentMapping(null); setMappingType(''); setMappingStatus('Em Processamento'); }
             }}>
             <DialogTrigger asChild>
               <Button
-                onClick={() => setCurrentMapping(null)}
+                onClick={() => { setCurrentMapping(null); setMappingType(''); setMappingStatus('Em Processamento'); }}
                 className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 w-full sm:w-auto"
               >
                 <Plus className="w-5 h-5 mr-2" />
@@ -283,8 +279,8 @@ export default function Mappings() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label>Tipo de Mapeamento</Label>
-                    <Select name="mapping_type" defaultValue={currentMapping?.mapping_type} required>
+                    <Label>Tipo de Mapeamento *</Label>
+                    <Select value={mappingType} onValueChange={setMappingType} required>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
@@ -299,7 +295,7 @@ export default function Mappings() {
                   </div>
                   <div>
                     <Label>Status</Label>
-                    <Select name="status" defaultValue={currentMapping?.status || 'Em Processamento'}>
+                    <Select value={mappingStatus} onValueChange={setMappingStatus}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -559,6 +555,8 @@ export default function Mappings() {
                         className="flex-1"
                         onClick={() => {
                           setCurrentMapping(mapping);
+                          setMappingType(mapping.mapping_type || '');
+                          setMappingStatus(mapping.status || 'Em Processamento');
                           if (canEdit) setDialogOpen(true);
                         }}
                       >

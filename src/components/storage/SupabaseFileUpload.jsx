@@ -30,42 +30,53 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
     setProgress(0);
     setErrorMsg('');
 
-    // 1. Pede URL pré-assinada ao backend
-    const res = await base44.functions.invoke('supabaseGetUploadUrl', {
-      fileName: file.name,
-      contentType: file.type || 'application/octet-stream',
-      folder,
-    });
+    try {
+      // 1. Pede URL pré-assinada ao backend
+      const res = await base44.functions.invoke('supabaseGetUploadUrl', {
+        fileName: file.name,
+        contentType: file.type || 'application/octet-stream',
+        folder,
+      });
 
-    const { uploadUrl, filePath } = res.data;
+      if (!res.data?.uploadUrl) {
+        throw new Error(res.data?.error || 'Falha ao obter URL de upload');
+      }
 
-    // 2. Faz upload direto para o Supabase via XHR para ter progresso real
-    await new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) {
-          setProgress(Math.round((e.loaded / e.total) * 100));
-        }
-      };
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          resolve();
-        } else {
-          reject(new Error(`Upload falhou: ${xhr.status} ${xhr.responseText}`));
-        }
-      };
-      xhr.onerror = () => reject(new Error('Erro de rede durante o upload'));
-      xhr.open('PUT', uploadUrl);
-      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
-      xhr.send(file);
-    });
+      const { uploadUrl, filePath } = res.data;
 
-    setStatus('success');
-    setProgress(100);
-    onUploadDone?.(filePath, file.name);
+      // 2. Faz upload direto para o Supabase via XHR para ter progresso real
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.upload.onprogress = (evt) => {
+          if (evt.lengthComputable) {
+            setProgress(Math.round((evt.loaded / evt.total) * 100));
+          }
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve();
+          } else {
+            reject(new Error(`Upload falhou: ${xhr.status} ${xhr.responseText}`));
+          }
+        };
+        xhr.onerror = () => reject(new Error('Erro de rede durante o upload'));
+        xhr.open('PUT', uploadUrl);
+        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+        xhr.send(file);
+      });
 
-    // Reset input
-    if (inputRef.current) inputRef.current.value = '';
+      setStatus('success');
+      setProgress(100);
+      onUploadDone?.(filePath, file.name);
+
+      // Reset input
+      if (inputRef.current) inputRef.current.value = '';
+    } catch (err) {
+      console.error('[SupabaseFileUpload] Erro:', err.message);
+      setStatus('error');
+      setErrorMsg(err.message || 'Erro ao enviar arquivo');
+      if (inputRef.current) inputRef.current.value = '';
+    }
   };
 
   const reset = () => {

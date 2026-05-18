@@ -4,6 +4,8 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 const BUCKET_NAME = Deno.env.get('SUPABASE_BUCKET_NAME');
 
+const BASE44_URL_PATTERN = 'base44.app';
+
 async function uploadToSupabase(filePath, fileBuffer, contentType) {
   const res = await fetch(
     `${SUPABASE_URL}/storage/v1/object/${BUCKET_NAME}/${filePath}`,
@@ -24,6 +26,197 @@ async function uploadToSupabase(filePath, fileBuffer, contentType) {
   return filePath;
 }
 
+async function migrateUrl(oldUrl, folder, ownerEmail) {
+  if (!oldUrl || !oldUrl.includes(BASE44_URL_PATTERN)) return null;
+
+  const downloadRes = await fetch(oldUrl);
+  if (!downloadRes.ok) throw new Error(`Download falhou: ${downloadRes.status}`);
+
+  const buffer = await downloadRes.arrayBuffer();
+  const contentType = downloadRes.headers.get('content-type') || 'application/octet-stream';
+
+  // Extrair nome do arquivo da URL
+  const urlParts = oldUrl.split('/');
+  const rawName = urlParts[urlParts.length - 1] || `file_${Date.now()}`;
+  const timestamp = Date.now();
+  const newPath = `${folder}/${ownerEmail || 'migrated'}/${timestamp}_${rawName}`;
+
+  await uploadToSupabase(newPath, buffer, contentType);
+  return newPath;
+}
+
+// Definição de cada entidade e como extrair/atualizar seus arquivos
+const ENTITY_CONFIGS = [
+  {
+    name: 'Mapping',
+    folder: 'mapeamentos',
+    ownerField: 'user_email',
+    extract: (data) => {
+      const patches = [];
+      if (Array.isArray(data.files)) {
+        data.files.forEach((f, i) => {
+          if (f.url?.includes(BASE44_URL_PATTERN)) {
+            patches.push({ path: `files[${i}].url`, oldUrl: f.url });
+          }
+        });
+      }
+      return patches;
+    },
+    apply: (data, patches) => {
+      const updated = { ...data, files: [...(data.files || [])] };
+      patches.forEach(p => {
+        const idx = parseInt(p.path.match(/\[(\d+)\]/)[1]);
+        updated.files[idx] = { ...updated.files[idx], url: p.newUrl };
+      });
+      return updated;
+    },
+  },
+  {
+    name: 'License',
+    folder: 'licencas',
+    ownerField: 'owner_email',
+    extract: (data) => {
+      const patches = [];
+      if (Array.isArray(data.documents)) {
+        data.documents.forEach((d, i) => {
+          if (d.url?.includes(BASE44_URL_PATTERN)) patches.push({ path: `documents[${i}].url`, oldUrl: d.url });
+        });
+      }
+      if (Array.isArray(data.updates)) {
+        data.updates.forEach((u, i) => {
+          if (u.file_url?.includes(BASE44_URL_PATTERN)) patches.push({ path: `updates[${i}].file_url`, oldUrl: u.file_url });
+        });
+      }
+      return patches;
+    },
+    apply: (data, patches) => {
+      const updated = { ...data, documents: [...(data.documents || [])], updates: [...(data.updates || [])] };
+      patches.forEach(p => {
+        const idx = parseInt(p.path.match(/\[(\d+)\]/)[1]);
+        if (p.path.startsWith('documents')) updated.documents[idx] = { ...updated.documents[idx], url: p.newUrl };
+        else if (p.path.startsWith('updates')) updated.updates[idx] = { ...updated.updates[idx], file_url: p.newUrl };
+      });
+      return updated;
+    },
+  },
+  {
+    name: 'PRAD',
+    folder: 'prad',
+    ownerField: 'owner_email',
+    extract: (data) => {
+      const patches = [];
+      if (Array.isArray(data.documents)) {
+        data.documents.forEach((d, i) => {
+          if (d.url?.includes(BASE44_URL_PATTERN)) patches.push({ path: `documents[${i}].url`, oldUrl: d.url });
+        });
+      }
+      if (Array.isArray(data.annual_reports)) {
+        data.annual_reports.forEach((r, i) => {
+          if (r.file_url?.includes(BASE44_URL_PATTERN)) patches.push({ path: `annual_reports[${i}].file_url`, oldUrl: r.file_url });
+        });
+      }
+      return patches;
+    },
+    apply: (data, patches) => {
+      const updated = { ...data, documents: [...(data.documents || [])], annual_reports: [...(data.annual_reports || [])] };
+      patches.forEach(p => {
+        const idx = parseInt(p.path.match(/\[(\d+)\]/)[1]);
+        if (p.path.startsWith('documents')) updated.documents[idx] = { ...updated.documents[idx], url: p.newUrl };
+        else if (p.path.startsWith('annual_reports')) updated.annual_reports[idx] = { ...updated.annual_reports[idx], file_url: p.newUrl };
+      });
+      return updated;
+    },
+  },
+  {
+    name: 'ClientContract',
+    folder: 'contratos',
+    ownerField: 'consultor_email',
+    extract: (data) => {
+      const patches = [];
+      if (Array.isArray(data.documents)) {
+        data.documents.forEach((d, i) => {
+          if (d.url?.includes(BASE44_URL_PATTERN)) patches.push({ path: `documents[${i}].url`, oldUrl: d.url });
+        });
+      }
+      return patches;
+    },
+    apply: (data, patches) => {
+      const updated = { ...data, documents: [...(data.documents || [])] };
+      patches.forEach(p => {
+        const idx = parseInt(p.path.match(/\[(\d+)\]/)[1]);
+        updated.documents[idx] = { ...updated.documents[idx], url: p.newUrl };
+      });
+      return updated;
+    },
+  },
+  {
+    name: 'Process',
+    folder: 'processos',
+    ownerField: 'client_email',
+    extract: (data) => {
+      const patches = [];
+      if (Array.isArray(data.updates)) {
+        data.updates.forEach((u, i) => {
+          if (u.file_url?.includes(BASE44_URL_PATTERN)) patches.push({ path: `updates[${i}].file_url`, oldUrl: u.file_url });
+        });
+      }
+      return patches;
+    },
+    apply: (data, patches) => {
+      const updated = { ...data, updates: [...(data.updates || [])] };
+      patches.forEach(p => {
+        const idx = parseInt(p.path.match(/\[(\d+)\]/)[1]);
+        updated.updates[idx] = { ...updated.updates[idx], file_url: p.newUrl };
+      });
+      return updated;
+    },
+  },
+  {
+    name: 'EnvironmentalAlert',
+    folder: 'alertas',
+    ownerField: 'responsible_email',
+    extract: (data) => {
+      const patches = [];
+      if (Array.isArray(data.attachments)) {
+        data.attachments.forEach((a, i) => {
+          if (a.url?.includes(BASE44_URL_PATTERN)) patches.push({ path: `attachments[${i}].url`, oldUrl: a.url });
+        });
+      }
+      return patches;
+    },
+    apply: (data, patches) => {
+      const updated = { ...data, attachments: [...(data.attachments || [])] };
+      patches.forEach(p => {
+        const idx = parseInt(p.path.match(/\[(\d+)\]/)[1]);
+        updated.attachments[idx] = { ...updated.attachments[idx], url: p.newUrl };
+      });
+      return updated;
+    },
+  },
+  {
+    name: 'Georeferencing',
+    folder: 'georreferenciamento',
+    ownerField: 'owner_email',
+    extract: (data) => {
+      const patches = [];
+      if (Array.isArray(data.documents)) {
+        data.documents.forEach((d, i) => {
+          if (d.url?.includes(BASE44_URL_PATTERN)) patches.push({ path: `documents[${i}].url`, oldUrl: d.url });
+        });
+      }
+      return patches;
+    },
+    apply: (data, patches) => {
+      const updated = { ...data, documents: [...(data.documents || [])] };
+      patches.forEach(p => {
+        const idx = parseInt(p.path.match(/\[(\d+)\]/)[1]);
+        updated.documents[idx] = { ...updated.documents[idx], url: p.newUrl };
+      });
+      return updated;
+    },
+  },
+];
+
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
   const user = await base44.auth.me();
@@ -32,84 +225,71 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Acesso negado. Apenas admins.' }, { status: 403 });
   }
 
-  const { dry_run = false } = await req.json().catch(() => ({}));
+  const body = await req.json().catch(() => ({}));
+  const dry_run = body.dry_run ?? false;
+  const only_entity = body.entity ?? null; // opcional: migrar só uma entidade
 
-  // Buscar todos os mappings
-  const allMappings = await base44.asServiceRole.entities.Mapping.list('-created_date', 500);
+  const results = {
+    dry_run,
+    total_files_found: 0,
+    total_files_migrated: 0,
+    total_files_failed: 0,
+    by_entity: {},
+    errors: [],
+  };
 
-  // Filtrar apenas os que têm arquivos com URLs do Base44
-  const toMigrate = allMappings.filter(m =>
-    Array.isArray(m.files) &&
-    m.files.some(f => f.url && f.url.includes('base44.app'))
-  );
+  const configs = only_entity
+    ? ENTITY_CONFIGS.filter(c => c.name === only_entity)
+    : ENTITY_CONFIGS;
 
-  console.log(`[migrateMappings] Total de mappings: ${allMappings.length}, com arquivos Base44: ${toMigrate.length}`);
+  for (const config of configs) {
+    const entityResult = { files_found: 0, migrated: 0, failed: 0 };
+    results.by_entity[config.name] = entityResult;
 
-  if (dry_run) {
-    return Response.json({
-      dry_run: true,
-      total_mappings: allMappings.length,
-      mappings_to_migrate: toMigrate.length,
-      files_to_migrate: toMigrate.reduce((acc, m) => acc + m.files.filter(f => f.url?.includes('base44.app')).length, 0),
-      details: toMigrate.map(m => ({
-        id: m.id,
-        title: m.title,
-        files: m.files.filter(f => f.url?.includes('base44.app')).map(f => f.name),
-      })),
-    });
-  }
+    let records;
+    try {
+      records = await base44.asServiceRole.entities[config.name].list('-created_date', 500);
+    } catch (e) {
+      console.error(`[migrate] Erro ao listar ${config.name}:`, e.message);
+      continue;
+    }
 
-  const results = { migrated: 0, failed: 0, errors: [] };
+    for (const record of records) {
+      const data = record;
+      const patches = config.extract(data);
+      if (patches.length === 0) continue;
 
-  for (const mapping of toMigrate) {
-    const updatedFiles = [...mapping.files];
-    let changed = false;
+      entityResult.files_found += patches.length;
+      results.total_files_found += patches.length;
 
-    for (let i = 0; i < updatedFiles.length; i++) {
-      const file = updatedFiles[i];
-      if (!file.url || !file.url.includes('base44.app')) continue;
+      if (dry_run) continue;
 
-      try {
-        console.log(`[migrateMappings] Baixando: ${file.name} (${file.url})`);
+      const owner = data[config.ownerField] || 'migrated';
 
-        // Baixar o arquivo da URL antiga
-        const downloadRes = await fetch(file.url);
-        if (!downloadRes.ok) {
-          throw new Error(`Download falhou: ${downloadRes.status}`);
+      for (const patch of patches) {
+        try {
+          const newUrl = await migrateUrl(patch.oldUrl, config.folder, owner);
+          patch.newUrl = newUrl;
+          entityResult.migrated++;
+          results.total_files_migrated++;
+          console.log(`[migrate] ✓ ${config.name}/${record.id}: ${patch.path}`);
+        } catch (err) {
+          entityResult.failed++;
+          results.total_files_failed++;
+          results.errors.push({ entity: config.name, id: record.id, path: patch.path, error: err.message });
+          console.error(`[migrate] ✗ ${config.name}/${record.id} ${patch.path}:`, err.message);
         }
+      }
 
-        const buffer = await downloadRes.arrayBuffer();
-        const contentType = downloadRes.headers.get('content-type') || file.type || 'application/octet-stream';
-
-        // Gerar novo path no Supabase
-        const timestamp = Date.now();
-        const safeName = file.name.replace(/[^a-zA-Z0-9._\-]/g, '_');
-        const newPath = `mapeamentos/${mapping.user_email || 'migrated'}/${timestamp}_${safeName}`;
-
-        // Upload para Supabase
-        await uploadToSupabase(newPath, buffer, contentType);
-
-        // Atualizar URL no arquivo
-        updatedFiles[i] = { ...file, url: newPath };
-        changed = true;
-        results.migrated++;
-        console.log(`[migrateMappings] ✓ Migrado: ${file.name} → ${newPath}`);
-
-      } catch (err) {
-        console.error(`[migrateMappings] ✗ Erro em ${file.name}:`, err.message);
-        results.failed++;
-        results.errors.push({ mapping_id: mapping.id, file: file.name, error: err.message });
+      const successPatches = patches.filter(p => p.newUrl);
+      if (successPatches.length > 0) {
+        const updatedData = config.apply(data, successPatches);
+        // Remover campos built-in antes de atualizar
+        const { id, created_date, updated_date, created_by, entity_name, app_id, is_sample, is_deleted, deleted_date, environment, ...cleanData } = updatedData;
+        await base44.asServiceRole.entities[config.name].update(record.id, cleanData);
       }
     }
-
-    if (changed) {
-      await base44.asServiceRole.entities.Mapping.update(mapping.id, { files: updatedFiles });
-    }
   }
 
-  return Response.json({
-    success: true,
-    ...results,
-    message: `Migração concluída: ${results.migrated} arquivo(s) migrado(s), ${results.failed} falha(s).`,
-  });
+  return Response.json(results);
 });

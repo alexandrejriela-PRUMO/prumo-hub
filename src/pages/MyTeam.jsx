@@ -38,7 +38,7 @@ function defaultPermissions(role) {
     team_management:  { manage: false },
     financial:        { view: false },
   };
-  const r = (role || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+  const r = (role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   if (r === 'engenheiro') return { ...viewer, office: { view: true, edit: true }, property_center: { view: true, edit: true }, advanced_modules: { access: true }, reports: { view: true } };
   if (r === 'advogado')   return { ...viewer, reports: { view: true } };
   if (r === 'administrador') return { office: { view: true, edit: true }, property_center: { view: true, edit: true }, advanced_modules: { access: true }, reports: { view: true }, ai_chat: { access: true }, team_management: { manage: true }, financial: { view: true } };

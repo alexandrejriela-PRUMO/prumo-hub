@@ -27,11 +27,26 @@
     <script type="module" src="/src/main.jsx"></script>
     <script>
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch((err) => {
-            console.warn('Service Worker registration failed:', err);
+        const isPreview = location.hostname.includes('preview') ||
+                          location.hostname.includes('sandbox') ||
+                          location.hostname.includes('localhost') ||
+                          location.port !== '';
+        if (isPreview) {
+          // Desregistrar todos os service workers em preview/dev para evitar cache de assets velhos
+          navigator.serviceWorker.getRegistrations().then((registrations) => {
+            registrations.forEach((reg) => reg.unregister());
           });
-        });
+          // Limpar caches
+          if (window.caches) {
+            caches.keys().then((keys) => keys.forEach((key) => caches.delete(key)));
+          }
+        } else {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').catch((err) => {
+              console.warn('Service Worker registration failed:', err);
+            });
+          });
+        }
       }
     </script>
   </body>

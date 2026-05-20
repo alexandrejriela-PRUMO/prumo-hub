@@ -326,6 +326,7 @@ export default function Layout({ children, currentPageName }) {
   const { hasPermission, canAccessModule } = useEffectiveUserPermissions(safeUser);
 
   const [userMeta, setUserMeta] = useState(null);
+  const [primaryOwnerType, setPrimaryOwnerType] = useState(null); // 'consultor' | 'produtor' para equipe
 
   // Load user data on mount
   useEffect(() => {
@@ -338,7 +339,20 @@ export default function Layout({ children, currentPageName }) {
   useEffect(() => {
     if (!user?.email) return;
     base44.entities.UserMetadata.filter({ user_email: user.email }, '-created_date', 1)
-      .then((data) => { if (data?.length > 0) setUserMeta(data[0]); })
+      .then(async (data) => {
+        if (data?.length > 0) {
+          setUserMeta(data[0]);
+          // Se for equipe, buscar o tipo do usuário principal
+          if (data[0].user_type === 'equipe' && data[0].primary_consultor_email) {
+            try {
+              const ownerMeta = await base44.entities.UserMetadata.filter(
+                { user_email: data[0].primary_consultor_email }, '-created_date', 1
+              );
+              if (ownerMeta?.length > 0) setPrimaryOwnerType(ownerMeta[0].user_type);
+            } catch {}
+          }
+        }
+      })
       .catch(() => {});
   }, [user?.email]);
 
@@ -409,10 +423,14 @@ export default function Layout({ children, currentPageName }) {
     const plano = userMeta?.plano || user?.plano || 'start';
     const isEnterprise = plano === 'enterprise';
     const ut = user?.user_type;
+    // Equipe de produtor: usa menu do produtor
+    const isEquipeProdutor = ut === 'equipe' && primaryOwnerType === 'produtor';
 
     let menuItems = [];
     if (ut === 'client_consultor') {
       menuItems = clientConsultorNavItems;
+    } else if (ut === 'equipe' && isEquipeProdutor) {
+      menuItems = produtorNavItems;
     } else if (ut === 'equipe') {
       menuItems = equipeNavItems;
     } else if (ut === 'consultor') {
@@ -428,7 +446,8 @@ export default function Layout({ children, currentPageName }) {
 
     return menuItems.filter(item => {
       if (item.adminOnly && user?.role !== 'admin') return false;
-      if (ut === 'equipe') {
+      // Equipe de consultor: filtrar por permissões de módulo
+      if (ut === 'equipe' && !isEquipeProdutor) {
         if (!item.page && !item.children) return true;
         const moduleKey = getModuleKey(item.page);
         if (!moduleKey) return true;
@@ -436,7 +455,7 @@ export default function Layout({ children, currentPageName }) {
       }
       return true;
     });
-  }, [user?.user_type, user?.role, userMeta?.plano, user?.plano, getModuleKey, canAccessModule]);
+  }, [user?.user_type, user?.role, userMeta?.plano, user?.plano, primaryOwnerType, getModuleKey, canAccessModule]);
 
   return (
     <ThemeProvider>
@@ -624,7 +643,8 @@ export default function Layout({ children, currentPageName }) {
                   client_consultor: 'Cliente',
                   produtor: 'Produtor',
                 }[user?.user_type] || 'Produtor';
-                const isConsultorFamily = user?.user_type === 'consultor' || user?.user_type === 'equipe';
+                const isEquipeProdutorLocal = user?.user_type === 'equipe' && primaryOwnerType === 'produtor';
+                const isConsultorFamily = (user?.user_type === 'consultor' || user?.user_type === 'equipe') && !isEquipeProdutorLocal;
                 const isClient = user?.user_type === 'client_consultor';
                 const gradient = isConsultorFamily
                   ? 'linear-gradient(135deg, #fbbf24, #f59e0b, #d97706)'

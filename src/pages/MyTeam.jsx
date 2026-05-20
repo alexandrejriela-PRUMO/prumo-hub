@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 
 const ROLES = ['Estagiário', 'Engenheiro', 'Advogado', 'Administrador', 'Outro'];
 
+
 const MODULES = [
   { key: 'office',           label: 'Escritório',         fields: ['view', 'edit'] },
   { key: 'property_center',  label: 'Central da Propriedade', fields: ['view', 'edit'] },

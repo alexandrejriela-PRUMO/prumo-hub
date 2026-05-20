@@ -1,12 +1,26 @@
-import { CheckCircle, Copy, Bookmark, UserPlus, Smartphone, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle, Copy, Bookmark, UserPlus, Smartphone, ChevronDown, ChevronUp, Leaf } from 'lucide-react';
 import { useState } from 'react';
 
 const LOGIN_URL = 'https://hub.prumo.site/login?from_url=https%3A%2F%2Fhub.prumo.site%2F';
 const APP_URL = 'https://hub.prumo.site/';
 
+// Mapeamento de offer codes para perfil/plano
+const OFFER_MAP = {
+  'PXP3P68': { perfil: 'produtor', label: 'Produtor Rural', emoji: '🌾', badge: 'Oferta Especial' },
+  'GNJXUCE': { perfil: 'produtor', label: 'Produtor Rural', emoji: '🌾', badge: null },
+  'EQL1OTT': { perfil: 'consultor', label: 'Consultor Enterprise', emoji: '🧑‍💼', badge: null },
+  '8QA4VR2': { perfil: 'consultor', label: 'Consultor Pro', emoji: '🧑‍💼', badge: null },
+  'GYXWU5X': { perfil: 'consultor', label: 'Consultor Start', emoji: '🧑‍💼', badge: null },
+};
+
 export default function CompraConfirmada() {
   const [copied, setCopied] = useState(false);
   const [showInstall, setShowInstall] = useState(false);
+
+  // Detectar offer code na URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const offerCode = urlParams.get('offer')?.toUpperCase() || '';
+  const offerInfo = OFFER_MAP[offerCode] || null;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(LOGIN_URL);
@@ -35,11 +49,21 @@ export default function CompraConfirmada() {
             </div>
           </div>
 
+          {offerInfo?.badge && (
+            <div className="flex justify-center mb-3">
+              <span className="inline-flex items-center gap-1.5 bg-amber-100 text-amber-700 border border-amber-300 text-xs font-bold px-3 py-1 rounded-full">
+                <Leaf className="w-3.5 h-3.5" />
+                {offerInfo.badge} — {offerInfo.emoji} {offerInfo.label}
+              </span>
+            </div>
+          )}
+
           <h1 className="text-2xl font-bold text-emerald-900 mb-2 text-center">
             Compra Confirmada! 🎉
           </h1>
           <p className="text-gray-600 mb-6 text-center">
-            Seu pagamento foi processado com sucesso. Bem-vindo ao <strong>PRUMO Hub</strong>!
+            Seu pagamento foi processado com sucesso. Bem-vindo ao <strong>PRUMO Hub</strong>
+            {offerInfo ? ` como ${offerInfo.emoji} ${offerInfo.label}` : ''}!
           </p>
 
           {/* Link para salvar */}

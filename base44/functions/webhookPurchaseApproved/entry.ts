@@ -36,8 +36,8 @@ function extractPlan(body) {
 
   const productNameLower = (productName + ' ' + offerId).toLowerCase();
 
-  // Produtor - Plano Único
-  if (offerId === 'GNJXUCE' || productNameLower.includes('único') || productNameLower.includes('unico')) {
+  // Produtor - Plano Único (inclui oferta de desconto PXP3P68)
+  if (offerId === 'GNJXUCE' || offerId === 'PXP3P68' || productNameLower.includes('único') || productNameLower.includes('unico')) {
     return { perfil: 'produtor', plano: 'unico', user_type: 'produtor', max_properties: 1, max_users: 3 };
   }
   // Consultor - Enterprise (checar antes do 'pro')

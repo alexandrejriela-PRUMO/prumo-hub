@@ -16,7 +16,6 @@ import { toast } from 'sonner';
 
 const ROLES = ['Estagiário', 'Engenheiro', 'Advogado', 'Administrador', 'Outro'];
 
-
 const MODULES = [
   { key: 'office',           label: 'Escritório',         fields: ['view', 'edit'] },
   { key: 'property_center',  label: 'Central da Propriedade', fields: ['view', 'edit'] },
@@ -59,7 +58,6 @@ export default function MyTeam() {
 
   const [userMeta, setUserMeta] = useState(null);
   const isAdmin = user?.role === 'admin';
-  // Usa userMeta como fonte da verdade para user_type, com fallback para o user
   const effectiveUserType = userMeta?.user_type ?? user?.user_type;
   const isConsultor = effectiveUserType === 'consultor';
   const isProdutor = effectiveUserType === 'produtor';
@@ -76,7 +74,6 @@ export default function MyTeam() {
     }).catch(() => {});
   }, []);
 
-  // Todos os membros cadastrados (admin vê tudo, consultor vê os seus)
   const { data: allMembers = [], isLoading } = useQuery({
     queryKey: ['allTeamMembers', user?.email, isAdmin],
     queryFn: () => isAdmin
@@ -85,7 +82,6 @@ export default function MyTeam() {
     enabled: !!user?.email,
   });
 
-  // Vincula um usuário existente ao consultor
   const linkMutation = useMutation({
     mutationFn: async (form) => {
       const perms = defaultPermissions(form.member_role);
@@ -110,26 +106,19 @@ export default function MyTeam() {
     onError: (err) => toast.error(err?.message || 'Erro ao vincular membro.'),
   });
 
-  // Limite de usuários do plano
-  // Produtor tem limite padrão de 3; consultor sem max_users definido tem 99
-  // Trata max_users=0 como "não configurado" para produtor (usa o padrão do perfil)
   const defaultMaxUsers = isProdutor ? 3 : 99;
   const rawMaxUsers = userMeta?.max_users;
   const maxUsers = (isProdutor && (!rawMaxUsers || rawMaxUsers === 0)) ? defaultMaxUsers : (rawMaxUsers ?? defaultMaxUsers);
   const activeMembers = allMembers.filter(m => m.status !== 'Inativo' && m.pending_user_type === 'equipe').length;
   const atUserLimit = !isAdmin && (isConsultor || isProdutor) && activeMembers >= maxUsers;
 
-  // Envia convite de novo usuário
   const inviteMutation = useMutation({
     mutationFn: async (form) => {
-      if (!canInvite) {
-        throw new Error('Você não tem permissão para enviar convites');
-      }
+      if (!canInvite) throw new Error('Você não tem permissão para enviar convites');
       if (form.target_user_type === 'equipe' && atUserLimit) {
         throw new Error(`Seu plano permite até ${maxUsers} usuário(s) de equipe. Faça upgrade para adicionar mais.`);
       }
 
-      // Criar registro TeamMember com status pendente
       const teamMemberData = {
         primary_user_email: user.email,
         consultor_email: user.email,
@@ -147,7 +136,6 @@ export default function MyTeam() {
 
       const teamMember = await base44.entities.TeamMember.create(teamMemberData);
 
-      // Aplicar imediatamente se o usuário já existir no sistema
       await base44.functions.invoke('applyTeamMemberOnInvite', {
         member_email: form.email,
         team_member_id: teamMember.id,
@@ -155,9 +143,7 @@ export default function MyTeam() {
         user_type: form.target_user_type,
       });
 
-      // Enviar email de convite
       const invite_link = `${window.location.origin}/AcceptInvite?token=${teamMember.invite_token}`;
-      
       await base44.functions.invoke('sendTeamInvite', {
         email: form.email,
         name: form.name,
@@ -177,7 +163,6 @@ export default function MyTeam() {
     onError: (err) => toast.error(err?.message || 'Erro ao enviar convite.'),
   });
 
-  // Remove membro
   const removeMutation = useMutation({
     mutationFn: (id) => base44.entities.TeamMember.delete(id),
     onSuccess: () => {
@@ -187,7 +172,6 @@ export default function MyTeam() {
     onError: () => toast.error('Erro ao remover membro.'),
   });
 
-  // Salva permissões
   const savePermsMutation = useMutation({
     mutationFn: ({ id, permissions }) => base44.entities.TeamMember.update(id, { permissions }),
     onSuccess: () => {
@@ -213,7 +197,6 @@ export default function MyTeam() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-emerald-900">Minha Equipe</h1>
@@ -246,7 +229,6 @@ export default function MyTeam() {
         </div>
       </div>
 
-      {/* Aviso informativo */}
       <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-800">
         <Info className="w-5 h-5 flex-shrink-0 text-blue-500 mt-0.5" />
         <div>
@@ -255,7 +237,6 @@ export default function MyTeam() {
         </div>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 gap-4">
         {[
           { label: 'Total de Membros', value: allMembers.length, Icon: Users, bg: 'bg-emerald-100', text: 'text-emerald-700' },
@@ -277,7 +258,6 @@ export default function MyTeam() {
         ))}
       </div>
 
-      {/* Lista de membros */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base text-emerald-900 flex items-center gap-2">
@@ -481,7 +461,7 @@ export default function MyTeam() {
         </Dialog>
       )}
 
-      {/* Dialog: Permissões de Layout */}
+      {/* Dialog: Permissões */}
       <Dialog open={showPermDialog} onOpenChange={setShowPermDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader>

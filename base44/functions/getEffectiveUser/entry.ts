@@ -13,8 +13,8 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // Se for consultor ou admin, retorna o próprio usuário imediatamente
-    if (user.user_type === 'consultor' || user.role === 'admin') {
+    // Se for admin, retorna o próprio usuário imediatamente
+    if (user.role === 'admin') {
       return Response.json({
         email: user.email,
         actual_email: user.email,
@@ -25,8 +25,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Para qualquer tipo de usuário (incluindo 'equipe', 'user', null, etc.),
-    // buscar se existe um TeamMember ativo vinculado a este email
+    // Para qualquer tipo de usuário, buscar se existe um TeamMember ativo vinculado a este email
     const memberships = await base44.asServiceRole.entities.TeamMember.filter({
       member_email: user.email,
       status: 'Ativo',
@@ -34,19 +33,21 @@ Deno.serve(async (req) => {
 
     if (memberships.length > 0) {
       const membership = memberships[0];
-      const consultorEmail = membership.primary_user_email;
+      const primaryEmail = membership.primary_user_email;
 
-      // Busca dados do consultor (nome + plano)
-      let consultorName = consultorEmail;
-      let consultorPlan = 'start';
+      // Busca dados do usuário principal (consultor ou produtor)
+      let primaryName = primaryEmail;
+      let primaryPlan = 'start';
+      let primaryUserType = 'consultor'; // padrão
       try {
-        const consultorUsers = await base44.asServiceRole.entities.User.filter({ email: consultorEmail });
-        if (consultorUsers.length > 0) {
-          consultorName = consultorUsers[0].full_name || consultorEmail;
-          consultorPlan = consultorUsers[0].consultor_plan || 'start';
+        const primaryUsers = await base44.asServiceRole.entities.User.filter({ email: primaryEmail });
+        if (primaryUsers.length > 0) {
+          primaryName = primaryUsers[0].full_name || primaryEmail;
+          primaryPlan = primaryUsers[0].plano || primaryUsers[0].consultor_plan || 'start';
+          primaryUserType = primaryUsers[0].user_type || 'consultor';
         }
       } catch (e) {
-        console.warn('[getEffectiveUser] Não foi possível buscar dados do consultor:', e.message);
+        console.warn('[getEffectiveUser] Não foi possível buscar dados do usuário principal:', e.message);
       }
 
       const VIEWER_PERMS = {
@@ -71,13 +72,14 @@ Deno.serve(async (req) => {
       }
 
       return Response.json({
-        email: consultorEmail,           // email para usar em queries (como se fosse o consultor)
-        actual_email: user.email,        // email real do membro da equipe
-        full_name: user.full_name,       // nome do membro
+        email: primaryEmail,              // email para usar em queries (como se fosse o usuário principal)
+        actual_email: user.email,         // email real do membro da equipe
+        full_name: user.full_name,        // nome do membro
         user_type: 'equipe',
-        consultor_email: consultorEmail,
-        consultor_name: consultorName,
-        consultor_plan: consultorPlan,
+        primary_user_type: primaryUserType, // 'consultor' ou 'produtor'
+        consultor_email: primaryEmail,    // mantido para compatibilidade
+        consultor_name: primaryName,
+        consultor_plan: primaryPlan,
         member_role: membership.member_role,
         permissions,
         is_equipe: true,

@@ -26,7 +26,7 @@ import ConsultorOverview from '../components/dashboard/ConsultorOverview';
 import PullToRefresh from '../components/mobile/PullToRefresh';
 
 // Component que recebe hooks já resolvidos via props
-export default function HomeContent({ user, effectiveEmail, isEquipe, isConsultor, effectiveLoading }) {
+export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipeProdutor, isConsultor, effectiveLoading }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [selectedPropertyId, setSelectedPropertyId] = useState(null);
@@ -45,9 +45,11 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isConsulto
   const { data: properties = [], isLoading: loadingProperties } = useQuery({
     queryKey: ['properties', effectiveEmail, isEquipe, isConsultor],
     queryFn: () => {
-      if (isConsultor || isEquipe) {
+      // Consultor ou equipe de consultor: busca por consultor_email
+      if (isConsultor || (isEquipe && !isEquipeProdutor)) {
         return base44.entities.Property.filter({ consultor_email: effectiveEmail });
       }
+      // Produtor ou equipe de produtor: busca por owner_email
       return base44.entities.Property.filter({ owner_email: effectiveEmail });
     },
     enabled: !!effectiveEmail && !effectiveLoading,
@@ -142,7 +144,8 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isConsulto
   }, [properties, propertyIdFromUrl, selectedPropertyId]);
 
   const selectedProperty = properties.find((p) => p.id === selectedPropertyId) || properties[0];
-  const isConsultorView = isConsultor || isEquipe;
+  // Equipe de produtor NÃO deve ver a visão de consultor — deve ver o dashboard do produtor
+  const isConsultorView = isConsultor || (isEquipe && !isEquipeProdutor);
   const isDashboardView = !!propertyIdFromUrl; // Se tem property_id na URL, é o dashboard detalhado
   
   // Apply filters

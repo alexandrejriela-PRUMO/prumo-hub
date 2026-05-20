@@ -76,7 +76,9 @@ export function useEffectiveUser() {
 
   const isEquipe = effectiveData?.is_equipe === true;
   const isConsultor = effectiveData?.user_type === 'consultor' || user?.user_type === 'consultor';
-  const isProdutor = !isEquipe && !isConsultor && !!user;
+  // Equipe de produtor: membro de equipe cujo dono é produtor
+  const isEquipeProdutor = isEquipe && effectiveData?.primary_user_type === 'produtor';
+  const isProdutor = (!isEquipe && !isConsultor && !!user) || isEquipeProdutor;
 
   // effectiveEmail: para equipe é o email do consultor; para consultor/produtor é o próprio email
   const effectiveEmail = effectiveData?.email || user?.email;
@@ -86,6 +88,8 @@ export function useEffectiveUser() {
   const permissions = effectiveData?.permissions || {};
   const userType = effectiveData?.user_type || user?.user_type;
 
+  const primaryUserType = effectiveData?.primary_user_type || null;
+
   return {
     user,
     effectiveEmail,
@@ -94,7 +98,9 @@ export function useEffectiveUser() {
     memberRole,
     permissions,
     userType,
+    primaryUserType,
     isEquipe,
+    isEquipeProdutor,
     isConsultor,
     isProdutor,
     isLoading,

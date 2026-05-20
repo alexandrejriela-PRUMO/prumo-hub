@@ -327,6 +327,7 @@ export default function Layout({ children, currentPageName }) {
 
   const [userMeta, setUserMeta] = useState(null);
   const [primaryOwnerType, setPrimaryOwnerType] = useState(null); // 'consultor' | 'produtor' para equipe
+  const [metaLoading, setMetaLoading] = useState(true); // aguarda userMeta + primaryOwnerType
 
   // Load user data on mount
   useEffect(() => {
@@ -338,22 +339,30 @@ export default function Layout({ children, currentPageName }) {
   // Load userMeta when user email is available
   useEffect(() => {
     if (!user?.email) return;
+    setMetaLoading(true);
     base44.entities.UserMetadata.filter({ user_email: user.email }, '-created_date', 1)
       .then(async (data) => {
         if (data?.length > 0) {
           setUserMeta(data[0]);
-          // Se for equipe, buscar o tipo do usuário principal
+          // Se for equipe, SEMPRE buscar o tipo do usuário principal antes de renderizar o menu
           if (data[0].user_type === 'equipe' && data[0].primary_consultor_email) {
             try {
               const ownerMeta = await base44.entities.UserMetadata.filter(
                 { user_email: data[0].primary_consultor_email }, '-created_date', 1
               );
               if (ownerMeta?.length > 0) setPrimaryOwnerType(ownerMeta[0].user_type);
-            } catch {}
+              else setPrimaryOwnerType('consultor'); // fallback seguro
+            } catch {
+              setPrimaryOwnerType('consultor');
+            }
+          } else {
+            // Não é equipe, não precisa buscar owner
+            setPrimaryOwnerType(null);
           }
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setMetaLoading(false));
   }, [user?.email]);
 
   // Auto-expand menus that contain the current active page
@@ -422,8 +431,9 @@ export default function Layout({ children, currentPageName }) {
   const filteredMenuItems = useMemo(() => {
     const plano = userMeta?.plano || user?.plano || 'start';
     const isEnterprise = plano === 'enterprise';
-    const ut = user?.user_type;
-    // Equipe de produtor: usa menu do produtor
+    // Usar userMeta como fonte da verdade (evita race condition com auth.me cache)
+    const ut = userMeta?.user_type || user?.user_type;
+    // Equipe de produtor: usa menu do produtor — SÓ resolver após primaryOwnerType estar carregado
     const isEquipeProdutor = ut === 'equipe' && primaryOwnerType === 'produtor';
 
     let menuItems = [];
@@ -683,7 +693,13 @@ export default function Layout({ children, currentPageName }) {
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-            {filteredMenuItems.map((item, index) => {
+            {metaLoading ? (
+              <div className="space-y-2 mt-2">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="h-9 rounded-xl bg-emerald-800/40 animate-pulse" />
+                ))}
+              </div>
+            ) : filteredMenuItems.map((item, index) => {
                 const itemKey = item.page || `${item.name}-${index}`;
                 if (item.children) {
                   const isExpanded = expandedMenus[item.name];

@@ -39,12 +39,27 @@ Deno.serve(async (req) => {
       let primaryName = primaryEmail;
       let primaryPlan = 'start';
       let primaryUserType = 'consultor'; // padrão
+
+      // Fonte da verdade: UserMetadata (user_type correto para produtor/consultor)
+      try {
+        const primaryMeta = await base44.asServiceRole.entities.UserMetadata.filter({ user_email: primaryEmail }, '-created_date', 1);
+        if (primaryMeta.length > 0) {
+          primaryPlan = primaryMeta[0].plano || 'start';
+          primaryUserType = primaryMeta[0].user_type || 'consultor';
+        }
+      } catch (e) {
+        console.warn('[getEffectiveUser] Não foi possível buscar UserMetadata do principal:', e.message);
+      }
+
+      // Busca nome do usuário principal via entidade User
       try {
         const primaryUsers = await base44.asServiceRole.entities.User.filter({ email: primaryEmail });
         if (primaryUsers.length > 0) {
           primaryName = primaryUsers[0].full_name || primaryEmail;
-          primaryPlan = primaryUsers[0].plano || primaryUsers[0].consultor_plan || 'start';
-          primaryUserType = primaryUsers[0].user_type || 'consultor';
+          // Só usa user_type do User se UserMetadata não encontrou
+          if (primaryUserType === 'consultor' && primaryUsers[0].user_type) {
+            primaryUserType = primaryUsers[0].user_type;
+          }
         }
       } catch (e) {
         console.warn('[getEffectiveUser] Não foi possível buscar dados do usuário principal:', e.message);

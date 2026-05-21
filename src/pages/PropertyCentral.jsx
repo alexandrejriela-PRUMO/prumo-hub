@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import { useEffectiveUser } from '@/hooks/useEffectiveUser';
 import { Link, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import PropertySelector from '@/components/properties/PropertySelector';
@@ -23,17 +24,21 @@ export default function PropertyCentral() {
     queryFn: () => base44.auth.me(),
   });
 
-  // Fetch properties - Dinâmico baseado no tipo de usuário
+  const { effectiveEmail, isEquipeProdutor, isConsultor: isConsultorEffective, isEquipe, loading: effectiveLoading } = useEffectiveUser();
+
+  // Fetch properties - Dinâmico baseado no tipo de usuário efetivo
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
-    queryKey: ['properties', user?.email, user?.user_type],
+    queryKey: ['properties', effectiveEmail, isEquipeProdutor],
     queryFn: () => {
-      if (!user?.email) return [];
-      const filter = user?.user_type === 'consultor' || user?.user_type === 'equipe'
-        ? { consultor_email: user.email }
-        : { owner_email: user.email };
-      return base44.entities.Property.filter(filter, '-created_date');
+      if (!effectiveEmail) return [];
+      // Equipe de produtor ou produtor: busca por owner_email (do dono principal)
+      if (isEquipeProdutor || (!isConsultorEffective && !isEquipe)) {
+        return base44.entities.Property.filter({ owner_email: effectiveEmail }, '-created_date');
+      }
+      // Consultor ou equipe de consultor: busca por consultor_email
+      return base44.entities.Property.filter({ consultor_email: effectiveEmail }, '-created_date');
     },
-    enabled: !!user?.email,
+    enabled: !!effectiveEmail && !effectiveLoading,
   });
 
   // Set first property as default

@@ -108,7 +108,7 @@ const licenseTypes = [
 ];
 
 export default function Licenses() {
-  const { effectiveEmail, isEquipe, isConsultor: isConsultorHook, userType, memberRole, loading: effectiveLoading } = useEffectiveUser();
+  const { effectiveEmail, isEquipe, isConsultor: isConsultorHook, isEquipeProdutor: isEquipeProdutorFromHook, userType, memberRole, loading: effectiveLoading } = useEffectiveUser();
   const canCreate = !isEquipe || memberRole === 'Administrador' || memberRole === 'Engenheiro';
   const [user, setUser] = useState(null);
   const [consultorPropertyId, setConsultorPropertyId] = useState(null);
@@ -169,7 +169,10 @@ export default function Licenses() {
     loadUser();
   }, []);
 
-  const isConsultor = isConsultorHook || isEquipe || userType === 'consultor' || user?.user_type === 'consultor';
+  // isConsultor: apenas consultor ou equipe de CONSULTOR (não equipe de produtor)
+  const isEquipeProdutor = isEquipeProdutorFromHook;
+  const isEquipeConsultor = isEquipe && !isEquipeProdutor;
+  const isConsultor = (isConsultorHook || isEquipeConsultor || userType === 'consultor' || user?.user_type === 'consultor') && !isEquipeProdutor;
   const isClientConsultor = userType === 'client_consultor' || user?.user_type === 'client_consultor';
   const canEdit = !isClientConsultor && canCreate;
   const queryEmail = effectiveEmail || user?.email;
@@ -177,13 +180,13 @@ export default function Licenses() {
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
     queryKey: ['properties', queryEmail],
     queryFn: () => base44.entities.Property.filter({ consultor_email: queryEmail }),
-    enabled: !!queryEmail && (user?.user_type === 'consultor' || isEquipe),
+    enabled: !!queryEmail && isConsultor && !isEquipeProdutor,
   });
 
   const { data: ownerProperties = [] } = useQuery({
-    queryKey: ['properties-owner', user?.email],
-    queryFn: () => base44.entities.Property.filter({ owner_email: user.email }),
-    enabled: !!user?.email && !isEquipe && user?.user_type !== 'consultor' && !isClientConsultor,
+    queryKey: ['properties-owner', queryEmail],
+    queryFn: () => base44.entities.Property.filter({ owner_email: queryEmail }),
+    enabled: !!queryEmail && (!isConsultor || isEquipeProdutor) && !isClientConsultor,
   });
 
   const { data: allPropsForClient = [] } = useQuery({
@@ -204,7 +207,7 @@ export default function Licenses() {
 
   const allProperties = isClientConsultor
     ? clientConsultorProperties
-    : (user?.user_type === 'consultor' || isEquipe) ? properties : ownerProperties;
+    : isConsultor ? properties : ownerProperties;
 
   // Garante que property_id seja preenchido quando properties são carregadas
   useEffect(() => {

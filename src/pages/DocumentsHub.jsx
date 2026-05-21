@@ -34,7 +34,7 @@ import { MODULES, MODULE_COLORS } from '../components/documents/documentConstant
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 export default function DocumentsHub() {
-  const { effectiveEmail, isEquipe, userType, loading: effectiveLoading } = useEffectiveUser();
+  const { effectiveEmail, isEquipe, isEquipeProdutor, userType, loading: effectiveLoading } = useEffectiveUser();
   const [user, setUser] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState(null);
@@ -71,7 +71,8 @@ export default function DocumentsHub() {
     enabled: !!user && !effectiveLoading
   });
 
-  const isConsultorFamily = userType === 'consultor' || userType === 'equipe';
+  // isConsultorFamily: apenas consultor ou equipe de CONSULTOR (não equipe de produtor)
+  const isConsultorFamily = (userType === 'consultor' || (userType === 'equipe' && !isEquipeProdutor));
   const isClientConsultor = userType === 'client_consultor' || user?.user_type === 'client_consultor';
   const canEdit = !isClientConsultor;
 
@@ -88,7 +89,7 @@ export default function DocumentsHub() {
       if (user?.role === 'admin') {
         return base44.entities.Property.list('-created_date', 1000);
       }
-      if (isConsultorFamily) {
+      if (isConsultorFamily && !isEquipeProdutor) {
         return base44.entities.Property.filter({ consultor_email: effectiveEmail }, '-created_date', 100);
       }
       return base44.entities.Property.filter({ owner_email: effectiveEmail }, '-created_date', 100);

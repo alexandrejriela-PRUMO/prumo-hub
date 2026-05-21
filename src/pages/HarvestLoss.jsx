@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useEffectiveUser } from '@/hooks/useEffectiveUser';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -71,30 +72,34 @@ export default function HarvestLossPage() {
 
   React.useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);
 
-  const isConsultor = user?.user_type === 'consultor' || user?.user_type === 'equipe';
+  const { effectiveEmail: harvestEffectiveEmail, userType: harvestUserType, isEquipeProdutor: harvestIsEquipeProdutor, loading: harvestUserLoading } = useEffectiveUser();
+  // equipe de produtor busca como produtor (owner_email)
+  const isConsultor = (harvestUserType === 'consultor' || (harvestUserType === 'equipe' && !harvestIsEquipeProdutor));
 
   const { data: properties = [] } = useQuery({
-    queryKey: ['props-harvest', user?.email],
+    queryKey: ['props-harvest', harvestEffectiveEmail, harvestUserType],
     queryFn: () => {
-      const filter = isConsultor ? { consultor_email: user.email } : { owner_email: user.email };
+      if (!harvestEffectiveEmail) return [];
+      const filter = isConsultor ? { consultor_email: harvestEffectiveEmail } : { owner_email: harvestEffectiveEmail };
       return base44.entities.Property.filter(filter, 'client_name', 300);
     },
-    enabled: !!user?.email,
+    enabled: !!harvestEffectiveEmail && !harvestUserLoading,
   });
 
   const { data: records = [], isLoading } = useQuery({
-    queryKey: ['harvest-loss', user?.email, selectedPropertyId, isConsultor],
+    queryKey: ['harvest-loss', harvestEffectiveEmail, selectedPropertyId, isConsultor],
     queryFn: async () => {
+      if (!harvestEffectiveEmail) return [];
       const propFilter = selectedPropertyId ? { property_id: selectedPropertyId } : {};
       const [byConsultor, byClient] = await Promise.all([
-        base44.entities.HarvestLoss.filter({ consultor_email: user.email, ...propFilter }, '-data_evento', 200),
-        base44.entities.HarvestLoss.filter({ client_email: user.email, ...propFilter }, '-data_evento', 200),
+        base44.entities.HarvestLoss.filter({ consultor_email: harvestEffectiveEmail, ...propFilter }, '-data_evento', 200),
+        base44.entities.HarvestLoss.filter({ client_email: harvestEffectiveEmail, ...propFilter }, '-data_evento', 200),
       ]);
       const all = [...byConsultor, ...byClient];
       const seen = new Set();
       return all.filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
     },
-    enabled: !!user?.email,
+    enabled: !!harvestEffectiveEmail && !harvestUserLoading,
   });
 
   const createM = useMutation({

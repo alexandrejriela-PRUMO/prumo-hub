@@ -47,8 +47,9 @@ export default function CARModule() {
   const [editOpen, setEditOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  const { effectiveEmail, userType, isEquipe, memberRole, user } = useEffectiveUser();
-  const isConsultor = userType === 'consultor' || userType === 'equipe';
+  const { effectiveEmail, userType, isEquipe, isEquipeProdutor, memberRole, user } = useEffectiveUser();
+  // equipe de produtor deve buscar como produtor (owner_email), não como consultor
+  const isConsultor = (userType === 'consultor' || (userType === 'equipe' && !isEquipeProdutor));
   const canEdit = !isEquipe || memberRole === 'Administrador' || memberRole === 'Engenheiro';
 
   const { data: properties = [], isLoading: propsLoading } = useQuery({

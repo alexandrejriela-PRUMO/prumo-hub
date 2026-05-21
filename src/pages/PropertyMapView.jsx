@@ -184,7 +184,9 @@ export default function PropertyMapView() {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
 
-  const isConsultorFamily = userType === 'consultor' || userType === 'equipe';
+  const { isEquipeProdutor } = useEffectiveUser();
+  // equipe de produtor busca como produtor (owner_email)
+  const isConsultorFamily = (userType === 'consultor' || (userType === 'equipe' && !isEquipeProdutor));
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties', effectiveEmail, userType],

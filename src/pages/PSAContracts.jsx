@@ -48,8 +48,9 @@ export default function PSAContractsPage() {
     loadUser();
   }, []);
 
-  const { effectiveEmail, userType } = useEffectiveUser();
-  const isConsultor = userType === 'consultor' || userType === 'equipe';
+  const { effectiveEmail, userType, isEquipeProdutor } = useEffectiveUser();
+  // equipe de produtor busca como produtor (owner_email)
+  const isConsultor = (userType === 'consultor' || (userType === 'equipe' && !isEquipeProdutor));
   const isClientConsultor = userType === 'client_consultor' || user?.user_type === 'client_consultor';
   const canEdit = !isClientConsultor;
 

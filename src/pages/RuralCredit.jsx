@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useEffectiveUser } from '@/hooks/useEffectiveUser';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -61,32 +62,34 @@ export default function RuralCreditPage() {
 
   React.useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);
 
-  const isConsultor = user?.user_type === 'consultor' || user?.user_type === 'equipe';
+  const { effectiveEmail: creditEffectiveEmail, userType: creditUserType, isEquipeProdutor: creditIsEquipeProdutor, loading: creditUserLoading } = useEffectiveUser();
+  // equipe de produtor busca como produtor (owner_email)
+  const isConsultor = (creditUserType === 'consultor' || (creditUserType === 'equipe' && !creditIsEquipeProdutor));
 
   const { data: properties = [] } = useQuery({
-    queryKey: ['props-credit', user?.email],
+    queryKey: ['props-credit', creditEffectiveEmail, creditUserType],
     queryFn: () => {
-      const filter = isConsultor ? { consultor_email: user.email } : { owner_email: user.email };
+      if (!creditEffectiveEmail) return [];
+      const filter = isConsultor ? { consultor_email: creditEffectiveEmail } : { owner_email: creditEffectiveEmail };
       return base44.entities.Property.filter(filter, 'client_name', 300);
     },
-    enabled: !!user?.email,
+    enabled: !!creditEffectiveEmail && !creditUserLoading,
   });
 
   const { data: credits = [], isLoading } = useQuery({
-    queryKey: ['rural-credits', user?.email, selectedPropertyId, isConsultor],
+    queryKey: ['rural-credits', creditEffectiveEmail, selectedPropertyId, isConsultor],
     queryFn: async () => {
-      // Busca por consultor_email (funciona tanto para consultor quanto para produtor que criou direto)
-      // E também por client_email para cobrir todos os casos
+      if (!creditEffectiveEmail) return [];
       const propFilter = selectedPropertyId ? { property_id: selectedPropertyId } : {};
       const [byConsultor, byClient] = await Promise.all([
-        base44.entities.RuralCredit.filter({ consultor_email: user.email, ...propFilter }, '-created_date', 200),
-        base44.entities.RuralCredit.filter({ client_email: user.email, ...propFilter }, '-created_date', 200),
+        base44.entities.RuralCredit.filter({ consultor_email: creditEffectiveEmail, ...propFilter }, '-created_date', 200),
+        base44.entities.RuralCredit.filter({ client_email: creditEffectiveEmail, ...propFilter }, '-created_date', 200),
       ]);
       const all = [...byConsultor, ...byClient];
       const seen = new Set();
       return all.filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
     },
-    enabled: !!user?.email,
+    enabled: !!creditEffectiveEmail && !creditUserLoading,
   });
 
   const createM = useMutation({

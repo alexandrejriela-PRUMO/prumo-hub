@@ -45,8 +45,9 @@ export default function Mappings() {
     loadUser();
   }, []);
 
-  const { effectiveEmail, userType, isEquipe, memberRole } = useEffectiveUser();
-  const isConsultor = userType === 'consultor' || userType === 'equipe';
+  const { effectiveEmail, userType, isEquipe, isEquipeProdutor, memberRole } = useEffectiveUser();
+  // equipe de produtor busca como produtor (owner_email)
+  const isConsultor = (userType === 'consultor' || (userType === 'equipe' && !isEquipeProdutor));
   const isClientConsultor = userType === 'client_consultor' || user?.user_type === 'client_consultor';
   const canEdit = !isEquipe && !isClientConsultor || (isEquipe && (memberRole === 'Administrador' || memberRole === 'Engenheiro'));
 

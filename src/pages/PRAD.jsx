@@ -29,7 +29,7 @@ import ConsultorPropertySelector from '../components/consultor/ConsultorProperty
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 export default function PRAD() {
-  const { effectiveEmail, userType, memberRole } = useEffectiveUser();
+  const { effectiveEmail, userType, isEquipeProdutor, memberRole } = useEffectiveUser();
   const [user, setUser] = useState(null);
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -46,7 +46,8 @@ export default function PRAD() {
     loadUser();
   }, []);
 
-  const isConsultorFamily = userType === 'consultor' || userType === 'equipe';
+  // equipe de produtor busca como produtor (owner_email)
+  const isConsultorFamily = (userType === 'consultor' || (userType === 'equipe' && !isEquipeProdutor));
   const isClientConsultor = userType === 'client_consultor' || user?.user_type === 'client_consultor';
   const canCreatePRAD = !isConsultorFamily && !isClientConsultor || (isConsultorFamily && memberRole !== 'Advogado');
 

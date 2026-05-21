@@ -340,18 +340,23 @@ export default function Layout({ children, currentPageName }) {
   useEffect(() => {
     if (!user?.email) return;
     setMetaLoading(true);
-    base44.entities.UserMetadata.filter({ user_email: user.email }, '-created_date', 1)
-      .then(async (data) => {
+
+    const loadMeta = async () => {
+      try {
+        const data = await base44.entities.UserMetadata.filter({ user_email: user.email }, '-created_date', 1);
         if (data?.length > 0) {
           setUserMeta(data[0]);
-          // Se for equipe, SEMPRE buscar o tipo do usuário principal antes de renderizar o menu
-          if (data[0].user_type === 'equipe' && data[0].primary_consultor_email) {
+          // Se for equipe, usar getEffectiveUser (asServiceRole) para obter primary_user_type
+          // Não consultar UserMetadata de outro usuário diretamente (RLS impede acesso cross-user)
+          if (data[0].user_type === 'equipe') {
             try {
-              const ownerMeta = await base44.entities.UserMetadata.filter(
-                { user_email: data[0].primary_consultor_email }, '-created_date', 1
-              );
-              if (ownerMeta?.length > 0) setPrimaryOwnerType(ownerMeta[0].user_type);
-              else setPrimaryOwnerType('consultor'); // fallback seguro
+              const res = await base44.functions.invoke('getEffectiveUser', {});
+              const effectiveData = res?.data;
+              if (effectiveData?.primary_user_type) {
+                setPrimaryOwnerType(effectiveData.primary_user_type);
+              } else {
+                setPrimaryOwnerType('consultor'); // fallback seguro
+              }
             } catch {
               setPrimaryOwnerType('consultor');
             }
@@ -360,9 +365,14 @@ export default function Layout({ children, currentPageName }) {
             setPrimaryOwnerType(null);
           }
         }
-      })
-      .catch(() => {})
-      .finally(() => setMetaLoading(false));
+      } catch {
+        // silently ignore
+      } finally {
+        setMetaLoading(false);
+      }
+    };
+
+    loadMeta();
   }, [user?.email]);
 
   // Auto-expand menus that contain the current active page

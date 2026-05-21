@@ -113,9 +113,15 @@ export function useEffectiveUser() {
   const { user, effectiveData, isLoading, error } = state;
 
   const isEquipe = effectiveData?.is_equipe === true;
-  const isConsultor = effectiveData?.user_type === 'consultor' || user?.user_type === 'consultor';
   // Equipe de produtor: membro de equipe cujo dono é produtor
   const isEquipeProdutor = isEquipe && effectiveData?.primary_user_type === 'produtor';
+  // isConsultor: usa effectiveData quando disponível (fonte da verdade), evita false-positive durante loading
+  // Nunca considera consultor se é equipe de produtor
+  const isConsultor = !isEquipeProdutor && (
+    effectiveData
+      ? effectiveData.user_type === 'consultor'
+      : user?.user_type === 'consultor'
+  );
   const isProdutor = (!isEquipe && !isConsultor && !!user) || isEquipeProdutor;
 
   // effectiveEmail: para equipe é o email do consultor; para consultor/produtor é o próprio email

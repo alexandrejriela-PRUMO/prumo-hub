@@ -5,7 +5,7 @@
  * Se encontrar vínculo ativo, retorna o email do consultor e as permissões.
  * Se for consultor/produtor sem vínculo de equipe, retorna o próprio usuário.
  */
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 Deno.serve(async (req) => {
   try {

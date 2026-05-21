@@ -34,7 +34,7 @@ export default function EquipeContextBanner() {
       </div>
       <div className="space-y-1">
         <p className="text-[11px] text-amber-200 leading-tight">
-          <span className="text-amber-400 font-medium">Consultor: </span>
+          <span className="text-amber-400 font-medium">Responsável: </span>
           {consultorName || 'N/A'}
         </p>
         {memberRole && (

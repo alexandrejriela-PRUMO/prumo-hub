@@ -185,6 +185,7 @@ export default function Licenses() {
 
   const { data: ownerProperties = [] } = useQuery({
     queryKey: ['properties-owner', queryEmail],
+    // equipe de produtor: busca por owner_email usando effectiveEmail (email do Denison)
     queryFn: () => base44.entities.Property.filter({ owner_email: queryEmail }),
     enabled: !!queryEmail && (!isConsultor || isEquipeProdutor) && !isClientConsultor,
   });
@@ -227,9 +228,10 @@ export default function Licenses() {
           clientConsultorProperties.map(p => base44.entities.License.filter({ property_id: p.id }))
         ).then(r => r.flat());
       }
-      return base44.entities.License.filter({ owner_email: user.email });
+      // Para produtor/equipe de produtor: usa effectiveEmail (email do dono principal)
+      return base44.entities.License.filter({ owner_email: queryEmail });
     },
-    enabled: isConsultor ? !!consultorPropertyId : !!user?.email,
+    enabled: isConsultor ? !!consultorPropertyId : !!queryEmail,
     initialData: [],
   });
 

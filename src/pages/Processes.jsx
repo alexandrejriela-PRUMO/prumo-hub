@@ -408,7 +408,7 @@ function ProcessForm({ formData, setFormData, onSubmit, onCancel, editingProcess
 
 // ── Página principal ─────────────────────────────────────────────────────────
 export default function Processes() {
-  const { effectiveEmail, userType, isEquipe, memberRole, loading: effectiveLoading } = useEffectiveUser();
+  const { effectiveEmail, userType, isEquipe, memberRole, isEquipeProdutor, loading: effectiveLoading } = useEffectiveUser();
   const [user, setUser] = useState(null);
   const [consultorPropertyId, setConsultorPropertyId] = useState(null);
   const [showDialog, setShowDialog] = useState(false);
@@ -450,7 +450,8 @@ export default function Processes() {
     loadUser();
   }, []);
 
-  const isConsultorFamily = userType === 'consultor' || userType === 'equipe';
+  // equipe de produtor usa fluxo de produtor (owner_email), não consultor
+  const isConsultorFamily = (userType === 'consultor' || (userType === 'equipe' && !isEquipeProdutor));
   const isClientConsultor = userType === 'client_consultor' || user?.user_type === 'client_consultor';
   const canCreateProcess = !isClientConsultor && (!isEquipe || memberRole === 'Administrador' || memberRole === 'Advogado');
 
@@ -461,7 +462,7 @@ export default function Processes() {
   });
 
   const { data: propertiesRaw = [], isLoading: propertiesLoading } = useQuery({
-    queryKey: ['properties', effectiveEmail, userType],
+    queryKey: ['properties', effectiveEmail, userType, isEquipeProdutor],
     queryFn: () => isConsultorFamily
       ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
       : base44.entities.Property.filter({ owner_email: effectiveEmail }),
@@ -479,7 +480,7 @@ export default function Processes() {
   const properties = isClientConsultor ? clientConsultorProperties : propertiesRaw;
 
   const { data: processes = [], isLoading } = useQuery({
-    queryKey: ['processes', effectiveEmail, consultorPropertyId, isClientConsultor],
+    queryKey: ['processes', effectiveEmail, consultorPropertyId, isClientConsultor, isConsultorFamily],
     queryFn: () => {
       if (isConsultorFamily && consultorPropertyId) {
         return base44.entities.Process.filter({ property_id: consultorPropertyId });
@@ -489,6 +490,7 @@ export default function Processes() {
           properties.map(p => base44.entities.Process.filter({ property_id: p.id }))
         ).then(r => r.flat());
       }
+      // produtor e equipe de produtor: busca por client_email usando effectiveEmail
       return base44.entities.Process.filter({ client_email: effectiveEmail });
     },
     enabled: isConsultorFamily ? !!consultorPropertyId : isClientConsultor ? properties.length > 0 : !!effectiveEmail,

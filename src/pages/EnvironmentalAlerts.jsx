@@ -76,8 +76,9 @@ export default function EnvironmentalAlerts() {
     loadUser();
   }, []);
 
-  const { effectiveEmail, userType } = useEffectiveUser();
-  const isConsultorFamily = userType === 'consultor' || userType === 'equipe';
+  const { effectiveEmail, userType, isEquipeProdutor } = useEffectiveUser();
+  // equipe de produtor usa fluxo de produtor (owner_email), não consultor
+  const isConsultorFamily = userType === 'consultor' || (userType === 'equipe' && !isEquipeProdutor);
   const isClientConsultor = userType === 'client_consultor' || user?.user_type === 'client_consultor';
   const canEdit = !isClientConsultor;
 
@@ -100,7 +101,7 @@ export default function EnvironmentalAlerts() {
     : [];
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
-    queryKey: ['properties', effectiveEmail, userType],
+    queryKey: ['properties', effectiveEmail, userType, isEquipeProdutor],
     queryFn: () => isConsultorFamily
       ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
       : base44.entities.Property.filter({ owner_email: effectiveEmail }),

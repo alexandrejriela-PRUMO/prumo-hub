@@ -28,7 +28,7 @@ import moment from 'moment';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 export default function RegularityReport() {
-  const { effectiveEmail, userType, loading: effectiveLoading } = useEffectiveUser();
+  const { effectiveEmail, userType, isEquipeProdutor, loading: effectiveLoading } = useEffectiveUser();
   const [user, setUser] = useState(null);
   const [selectedPropertyId, setSelectedPropertyId] = useState(null);
 
@@ -36,7 +36,8 @@ export default function RegularityReport() {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
 
-  const isConsultorFamily = userType === 'consultor' || userType === 'equipe';
+  // equipe de produtor usa fluxo de produtor (owner_email), não consultor
+  const isConsultorFamily = userType === 'consultor' || (userType === 'equipe' && !isEquipeProdutor);
   const isClientConsultor = userType === 'client_consultor' || user?.user_type === 'client_consultor';
 
   const { data: allPropertiesForClient = [] } = useQuery({
@@ -56,7 +57,7 @@ export default function RegularityReport() {
     : [];
 
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties', effectiveEmail, userType],
+    queryKey: ['properties', effectiveEmail, userType, isEquipeProdutor],
     queryFn: () => isConsultorFamily
       ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
       : base44.entities.Property.filter({ owner_email: effectiveEmail }),

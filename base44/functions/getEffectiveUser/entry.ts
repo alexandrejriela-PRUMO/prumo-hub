@@ -1,9 +1,13 @@
 /**
  * getEffectiveUser — Retorna o email efetivo para queries de dados.
  *
- * Busca o TeamMember pelo email do usuário (independente do user_type).
- * Se encontrar vínculo ativo, retorna o email do consultor e as permissões.
- * Se for consultor/produtor sem vínculo de equipe, retorna o próprio usuário.
+ * Busca o TeamMember pelo email do usuário.
+ * Se encontrar vínculo ativo, retorna o email do principal e as permissões.
+ * Se for consultor/produtor sem vínculo, retorna o próprio usuário.
+ *
+ * user_type retornado para membros de equipe:
+ *   - 'equipe_consultor' se o principal é consultor
+ *   - 'equipe_produtor'  se o principal é produtor
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
@@ -13,7 +17,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // Se for admin, retorna o próprio usuário imediatamente
+    // Admin — retorna o próprio usuário imediatamente
     if (user.role === 'admin') {
       return Response.json({
         email: user.email,
@@ -25,7 +29,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Para qualquer tipo de usuário, buscar se existe um TeamMember ativo vinculado a este email
+    // Buscar vínculo de equipe ativo para este usuário
     const memberships = await base44.asServiceRole.entities.TeamMember.filter({
       member_email: user.email,
       status: 'Ativo',
@@ -35,42 +39,65 @@ Deno.serve(async (req) => {
       const membership = memberships[0];
       const primaryEmail = membership.primary_user_email;
 
-      // Busca dados do usuário principal (consultor ou produtor)
       let primaryName = primaryEmail;
       let primaryPlan = 'start';
-      let primaryUserType = null; // null = não resolvido ainda
+      let primaryUserType = null;
 
-      // Fonte da verdade: UserMetadata (user_type correto para produtor/consultor)
+      // Fonte da verdade: UserMetadata do principal
       try {
-        const primaryMeta = await base44.asServiceRole.entities.UserMetadata.filter({ user_email: primaryEmail }, '-created_date', 1);
+        const primaryMeta = await base44.asServiceRole.entities.UserMetadata.filter(
+          { user_email: primaryEmail }, '-created_date', 1
+        );
         if (primaryMeta.length > 0) {
           primaryPlan = primaryMeta[0].plano || 'start';
           primaryUserType = primaryMeta[0].user_type || null;
           console.log(`[getEffectiveUser] primaryUserType via UserMetadata: ${primaryUserType} para ${primaryEmail}`);
         }
       } catch (e) {
-        console.warn('[getEffectiveUser] Não foi possível buscar UserMetadata do principal:', e.message);
+        console.warn('[getEffectiveUser] Erro ao buscar UserMetadata do principal:', e.message);
       }
 
-      // Busca nome do usuário principal via entidade User
-      // Também usa user_type do User APENAS se UserMetadata não encontrou
+      // Fallback: User entity do principal
       try {
         const primaryUsers = await base44.asServiceRole.entities.User.filter({ email: primaryEmail });
         if (primaryUsers.length > 0) {
           primaryName = primaryUsers[0].full_name || primaryEmail;
           if (!primaryUserType && primaryUsers[0].user_type) {
             primaryUserType = primaryUsers[0].user_type;
-            console.log(`[getEffectiveUser] primaryUserType via User entity: ${primaryUserType} para ${primaryEmail}`);
+            console.log(`[getEffectiveUser] primaryUserType via User: ${primaryUserType} para ${primaryEmail}`);
           }
         }
       } catch (e) {
-        console.warn('[getEffectiveUser] Não foi possível buscar dados do usuário principal:', e.message);
+        console.warn('[getEffectiveUser] Erro ao buscar User do principal:', e.message);
       }
 
-      // Fallback final — nunca deixar null
-      if (!primaryUserType) {
+      // Fallback final
+      if (!primaryUserType || primaryUserType === 'equipe' || primaryUserType === 'equipe_consultor' || primaryUserType === 'equipe_produtor') {
         primaryUserType = 'consultor';
-        console.warn(`[getEffectiveUser] primaryUserType não resolvido para ${primaryEmail}, usando fallback 'consultor'`);
+        console.warn(`[getEffectiveUser] primaryUserType inválido para ${primaryEmail}, usando fallback 'consultor'`);
+      }
+
+      // Tipo específico do membro: equipe_consultor ou equipe_produtor
+      const memberUserType = primaryUserType === 'produtor' ? 'equipe_produtor' : 'equipe_consultor';
+
+      // Sincronizar user_type do membro se necessário
+      if (user.user_type !== memberUserType) {
+        try {
+          await base44.auth.updateMe({ user_type: memberUserType });
+          // Atualizar UserMetadata do membro também
+          const memberMeta = await base44.asServiceRole.entities.UserMetadata.filter(
+            { user_email: user.email }, '-created_date', 1
+          );
+          if (memberMeta.length > 0) {
+            await base44.asServiceRole.entities.UserMetadata.update(memberMeta[0].id, {
+              user_type: memberUserType,
+              primary_consultor_email: primaryEmail,
+            });
+          }
+          console.log(`[getEffectiveUser] user_type do membro ${user.email} atualizado para '${memberUserType}'`);
+        } catch (e) {
+          console.warn('[getEffectiveUser] Erro ao atualizar user_type do membro:', e.message);
+        }
       }
 
       const VIEWER_PERMS = {
@@ -84,23 +111,13 @@ Deno.serve(async (req) => {
       };
       const permissions = membership.permissions || VIEWER_PERMS;
 
-      // Garantir que o user_type seja 'equipe' caso ainda não esteja
-      if (user.user_type !== 'equipe') {
-        try {
-          await base44.auth.updateMe({ user_type: 'equipe' });
-          console.log(`[getEffectiveUser] user_type atualizado para 'equipe' para ${user.email}`);
-        } catch (e) {
-          console.warn('[getEffectiveUser] Não foi possível atualizar user_type:', e.message);
-        }
-      }
-
       return Response.json({
-        email: primaryEmail,              // email para usar em queries (como se fosse o usuário principal)
-        actual_email: user.email,         // email real do membro da equipe
-        full_name: user.full_name,        // nome do membro
-        user_type: 'equipe',
-        primary_user_type: primaryUserType, // 'consultor' ou 'produtor'
-        consultor_email: primaryEmail,    // mantido para compatibilidade
+        email: primaryEmail,
+        actual_email: user.email,
+        full_name: user.full_name,
+        user_type: memberUserType,
+        primary_user_type: primaryUserType,
+        consultor_email: primaryEmail,
         consultor_name: primaryName,
         consultor_plan: primaryPlan,
         member_role: membership.member_role,

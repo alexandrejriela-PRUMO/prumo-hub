@@ -26,6 +26,8 @@
         "consultor",
         "produtor",
         "equipe",
+        "equipe_consultor",
+        "equipe_produtor",
         "client_consultor"
       ],
       "description": "Tipo de usu\u00e1rio"
@@ -59,7 +61,7 @@
     },
     "primary_consultor_email": {
       "type": "string",
-      "description": "Email do consultor principal (para equipe/client_consultor)"
+      "description": "Email do consultor/produtor principal (para equipe_consultor/equipe_produtor/client_consultor)"
     }
   },
   "required": [

@@ -1,7 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-// Quando um consultor convida um membro, verifica se o usuário já existe no sistema
-// e aplica imediatamente o user_type correto no UserMetadata dele.
+// Quando um consultor/produtor convida um membro, aplica imediatamente o user_type correto.
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
@@ -14,14 +13,36 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { member_email, team_member_id, primary_consultor_email, user_type } = await req.json();
+    const { member_email, team_member_id, primary_consultor_email } = await req.json();
 
     if (!member_email || !team_member_id) {
       return Response.json({ error: 'member_email e team_member_id são obrigatórios' }, { status: 400 });
     }
 
-    const targetUserType = user_type || 'equipe';
-    const consultorEmail = primary_consultor_email || caller.email;
+    const primaryEmail = primary_consultor_email || caller.email;
+
+    // Descobrir tipo do usuário principal
+    let primaryUserType = caller.user_type || 'consultor';
+    let primaryPlano = 'start';
+    try {
+      const primaryMeta = await base44.asServiceRole.entities.UserMetadata.filter(
+        { user_email: primaryEmail }, '-created_date', 1
+      );
+      if (primaryMeta && primaryMeta.length > 0) {
+        primaryUserType = primaryMeta[0].user_type || primaryUserType;
+        primaryPlano = primaryMeta[0].plano || 'start';
+      }
+    } catch (e) {
+      console.warn('[applyTeamMemberOnInvite] Erro ao buscar UserMetadata do principal:', e.message);
+    }
+
+    // Normalizar: garantir que não é um tipo de equipe
+    if (primaryUserType === 'equipe' || primaryUserType === 'equipe_consultor' || primaryUserType === 'equipe_produtor') {
+      primaryUserType = 'consultor';
+    }
+
+    // Tipo específico do membro
+    const memberUserType = primaryUserType === 'produtor' ? 'equipe_produtor' : 'equipe_consultor';
 
     // Verifica se já existe UserMetadata para este email
     const existingMeta = await base44.asServiceRole.entities.UserMetadata.filter(
@@ -30,29 +51,14 @@ Deno.serve(async (req) => {
       1
     );
 
-    // Buscar plano do consultor/produtor principal para herdar
-    let primaryPlano = 'start';
-    try {
-      const primaryMeta = await base44.asServiceRole.entities.UserMetadata.filter(
-        { user_email: consultorEmail }, '-created_date', 1
-      );
-      if (primaryMeta && primaryMeta.length > 0 && primaryMeta[0].plano) {
-        primaryPlano = primaryMeta[0].plano;
-      }
-    } catch (e) {
-      console.warn('[applyTeamMemberOnInvite] Não foi possível buscar plano do principal:', e.message);
-    }
-
     if (existingMeta && existingMeta.length > 0) {
-      // Usuário já existe — atualiza imediatamente
       await base44.asServiceRole.entities.UserMetadata.update(existingMeta[0].id, {
-        user_type: targetUserType,
+        user_type: memberUserType,
         subscription_status: 'active',
-        primary_consultor_email: consultorEmail,
+        primary_consultor_email: primaryEmail,
         plano: primaryPlano,
       });
 
-      // Marca o TeamMember como já aplicado
       await base44.asServiceRole.entities.TeamMember.update(team_member_id, {
         user_type_applied: true,
         status: 'Ativo',
@@ -60,11 +66,11 @@ Deno.serve(async (req) => {
         accepted_at: new Date().toISOString(),
       });
 
-      console.log(`[applyTeamMemberOnInvite] Usuário existente ${member_email} atualizado para ${targetUserType}`);
-      return Response.json({ applied: true, existing_user: true, user_type: targetUserType });
+      console.log(`[applyTeamMemberOnInvite] Usuário existente ${member_email} atualizado para ${memberUserType}`);
+      return Response.json({ applied: true, existing_user: true, user_type: memberUserType });
     }
 
-    // Usuário não existe ainda — deixa o applyInviteConfigOnFirstLogin lidar quando ele logar
+    // Usuário não existe ainda — deixa o applyInviteConfigOnFirstLogin lidar no primeiro login
     console.log(`[applyTeamMemberOnInvite] Usuário ${member_email} ainda não existe, aguardando primeiro login`);
     return Response.json({ applied: false, existing_user: false, reason: 'User not registered yet' });
 

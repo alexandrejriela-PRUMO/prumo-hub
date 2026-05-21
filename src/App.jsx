@@ -82,12 +82,13 @@ const AuthenticatedApp = () => {
         }
 
         // Buscar user_type real via getEffectiveUser (usa asServiceRole, fonte da verdade)
+        // Retorna equipe_consultor / equipe_produtor para membros de equipe
         let effectiveUserType = user.user_type;
+        const isEquipeMember = ['equipe', 'equipe_consultor', 'equipe_produtor'].includes(user.user_type);
         try {
           const effectiveRes = await base44.functions.invoke('getEffectiveUser', {});
           const effectiveData = effectiveRes?.data;
           if (effectiveData && !effectiveData.error) {
-            // Para equipe, o user_type correto é 'equipe' — não sobrescrever com tipo do principal
             effectiveUserType = effectiveData.user_type || user.user_type;
             // Sincronizar user_type no auth se divergiu
             if (effectiveUserType !== user.user_type) {
@@ -104,7 +105,7 @@ const AuthenticatedApp = () => {
         } catch (metaErr) {
           console.warn('[App] Erro ao buscar user_type efetivo:', metaErr.message);
           // Fallback: tentar lead nexano apenas para não-equipe
-          if (user.user_type !== 'equipe') {
+          if (!isEquipeMember) {
             try {
               const leads = await base44.entities.LeadFormSubmission.filter({ email: user.email }, '-created_date', 1);
               const nexanoLead = leads?.find(l => l.parceiro?.startsWith('nexano_') && l.subscription_status === 'active');

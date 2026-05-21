@@ -13,8 +13,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Procura por TeamMember pendente com este email (sem filtrar user_type_applied
-    // pois o campo pode não ter sido salvo explicitamente como false)
+    // Procura por TeamMember pendente com este email
     const teamMembers = await base44.asServiceRole.entities.TeamMember.filter(
       { member_email: user.email },
       '-invited_at',
@@ -41,36 +40,52 @@ Deno.serve(async (req) => {
       });
     }
 
-    const userType = tm.pending_user_type || 'equipe';
+    const primaryEmail = tm.primary_user_email || tm.consultor_email;
     const now = new Date().toISOString();
 
-    // 1. Atualiza user_type na sessão/User
-    await base44.auth.updateMe({ user_type: userType });
+    // Descobrir o tipo do usuário principal para definir equipe_consultor vs equipe_produtor
+    let primaryUserType = 'consultor'; // fallback
+    let primaryPlano = 'start';
+    try {
+      const primaryMeta = await base44.asServiceRole.entities.UserMetadata.filter(
+        { user_email: primaryEmail }, '-created_date', 1
+      );
+      if (primaryMeta && primaryMeta.length > 0) {
+        primaryUserType = primaryMeta[0].user_type || 'consultor';
+        primaryPlano = primaryMeta[0].plano || 'start';
+      }
+    } catch (e) {
+      console.warn('[applyInviteConfigOnFirstLogin] Erro ao buscar UserMetadata do principal:', e.message);
+    }
 
-    // 2. Persiste no UserMetadata (fonte da verdade usada pelo app)
+    // Fallback via User entity
+    if (!primaryUserType || primaryUserType === 'equipe' || primaryUserType === 'equipe_consultor' || primaryUserType === 'equipe_produtor') {
+      try {
+        const primaryUsers = await base44.asServiceRole.entities.User.filter({ email: primaryEmail });
+        if (primaryUsers.length > 0 && primaryUsers[0].user_type) {
+          primaryUserType = primaryUsers[0].user_type;
+        }
+      } catch (e) {
+        console.warn('[applyInviteConfigOnFirstLogin] Erro ao buscar User do principal:', e.message);
+      }
+    }
+
+    // Definir tipo específico do membro
+    const memberUserType = primaryUserType === 'produtor' ? 'equipe_produtor' : 'equipe_consultor';
+
+    // 1. Atualiza user_type na sessão/User
+    await base44.auth.updateMe({ user_type: memberUserType });
+
+    // 2. Persiste no UserMetadata
     const existingMeta = await base44.asServiceRole.entities.UserMetadata.filter(
       { user_email: user.email },
       '-created_date',
       1
     );
 
-    // Buscar plano do consultor/produtor principal para herdar
-    const primaryEmail = tm.primary_user_email || tm.consultor_email;
-    let primaryPlano = 'start';
-    try {
-      const primaryMeta = await base44.asServiceRole.entities.UserMetadata.filter(
-        { user_email: primaryEmail }, '-created_date', 1
-      );
-      if (primaryMeta && primaryMeta.length > 0 && primaryMeta[0].plano) {
-        primaryPlano = primaryMeta[0].plano;
-      }
-    } catch (e) {
-      console.warn('[applyInviteConfigOnFirstLogin] Não foi possível buscar plano do principal:', e.message);
-    }
-
     if (existingMeta && existingMeta.length > 0) {
       await base44.asServiceRole.entities.UserMetadata.update(existingMeta[0].id, {
-        user_type: userType,
+        user_type: memberUserType,
         subscription_status: 'active',
         primary_consultor_email: primaryEmail,
         plano: primaryPlano,
@@ -78,7 +93,7 @@ Deno.serve(async (req) => {
     } else {
       await base44.asServiceRole.entities.UserMetadata.create({
         user_email: user.email,
-        user_type: userType,
+        user_type: memberUserType,
         subscription_status: 'active',
         primary_consultor_email: primaryEmail,
         plano: primaryPlano,
@@ -95,12 +110,12 @@ Deno.serve(async (req) => {
       accepted_at: now,
     });
 
-    console.log(`[applyInviteConfigOnFirstLogin] user_type '${userType}' aplicado para ${user.email}, consultor: ${tm.primary_user_email || tm.consultor_email}`);
+    console.log(`[applyInviteConfigOnFirstLogin] user_type '${memberUserType}' aplicado para ${user.email}, principal: ${primaryEmail} (${primaryUserType})`);
 
     return Response.json({ 
       applied: true, 
-      user_type: userType,
-      message: `User ${user.email} configured as ${userType}`
+      user_type: memberUserType,
+      message: `User ${user.email} configured as ${memberUserType}`
     });
 
   } catch (error) {

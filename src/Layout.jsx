@@ -326,44 +326,33 @@ export default function Layout({ children, currentPageName }) {
   const { hasPermission, canAccessModule } = useEffectiveUserPermissions(safeUser);
 
   const [userMeta, setUserMeta] = useState(null);
-  const [primaryOwnerType, setPrimaryOwnerType] = useState(null); // 'consultor' | 'produtor' para equipe
-  const [metaLoading, setMetaLoading] = useState(true); // aguarda userMeta + primaryOwnerType
+  const [metaLoading, setMetaLoading] = useState(true);
 
-  // Load user data on mount
+  // Load user + meta via getEffectiveUser (fonte da verdade, usa asServiceRole)
   useEffect(() => {
-    base44.auth.me().then((u) => {
-      if (u) setUser(u);
-    }).catch(() => {});
-  }, []);
-
-  // Load userMeta when user email is available
-  useEffect(() => {
-    if (!user?.email) return;
-    setMetaLoading(true);
-
-    const loadMeta = async () => {
+    const loadUser = async () => {
       try {
-        const data = await base44.entities.UserMetadata.filter({ user_email: user.email }, '-created_date', 1);
-        if (data?.length > 0) {
-          setUserMeta(data[0]);
-          // Se for equipe, usar getEffectiveUser (asServiceRole) para obter primary_user_type
-          // Não consultar UserMetadata de outro usuário diretamente (RLS impede acesso cross-user)
-          if (data[0].user_type === 'equipe') {
-            try {
-              const res = await base44.functions.invoke('getEffectiveUser', {});
-              const effectiveData = res?.data;
-              if (effectiveData?.primary_user_type) {
-                setPrimaryOwnerType(effectiveData.primary_user_type);
-              } else {
-                setPrimaryOwnerType('consultor'); // fallback seguro
-              }
-            } catch {
-              setPrimaryOwnerType('consultor');
-            }
-          } else {
-            // Não é equipe, não precisa buscar owner
-            setPrimaryOwnerType(null);
+        const u = await base44.auth.me();
+        if (!u) return;
+        setUser(u);
+
+        // getEffectiveUser retorna user_type já correto (equipe_consultor / equipe_produtor)
+        // e sincroniza no User/UserMetadata se necessário
+        const res = await base44.functions.invoke('getEffectiveUser', {});
+        const effectiveData = res?.data;
+        if (effectiveData && !effectiveData.error) {
+          // Montar userMeta sintético com o user_type correto
+          setUserMeta({
+            user_type: effectiveData.user_type,
+            plano: effectiveData.consultor_plan || u.plano || 'start',
+          });
+          // Se o user_type mudou, atualizar o estado do user local
+          if (effectiveData.user_type !== u.user_type) {
+            setUser(prev => ({ ...prev, user_type: effectiveData.user_type }));
           }
+        } else {
+          // Fallback: usar dados do próprio user
+          setUserMeta({ user_type: u.user_type, plano: u.plano || 'start' });
         }
       } catch {
         // silently ignore
@@ -372,8 +361,8 @@ export default function Layout({ children, currentPageName }) {
       }
     };
 
-    loadMeta();
-  }, [user?.email]);
+    loadUser();
+  }, []);
 
   // Auto-expand menus that contain the current active page
   useEffect(() => {
@@ -441,17 +430,17 @@ export default function Layout({ children, currentPageName }) {
   const filteredMenuItems = useMemo(() => {
     const plano = userMeta?.plano || user?.plano || 'start';
     const isEnterprise = plano === 'enterprise';
-    // Usar userMeta como fonte da verdade (evita race condition com auth.me cache)
+    // userMeta é fonte da verdade (setada via getEffectiveUser)
     const ut = userMeta?.user_type || user?.user_type;
-    // Equipe de produtor: usa menu do produtor — SÓ resolver após primaryOwnerType estar carregado
-    const isEquipeProdutor = ut === 'equipe' && primaryOwnerType === 'produtor';
+    const isEquipeProdutor = ut === 'equipe_produtor';
+    const isEquipeConsultor = ut === 'equipe_consultor' || ut === 'equipe';
 
     let menuItems = [];
     if (ut === 'client_consultor') {
       menuItems = clientConsultorNavItems;
-    } else if (ut === 'equipe' && isEquipeProdutor) {
+    } else if (isEquipeProdutor) {
       menuItems = produtorNavItems;
-    } else if (ut === 'equipe') {
+    } else if (isEquipeConsultor) {
       menuItems = equipeNavItems;
     } else if (ut === 'consultor') {
       const enterpriseOnlyPages = ['CRMBoard', 'Agenda', 'FinancialDashboard', 'FinancialTransactions', 'PaymentSettings', 'NFeManagement'];
@@ -467,7 +456,7 @@ export default function Layout({ children, currentPageName }) {
     return menuItems.filter(item => {
       if (item.adminOnly && user?.role !== 'admin') return false;
       // Equipe de consultor: filtrar por permissões de módulo
-      if (ut === 'equipe' && !isEquipeProdutor) {
+      if (isEquipeConsultor) {
         if (!item.page && !item.children) return true;
         const moduleKey = getModuleKey(item.page);
         if (!moduleKey) return true;
@@ -475,7 +464,7 @@ export default function Layout({ children, currentPageName }) {
       }
       return true;
     });
-  }, [user?.user_type, user?.role, userMeta?.plano, user?.plano, primaryOwnerType, getModuleKey, canAccessModule]);
+  }, [user?.user_type, user?.role, userMeta?.user_type, userMeta?.plano, user?.plano, getModuleKey, canAccessModule]);
 
   return (
     <ThemeProvider>
@@ -657,14 +646,17 @@ export default function Layout({ children, currentPageName }) {
           <div className="p-6 border-b border-emerald-800/50">
             <div className="flex flex-col items-center gap-3 w-full">
               {(() => {
+                const ut = userMeta?.user_type || user?.user_type;
                 const typeLabel = {
                   consultor: 'Consultor',
                   equipe: 'Equipe',
+                  equipe_consultor: 'Equipe',
+                  equipe_produtor: 'Equipe',
                   client_consultor: 'Cliente',
                   produtor: 'Produtor',
-                }[user?.user_type] || 'Produtor';
-                const isEquipeProdutorLocal = user?.user_type === 'equipe' && primaryOwnerType === 'produtor';
-                const isConsultorFamily = (user?.user_type === 'consultor' || user?.user_type === 'equipe') && !isEquipeProdutorLocal;
+                }[ut] || 'Produtor';
+                const isEquipeProdutorLocal = ut === 'equipe_produtor';
+                const isConsultorFamily = (ut === 'consultor' || ut === 'equipe_consultor' || ut === 'equipe') && !isEquipeProdutorLocal;
                 const isClient = user?.user_type === 'client_consultor';
                 const gradient = isConsultorFamily
                   ? 'linear-gradient(135deg, #fbbf24, #f59e0b, #d97706)'

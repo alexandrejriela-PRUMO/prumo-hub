@@ -71,23 +71,20 @@ export function useEffectiveUser() {
             is_equipe: false,
           };
 
-          // Se é equipe, tentar recuperar o contexto via UserMetadata
-          if (user?.user_type === 'equipe') {
+          // Se é equipe (qualquer variante), tentar recuperar contexto via UserMetadata
+          const isEquipeVariant = ['equipe', 'equipe_consultor', 'equipe_produtor'].includes(user?.user_type);
+          if (isEquipeVariant) {
             try {
               const metaList = await base44.entities.UserMetadata.filter({ user_email: user.email }, '-created_date', 1);
               if (metaList?.length > 0 && metaList[0].primary_consultor_email) {
                 const primaryEmail = metaList[0].primary_consultor_email;
-                // Buscar tipo do usuário principal
-                let primaryUserType = 'consultor';
-                try {
-                  const ownerMeta = await base44.entities.UserMetadata.filter({ user_email: primaryEmail }, '-created_date', 1);
-                  if (ownerMeta?.length > 0) primaryUserType = ownerMeta[0].user_type || 'consultor';
-                } catch {}
+                const memberType = metaList[0].user_type || user.user_type;
+                const primaryUserType = memberType === 'equipe_produtor' ? 'produtor' : 'consultor';
                 effectiveData = {
                   email: primaryEmail,
                   actual_email: user.email,
                   full_name: user.full_name,
-                  user_type: 'equipe',
+                  user_type: memberType,
                   primary_user_type: primaryUserType,
                   consultor_email: primaryEmail,
                   is_equipe: true,
@@ -113,16 +110,18 @@ export function useEffectiveUser() {
   const { user, effectiveData, isLoading, error } = state;
 
   const isEquipe = effectiveData?.is_equipe === true;
-  // Equipe de produtor: membro de equipe cujo dono é produtor
-  const isEquipeProdutor = isEquipe && effectiveData?.primary_user_type === 'produtor';
-  // isConsultor: usa effectiveData quando disponível (fonte da verdade), evita false-positive durante loading
-  // Nunca considera consultor se é equipe de produtor
-  const isConsultor = !isEquipeProdutor && (
-    effectiveData
-      ? effectiveData.user_type === 'consultor'
-      : user?.user_type === 'consultor'
-  );
-  const isProdutor = (!isEquipe && !isConsultor && !!user) || isEquipeProdutor;
+  // Equipe de produtor: user_type é equipe_produtor OU (equipe legado + primary_user_type === produtor)
+  const isEquipeProdutor = effectiveData?.user_type === 'equipe_produtor'
+    || (isEquipe && effectiveData?.primary_user_type === 'produtor');
+  const isEquipeConsultor = effectiveData?.user_type === 'equipe_consultor'
+    || (isEquipe && !isEquipeProdutor);
+  // isConsultor: usa effectiveData como fonte da verdade
+  const isConsultor = effectiveData
+    ? effectiveData.user_type === 'consultor'
+    : user?.user_type === 'consultor';
+  const isProdutor = effectiveData
+    ? (effectiveData.user_type === 'produtor' || effectiveData.user_type === 'equipe_produtor')
+    : (!isEquipe && !isConsultor && !!user);
 
   // effectiveEmail: para equipe é o email do consultor; para consultor/produtor é o próprio email
   const effectiveEmail = effectiveData?.email || user?.email;
@@ -145,6 +144,7 @@ export function useEffectiveUser() {
     primaryUserType,
     isEquipe,
     isEquipeProdutor,
+    isEquipeConsultor,
     isConsultor,
     isProdutor,
     isLoading,

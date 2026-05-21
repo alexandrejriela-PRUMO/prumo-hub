@@ -38,31 +38,39 @@ Deno.serve(async (req) => {
       // Busca dados do usuário principal (consultor ou produtor)
       let primaryName = primaryEmail;
       let primaryPlan = 'start';
-      let primaryUserType = 'consultor'; // padrão
+      let primaryUserType = null; // null = não resolvido ainda
 
       // Fonte da verdade: UserMetadata (user_type correto para produtor/consultor)
       try {
         const primaryMeta = await base44.asServiceRole.entities.UserMetadata.filter({ user_email: primaryEmail }, '-created_date', 1);
         if (primaryMeta.length > 0) {
           primaryPlan = primaryMeta[0].plano || 'start';
-          primaryUserType = primaryMeta[0].user_type || 'consultor';
+          primaryUserType = primaryMeta[0].user_type || null;
+          console.log(`[getEffectiveUser] primaryUserType via UserMetadata: ${primaryUserType} para ${primaryEmail}`);
         }
       } catch (e) {
         console.warn('[getEffectiveUser] Não foi possível buscar UserMetadata do principal:', e.message);
       }
 
       // Busca nome do usuário principal via entidade User
+      // Também usa user_type do User APENAS se UserMetadata não encontrou
       try {
         const primaryUsers = await base44.asServiceRole.entities.User.filter({ email: primaryEmail });
         if (primaryUsers.length > 0) {
           primaryName = primaryUsers[0].full_name || primaryEmail;
-          // Só usa user_type do User se UserMetadata não encontrou
-          if (primaryUserType === 'consultor' && primaryUsers[0].user_type) {
+          if (!primaryUserType && primaryUsers[0].user_type) {
             primaryUserType = primaryUsers[0].user_type;
+            console.log(`[getEffectiveUser] primaryUserType via User entity: ${primaryUserType} para ${primaryEmail}`);
           }
         }
       } catch (e) {
         console.warn('[getEffectiveUser] Não foi possível buscar dados do usuário principal:', e.message);
+      }
+
+      // Fallback final — nunca deixar null
+      if (!primaryUserType) {
+        primaryUserType = 'consultor';
+        console.warn(`[getEffectiveUser] primaryUserType não resolvido para ${primaryEmail}, usando fallback 'consultor'`);
       }
 
       const VIEWER_PERMS = {

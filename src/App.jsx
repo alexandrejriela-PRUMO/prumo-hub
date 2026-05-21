@@ -81,27 +81,30 @@ const AuthenticatedApp = () => {
           console.warn('[App] Erro ao verificar convite de equipe:', inviteErr.message);
         }
 
-        // Buscar user_type real do UserMetadata (fonte da verdade, não o cache do auth.me)
+        // Buscar user_type real via getEffectiveUser (usa asServiceRole, fonte da verdade)
         let effectiveUserType = user.user_type;
         try {
-          const metaList = await base44.entities.UserMetadata.filter({ user_email: user.email }, '-created_date', 1);
-          if (metaList?.length > 0 && metaList[0].user_type) {
-            effectiveUserType = metaList[0].user_type;
-            // Se UserMetadata tem user_type diferente do User, sincronizar agora
-            if (metaList[0].user_type !== user.user_type) {
+          const effectiveRes = await base44.functions.invoke('getEffectiveUser', {});
+          const effectiveData = effectiveRes?.data;
+          if (effectiveData && !effectiveData.error) {
+            // Para equipe, o user_type correto é 'equipe' — não sobrescrever com tipo do principal
+            effectiveUserType = effectiveData.user_type || user.user_type;
+            // Sincronizar user_type no auth se divergiu
+            if (effectiveUserType !== user.user_type) {
               try {
-                const syncPayload = { user_type: metaList[0].user_type };
-                if (metaList[0].plano) syncPayload.plano = metaList[0].plano;
-                if (metaList[0].subscription_status) syncPayload.subscription_status = metaList[0].subscription_status;
-                await base44.auth.updateMe(syncPayload);
-                console.log('[App] user_type sincronizado do UserMetadata:', metaList[0].user_type);
+                await base44.auth.updateMe({ user_type: effectiveUserType });
+                console.log('[App] user_type sincronizado via getEffectiveUser:', effectiveUserType);
                 await refreshUser();
+                user = await base44.auth.me();
               } catch (syncErr) {
                 console.warn('[App] Erro ao sincronizar user_type:', syncErr.message);
               }
             }
-          } else if (!metaList || metaList.length === 0) {
-            // Sem UserMetadata — tentar recuperar do lead nexano para novos usuários pagantes
+          }
+        } catch (metaErr) {
+          console.warn('[App] Erro ao buscar user_type efetivo:', metaErr.message);
+          // Fallback: tentar lead nexano apenas para não-equipe
+          if (user.user_type !== 'equipe') {
             try {
               const leads = await base44.entities.LeadFormSubmission.filter({ email: user.email }, '-created_date', 1);
               const nexanoLead = leads?.find(l => l.parceiro?.startsWith('nexano_') && l.subscription_status === 'active');
@@ -119,8 +122,6 @@ const AuthenticatedApp = () => {
               console.warn('[App] Erro ao verificar lead nexano:', leadErr.message);
             }
           }
-        } catch (metaErr) {
-          console.warn('[App] Erro ao buscar UserMetadata:', metaErr.message);
         }
 
         const activeTerms = await base44.entities.TermsOfUse.filter({ is_active: true }, '-version', 1);

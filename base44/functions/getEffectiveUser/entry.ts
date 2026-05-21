@@ -81,7 +81,9 @@ Deno.serve(async (req) => {
       const memberUserType = primaryUserType === 'produtor' ? 'equipe_produtor' : 'equipe_consultor';
 
       // Sincronizar user_type do membro se necessário
-      if (user.user_type !== memberUserType) {
+      // Inclui variantes antigas ('equipe') que precisam ser migradas para o tipo específico
+      const needsSync = user.user_type !== memberUserType;
+      if (needsSync) {
         try {
           await base44.auth.updateMe({ user_type: memberUserType });
           // Atualizar UserMetadata do membro também

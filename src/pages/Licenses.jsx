@@ -109,7 +109,8 @@ const licenseTypes = [
 
 export default function Licenses() {
   const { effectiveEmail, isEquipe, isConsultor: isConsultorHook, isEquipeProdutor: isEquipeProdutorFromHook, userType, memberRole, loading: effectiveLoading } = useEffectiveUser();
-  const canCreate = !isEquipe || memberRole === 'Administrador' || memberRole === 'Engenheiro';
+  // equipe de produtor pode criar (mesmas permissões do produtor); equipe de consultor requer role específica
+  const canCreate = !isEquipe || isEquipeProdutorFromHook || memberRole === 'Administrador' || memberRole === 'Engenheiro';
   const [user, setUser] = useState(null);
   const [consultorPropertyId, setConsultorPropertyId] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -493,7 +494,7 @@ export default function Licenses() {
           <p className="text-gray-500 mt-1 text-sm sm:text-base">Gerencie licenças, ARTs, laudos e documentos técnicos</p>
         </div>
         <div className="flex gap-2">
-          {!isClientConsultor && (
+          {isConsultor && (
             <Button
               variant="outline"
               size="sm"
@@ -859,7 +860,7 @@ export default function Licenses() {
                         <span className="hidden sm:inline">Histórico</span>
                         <span className="sm:hidden">Hist</span>
                       </Button>
-                      {!isClientConsultor && (
+                      {isConsultor && (
                         <Button
                           variant="outline"
                           size="sm"

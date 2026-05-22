@@ -21,6 +21,18 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
   const [errorMsg, setErrorMsg] = useState('');
   const inputRef = useRef(null);
 
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -31,46 +43,25 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
     setErrorMsg('');
 
     try {
-      setProgress(20);
+      setProgress(25);
+      const fileBase64 = await fileToBase64(file);
+      setProgress(50);
 
-      // Lê arquivo em chunks (máx 10MB por chunk)
-      const chunkSize = 10 * 1024 * 1024;
-      const chunks = Math.ceil(file.size / chunkSize);
+      const uploadRes = await base44.functions.invoke('r2UploadProxy', {
+        fileName: file.name,
+        contentType: file.type || 'application/octet-stream',
+        folder,
+        fileBase64,
+      });
 
-      let uploadedBytes = 0;
-
-      for (let i = 0; i < chunks; i++) {
-        const start = i * chunkSize;
-        const end = Math.min(start + chunkSize, file.size);
-        const chunk = file.slice(start, end);
-
-        const formData = new FormData();
-        formData.append('file', chunk);
-        formData.append('fileName', file.name);
-        formData.append('contentType', file.type || 'application/octet-stream');
-        formData.append('folder', folder);
-
-        const uploadRes = await base44.functions.invoke('r2UploadProxy', formData, {
-          skipContentType: true,
-        });
-
-        if (uploadRes.status !== 200 && !uploadRes.data?.filePath) {
-          throw new Error(uploadRes.data?.error || 'Erro no upload');
-        }
-
-        uploadedBytes += (end - start);
-        const percent = 20 + Math.round((uploadedBytes / file.size) * 75);
-        setProgress(percent);
-
-        // Se for o último chunk e temos filePath, sucesso
-        if (i === chunks - 1) {
-          setProgress(100);
-          setStatus('success');
-          onUploadDone?.(uploadRes.data.filePath, file.name);
-          if (inputRef.current) inputRef.current.value = '';
-          return;
-        }
+      if (!uploadRes.data?.filePath) {
+        throw new Error(uploadRes.data?.error || 'Erro no upload');
       }
+
+      setProgress(100);
+      setStatus('success');
+      onUploadDone?.(uploadRes.data.filePath, file.name);
+      if (inputRef.current) inputRef.current.value = '';
     } catch (err) {
       console.error('[FileUpload] Erro:', err.message);
       setStatus('error');

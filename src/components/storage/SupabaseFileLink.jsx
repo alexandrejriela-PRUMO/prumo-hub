@@ -30,10 +30,21 @@ export default function SupabaseFileLink({ filePath, label = 'Baixar Arquivo', e
     }
     // Arquivos novos no Supabase: gera URL assinada temporária
     setLoading(true);
-    const res = await base44.functions.invoke('supabaseGetSignedUrl', { filePath, expiresIn });
-    const { signedUrl } = res.data;
-    window.open(signedUrl, '_blank');
-    setLoading(false);
+    try {
+      const res = await base44.functions.invoke('supabaseGetSignedUrl', { filePath, expiresIn });
+      const signedUrl = res?.data?.signedUrl;
+      if (!signedUrl) {
+        console.error('[SupabaseFileLink] URL assinada não retornada:', res?.data);
+        alert('Não foi possível gerar o link de download. Tente novamente.');
+        return;
+      }
+      window.open(signedUrl, '_blank');
+    } catch (err) {
+      console.error('[SupabaseFileLink] Erro ao gerar URL assinada:', err);
+      alert('Erro ao gerar link de download.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (asLink) {

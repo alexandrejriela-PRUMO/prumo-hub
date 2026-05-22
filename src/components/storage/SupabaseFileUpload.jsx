@@ -51,10 +51,12 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
         method: 'PUT',
         headers: { 'Content-Type': file.type || 'application/octet-stream' },
         body: file,
+        mode: 'cors',
       });
 
       if (!uploadRes.ok) {
-        throw new Error(`Upload falhou: ${uploadRes.status}`);
+        const errText = await uploadRes.text().catch(() => 'sem detalhes');
+        throw new Error(`Upload falhou: ${uploadRes.status} ${errText}`);
       }
 
       setProgress(100);

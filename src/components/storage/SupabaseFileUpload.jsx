@@ -28,13 +28,15 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
         try {
           const arrayBuffer = reader.result;
           const bytes = new Uint8Array(arrayBuffer);
+          
+          // Converter em chunks de 1024 bytes para evitar stack overflow
+          const chunkSize = 1024;
           let binary = '';
           
-          // Converter bytes para string binária em chunks para evitar stack overflow
-          const chunkSize = 8192;
           for (let i = 0; i < bytes.length; i += chunkSize) {
-            const chunk = bytes.slice(i, i + chunkSize);
-            binary += String.fromCharCode.apply(null, chunk);
+            const end = Math.min(i + chunkSize, bytes.length);
+            const chunk = Array.from(bytes.slice(i, end));
+            binary += String.fromCharCode(...chunk);
           }
           
           const base64 = btoa(binary);

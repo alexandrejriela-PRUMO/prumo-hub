@@ -42,7 +42,7 @@ export default function SupabaseFileLink({ filePath, label = 'Baixar Arquivo', e
     }
   };
 
-  // Faz download via proxy do backend
+  // Faz download via URL assinada (fetch direto para preservar bytes binários)
   const handleDownload = async () => {
     setLoading(true);
     try {
@@ -51,12 +51,18 @@ export default function SupabaseFileLink({ filePath, label = 'Baixar Arquivo', e
         window.open(filePath, '_blank');
         return;
       }
-      const res = await base44.functions.invoke('supabaseDownloadFile', { filePath });
-      const blob = new Blob([res.data], { type: 'application/octet-stream' });
+      // Gera URL assinada e faz fetch direto (evita corrupção de bytes pelo axios)
+      const res = await base44.functions.invoke('supabaseGetSignedUrl', { filePath, expiresIn: 300 });
+      const signedUrl = res?.data?.signedUrl;
+      if (!signedUrl) { alert('Erro ao gerar link de download.'); return; }
+
+      const response = await fetch(signedUrl);
+      if (!response.ok) { alert('Erro ao baixar arquivo.'); return; }
+      const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = blobUrl;
-      a.download = fileName;
+      a.download = decodeURIComponent(fileName);
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

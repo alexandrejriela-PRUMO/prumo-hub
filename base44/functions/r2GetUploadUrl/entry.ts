@@ -3,7 +3,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 const R2_ACCOUNT_ID = Deno.env.get('R2_ACCOUNT_ID');
 const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID');
 const R2_SECRET_ACCESS_KEY = Deno.env.get('R2_SECRET_ACCESS_KEY');
-const R2_BUCKET_NAME = Deno.env.get('R2_BUCKET_NAME');
+const R2_BUCKET_NAME = (Deno.env.get('R2_BUCKET_NAME') || '').trim().replace(/\s+/g, '-').toLowerCase();
 
 async function hmacSha256(key, data) {
   const keyBytes = typeof key === 'string' ? new TextEncoder().encode(key) : key;

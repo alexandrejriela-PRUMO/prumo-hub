@@ -45,19 +45,10 @@ async function uploadToR2(filePath, fileBytes, contentType) {
   const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
 
   const payloadHash = await sha256HexBytes(fileBytes);
-
   const canonicalHeaders = `content-type:${contentType}\nhost:${host}\nx-amz-content-sha256:${payloadHash}\nx-amz-date:${amzDate}\n`;
   const signedHeaders = 'content-type;host;x-amz-content-sha256;x-amz-date';
 
-  const canonicalRequest = [
-    'PUT',
-    canonicalUri,
-    '',
-    canonicalHeaders,
-    signedHeaders,
-    payloadHash,
-  ].join('\n');
-
+  const canonicalRequest = ['PUT', canonicalUri, '', canonicalHeaders, signedHeaders, payloadHash].join('\n');
   const canonicalRequestHash = await sha256Hex(canonicalRequest);
   const stringToSign = ['AWS4-HMAC-SHA256', amzDate, credentialScope, canonicalRequestHash].join('\n');
 
@@ -94,24 +85,27 @@ Deno.serve(async (req) => {
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const formData = await req.formData();
-    const file = formData.get('file');
-    const folder = formData.get('folder') || 'uploads';
+    const { fileName, contentType, folder, fileBase64 } = await req.json();
 
-    if (!file || typeof file === 'string') {
-      return Response.json({ error: 'Arquivo não enviado' }, { status: 400 });
+    if (!fileName || !fileBase64) {
+      return Response.json({ error: 'fileName e fileBase64 são obrigatórios' }, { status: 400 });
     }
 
-    const fileBytes = new Uint8Array(await file.arrayBuffer());
-    const contentType = file.type || 'application/octet-stream';
+    // Decodifica base64 para bytes
+    const binaryString = atob(fileBase64);
+    const fileBytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      fileBytes[i] = binaryString.charCodeAt(i);
+    }
+
+    const safeFolder = (folder || 'uploads').replace(/[^a-zA-Z0-9_\-\/]/g, '_');
     const timestamp = Date.now();
-    const safeName = file.name.replace(/[^a-zA-Z0-9._\-]/g, '_');
-    const safeFolder = folder.replace(/[^a-zA-Z0-9_\-\/]/g, '_');
+    const safeName = fileName.replace(/[^a-zA-Z0-9._\-]/g, '_');
     const filePath = `${safeFolder}/${user.email}/${timestamp}_${safeName}`;
 
-    await uploadToR2(filePath, fileBytes, contentType);
+    await uploadToR2(filePath, fileBytes, contentType || 'application/octet-stream');
 
-    return Response.json({ filePath, fileName: file.name });
+    return Response.json({ filePath, fileName });
   } catch (err) {
     console.error('[r2UploadProxy] Erro:', err.message);
     return Response.json({ error: err.message }, { status: 500 });

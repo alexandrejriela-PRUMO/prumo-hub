@@ -33,12 +33,18 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
     try {
       setProgress(10);
 
-      // Upload via backend proxy (evita CORS do R2)
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('folder', folder);
+      // Converte arquivo para base64 para enviar via JSON ao backend proxy
+      const arrayBuffer = await file.arrayBuffer();
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
 
-      const res = await base44.functions.invoke('r2UploadProxy', formData);
+      setProgress(40);
+
+      const res = await base44.functions.invoke('r2UploadProxy', {
+        fileName: file.name,
+        contentType: file.type || 'application/octet-stream',
+        folder,
+        fileBase64: base64,
+      });
 
       if (!res.data?.filePath) {
         throw new Error(res.data?.error || 'Falha ao enviar arquivo');

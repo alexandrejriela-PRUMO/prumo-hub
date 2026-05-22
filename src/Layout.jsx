@@ -354,8 +354,22 @@ export default function Layout({ children, currentPageName }) {
           // Fallback: usar dados do próprio user
           setUserMeta({ user_type: u.user_type, plano: u.plano || 'start' });
         }
-      } catch {
-        // silently ignore
+      } catch (err) {
+        console.warn('[Layout] getEffectiveUser falhou, usando fallback local:', err?.message);
+        // Fallback: tentar UserMetadata diretamente
+        try {
+          const u = await base44.auth.me();
+          if (u) {
+            const metas = await base44.entities.UserMetadata.filter({ user_email: u.email }, '-created_date', 1);
+            if (metas?.length > 0) {
+              setUserMeta({ user_type: metas[0].user_type || u.user_type, plano: metas[0].plano || u.plano || 'start' });
+            } else {
+              setUserMeta({ user_type: u.user_type, plano: u.plano || 'start' });
+            }
+          }
+        } catch {
+          // último fallback
+        }
       } finally {
         setMetaLoading(false);
       }
@@ -430,8 +444,9 @@ export default function Layout({ children, currentPageName }) {
   const filteredMenuItems = useMemo(() => {
     const plano = userMeta?.plano || user?.plano || 'start';
     const isEnterprise = plano === 'enterprise';
-    // userMeta é fonte da verdade (setada via getEffectiveUser)
-    const ut = userMeta?.user_type || user?.user_type;
+    // userMeta é SEMPRE a fonte da verdade — nunca usar user?.user_type diretamente para menu
+    // (user?.user_type pode estar em cache de sessão com valor desatualizado)
+    const ut = userMeta?.user_type ?? user?.user_type;
     const isEquipeProdutor = ut === 'equipe_produtor';
     const isEquipeConsultor = ut === 'equipe_consultor' || ut === 'equipe';
 
@@ -736,7 +751,8 @@ export default function Layout({ children, currentPageName }) {
                       {isExpanded && (
                         <div className="mt-1 ml-3 pl-3 border-l-2 border-emerald-700/50 space-y-0.5 py-1">
                           {item.children.filter(child => {
-                            if (user?.user_type !== 'equipe') return true;
+                            const ut2 = userMeta?.user_type || user?.user_type;
+                            if (!['equipe', 'equipe_consultor', 'equipe_produtor'].includes(ut2)) return true;
                             const mk = getModuleKey(child.page);
                             if (!mk) return true;
                             return canAccessModule(mk);
@@ -800,7 +816,7 @@ export default function Layout({ children, currentPageName }) {
       </aside>
 
       {/* Bottom Tab Bar (mobile only) */}
-      <BottomTabBar currentPageName={currentPageName} userType={user?.user_type} />
+      <BottomTabBar currentPageName={currentPageName} userType={userMeta?.user_type || user?.user_type} />
 
       {/* Main Content */}
       <main className="lg:ml-72 pt-20 lg:pt-16 min-h-screen bg-gradient-to-br from-stone-50 via-white to-emerald-50/20">

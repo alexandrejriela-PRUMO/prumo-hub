@@ -24,6 +24,7 @@ import {
   Activity
 } from 'lucide-react';
 import SupabaseFileUpload from '../components/storage/SupabaseFileUpload';
+import SupabaseFileLink from '../components/storage/SupabaseFileLink';
 import DJIFilesPanel from '../components/mappings/DJIFilesPanel';
 import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
@@ -549,21 +550,16 @@ export default function Mappings() {
                         <p className="text-gray-600 mb-1">Arquivos Geoespaciais ({mapping.files.length}):</p>
                         <div className="space-y-1">
                           {mapping.files.slice(0, 3).map((file, idx) => (
-                            <a
-                              key={idx}
-                              href={file.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-1 text-emerald-600 hover:underline"
-                            >
-                              <FileText className="w-3 h-3" />
-                              <span className="truncate">{file.name}</span>
+                            <div key={idx} className="flex items-center gap-1">
+                              <FileText className="w-3 h-3 text-emerald-600 flex-shrink-0" />
+                              <span className="truncate flex-1">{file.name}</span>
                               {file.type && (
-                                <Badge variant="outline" className="ml-auto text-[10px] px-1 py-0 h-4">
+                                <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
                                   {file.type.toUpperCase()}
                                 </Badge>
                               )}
-                            </a>
+                              <SupabaseFileLink filePath={file.url} label="Baixar" mode="download" asLink={true} />
+                            </div>
                           ))}
                           {mapping.files.length > 3 && (
                             <p className="text-gray-500 text-[10px]">+{mapping.files.length - 3} mais</p>

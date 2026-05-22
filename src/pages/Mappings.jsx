@@ -25,8 +25,6 @@ import {
 } from 'lucide-react';
 import SupabaseFileUpload from '../components/storage/SupabaseFileUpload';
 import SupabaseFileLink from '../components/storage/SupabaseFileLink';
-import R2TiffUpload from '../components/storage/R2TiffUpload';
-import R2FileLink from '../components/storage/R2FileLink';
 import DJIFilesPanel from '../components/mappings/DJIFilesPanel';
 import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
@@ -117,22 +115,13 @@ export default function Mappings() {
     },
   });
 
-  const handleSupabaseUpload = async (filePath, fileName, mapping) => {
-    const ext = fileName.toLowerCase().substring(fileName.lastIndexOf('.'));
-    let fileType = 'geoespacial';
-    if (ext === '.kml') fileType = 'kml';
-    else if (ext === '.tfw') fileType = 'tfw';
+  const handleFileUpload = async (filePath, fileName, mapping) => {
+    const ext = fileName.toLowerCase().substring(fileName.lastIndexOf('.') + 1);
+    let fileType = ext || 'geoespacial';
     const newFile = { name: fileName, url: filePath, type: fileType, upload_date: new Date().toISOString() };
     const updatedFiles = [...(mapping.files || []), newFile];
     await updateMutation.mutateAsync({ id: mapping.id, data: { ...mapping, files: updatedFiles } });
-    toast.success('Arquivo geoespacial enviado!');
-  };
-
-  const handleR2TiffUpload = async (filePath, fileName, mapping) => {
-    const newFile = { name: fileName, url: filePath, type: 'tif', storage: 'r2', upload_date: new Date().toISOString() };
-    const updatedFiles = [...(mapping.files || []), newFile];
-    await updateMutation.mutateAsync({ id: mapping.id, data: { ...mapping, files: updatedFiles } });
-    toast.success('TIFF enviado para o R2!');
+    toast.success('Arquivo enviado!');
   };
 
   const handleSubmit = (e) => {
@@ -565,10 +554,7 @@ export default function Mappings() {
                                   {file.type.toUpperCase()}
                                 </Badge>
                               )}
-                              {file.storage === 'r2'
-                                ? <R2FileLink filePath={file.url} fileName={file.name} />
-                                : <SupabaseFileLink filePath={file.url} label="Baixar" mode="download" asLink={true} />
-                              }
+                              <SupabaseFileLink filePath={file.url} label="Baixar" mode="download" asLink={true} />
                             </div>
                           ))}
                           {mapping.files.length > 3 && (
@@ -598,17 +584,12 @@ export default function Mappings() {
                         Ver
                       </Button>
                       {canEdit && (
-                        <div className="flex-1 flex flex-col gap-1">
+                        <div className="flex-1">
                           <SupabaseFileUpload
                             folder="mapeamentos"
-                            accept=".kml,.tfw"
-                            label="KML/TFW"
-                            onUploadDone={(filePath, fileName) => handleSupabaseUpload(filePath, fileName, mapping)}
-                          />
-                          <R2TiffUpload
-                            folder="tiffs"
-                            label="TIFF → R2"
-                            onUploadDone={(filePath, fileName) => handleR2TiffUpload(filePath, fileName, mapping)}
+                            accept=".kml,.tif,.tiff,.tfw,.json,.png,.zip"
+                            label="Upload Arquivo"
+                            onUploadDone={(filePath, fileName) => handleFileUpload(filePath, fileName, mapping)}
                           />
                         </div>
                       )}

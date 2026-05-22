@@ -3,15 +3,15 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Upload, X, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 /**
- * Componente de upload para arquivos grandes via Supabase Storage.
- * 
+ * Componente de upload universal — envia arquivos para o Cloudflare R2.
+ * Mantém a mesma interface de props de antes para compatibilidade total.
+ *
  * Props:
- *   folder       - subpasta no bucket (ex: 'georreferenciamento', 'documentos')
- *   accept       - tipos aceitos (ex: '.tif,.pdf,.zip')
- *   onUploadDone - callback(filePath, fileName) chamado após upload bem-sucedido
+ *   folder       - subpasta no bucket (ex: 'documentos', 'mapeamentos')
+ *   accept       - tipos aceitos (ex: '.pdf,.zip,.tif')
+ *   onUploadDone - callback(filePath, fileName) após upload bem-sucedido
  *   label        - texto do botão (opcional)
  */
 export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploadDone, label = 'Selecionar Arquivo' }) {
@@ -31,8 +31,8 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
     setErrorMsg('');
 
     try {
-      // 1. Pede URL pré-assinada ao backend
-      const res = await base44.functions.invoke('supabaseGetUploadUrl', {
+      // 1. Pede URL pré-assinada PUT ao backend R2
+      const res = await base44.functions.invoke('r2GetUploadUrl', {
         fileName: file.name,
         contentType: file.type || 'application/octet-stream',
         folder,
@@ -44,7 +44,7 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
 
       const { uploadUrl, filePath } = res.data;
 
-      // 2. Faz upload direto para o Supabase via XHR para ter progresso real
+      // 2. Upload direto para o R2 via XHR (progresso real)
       await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.upload.onprogress = (evt) => {
@@ -53,11 +53,8 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
           }
         };
         xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve();
-          } else {
-            reject(new Error(`Upload falhou: ${xhr.status} ${xhr.responseText}`));
-          }
+          if (xhr.status >= 200 && xhr.status < 300) resolve();
+          else reject(new Error(`Upload falhou: ${xhr.status} ${xhr.responseText}`));
         };
         xhr.onerror = () => reject(new Error('Erro de rede durante o upload'));
         xhr.open('PUT', uploadUrl);
@@ -69,10 +66,9 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
       setProgress(100);
       onUploadDone?.(filePath, file.name);
 
-      // Reset input
       if (inputRef.current) inputRef.current.value = '';
     } catch (err) {
-      console.error('[SupabaseFileUpload] Erro:', err.message);
+      console.error('[FileUpload] Erro:', err.message);
       setStatus('error');
       setErrorMsg(err.message || 'Erro ao enviar arquivo');
       if (inputRef.current) inputRef.current.value = '';
@@ -117,7 +113,7 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
             <span className="ml-auto font-medium">{progress}%</span>
           </div>
           <Progress value={progress} className="h-2" />
-          <p className="text-xs text-slate-500">Enviando arquivo diretamente para o armazenamento seguro...</p>
+          <p className="text-xs text-slate-500">Enviando para Cloudflare R2...</p>
         </div>
       )}
 

@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { FileText, Bot, Mountain, ClipboardList, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import SupabaseFileUpload from '@/components/storage/SupabaseFileUpload';
 import SupabaseFileLink from '@/components/storage/SupabaseFileLink';
+// SupabaseFileUpload e SupabaseFileLink agora apontam para Cloudflare R2 internamente
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';

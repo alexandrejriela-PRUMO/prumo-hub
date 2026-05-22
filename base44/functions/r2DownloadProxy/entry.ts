@@ -3,7 +3,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 const R2_ACCOUNT_ID = Deno.env.get('R2_ACCOUNT_ID');
 const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID');
 const R2_SECRET_ACCESS_KEY = Deno.env.get('R2_SECRET_ACCESS_KEY');
-const R2_BUCKET_NAME = Deno.env.get('R2_BUCKET_NAME');
+const R2_BUCKET_NAME = (Deno.env.get('R2_BUCKET_NAME') || '').trim().replace(/\s+/g, '-').toLowerCase();
 
 async function hmacSha256(key, data) {
   const keyBytes = typeof key === 'string' ? new TextEncoder().encode(key) : key;
@@ -27,8 +27,8 @@ function toHex(bytes) {
 async function generatePresignedGetUrl(filePath, expiresIn = 300) {
   const region = 'auto';
   const service = 's3';
-  const host = `${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
-  const endpoint = `https://${host}`;
+  // Virtual-hosted style: bucket no hostname
+  const host = `${R2_BUCKET_NAME}.${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
 
   const now = new Date();
   const amzDate = now.toISOString().replace(/[:\-]|\.\d{3}/g, '').slice(0, 15) + 'Z';
@@ -36,18 +36,20 @@ async function generatePresignedGetUrl(filePath, expiresIn = 300) {
   const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
   const credential = `${R2_ACCESS_KEY_ID}/${credentialScope}`;
 
-  const encodedPath = filePath.split('/').map(encodeURIComponent).join('/');
-  const encodedBucket = encodeURIComponent(R2_BUCKET_NAME);
-  const canonicalUri = `/${encodedBucket}/${encodedPath}`;
+  const canonicalUri = '/' + filePath.split('/').map(encodeURIComponent).join('/');
 
-  const queryParams = new URLSearchParams({
-    'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
-    'X-Amz-Credential': credential,
-    'X-Amz-Date': amzDate,
-    'X-Amz-Expires': String(expiresIn),
-    'X-Amz-SignedHeaders': 'host',
-  });
-  const canonicalQueryString = queryParams.toString();
+  // Parâmetros em ordem canônica (alfabética)
+  const queryEntries = [
+    ['X-Amz-Algorithm', 'AWS4-HMAC-SHA256'],
+    ['X-Amz-Credential', credential],
+    ['X-Amz-Date', amzDate],
+    ['X-Amz-Expires', String(expiresIn)],
+    ['X-Amz-SignedHeaders', 'host'],
+  ].sort((a, b) => a[0].localeCompare(b[0]));
+
+  const canonicalQueryString = queryEntries
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .join('&');
 
   const canonicalRequest = [
     'GET',
@@ -67,9 +69,7 @@ async function generatePresignedGetUrl(filePath, expiresIn = 300) {
   const kSigning = await hmacSha256(kService, 'aws4_request');
   const signature = toHex(await hmacSha256(kSigning, stringToSign));
 
-  queryParams.set('X-Amz-Signature', signature);
-
-  return `${endpoint}${canonicalUri}?${queryParams.toString()}`;
+  return `https://${host}${canonicalUri}?${canonicalQueryString}&X-Amz-Signature=${signature}`;
 }
 
 Deno.serve(async (req) => {

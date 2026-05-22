@@ -24,7 +24,17 @@ export default function SupabaseFileLink({ filePath, label = 'Baixar Arquivo', e
     // URL absoluta legada — usa direto
     if (filePath.startsWith('http://') || filePath.startsWith('https://')) return filePath;
 
-    const res = await base44.functions.invoke('getFileSignedUrl', { filePath, expiresIn, storage });
+    // Validar e migrar para R2 se necessário
+    let validatedPath = filePath;
+    try {
+      const validateRes = await base44.functions.invoke('validateAndMigrateStorageToR2', { filePath });
+      validatedPath = validateRes?.data?.filePath || filePath;
+      console.log(`[FileLink] Path validado: ${filePath} → ${validatedPath}`);
+    } catch (err) {
+      console.warn('[FileLink] Erro ao validar/migrar:', err.message, '— continuando com path original');
+    }
+
+    const res = await base44.functions.invoke('getFileSignedUrl', { filePath: validatedPath, expiresIn, storage });
     if (res?.data?.error) {
       throw new Error(res.data.error);
     }

@@ -76,6 +76,16 @@ Deno.serve(async (req) => {
     // 1. Atualiza user_type na sessão/User
     await base44.auth.updateMe({ user_type: memberUserType });
 
+    // 1.5 Chamar persistTeamMemberUserType para sincronizar em TODAS as fontes (User, UserMetadata, TeamMember)
+    // Isso evita oscilações ao fazer login em diferentes browsers/devices
+    try {
+      const persistRes = await base44.asServiceRole.functions.invoke('persistTeamMemberUserType', {});
+      console.log(`[applyInviteConfigOnFirstLogin] persistTeamMemberUserType executado:`, persistRes?.data?.message);
+    } catch (e) {
+      console.warn('[applyInviteConfigOnFirstLogin] Erro ao chamar persistTeamMemberUserType:', e.message);
+      // Continua mesmo se falhar — os passos 2 e 3 abaixo já sincronizam
+    }
+
     // 2. Persiste no UserMetadata
     const existingMeta = await base44.asServiceRole.entities.UserMetadata.filter(
       { user_email: user.email },

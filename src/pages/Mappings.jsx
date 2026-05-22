@@ -186,17 +186,29 @@ export default function Mappings() {
   };
 
   const typeIcons = {
+    'RGB (Ortomosaico)': Map,
     Multiespectral: Activity,
+    'Elevação (MDT/MDS)': Mountain,
+    LiDAR: Mountain,
+    Termográfico: Activity,
+    'Inspeção Fotográfica': FileText,
+    'IA + RGB': Activity,
+    'IA + Multiespectral': Activity,
     Obstáculos: AlertTriangle,
-    'Relevo e Alturas': Mountain,
     Frutíferas: Trees,
     Pastagem: Leaf,
   };
 
   const typeColors = {
+    'RGB (Ortomosaico)': 'from-sky-500 to-sky-600',
     Multiespectral: 'from-purple-500 to-purple-600',
+    'Elevação (MDT/MDS)': 'from-blue-500 to-blue-600',
+    LiDAR: 'from-indigo-500 to-indigo-600',
+    Termográfico: 'from-orange-500 to-orange-600',
+    'Inspeção Fotográfica': 'from-slate-500 to-slate-600',
+    'IA + RGB': 'from-violet-500 to-violet-600',
+    'IA + Multiespectral': 'from-fuchsia-500 to-fuchsia-600',
     Obstáculos: 'from-red-500 to-red-600',
-    'Relevo e Alturas': 'from-blue-500 to-blue-600',
     Frutíferas: 'from-green-500 to-green-600',
     Pastagem: 'from-emerald-500 to-emerald-600',
   };
@@ -287,11 +299,17 @@ export default function Mappings() {
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Multiespectral">Multiespectral</SelectItem>
-                        <SelectItem value="Obstáculos">Obstáculos</SelectItem>
-                        <SelectItem value="Relevo e Alturas">Relevo e Alturas</SelectItem>
-                        <SelectItem value="Frutíferas">Frutíferas</SelectItem>
-                        <SelectItem value="Pastagem">Pastagem</SelectItem>
+                        <SelectItem value="RGB (Ortomosaico)">📸 RGB (Ortomosaico)</SelectItem>
+                        <SelectItem value="Multiespectral">🌿 Multiespectral (NDVI/NDRE)</SelectItem>
+                        <SelectItem value="Elevação (MDT/MDS)">🏔️ Elevação (MDT/MDS)</SelectItem>
+                        <SelectItem value="LiDAR">📡 LiDAR</SelectItem>
+                        <SelectItem value="Termográfico">🌡️ Termográfico</SelectItem>
+                        <SelectItem value="Inspeção Fotográfica">🔍 Inspeção Fotográfica</SelectItem>
+                        <SelectItem value="IA + RGB">🤖 IA + RGB</SelectItem>
+                        <SelectItem value="IA + Multiespectral">🤖 IA + Multiespectral</SelectItem>
+                        <SelectItem value="Obstáculos">⚠️ Obstáculos</SelectItem>
+                        <SelectItem value="Frutíferas">🍊 Frutíferas</SelectItem>
+                        <SelectItem value="Pastagem">🌾 Pastagem</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

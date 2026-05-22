@@ -24,7 +24,7 @@ function toHex(bytes) {
   return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function generatePresignedGetUrl(filePath, expiresIn = 3600) {
+async function generatePresignedGetUrl(filePath, expiresIn = 300) {
   const region = 'auto';
   const service = 's3';
   const host = `${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
@@ -75,14 +75,33 @@ async function generatePresignedGetUrl(filePath, expiresIn = 3600) {
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return Response.json({ error: 'Method not allowed' }, { status: 405 });
 
-  const base44 = createClientFromRequest(req);
-  const user = await base44.auth.me();
-  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { filePath, expiresIn } = await req.json();
-  if (!filePath) return Response.json({ error: 'filePath é obrigatório' }, { status: 400 });
+    const { filePath } = await req.json();
+    if (!filePath) return Response.json({ error: 'filePath é obrigatório' }, { status: 400 });
 
-  const signedUrl = await generatePresignedGetUrl(filePath, expiresIn || 3600);
+    // Gera signed URL e faz fetch server-side (evita CORS)
+    const signedUrl = await generatePresignedGetUrl(filePath, 300);
+    const r2Response = await fetch(signedUrl);
 
-  return Response.json({ signedUrl });
+    if (!r2Response.ok) {
+      return Response.json({ error: `R2 retornou ${r2Response.status}` }, { status: 502 });
+    }
+
+    const contentType = r2Response.headers.get('content-type') || 'application/octet-stream';
+    const body = await r2Response.arrayBuffer();
+
+    return new Response(body, {
+      status: 200,
+      headers: {
+        'Content-Type': contentType,
+        'Content-Disposition': `attachment; filename="${filePath.split('/').pop()}"`,
+      },
+    });
+  } catch (error) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
 });

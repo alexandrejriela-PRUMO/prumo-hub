@@ -4,29 +4,27 @@ import { Button } from '@/components/ui/button';
 import { Download, Loader2, ExternalLink, Eye } from 'lucide-react';
 
 /**
- * Componente universal de download/visualização de arquivos armazenados no Cloudflare R2.
- * Mantém a mesma interface de props de antes para compatibilidade total.
- * Arquivos com URL https:// legadas são abertos diretamente (sem assinatura).
+ * Componente universal de download/visualização de arquivos.
+ * Usa backend getFileSignedUrl que tenta R2 primeiro, depois Supabase (fallback para arquivos antigos).
  *
  * Props:
- *   filePath   - caminho do arquivo no bucket R2 (ou URL legada https://)
+ *   filePath   - caminho do arquivo no storage ou URL legada https://
  *   label      - texto do botão
  *   expiresIn  - segundos de validade do link (padrão: 3600)
  *   asLink     - se true, renderiza como link inline
  *   mode       - 'download' | 'view'
+ *   storage    - 'r2' | 'supabase' | undefined (auto-detect via backend)
  */
-function isLegacyUrl(filePath) {
-  return filePath && (filePath.startsWith('http://') || filePath.startsWith('https://'));
-}
-
-export default function SupabaseFileLink({ filePath, label = 'Baixar Arquivo', expiresIn = 3600, asLink = false, mode = 'download' }) {
+export default function SupabaseFileLink({ filePath, label = 'Baixar Arquivo', expiresIn = 3600, asLink = false, mode = 'download', storage }) {
   const [loading, setLoading] = useState(false);
 
   if (!filePath) return null;
 
-  const getSignedUrl = async () => {
-    if (isLegacyUrl(filePath)) return filePath;
-    const res = await base44.functions.invoke('r2GetSignedUrl', { filePath, expiresIn });
+  const getUrl = async () => {
+    // URL absoluta legada — usa direto
+    if (filePath.startsWith('http://') || filePath.startsWith('https://')) return filePath;
+
+    const res = await base44.functions.invoke('getFileSignedUrl', { filePath, expiresIn, storage });
     const url = res?.data?.signedUrl;
     if (!url) throw new Error('Não foi possível gerar o link.');
     return url;
@@ -35,7 +33,7 @@ export default function SupabaseFileLink({ filePath, label = 'Baixar Arquivo', e
   const handleView = async () => {
     setLoading(true);
     try {
-      const url = await getSignedUrl();
+      const url = await getUrl();
       window.open(url, '_blank');
     } catch (err) {
       console.error('[FileLink] Erro ao visualizar:', err);
@@ -49,24 +47,25 @@ export default function SupabaseFileLink({ filePath, label = 'Baixar Arquivo', e
     setLoading(true);
     try {
       const fileName = filePath.split('/').pop() || 'arquivo';
-      const signedUrl = await getSignedUrl();
+      const url = await getUrl();
 
-      if (isLegacyUrl(filePath)) {
-        window.open(signedUrl, '_blank');
-        return;
+      // Tenta fetch direto; se CORS bloquear, abre em nova aba
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('fetch failed');
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = decodeURIComponent(fileName);
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+      } catch {
+        // Fallback: abre em nova aba (funciona para Supabase e URLs públicas)
+        window.open(url, '_blank');
       }
-
-      const response = await fetch(signedUrl);
-      if (!response.ok) { alert('Erro ao baixar arquivo.'); return; }
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = decodeURIComponent(fileName);
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(blobUrl);
     } catch (err) {
       console.error('[FileLink] Erro ao baixar arquivo:', err);
       alert('Erro ao baixar arquivo. Tente novamente.');

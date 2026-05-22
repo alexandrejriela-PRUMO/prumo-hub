@@ -37,7 +37,8 @@ async function generatePresignedUrl(filePath, method = 'PUT', expiresIn = 3600) 
   const credential = `${R2_ACCESS_KEY_ID}/${credentialScope}`;
 
   const encodedPath = filePath.split('/').map(encodeURIComponent).join('/');
-  const canonicalUri = `/${R2_BUCKET_NAME}/${encodedPath}`;
+  const encodedBucket = encodeURIComponent(R2_BUCKET_NAME);
+  const canonicalUri = `/${encodedBucket}/${encodedPath}`;
 
   const queryParams = new URLSearchParams({
     'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',

@@ -30,52 +30,6 @@ function toHex(bytes) {
   return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function r2FileExists(filePath) {
-  const region = 'auto';
-  const service = 's3';
-  const host = `${R2_BUCKET_NAME}.${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
-
-  const now = new Date();
-  const amzDate = now.toISOString().replace(/[:\-]|\.\d{3}/g, '').slice(0, 15) + 'Z';
-  const dateStamp = amzDate.slice(0, 8);
-  const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
-  const credential = `${R2_ACCESS_KEY_ID}/${credentialScope}`;
-
-  const encodedPath = filePath.split('/').map(encodeURIComponent).join('/');
-  const canonicalUri = `/${encodedPath}`;
-
-  const queryEntries = [
-    ['X-Amz-Algorithm', 'AWS4-HMAC-SHA256'],
-    ['X-Amz-Credential', credential],
-    ['X-Amz-Date', amzDate],
-    ['X-Amz-Expires', '60'],
-    ['X-Amz-SignedHeaders', 'host'],
-  ].sort((a, b) => a[0].localeCompare(b[0]));
-
-  const canonicalQueryString = queryEntries
-    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-    .join('&');
-
-  const canonicalRequest = ['HEAD', canonicalUri, canonicalQueryString, `host:${host}\n`, 'host', 'UNSIGNED-PAYLOAD'].join('\n');
-  const canonicalRequestHash = await sha256Hex(canonicalRequest);
-  const stringToSign = ['AWS4-HMAC-SHA256', amzDate, credentialScope, canonicalRequestHash].join('\n');
-
-  const kDate = await hmacSha256(`AWS4${R2_SECRET_ACCESS_KEY}`, dateStamp);
-  const kRegion = await hmacSha256(kDate, region);
-  const kService = await hmacSha256(kRegion, service);
-  const kSigning = await hmacSha256(kService, 'aws4_request');
-  const signature = toHex(await hmacSha256(kSigning, stringToSign));
-
-  const checkUrl = `https://${host}${canonicalUri}?${canonicalQueryString}&X-Amz-Signature=${signature}`;
-
-  try {
-    const resp = await fetch(checkUrl, { method: 'HEAD' });
-    return resp.ok;
-  } catch {
-    return false;
-  }
-}
-
 async function r2SignedUrl(filePath, expiresIn = 3600) {
   const region = 'auto';
   const service = 's3';
@@ -155,31 +109,28 @@ Deno.serve(async (req) => {
      // Arquivos novos (R2) têm padrão: pasta/email/timestamp_nome
      const looksLikeR2 = /^\w+\/[^/]+\/\d+_/.test(filePath);
 
-     // Se foi explicitamente indicado que é R2, ou o path parece ser R2, tenta R2
+     // Se foi explicitamente indicado que é R2, ou o path parece ser R2, retorna R2
      if (storage === 'r2' || looksLikeR2) {
-       const existsInR2 = await r2FileExists(filePath);
-       if (existsInR2) {
-         const r2Url = await r2SignedUrl(filePath, expiresIn);
-         console.log('[getFileSignedUrl] Retornando R2 URL:', filePath.slice(0, 50));
-         return Response.json({ signedUrl: r2Url, source: 'r2' });
-       }
-       console.log('[getFileSignedUrl] Arquivo não encontrado em R2, tentando Supabase:', filePath.slice(0, 50));
+       const r2Url = await r2SignedUrl(filePath, expiresIn);
+       console.log('[getFileSignedUrl] Retornando R2 URL:', filePath.slice(0, 50));
+       return Response.json({ signedUrl: r2Url, source: 'r2' });
      }
 
      // Se foi explicitamente indicado que é Supabase, tenta Supabase
      if (storage === 'supabase') {
        const supUrl = await supabaseSignedUrl(filePath, expiresIn);
-       console.log('[getFileSignedUrl] Supabase URL:', supUrl ? 'ok' : 'failed');
        if (supUrl) return Response.json({ signedUrl: supUrl, source: 'supabase' });
+       return Response.json({ error: 'Arquivo não encontrado no Supabase' }, { status: 404 });
      }
 
-     // Fallback para arquivo antigo: tenta Supabase
+     // Fallback para arquivo antigo: tenta Supabase primeiro
      console.log('[getFileSignedUrl] Tentando Supabase para arquivo antigo:', filePath.slice(0, 50));
      const supUrl = await supabaseSignedUrl(filePath, expiresIn);
      if (supUrl) return Response.json({ signedUrl: supUrl, source: 'supabase' });
 
-     // Se nem Supabase funcionou, erro 404
-     return Response.json({ error: 'Arquivo não encontrado em nenhum storage' }, { status: 404 });
+     // Se falhar no Supabase, tenta R2 como último recurso
+     const r2Url = await r2SignedUrl(filePath, expiresIn);
+     return Response.json({ signedUrl: r2Url, source: 'r2' });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

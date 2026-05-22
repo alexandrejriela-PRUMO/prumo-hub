@@ -17,7 +17,7 @@ export default function AccessGuardTeam({
   requiredRole = null,
   fallbackMessage = null 
 }) {
-  const { user, memberRole, permissions, linkedConsultant, isLoading, error } = useEffectiveUser();
+  const { user, memberRole, permissions, linkedConsultant, isEquipeProdutor, isLoading, error } = useEffectiveUser();
 
   if (isLoading) {
     return (
@@ -26,6 +26,9 @@ export default function AccessGuardTeam({
       </div>
     );
   }
+
+  // equipe_produtor tem acesso total — não precisa de permissões granulares
+  if (isEquipeProdutor) return <>{children}</>;
 
   // Erro de carregamento ou não autenticado
   if (error || !linkedConsultant) {

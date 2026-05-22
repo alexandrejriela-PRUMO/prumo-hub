@@ -10,7 +10,8 @@ export function useEffectiveUserPermissions(user) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!user?.email || user.user_type !== 'equipe') {
+    const isEquipeVariant = ['equipe', 'equipe_consultor', 'equipe_produtor'].includes(user.user_type);
+    if (!user?.email || !isEquipeVariant) {
       setPermissions(null);
       return;
     }

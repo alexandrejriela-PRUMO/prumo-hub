@@ -28,11 +28,12 @@ export default function DocumentViewer({ document, onClose }) {
       setResolvedUrl(rawUrl);
       setLoading(false);
     } else {
-      // Path Supabase: gera URL assinada (válida por 1h)
-      base44.functions.invoke('supabaseGetSignedUrl', { filePath: rawUrl, expiresIn: 3600 })
+      // Path de arquivo: usa getFileSignedUrl (tenta R2 primeiro, depois Supabase)
+      base44.functions.invoke('getFileSignedUrl', { filePath: rawUrl, expiresIn: 3600 })
         .then(res => {
           setResolvedUrl(res.data?.signedUrl || null);
         })
+        .catch(() => setResolvedUrl(null))
         .finally(() => setLoading(false));
     }
   }, [rawUrl]);

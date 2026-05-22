@@ -25,28 +25,29 @@ export default function SupabaseFileLink({ filePath, label = 'Baixar Arquivo', e
   const handleClick = async () => {
     setLoading(true);
     try {
-      let url = filePath;
-      // Arquivos no Supabase (path relativo): gera URL assinada temporária
-      if (!isLegacyUrl(filePath)) {
-        const res = await base44.functions.invoke('supabaseGetSignedUrl', { filePath, expiresIn });
-        url = res?.data?.signedUrl;
-        if (!url) {
-          alert('Não foi possível gerar o link de download. Tente novamente.');
-          return;
-        }
-      }
-      // Força download direto via <a> (evita redirecionamento para login)
       const fileName = filePath.split('/').pop() || 'arquivo';
+
+      if (isLegacyUrl(filePath)) {
+        // URL legada: abre em nova aba
+        window.open(filePath, '_blank');
+        return;
+      }
+
+      // Usa proxy do backend para download direto (evita CORS e redirecionamento)
+      const res = await base44.functions.invoke('supabaseDownloadFile', { filePath });
+      // res.data é o ArrayBuffer retornado como blob pelo axios
+      const blob = new Blob([res.data], { type: 'application/octet-stream' });
+      const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
+      a.href = blobUrl;
       a.download = fileName;
-      a.target = '_blank';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
     } catch (err) {
-      console.error('[SupabaseFileLink] Erro ao gerar URL assinada:', err);
-      alert('Erro ao gerar link de download.');
+      console.error('[SupabaseFileLink] Erro ao baixar arquivo:', err);
+      alert('Erro ao baixar arquivo. Tente novamente.');
     } finally {
       setLoading(false);
     }

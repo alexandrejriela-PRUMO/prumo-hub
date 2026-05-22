@@ -8,18 +8,91 @@ import { Upload, X, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
  * Componente de upload universal — envia arquivos para o Cloudflare R2.
  * Mantém a mesma interface de props de antes para compatibilidade total.
  *
+ * Estratégia de upload:
+ *   - Arquivos < 10 MB: Base64 via r2UploadProxy (simples, sem CORS)
+ *   - Arquivos >= 10 MB ou TIFF/TIF: URL pré-assinada PUT direto ao R2 (suporta qualquer tamanho)
+ *
  * Props:
  *   folder       - subpasta no bucket (ex: 'documentos', 'mapeamentos')
  *   accept       - tipos aceitos (ex: '.pdf,.zip,.tif')
  *   onUploadDone - callback(filePath, fileName) após upload bem-sucedido
  *   label        - texto do botão (opcional)
  */
+
+const LARGE_FILE_THRESHOLD = 10 * 1024 * 1024; // 10 MB
+
+const isTiffFile = (name) => {
+  const lower = name.toLowerCase();
+  return lower.endsWith('.tif') || lower.endsWith('.tiff');
+};
+
 export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploadDone, label = 'Selecionar Arquivo' }) {
   const [status, setStatus] = useState('idle'); // idle | uploading | success | error
   const [progress, setProgress] = useState(0);
   const [fileName, setFileName] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const inputRef = useRef(null);
+
+  // Upload via Base64 proxy — adequado para arquivos pequenos (< 10 MB)
+  const uploadViaBase64 = async (file) => {
+    const fileBase64 = await fileToBase64(file);
+    setProgress(40);
+
+    const uploadRes = await base44.functions.invoke('r2UploadProxy', {
+      fileName: file.name,
+      contentType: file.type || 'application/octet-stream',
+      folder,
+      fileBase64,
+    });
+
+    if (!uploadRes.data?.filePath) {
+      throw new Error(uploadRes.data?.error || 'Erro no upload');
+    }
+
+    setProgress(100);
+    return uploadRes.data.filePath;
+  };
+
+  // Upload via URL pré-assinada — adequado para arquivos grandes e TIFF
+  const uploadViaPresignedUrl = async (file) => {
+    const urlRes = await base44.functions.invoke('r2GetUploadUrl', {
+      fileName: file.name,
+      contentType: file.type || 'application/octet-stream',
+      folder,
+    });
+
+    const { uploadUrl, filePath } = urlRes.data || {};
+    if (!uploadUrl || !filePath) {
+      throw new Error(urlRes.data?.error || 'Erro ao obter URL de upload');
+    }
+
+    setProgress(10);
+
+    await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', uploadUrl);
+      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          // Reserva 10% inicial para obtenção da URL; progresso real vai de 10 a 100
+          const uploadPercent = Math.round((event.loaded / event.total) * 90);
+          setProgress(10 + uploadPercent);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) resolve();
+        else reject(new Error(`Upload falhou: HTTP ${xhr.status}`));
+      };
+
+      xhr.onerror = () => reject(new Error('Erro de rede durante o upload.'));
+      xhr.send(file);
+    });
+
+    setProgress(100);
+    return filePath;
+  };
 
   const fileToBase64 = (file) => {
     return new Promise((resolve, reject) => {
@@ -28,39 +101,23 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
         try {
           const arrayBuffer = reader.result;
           if (!arrayBuffer) throw new Error('ArrayBuffer vazio');
-          
+
           const bytes = new Uint8Array(arrayBuffer);
           let binary = '';
-          
-          // Converter em chunks para evitar stack overflow
-          const chunkSize = 32768; // 32KB chunks
+          const chunkSize = 32768;
           for (let i = 0; i < bytes.length; i += chunkSize) {
             const end = Math.min(i + chunkSize, bytes.length);
-            const chunk = Array.from(bytes.subarray(i, end));
-            binary += String.fromCharCode.apply(null, chunk);
+            binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, end)));
           }
-          
-          const base64 = btoa(binary);
-          resolve(base64);
+
+          resolve(btoa(binary));
         } catch (err) {
-          console.error('[FileUpload] Erro na conversão:', err);
           reject(new Error('Erro ao converter: ' + err.message));
         }
       };
-      reader.onerror = (err) => {
-        console.error('[FileUpload] Erro FileReader:', err);
-        reject(new Error('Erro ao ler arquivo'));
-      };
-      reader.onabort = () => {
-        console.error('[FileUpload] Leitura abortada');
-        reject(new Error('Leitura abortada'));
-      };
-      try {
-        reader.readAsArrayBuffer(file);
-      } catch (err) {
-        console.error('[FileUpload] Erro ao iniciar readAsArrayBuffer:', err);
-        reject(err);
-      }
+      reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
+      reader.onabort = () => reject(new Error('Leitura abortada'));
+      reader.readAsArrayBuffer(file);
     });
   };
 
@@ -74,23 +131,13 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
     setErrorMsg('');
 
     try {
-      const fileBase64 = await fileToBase64(file);
-      setProgress(40);
+      const useLargeUpload = file.size >= LARGE_FILE_THRESHOLD || isTiffFile(file.name);
+      const filePath = useLargeUpload
+        ? await uploadViaPresignedUrl(file)
+        : await uploadViaBase64(file);
 
-      const uploadRes = await base44.functions.invoke('r2UploadProxy', {
-        fileName: file.name,
-        contentType: file.type || 'application/octet-stream',
-        folder,
-        fileBase64,
-      });
-
-      if (!uploadRes.data?.filePath) {
-        throw new Error(uploadRes.data?.error || 'Erro no upload');
-      }
-
-      setProgress(100);
       setStatus('success');
-      onUploadDone?.(uploadRes.data.filePath, file.name);
+      onUploadDone?.(filePath, file.name);
       if (inputRef.current) inputRef.current.value = '';
     } catch (err) {
       console.error('[FileUpload] Erro:', err.message);
@@ -138,7 +185,9 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
             <span className="ml-auto font-medium">{progress}%</span>
           </div>
           <Progress value={progress} className="h-2" />
-          <p className="text-xs text-slate-500">Enviando para Cloudflare R2...</p>
+          <p className="text-xs text-slate-500">
+            {progress < 10 ? 'Preparando upload...' : 'Enviando para Cloudflare R2...'}
+          </p>
         </div>
       )}
 

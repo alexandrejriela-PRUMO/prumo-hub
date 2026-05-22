@@ -70,10 +70,15 @@ const AuthenticatedApp = () => {
         if (!user) { setTermsChecked(true); return; }
 
         // Verificar automaticamente se há convite de equipe pendente e aplicar user_type
+        // IMPORTANTE: guardar se o convite foi recém aplicado para não sobrescrever abaixo
+        let inviteJustApplied = false;
+        let appliedUserType = null;
         try {
           const inviteRes = await base44.functions.invoke('applyInviteConfigOnFirstLogin', {});
           if (inviteRes.data?.applied) {
             console.log('[App] user_type de equipe aplicado automaticamente:', inviteRes.data.user_type);
+            inviteJustApplied = true;
+            appliedUserType = inviteRes.data.user_type;
             await refreshUser();
             user = await base44.auth.me();
           }
@@ -90,6 +95,15 @@ const AuthenticatedApp = () => {
           const effectiveData = effectiveRes?.data;
           if (effectiveData && !effectiveData.error) {
             effectiveUserType = effectiveData.user_type || user.user_type;
+
+            // Se o convite foi recém aplicado, NÃO sobrescrever com resultado de getEffectiveUser.
+            // getEffectiveUser pode encontrar um TeamMember antigo de outro contexto (ex: equipe_consultor
+            // anterior) e reverter o user_type correto que acabou de ser aplicado pelo convite.
+            if (inviteJustApplied && appliedUserType) {
+              console.log('[App] Convite recém aplicado — protegendo user_type:', appliedUserType, '(ignorando getEffectiveUser:', effectiveUserType, ')');
+              effectiveUserType = appliedUserType;
+            }
+
             // Sincronizar user_type no auth se divergiu
             if (effectiveUserType !== user.user_type) {
               try {

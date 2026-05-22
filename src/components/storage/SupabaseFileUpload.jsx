@@ -21,10 +21,19 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
   const [errorMsg, setErrorMsg] = useState('');
   const inputRef = useRef(null);
 
-  const readFileAsArrayBuffer = (file) => {
+  const readFileAsBase64 = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(new Uint8Array(reader.result));
+      reader.onload = () => {
+        try {
+          const buffer = reader.result;
+          const bytes = new Uint8Array(buffer);
+          const base64 = btoa(String.fromCharCode.apply(null, bytes));
+          resolve(base64);
+        } catch (err) {
+          reject(err);
+        }
+      };
       reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
       reader.readAsArrayBuffer(file);
     });
@@ -42,9 +51,7 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
     try {
       setProgress(10);
 
-      // Usa FileReader para garantir acesso ao arquivo
-      const fileBytes = await readFileAsArrayBuffer(file);
-      const base64 = btoa(String.fromCharCode(...fileBytes));
+      const base64 = await readFileAsBase64(file);
 
       setProgress(40);
 

@@ -26,6 +26,7 @@ import {
 import SupabaseFileUpload from '../components/storage/SupabaseFileUpload';
 import SupabaseFileLink from '../components/storage/SupabaseFileLink';
 import DJIFilesPanel from '../components/mappings/DJIFilesPanel';
+import MappingFilesModal from '../components/mappings/MappingFilesModal';
 import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
 import { toast } from 'sonner';
@@ -37,6 +38,8 @@ export default function Mappings() {
   const [currentMapping, setCurrentMapping] = useState(null);
   const [mappingType, setMappingType] = useState('');
   const [mappingStatus, setMappingStatus] = useState('Em Processamento');
+  const [filesModalOpen, setFilesModalOpen] = useState(false);
+  const [filesModalMapping, setFilesModalMapping] = useState(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -115,13 +118,9 @@ export default function Mappings() {
     },
   });
 
-  const handleFileUpload = async (filePath, fileName, mapping) => {
-    const ext = fileName.toLowerCase().substring(fileName.lastIndexOf('.') + 1);
-    let fileType = ext || 'geoespacial';
-    const newFile = { name: fileName, url: filePath, type: fileType, upload_date: new Date().toISOString() };
-    const updatedFiles = [...(mapping.files || []), newFile];
-    await updateMutation.mutateAsync({ id: mapping.id, data: { ...mapping, files: updatedFiles } });
-    toast.success('Arquivo enviado!');
+  const handleFilesUpdate = async (files) => {
+    if (!filesModalMapping) return;
+    await updateMutation.mutateAsync({ id: filesModalMapping.id, data: { ...filesModalMapping, files } });
   };
 
   const handleSubmit = (e) => {
@@ -543,7 +542,20 @@ export default function Mappings() {
                     {/* Files */}
                     {mapping.files?.length > 0 && (
                       <div className="text-xs">
-                        <p className="text-gray-600 mb-1">Arquivos Geoespaciais ({mapping.files.length}):</p>
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-gray-600">Arquivos Geoespaciais ({mapping.files.length}):</p>
+                          {canEdit && (
+                            <button
+                              onClick={() => {
+                                setFilesModalMapping(mapping);
+                                setFilesModalOpen(true);
+                              }}
+                              className="text-emerald-600 hover:text-emerald-700 font-medium text-[11px]"
+                            >
+                              Editar
+                            </button>
+                          )}
+                        </div>
                         <div className="space-y-1">
                           {mapping.files.slice(0, 3).map((file, idx) => (
                             <div key={idx} className="flex items-center gap-1">
@@ -565,9 +577,22 @@ export default function Mappings() {
                     )}
 
                     {/* DJI Files */}
-                    <DJIFilesPanel mapping={mapping} canEdit={canEdit} />
+                     <DJIFilesPanel mapping={mapping} canEdit={canEdit} />
 
-                    {/* Actions */}
+                     {/* Files Modal */}
+                     {filesModalMapping?.id === mapping.id && (
+                       <MappingFilesModal
+                         mapping={mapping}
+                         isOpen={filesModalOpen}
+                         onClose={() => {
+                           setFilesModalOpen(false);
+                           setFilesModalMapping(null);
+                         }}
+                         onFilesUpdate={handleFilesUpdate}
+                       />
+                     )}
+
+                     {/* Actions */}
                     <div className="flex gap-2 pt-2">
                       <Button
                         size="sm"
@@ -584,14 +609,18 @@ export default function Mappings() {
                         Ver
                       </Button>
                       {canEdit && (
-                        <div className="flex-1">
-                          <SupabaseFileUpload
-                            folder="mapeamentos"
-                            accept=".kml,.tif,.tiff,.tfw,.json,.png,.zip"
-                            label="Upload Arquivo"
-                            onUploadDone={(filePath, fileName) => handleFileUpload(filePath, fileName, mapping)}
-                          />
-                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => {
+                            setFilesModalMapping(mapping);
+                            setFilesModalOpen(true);
+                          }}
+                        >
+                          <Upload className="w-4 h-4 mr-1" />
+                          Arquivos
+                        </Button>
                       )}
                       {canEdit && <Button
                         size="sm"

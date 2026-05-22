@@ -107,21 +107,31 @@ Deno.serve(async (req) => {
 
     // Detecta se é arquivo R2 ou Supabase pelo padrão do path
     // Arquivos novos (R2) têm padrão: pasta/email/timestamp_nome
-    // Arquivos antigos (Supabase) podem ter outros formatos
-    // Estratégia: tenta R2 primeiro; se retornar 403/404 ao abrir, tenta Supabase como fallback
-    // Para evitar latência do HEAD, retorna R2 direto se o filePath parece ser do R2
+    // Estratégia: SEMPRE tenta R2 primeiro (novo padrão de upload)
+    // Se falhar (arquivo antigo), tenta Supabase como fallback
     const looksLikeR2 = /^\w+\/[^/]+\/\d+_/.test(filePath);
 
-    if (looksLikeR2 || storage === 'r2') {
+    // Se foi explicitamente indicado que é R2, ou o path parece ser R2, retorna R2
+    if (storage === 'r2' || looksLikeR2) {
       const r2Url = await r2SignedUrl(filePath, expiresIn);
+      console.log('[getFileSignedUrl] Retornando R2 URL:', filePath.slice(0, 50));
       return Response.json({ signedUrl: r2Url, source: 'r2' });
     }
 
-    // Fallback: Supabase (para arquivos antigos)
+    // Se foi explicitamente indicado que é Supabase, tenta Supabase
+    if (storage === 'supabase') {
+      const supUrl = await supabaseSignedUrl(filePath, expiresIn);
+      console.log('[getFileSignedUrl] Supabase URL:', supUrl ? 'ok' : 'failed');
+      if (supUrl) return Response.json({ signedUrl: supUrl, source: 'supabase' });
+    }
+
+    // Fallback para arquivo antigo: tenta Supabase primeiro (arquivos antigos estão lá)
+    console.log('[getFileSignedUrl] Tentando Supabase para arquivo antigo:', filePath.slice(0, 50));
     const supUrl = await supabaseSignedUrl(filePath, expiresIn);
     if (supUrl) return Response.json({ signedUrl: supUrl, source: 'supabase' });
 
-    // Último recurso: tenta R2 mesmo assim
+    // Se nem Supabase funcionou, tenta R2 como último recurso
+    console.log('[getFileSignedUrl] Fallback para R2:', filePath.slice(0, 50));
     const r2Url = await r2SignedUrl(filePath, expiresIn);
     return Response.json({ signedUrl: r2Url, source: 'r2' });
   } catch (error) {

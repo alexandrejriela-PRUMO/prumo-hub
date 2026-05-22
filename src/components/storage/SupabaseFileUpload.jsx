@@ -27,32 +27,40 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
       reader.onload = () => {
         try {
           const arrayBuffer = reader.result;
-          const bytes = new Uint8Array(arrayBuffer);
+          if (!arrayBuffer) throw new Error('ArrayBuffer vazio');
           
-          // Converter em chunks de 1024 bytes para evitar stack overflow
-          const chunkSize = 1024;
+          const bytes = new Uint8Array(arrayBuffer);
           let binary = '';
           
+          // Converter em chunks para evitar stack overflow
+          const chunkSize = 32768; // 32KB chunks
           for (let i = 0; i < bytes.length; i += chunkSize) {
             const end = Math.min(i + chunkSize, bytes.length);
-            const chunk = Array.from(bytes.slice(i, end));
-            binary += String.fromCharCode(...chunk);
+            const chunk = Array.from(bytes.subarray(i, end));
+            binary += String.fromCharCode.apply(null, chunk);
           }
           
           const base64 = btoa(binary);
           resolve(base64);
         } catch (err) {
-          reject(new Error('Erro ao converter arquivo: ' + err.message));
+          console.error('[FileUpload] Erro na conversão:', err);
+          reject(new Error('Erro ao converter: ' + err.message));
         }
       };
-      reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
-      reader.onprogress = (e) => {
-        if (e.lengthComputable) {
-          const percent = Math.round((e.loaded / e.total) * 30);
-          setProgress(percent);
-        }
+      reader.onerror = (err) => {
+        console.error('[FileUpload] Erro FileReader:', err);
+        reject(new Error('Erro ao ler arquivo'));
       };
-      reader.readAsArrayBuffer(file);
+      reader.onabort = () => {
+        console.error('[FileUpload] Leitura abortada');
+        reject(new Error('Leitura abortada'));
+      };
+      try {
+        reader.readAsArrayBuffer(file);
+      } catch (err) {
+        console.error('[FileUpload] Erro ao iniciar readAsArrayBuffer:', err);
+        reject(err);
+      }
     });
   };
 

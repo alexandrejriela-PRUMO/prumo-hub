@@ -21,9 +21,9 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'filePath é obrigatório' }, { status: 400 });
   }
 
-  const expiry = expiresIn || 3600; // padrão: 1 hora
+  const expiry = expiresIn || 3600;
 
-  // Gera URL assinada temporária para download seguro
+  // Endpoint correto: POST /storage/v1/object/sign/{bucket}/{path}
   const response = await fetch(
     `${SUPABASE_URL}/storage/v1/object/sign/${BUCKET_NAME}/${filePath}`,
     {
@@ -39,13 +39,24 @@ Deno.serve(async (req) => {
   if (!response.ok) {
     const err = await response.text();
     console.error('[supabaseGetSignedUrl] Erro ao gerar URL assinada:', err);
+
+    // Fallback: usar URL pública direta via download proxy não é possível aqui,
+    // mas podemos retornar a URL de download autenticado via service role como inline
+    // Neste caso, retornamos a URL de download direto do Supabase com token de serviço
+    // mas isso exporia o service role key — então apenas reportamos o erro
     return Response.json({ error: 'Falha ao gerar URL assinada', details: err }, { status: 500 });
   }
 
   const data = await response.json();
 
+  // data.signedURL vem no formato: /object/sign/{bucket}/{path}?token=...
+  // Precisamos construir a URL completa
+  const signedUrl = `${SUPABASE_URL}/storage/v1${data.signedURL}`;
+
+  console.log('[supabaseGetSignedUrl] URL gerada:', signedUrl);
+
   return Response.json({
-    signedUrl: `${SUPABASE_URL}/storage/v1${data.signedURL}`,
+    signedUrl,
     expiresIn: expiry,
   });
 });

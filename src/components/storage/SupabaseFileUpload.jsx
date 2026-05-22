@@ -21,24 +21,6 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
   const [errorMsg, setErrorMsg] = useState('');
   const inputRef = useRef(null);
 
-  const readFileAsBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const buffer = reader.result;
-          const bytes = new Uint8Array(buffer);
-          const base64 = btoa(String.fromCharCode.apply(null, bytes));
-          resolve(base64);
-        } catch (err) {
-          reject(err);
-        }
-      };
-      reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
-      reader.readAsArrayBuffer(file);
-    });
-  };
-
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -49,26 +31,35 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
     setErrorMsg('');
 
     try {
-      setProgress(10);
+      setProgress(15);
 
-      const base64 = await readFileAsBase64(file);
-
-      setProgress(40);
-
-      const res = await base44.functions.invoke('r2UploadProxy', {
+      // Gera presigned URL
+      const getUrlRes = await base44.functions.invoke('r2GetUploadUrl', {
         fileName: file.name,
         contentType: file.type || 'application/octet-stream',
         folder,
-        fileBase64: base64,
       });
 
-      if (!res.data?.filePath) {
-        throw new Error(res.data?.error || 'Falha ao enviar arquivo');
+      if (!getUrlRes.data?.uploadUrl) {
+        throw new Error('Falha ao gerar URL de upload');
       }
 
-      setStatus('success');
+      setProgress(35);
+
+      // Upload direto com presigned URL
+      const uploadRes = await fetch(getUrlRes.data.uploadUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        body: file,
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error(`Upload falhou: ${uploadRes.status}`);
+      }
+
       setProgress(100);
-      onUploadDone?.(res.data.filePath, file.name);
+      setStatus('success');
+      onUploadDone?.(getUrlRes.data.filePath, file.name);
 
       if (inputRef.current) inputRef.current.value = '';
     } catch (err) {

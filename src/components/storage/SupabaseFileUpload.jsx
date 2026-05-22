@@ -31,39 +31,46 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
     setErrorMsg('');
 
     try {
-      setProgress(15);
+      setProgress(20);
 
-      // Gera presigned URL
-      const getUrlRes = await base44.functions.invoke('r2GetUploadUrl', {
-        fileName: file.name,
-        contentType: file.type || 'application/octet-stream',
-        folder,
-      });
+      // Lê arquivo em chunks (máx 10MB por chunk)
+      const chunkSize = 10 * 1024 * 1024;
+      const chunks = Math.ceil(file.size / chunkSize);
 
-      if (!getUrlRes.data?.uploadUrl) {
-        throw new Error('Falha ao gerar URL de upload');
+      let uploadedBytes = 0;
+
+      for (let i = 0; i < chunks; i++) {
+        const start = i * chunkSize;
+        const end = Math.min(start + chunkSize, file.size);
+        const chunk = file.slice(start, end);
+
+        const formData = new FormData();
+        formData.append('file', chunk);
+        formData.append('fileName', file.name);
+        formData.append('contentType', file.type || 'application/octet-stream');
+        formData.append('folder', folder);
+
+        const uploadRes = await base44.functions.invoke('r2UploadProxy', formData, {
+          skipContentType: true,
+        });
+
+        if (uploadRes.status !== 200 && !uploadRes.data?.filePath) {
+          throw new Error(uploadRes.data?.error || 'Erro no upload');
+        }
+
+        uploadedBytes += (end - start);
+        const percent = 20 + Math.round((uploadedBytes / file.size) * 75);
+        setProgress(percent);
+
+        // Se for o último chunk e temos filePath, sucesso
+        if (i === chunks - 1) {
+          setProgress(100);
+          setStatus('success');
+          onUploadDone?.(uploadRes.data.filePath, file.name);
+          if (inputRef.current) inputRef.current.value = '';
+          return;
+        }
       }
-
-      setProgress(35);
-
-      // Upload direto com presigned URL
-      const uploadRes = await fetch(getUrlRes.data.uploadUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': file.type || 'application/octet-stream' },
-        body: file,
-        mode: 'cors',
-      });
-
-      if (!uploadRes.ok) {
-        const errText = await uploadRes.text().catch(() => 'sem detalhes');
-        throw new Error(`Upload falhou: ${uploadRes.status} ${errText}`);
-      }
-
-      setProgress(100);
-      setStatus('success');
-      onUploadDone?.(getUrlRes.data.filePath, file.name);
-
-      if (inputRef.current) inputRef.current.value = '';
     } catch (err) {
       console.error('[FileUpload] Erro:', err.message);
       setStatus('error');

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
-import { Download, Loader2, ExternalLink } from 'lucide-react';
+import { Download, Loader2, ExternalLink, Eye } from 'lucide-react';
 
 /**
  * Componente para gerar e abrir um link assinado temporário de um arquivo no Supabase Storage.
@@ -17,25 +17,41 @@ function isLegacyUrl(filePath) {
   return filePath && (filePath.startsWith('http://') || filePath.startsWith('https://'));
 }
 
-export default function SupabaseFileLink({ filePath, label = 'Baixar Arquivo', expiresIn = 3600, asLink = false }) {
+export default function SupabaseFileLink({ filePath, label = 'Baixar Arquivo', expiresIn = 3600, asLink = false, mode = 'download' }) {
   const [loading, setLoading] = useState(false);
 
   if (!filePath) return null;
 
-  const handleClick = async () => {
+  // Obtém URL assinada e abre para visualização em nova aba
+  const handleView = async () => {
     setLoading(true);
     try {
-      const fileName = filePath.split('/').pop() || 'arquivo';
-
       if (isLegacyUrl(filePath)) {
-        // URL legada: abre em nova aba
         window.open(filePath, '_blank');
         return;
       }
+      const res = await base44.functions.invoke('supabaseGetSignedUrl', { filePath, expiresIn });
+      const url = res?.data?.signedUrl;
+      if (!url) { alert('Não foi possível gerar o link. Tente novamente.'); return; }
+      window.open(url, '_blank');
+    } catch (err) {
+      console.error('[SupabaseFileLink] Erro ao visualizar:', err);
+      alert('Erro ao abrir arquivo.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      // Usa proxy do backend para download direto (evita CORS e redirecionamento)
+  // Faz download via proxy do backend
+  const handleDownload = async () => {
+    setLoading(true);
+    try {
+      const fileName = filePath.split('/').pop() || 'arquivo';
+      if (isLegacyUrl(filePath)) {
+        window.open(filePath, '_blank');
+        return;
+      }
       const res = await base44.functions.invoke('supabaseDownloadFile', { filePath });
-      // res.data é o ArrayBuffer retornado como blob pelo axios
       const blob = new Blob([res.data], { type: 'application/octet-stream' });
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -53,14 +69,17 @@ export default function SupabaseFileLink({ filePath, label = 'Baixar Arquivo', e
     }
   };
 
+  const handleClick = mode === 'view' ? handleView : handleDownload;
+
   if (asLink) {
     return (
       <button
         onClick={handleClick}
         disabled={loading}
+        title={mode === 'view' ? 'Visualizar' : 'Baixar'}
         className="inline-flex items-center gap-1 text-sm text-emerald-700 hover:text-emerald-900 hover:underline disabled:opacity-50"
       >
-        {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <ExternalLink className="w-3 h-3" />}
+        {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : mode === 'view' ? <Eye className="w-4 h-4" /> : <ExternalLink className="w-3 h-3" />}
         {label}
       </button>
     );
@@ -73,9 +92,10 @@ export default function SupabaseFileLink({ filePath, label = 'Baixar Arquivo', e
       size="sm"
       onClick={handleClick}
       disabled={loading}
+      title={mode === 'view' ? 'Visualizar' : 'Baixar'}
       className="gap-2"
     >
-      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : mode === 'view' ? <Eye className="w-4 h-4" /> : <Download className="w-4 h-4" />}
       {label}
     </Button>
   );

@@ -152,7 +152,8 @@ export default function LicenseDocuments({ license, onUpdate }) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <SupabaseFileLink filePath={doc.url} label="" asLink={true} />
+                  <SupabaseFileLink filePath={doc.url} label="" asLink={true} mode="view" />
+                  <SupabaseFileLink filePath={doc.url} label="" asLink={false} mode="download" />
                   <Button
                     variant="ghost"
                     size="icon"

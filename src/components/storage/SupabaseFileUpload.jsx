@@ -33,24 +33,31 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
     try {
       setProgress(10);
 
-      // Converte arquivo para base64 para enviar via JSON ao backend proxy
-      const arrayBuffer = await file.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-
-      setProgress(40);
-
-      const res = await base44.functions.invoke('r2UploadProxy', {
+      // Passo 1: obter presigned PUT URL do backend
+      const res = await base44.functions.invoke('r2GetUploadUrl', {
         fileName: file.name,
         contentType: file.type || 'application/octet-stream',
         folder,
-        fileBase64: base64,
       });
 
-      if (!res.data?.filePath) {
-        throw new Error(res.data?.error || 'Falha ao enviar arquivo');
+      if (!res.data?.uploadUrl || !res.data?.filePath) {
+        throw new Error(res.data?.error || 'Falha ao obter URL de upload');
       }
 
-      const { filePath } = res.data;
+      const { uploadUrl, filePath } = res.data;
+      setProgress(30);
+
+      // Passo 2: PUT direto para o R2 com a presigned URL
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        body: file,
+      });
+
+      if (!uploadRes.ok) {
+        const errText = await uploadRes.text();
+        throw new Error(`Upload falhou: ${uploadRes.status} ${errText.slice(0, 100)}`);
+      }
 
       setStatus('success');
       setProgress(100);
@@ -103,7 +110,7 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
             <span className="ml-auto font-medium">{progress}%</span>
           </div>
           <Progress value={progress} className="h-2" />
-          <p className="text-xs text-slate-500">Enviando para Cloudflare R2...</p>
+          <p className="text-xs text-slate-500">Enviando arquivo...</p>
         </div>
       )}
 

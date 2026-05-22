@@ -31,36 +31,20 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
     setErrorMsg('');
 
     try {
-      // 1. Pede URL pré-assinada PUT ao backend R2
-      const res = await base44.functions.invoke('r2GetUploadUrl', {
-        fileName: file.name,
-        contentType: file.type || 'application/octet-stream',
-        folder,
-      });
+      setProgress(10);
 
-      if (!res.data?.uploadUrl) {
-        throw new Error(res.data?.error || 'Falha ao obter URL de upload');
+      // Upload via backend proxy (evita CORS do R2)
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', folder);
+
+      const res = await base44.functions.invoke('r2UploadProxy', formData);
+
+      if (!res.data?.filePath) {
+        throw new Error(res.data?.error || 'Falha ao enviar arquivo');
       }
 
-      const { uploadUrl, filePath } = res.data;
-
-      // 2. Upload direto para o R2 via XHR (progresso real)
-      await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.upload.onprogress = (evt) => {
-          if (evt.lengthComputable) {
-            setProgress(Math.round((evt.loaded / evt.total) * 100));
-          }
-        };
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) resolve();
-          else reject(new Error(`Upload falhou: ${xhr.status} ${xhr.responseText}`));
-        };
-        xhr.onerror = () => reject(new Error('Erro de rede durante o upload'));
-        xhr.open('PUT', uploadUrl);
-        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
-        xhr.send(file);
-      });
+      const { filePath } = res.data;
 
       setStatus('success');
       setProgress(100);

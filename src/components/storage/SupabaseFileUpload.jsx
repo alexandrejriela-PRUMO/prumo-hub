@@ -25,11 +25,32 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => {
-        const base64 = reader.result.split(',')[1];
-        resolve(base64);
+        try {
+          const arrayBuffer = reader.result;
+          const bytes = new Uint8Array(arrayBuffer);
+          let binary = '';
+          
+          // Converter bytes para string binária em chunks para evitar stack overflow
+          const chunkSize = 8192;
+          for (let i = 0; i < bytes.length; i += chunkSize) {
+            const chunk = bytes.slice(i, i + chunkSize);
+            binary += String.fromCharCode.apply(null, chunk);
+          }
+          
+          const base64 = btoa(binary);
+          resolve(base64);
+        } catch (err) {
+          reject(new Error('Erro ao converter arquivo: ' + err.message));
+        }
       };
       reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
-      reader.readAsDataURL(file);
+      reader.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const percent = Math.round((e.loaded / e.total) * 30);
+          setProgress(percent);
+        }
+      };
+      reader.readAsArrayBuffer(file);
     });
   };
 
@@ -43,9 +64,8 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
     setErrorMsg('');
 
     try {
-      setProgress(25);
       const fileBase64 = await fileToBase64(file);
-      setProgress(50);
+      setProgress(40);
 
       const uploadRes = await base44.functions.invoke('r2UploadProxy', {
         fileName: file.name,

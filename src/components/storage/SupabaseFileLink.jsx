@@ -23,22 +23,27 @@ export default function SupabaseFileLink({ filePath, label = 'Baixar Arquivo', e
   if (!filePath) return null;
 
   const handleClick = async () => {
-    // Arquivos legados (base44, URLs externas): abre diretamente
-    if (isLegacyUrl(filePath)) {
-      window.open(filePath, '_blank');
-      return;
-    }
-    // Arquivos novos no Supabase: gera URL assinada temporária
     setLoading(true);
     try {
-      const res = await base44.functions.invoke('supabaseGetSignedUrl', { filePath, expiresIn });
-      const signedUrl = res?.data?.signedUrl;
-      if (!signedUrl) {
-        console.error('[SupabaseFileLink] URL assinada não retornada:', res?.data);
-        alert('Não foi possível gerar o link de download. Tente novamente.');
-        return;
+      let url = filePath;
+      // Arquivos no Supabase (path relativo): gera URL assinada temporária
+      if (!isLegacyUrl(filePath)) {
+        const res = await base44.functions.invoke('supabaseGetSignedUrl', { filePath, expiresIn });
+        url = res?.data?.signedUrl;
+        if (!url) {
+          alert('Não foi possível gerar o link de download. Tente novamente.');
+          return;
+        }
       }
-      window.open(signedUrl, '_blank');
+      // Força download direto via <a> (evita redirecionamento para login)
+      const fileName = filePath.split('/').pop() || 'arquivo';
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     } catch (err) {
       console.error('[SupabaseFileLink] Erro ao gerar URL assinada:', err);
       alert('Erro ao gerar link de download.');

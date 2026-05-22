@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { FileText, Download, Bot, Mountain, ClipboardList, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { FileText, Bot, Mountain, ClipboardList, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import SupabaseFileUpload from '@/components/storage/SupabaseFileUpload';
+import SupabaseFileLink from '@/components/storage/SupabaseFileLink';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -130,9 +129,7 @@ export default function DJIFilesPanel({ mapping, canEdit }) {
                         </div>
                         {uploaded ? (
                           <div className="flex items-center gap-1 flex-shrink-0">
-                            <a href={uploaded.url} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:text-emerald-700">
-                              <Download className="w-3.5 h-3.5" />
-                            </a>
+                            <SupabaseFileLink filePath={uploaded.url} label="↓" asLink={true} />
                             {canEdit && (
                               <button onClick={() => handleDelete((mapping.files || []).indexOf(uploaded))} className="text-red-400 hover:text-red-600">
                                 <Trash2 className="w-3 h-3" />
@@ -154,9 +151,7 @@ export default function DJIFilesPanel({ mapping, canEdit }) {
                         <span className="truncate text-gray-600">{f.name}</span>
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0">
-                        <a href={f.url} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:text-emerald-700">
-                          <Download className="w-3.5 h-3.5" />
-                        </a>
+                        <SupabaseFileLink filePath={f.url} label="↓" asLink={true} />
                         {canEdit && (
                           <button onClick={() => handleDelete((mapping.files || []).indexOf(f))} className="text-red-400 hover:text-red-600">
                             <Trash2 className="w-3 h-3" />

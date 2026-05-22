@@ -25,6 +25,9 @@ export default function SupabaseFileLink({ filePath, label = 'Baixar Arquivo', e
     if (filePath.startsWith('http://') || filePath.startsWith('https://')) return filePath;
 
     const res = await base44.functions.invoke('getFileSignedUrl', { filePath, expiresIn, storage });
+    if (res?.data?.error) {
+      throw new Error(res.data.error);
+    }
     const url = res?.data?.signedUrl;
     if (!url) throw new Error('Não foi possível gerar o link.');
     return url;

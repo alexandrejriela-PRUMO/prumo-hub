@@ -21,6 +21,15 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
   const [errorMsg, setErrorMsg] = useState('');
   const inputRef = useRef(null);
 
+  const readFileAsArrayBuffer = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(new Uint8Array(reader.result));
+      reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
+      reader.readAsArrayBuffer(file);
+    });
+  };
+
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -33,85 +42,26 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
     try {
       setProgress(10);
 
-      // Para arquivos grandes (> 5MB), usa multipart; para menores, usa base64
-      const MAX_BASE64_SIZE = 5 * 1024 * 1024; // 5MB
-      
-      if (file.size > MAX_BASE64_SIZE) {
-        // Usa presigned URL para upload direto
-        const getUrlRes = await base44.functions.invoke('r2GetUploadUrl', {
-          fileName: file.name,
-          contentType: file.type || 'application/octet-stream',
-          folder,
-        });
+      // Usa FileReader para garantir acesso ao arquivo
+      const fileBytes = await readFileAsArrayBuffer(file);
+      const base64 = btoa(String.fromCharCode(...fileBytes));
 
-        if (!getUrlRes.data?.uploadUrl) {
-          throw new Error('Falha ao gerar URL de upload');
-        }
+      setProgress(40);
 
-        setProgress(40);
+      const res = await base44.functions.invoke('r2UploadProxy', {
+        fileName: file.name,
+        contentType: file.type || 'application/octet-stream',
+        folder,
+        fileBase64: base64,
+      });
 
-        try {
-          const uploadRes = await fetch(getUrlRes.data.uploadUrl, {
-            method: 'PUT',
-            headers: { 'Content-Type': file.type || 'application/octet-stream' },
-            body: file,
-          });
-
-          if (!uploadRes.ok) {
-            throw new Error(`Upload falhou: ${uploadRes.status} ${uploadRes.statusText}`);
-          }
-
-          setProgress(90);
-          setStatus('success');
-          setProgress(100);
-          onUploadDone?.(getUrlRes.data.filePath, file.name);
-        } catch (fetchErr) {
-          console.warn('[FileUpload] Presigned URL falhou, tentando via proxy...', fetchErr.message);
-          
-          // Fallback: converte para base64 mesmo para arquivo grande
-          const arrayBuffer = await file.arrayBuffer();
-          const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-          setProgress(40);
-
-          const res = await base44.functions.invoke('r2UploadProxy', {
-            fileName: file.name,
-            contentType: file.type || 'application/octet-stream',
-            folder,
-            fileBase64: base64,
-          });
-
-          if (!res.data?.filePath) {
-            throw new Error(res.data?.error || 'Falha ao enviar arquivo');
-          }
-
-          setStatus('success');
-          setProgress(100);
-          onUploadDone?.(res.data.filePath, file.name);
-        }
-      } else {
-        // Arquivo pequeno: converte para base64
-        const arrayBuffer = await file.arrayBuffer();
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-
-        setProgress(40);
-
-        const res = await base44.functions.invoke('r2UploadProxy', {
-          fileName: file.name,
-          contentType: file.type || 'application/octet-stream',
-          folder,
-          fileBase64: base64,
-        });
-
-        if (!res.data?.filePath) {
-          throw new Error(res.data?.error || 'Falha ao enviar arquivo');
-        }
-
-        const { filePath } = res.data;
-
-        setStatus('success');
-        setProgress(100);
-        onUploadDone?.(filePath, file.name);
+      if (!res.data?.filePath) {
+        throw new Error(res.data?.error || 'Falha ao enviar arquivo');
       }
+
+      setStatus('success');
+      setProgress(100);
+      onUploadDone?.(res.data.filePath, file.name);
 
       if (inputRef.current) inputRef.current.value = '';
     } catch (err) {

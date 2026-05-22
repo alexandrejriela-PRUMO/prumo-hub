@@ -594,14 +594,14 @@ function GeoreferencingDetails({ geo, onFileUpload, user, onUpdate }) {
 
       {/* Documents Tab */}
       <TabsContent value="documents" className="space-y-4">
-        {['Planta Georreferenciada', 'Memorial Descritivo', 'ART/RRT', 'Shapefile/KML', 'Certificação SIGEF'].map((docType) => (
+        {['XML (SIGEF)', 'KML/KMZ', 'Shapefile (.shp)', 'Planta Georreferenciada', 'Memorial Descritivo', 'ART/RRT', 'Certificação SIGEF', 'Outro'].map((docType) => (
           <Card key={docType}>
             <CardHeader>
               <CardTitle className="text-base flex items-center justify-between">
                 <span className="flex items-center gap-2"><FileText className="w-4 h-4" />{docType}</span>
                 <SupabaseFileUpload
                   folder="georreferenciamento"
-                  accept=".pdf,.kml,.kmz,.shp,.zip,.dwg,.dxf"
+                  accept=".xml,.kml,.kmz,.shp,.zip,.pdf,.dwg,.dxf,.dbf,.prj,.shx"
                   label="Upload"
                   onUploadDone={(fp, fn) => onFileUpload(fp, fn, localGeo.id, docType)}
                 />

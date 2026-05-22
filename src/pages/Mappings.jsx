@@ -24,6 +24,7 @@ import {
   Activity
 } from 'lucide-react';
 import SupabaseFileUpload from '../components/storage/SupabaseFileUpload';
+import DJIFilesPanel from '../components/mappings/DJIFilesPanel';
 import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
 import { toast } from 'sonner';
@@ -552,6 +553,9 @@ export default function Mappings() {
                         </div>
                       </div>
                     )}
+
+                    {/* DJI Files */}
+                    <DJIFilesPanel mapping={mapping} canEdit={canEdit} />
 
                     {/* Actions */}
                     <div className="flex gap-2 pt-2">

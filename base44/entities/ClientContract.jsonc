@@ -105,6 +105,11 @@
       "type": "string",
       "description": "Condi\u00e7\u00f5es de pagamento"
     },
+    "enable_expiry_alerts": {
+      "type": "boolean",
+      "default": false,
+      "description": "Habilitar alertas de vencimento do contrato"
+    },
     "alert_days_before_expiry": {
       "type": "number",
       "default": 30,

@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2, CheckCircle, FileText } from 'lucide-react';
+import { Plus, Trash2, CheckCircle, FileText, Bell } from 'lucide-react';
 
 const CONTRACT_TYPES = [
   'Prestação de Serviços Ambientais','Assessoria Ambiental','Licenciamento Ambiental',
@@ -49,6 +49,7 @@ export default function ContractForm({ user, templates = [], onSubmit, onFormCha
     status: 'Proposta',
     total_value: '',
     payment_terms: '',
+    enable_expiry_alerts: false,
     alert_days_before_expiry: 30,
     parties: [],
     services_linked: [],
@@ -294,14 +295,34 @@ export default function ContractForm({ user, templates = [], onSubmit, onFormCha
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label className="text-xs">Alertar X dias antes do vencimento</Label>
-              <Input type="number" min="1" className="mt-1 h-9" value={formData.alert_days_before_expiry}
-                onChange={e => {
-                  onFormChange();
-                  setFormData(p => ({ ...p, alert_days_before_expiry: parseInt(e.target.value) || 30 }));
-                }} />
-            </div>
+            <div className="col-span-1 sm:col-span-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+               <div className="flex items-center gap-3 mb-3">
+                 <input
+                   type="checkbox"
+                   id="enable_alerts"
+                   checked={formData.enable_expiry_alerts}
+                   onChange={e => {
+                     onFormChange();
+                     setFormData(p => ({ ...p, enable_expiry_alerts: e.target.checked }));
+                   }}
+                   className="w-4 h-4 rounded cursor-pointer"
+                 />
+                 <Label htmlFor="enable_alerts" className="text-sm font-medium cursor-pointer flex items-center gap-2 m-0">
+                   <Bell className="w-4 h-4 text-emerald-600" />
+                   Habilitar alertas de vencimento
+                 </Label>
+               </div>
+               {formData.enable_expiry_alerts && (
+                 <div>
+                   <Label className="text-xs text-emerald-700">Alertar X dias antes do vencimento</Label>
+                   <Input type="number" min="1" className="mt-2 h-9" value={formData.alert_days_before_expiry}
+                     onChange={e => {
+                       onFormChange();
+                       setFormData(p => ({ ...p, alert_days_before_expiry: parseInt(e.target.value) || 30 }));
+                     }} />
+                 </div>
+               )}
+             </div>
             <div className="col-span-1 sm:col-span-2">
               <Label className="text-xs">Condições de Pagamento</Label>
               <Input className="mt-1 h-9" value={formData.payment_terms}

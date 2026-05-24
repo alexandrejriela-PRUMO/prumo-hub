@@ -411,7 +411,6 @@ export default function ClimateMonitoring() {
                   climateRecord={recordWithHistory}
                   propertyName={currentProperty.property_name}
                 />
-                <ClimateHistory records={climateData} />
               </>
             );
           })()}

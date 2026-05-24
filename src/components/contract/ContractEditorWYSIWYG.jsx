@@ -182,21 +182,32 @@ export default function ContractEditorWYSIWYG({
   const exportDocx = async () => {
     try {
       const htmlContent = generateCompleteHTML();
-      const textContent = htmlContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
       
+      // Renderizar HTML em canvas e converter para imagem para inserir no DOCX
+      const container = document.createElement('div');
+      container.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;padding:40px;background:#fff;font-family:Calibri,Arial,sans-serif;line-height:1.8;color:#333;';
+      container.innerHTML = htmlContent;
+      document.body.appendChild(container);
+      
+      const canvas = await html2canvas(container, { scale: 2, backgroundColor: '#fff', useCORS: true });
+      document.body.removeChild(container);
+      
+      const imgData = canvas.toDataURL('image/png');
+      
+      // Criar documento com a imagem do contrato renderizado
       const doc = new Document({
         sections: [{
           properties: {},
           children: [
             new Paragraph({
-              text: 'CONTRATO',
-              bold: true,
-              size: 28 * 2,
-              spacing: { line: 360, before: 200, after: 200 },
-            }),
-            new Paragraph({
-              text: textContent,
-              spacing: { line: 280 },
+              children: [{
+                type: 'image',
+                data: imgData.split(',')[1], // Remove data:image/png;base64,
+                transformation: {
+                  width: 600,
+                  height: (canvas.height * 600) / canvas.width,
+                },
+              }],
             }),
           ],
         }],

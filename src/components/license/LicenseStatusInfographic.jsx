@@ -1,8 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { differenceInDays, parseISO } from 'date-fns';
-import { AlertTriangle, Clock, CheckCircle, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
+import { AlertTriangle, Clock, CheckCircle, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react';
 
 function getLicenseStatusKey(license) {
   if (!license.expiry_date) return 'vigente';
@@ -12,7 +10,7 @@ function getLicenseStatusKey(license) {
   return 'vigente';
 }
 
-export default function LicenseStatusInfographic({ allLicenses = [], allProperties = [], onFilterSelect, activeFilter }) {
+export default function LicenseStatusInfographic({ allLicenses = [], allProperties = [], onFilterSelect, activeFilter, onSelectProperty }) {
   const [expandedGroup, setExpandedGroup] = useState(null);
 
   // Agrupa licenças por status e por propriedade
@@ -172,13 +170,13 @@ export default function LicenseStatusInfographic({ allLicenses = [], allProperti
                   <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${cards.find(c => c.key === expandedGroup)?.propBadge}`}>
                     {licenses.length}
                   </span>
-                  <Link
-                    to={`${createPageUrl('Licenses')}?property_id=${property?.id}`}
-                    className="p-1 rounded hover:bg-gray-100 transition-colors"
+                  <button
+                    onClick={() => onSelectProperty && onSelectProperty(property?.id)}
+                    className="flex items-center gap-1 text-xs text-emerald-700 font-medium px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors"
                     title="Ver licenças desta propriedade"
                   >
-                    <ExternalLink className="w-3.5 h-3.5 text-gray-400 hover:text-emerald-600" />
-                  </Link>
+                    Ver <ArrowRight className="w-3 h-3" />
+                  </button>
                 </div>
               </div>
             ))}

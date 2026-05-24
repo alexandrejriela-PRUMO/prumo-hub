@@ -481,6 +481,11 @@ export default function Licenses() {
           allProperties={allProperties}
           activeFilter={statusFilter}
           onFilterSelect={(key) => setStatusFilter(key)}
+          onSelectProperty={(propId) => {
+            setConsultorPropertyId(propId);
+            setStatusFilter(null);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
         />
       )}
 

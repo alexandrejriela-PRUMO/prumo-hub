@@ -50,12 +50,6 @@ export default function FinancialDashboard() {
 
   useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);
 
-  const { data: crms = [] } = useQuery({
-    queryKey: ['fd-crms', user?.email],
-    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: user.email }, '-updated_date', 500),
-    enabled: !!user?.email,
-  });
-
   const { data: charges = [] } = useQuery({
     queryKey: ['fd-charges', user?.email],
     queryFn: () => base44.entities.ConsultorCharge.filter({ consultor_email: user.email }, '-due_date', 1000),
@@ -115,16 +109,6 @@ export default function FinancialDashboard() {
           }
         }
       });
-      // Adicionar receitas de serviços parcelados e avista do CRM
-      crms.forEach(crm => {
-        if (!crm.services) return;
-        crm.services.forEach(svc => {
-          if (!svc.received) return;
-          const month = svc.received_at?.substring(0,7);
-          const value = parseFloat(svc.value) || 0;
-          if (byMonth[month]) byMonth[month].receita += value;
-        });
-      });
     return months.map(m => ({
       mes: format(parseISO(m+'-01'), 'MMM/yy', { locale: ptBR }),
       mesKey: m,
@@ -132,7 +116,7 @@ export default function FinancialDashboard() {
       despesa: byMonth[m].despesa,
       resultado: byMonth[m].receita - byMonth[m].despesa,
     }));
-    }, [effectiveCharges, effectiveManual, crms]);
+    }, [effectiveCharges, effectiveManual]);
 
   // ── Next 12 months projection ─────────────────────────────────────────────
   const projecao = useMemo(() => {
@@ -189,14 +173,6 @@ export default function FinancialDashboard() {
         }
       }
     });
-    crms.forEach(crm => {
-      if (!crm.services) return;
-      crm.services.forEach(svc => {
-        if (!svc.received) return;
-        const month = svc.received_at?.substring(0,7);
-        if (histByMonth[month]) histByMonth[month].receita += parseFloat(svc.value) || 0;
-      });
-    });
     let accSaldo = histMonths12.reduce((s, m) => s + (histByMonth[m].receita - histByMonth[m].despesa), 0);
 
     return months.map((m,i) => {
@@ -208,7 +184,7 @@ export default function FinancialDashboard() {
         receita: Math.round(projReceita), despesa: Math.round(projDespesa),
         resultado: Math.round(resultado), saldoAcumulado: Math.round(accSaldo), isCurrent: i===0 };
     });
-    }, [charges, effectiveManual, contracts, filterAccount, crms]);
+    }, [charges, effectiveManual, contracts, filterAccount]);
 
   const kpis = useMemo(() => {
     const totalReceita12 = historico.reduce((s,h)=>s+h.receita, 0);
@@ -385,7 +361,7 @@ export default function FinancialDashboard() {
                 <CalendarRange className="w-4 h-4 text-violet-600"/>Fluxo de Caixa Projetado — Próximos 12 Meses
               </CardTitle>
               <p className="text-xs text-gray-400 flex items-center gap-1.5">
-                <Info className="w-3 h-3"/>Estimativa baseada em contratos ativos, serviços do CRM e média de receitas/despesas dos últimos 3 meses
+                <Info className="w-3 h-3"/>Estimativa baseada em contratos ativos e média de despesas dos últimos 3 meses
               </p>
             </CardHeader>
             <CardContent>

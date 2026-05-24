@@ -379,8 +379,11 @@ export default function ClimateMonitoring() {
                           : 'border-gray-200 hover:border-blue-300'
                       }`}
                     >
-                      <p className="font-medium text-sm text-gray-900">{location.location_name}</p>
-                      <p className="text-xs text-gray-600 mt-1">{location.temperature_current}°C</p>
+                      <p className="font-medium text-sm text-gray-900">{location.location_name || currentProperty.property_name}</p>
+                      <p className="text-xs text-gray-600 mt-1">
+                        {location.temperature_current != null ? `${location.temperature_current}°C` : 
+                         location.historical_records?.length > 0 ? `${location.historical_records.length} dias` : 'Sem dados atuais'}
+                      </p>
                     </button>
                   ))}
                 </div>
@@ -396,13 +399,22 @@ export default function ClimateMonitoring() {
               {currentLocation.alerts?.length > 0 && (
                 <ClimateAlerts alerts={currentLocation.alerts} />
               )}
-              <ClimateHistoryExport 
-                climateRecord={currentLocation} 
-                propertyName={currentProperty.property_name} 
-              />
-              <ClimateHistory records={climateData} />
             </>
           )}
+
+          {/* Histórico Exportável — usa o primeiro registro com historical_records, independente de currentLocation */}
+          {climateData.length > 0 && (() => {
+            const recordWithHistory = climateData.find(r => r.historical_records && r.historical_records.length > 0) || climateData[0];
+            return (
+              <>
+                <ClimateHistoryExport
+                  climateRecord={recordWithHistory}
+                  propertyName={currentProperty.property_name}
+                />
+                <ClimateHistory records={climateData} />
+              </>
+            );
+          })()}
 
           {climateData.length === 0 && (
             <Card className="bg-gray-50 border-dashed">

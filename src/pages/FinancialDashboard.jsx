@@ -141,15 +141,7 @@ export default function FinancialDashboard() {
     const byMonth = {};
     months.forEach(m => { byMonth[m] = { receita: 0, despesa: 0 }; });
 
-    // Pending Stripe charges
-    if (filterAccount === '__all' || filterAccount === '__stripe') {
-      charges.forEach(c => {
-        const month = c.due_date?.substring(0,7);
-        if (byMonth[month] && ['Pendente','Vencido'].includes(normalizeStatus(c.status))) {
-          byMonth[month].receita += c.amount || 0;
-        }
-      });
-    }
+    // Stripe/ConsultorCharges removidos da projeção para evitar conflito entre usuários
     // Active contracts monthly split
     contracts.filter(c => c.status==='Ativo' && c.total_value && c.start_date && c.end_date).forEach(c => {
       const start = parseISO(c.start_date), end = parseISO(c.end_date);
@@ -420,7 +412,7 @@ export default function FinancialDashboard() {
                 <CalendarRange className="w-4 h-4 text-violet-600"/>Fluxo de Caixa Projetado — Próximos 12 Meses
               </CardTitle>
               <p className="text-xs text-gray-400 flex items-center gap-1.5">
-                <Info className="w-3 h-3"/>Estimativa baseada em cobranças Stripe pendentes, contratos ativos e média de despesas dos últimos 3 meses
+                <Info className="w-3 h-3"/>Estimativa baseada em contratos ativos, serviços do CRM e média de receitas/despesas dos últimos 3 meses
               </p>
             </CardHeader>
             <CardContent>

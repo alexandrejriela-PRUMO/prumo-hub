@@ -498,43 +498,43 @@ export default function RegularityReport() {
 
       const orientacoes = [];
 
-      if (criticalCats.some(c => c.name.includes('Licença'))) {
-        orientacoes.push({ nivel: 'URGENTE', texto: 'Licenças Ambientais: Renove imediatamente as licenças vencidas junto ao órgão ambiental competente (Municipal, Estadual ou Federal). O prazo de renovação deve ser iniciado com antecedência mínima de 120 dias. Use o módulo "Licenças e Projetos" para registrar e acompanhar.' });
-      } else if (warningCats.some(c => c.name.includes('Licença'))) {
-        orientacoes.push({ nivel: 'ATENÇÃO', texto: 'Licenças Ambientais: Inicie o processo de renovação das licenças que estão próximas do vencimento. Acesse o módulo "Licenças e Projetos" para conferir os prazos.' });
+      if (criticalCats.some(c => c.name.includes('Licen'))) {
+        orientacoes.push({ nivel: 'URGENTE', texto: 'Licencas Ambientais: Renove imediatamente as licencas vencidas junto ao orgao ambiental competente (Municipal, Estadual ou Federal). O prazo de renovacao deve ser iniciado com antecedencia minima de 120 dias. Use o modulo Licencas e Projetos para registrar e acompanhar.' });
+      } else if (warningCats.some(c => c.name.includes('Licen'))) {
+        orientacoes.push({ nivel: 'ATENCAO', texto: 'Licencas Ambientais: Inicie o processo de renovacao das licencas que estao proximas do vencimento. Acesse o modulo Licencas e Projetos para conferir os prazos.' });
       }
 
       if (criticalCats.some(c => c.name.includes('CAR'))) {
-        orientacoes.push({ nivel: 'URGENTE', texto: 'CAR: O Cadastro Ambiental Rural deve ser regularizado. Se não cadastrado, acesse o SICAR (car.gov.br) ou o sistema estadual correspondente. Se com inconsistências, acesse o módulo "Gestão do CAR" e providencie a retificação com auxílio técnico.' });
+        orientacoes.push({ nivel: 'URGENTE', texto: 'CAR: O Cadastro Ambiental Rural deve ser regularizado. Se nao cadastrado, acesse o SICAR (car.gov.br) ou o sistema estadual. Se com inconsistencias, acesse o modulo Gestao do CAR e providencie a retificacao com auxilio tecnico.' });
       } else if (warningCats.some(c => c.name.includes('CAR'))) {
-        orientacoes.push({ nivel: 'ATENÇÃO', texto: 'CAR: Verifique e atualize o status do CAR no módulo "Gestão do CAR". Acompanhe a análise no SICAR e documente todas as movimentações.' });
+        orientacoes.push({ nivel: 'ATENCAO', texto: 'CAR: Verifique e atualize o status do CAR no modulo Gestao do CAR. Acompanhe a analise no SICAR e documente todas as movimentacoes.' });
       }
 
       if (criticalCats.some(c => c.name.includes('Processual'))) {
-        orientacoes.push({ nivel: 'URGENTE', texto: 'Processos: Há processos criminais em andamento que requerem acompanhamento jurídico imediato. Consulte um advogado especializado em direito ambiental. Para processos administrativos, verifique a possibilidade de TAC (Termo de Ajustamento de Conduta) ou quitação de multas para regularizar a situação.' });
+        orientacoes.push({ nivel: 'URGENTE', texto: 'Processos: Ha processos criminais em andamento que requerem acompanhamento juridico imediato. Consulte um advogado especializado em direito ambiental. Para processos administrativos, verifique a possibilidade de TAC ou quitacao de multas.' });
       } else if (warningCats.some(c => c.name.includes('Processual'))) {
-        orientacoes.push({ nivel: 'ATENÇÃO', texto: 'Processos: Existem processos em andamento. Certifique-se de que multas foram pagas ou TAC firmado. Registre os comprovantes no módulo "Processos" para atualizar a pontuação.' });
+        orientacoes.push({ nivel: 'ATENCAO', texto: 'Processos: Existem processos em andamento. Certifique-se de que multas foram pagas ou TAC firmado. Registre os comprovantes no modulo Processos para atualizar a pontuacao.' });
       }
 
       if (warningCats.some(c => c.name.includes('Documento'))) {
-        orientacoes.push({ nivel: 'ATENÇÃO', texto: 'Documentos Cadastrais: O CCIR (Certificado de Cadastro de Imóvel Rural) deve ser atualizado anualmente no INCRA. O ITR (Imposto Territorial Rural) deve ser declarado e pago anualmente na Receita Federal. Após regularizar, cadastre os documentos no módulo "Documentos".' });
+        orientacoes.push({ nivel: 'ATENCAO', texto: 'Documentos Cadastrais: O CCIR (Certificado de Cadastro de Imovel Rural) deve ser atualizado anualmente no INCRA. O ITR (Imposto Territorial Rural) deve ser declarado e pago anualmente na Receita Federal. Apos regularizar, cadastre no modulo Documentos.' });
       }
 
       if (!scoreData.categories.some(c => c.name.includes('Geo')) || warningCats.some(c => c.name.includes('Geo'))) {
-        orientacoes.push({ nivel: 'RECOMENDADO', texto: 'Georreferenciamento: O georreferenciamento é obrigatório para transações de imóveis rurais conforme Lei 10.267/01. Contrate um profissional credenciado no INCRA para a execução e certifique o imóvel no SIGEF. Registre no módulo "Georreferenciamento".' });
+        orientacoes.push({ nivel: 'RECOMENDADO', texto: 'Georreferenciamento: O georreferenciamento e obrigatorio para transacoes de imoveis rurais conforme Lei 10.267/01. Contrate um profissional credenciado no INCRA e certifique o imovel no SIGEF. Registre no modulo Georreferenciamento.' });
       }
 
       if (criticalCats.some(c => c.name.includes('PRAD'))) {
-        orientacoes.push({ nivel: 'URGENTE', texto: 'PRAD: Projetos de Recuperação de Área Degradada pendentes precisam ser iniciados. A não execução pode acarretar em auto de infração e impedir desembargos. Acione seu consultor ambiental e use o módulo "PRAD" para acompanhar o cronograma.' });
+        orientacoes.push({ nivel: 'URGENTE', texto: 'PRAD: Projetos de Recuperacao de Area Degradada pendentes precisam ser iniciados. A nao execucao pode acarretar em auto de infracao e impedir desembargos. Acione seu consultor ambiental e use o modulo PRAD para acompanhar o cronograma.' });
       }
 
       if (orientacoes.length === 0) {
-        orientacoes.push({ nivel: 'PARABÉNS', texto: 'A propriedade está em excelente situação de conformidade ambiental. Continue monitorando os prazos das licenças e mantendo os documentos atualizados no PRUMO Hub para manter esta pontuação.' });
+        orientacoes.push({ nivel: 'PARABENS', texto: 'A propriedade esta em excelente situacao de conformidade ambiental. Continue monitorando os prazos das licencas e mantendo os documentos atualizados no PRUMO Hub para manter esta pontuacao.' });
       }
 
       orientacoes.forEach(o => {
         checkSpace(18);
-        const nivelColor = o.nivel === 'URGENTE' ? [185, 28, 28] : o.nivel === 'ATENÇÃO' ? [161, 98, 7] : o.nivel === 'PARABÉNS' ? [22, 101, 52] : [30, 64, 175];
+        const nivelColor = o.nivel === 'URGENTE' ? [185, 28, 28] : o.nivel === 'ATENCAO' ? [161, 98, 7] : o.nivel === 'PARABENS' ? [22, 101, 52] : [30, 64, 175];
         doc.setFillColor(...nivelColor);
         doc.roundedRect(M, y, 28, 5, 1, 1, 'F');
         doc.setTextColor(255, 255, 255);
@@ -561,21 +561,25 @@ export default function RegularityReport() {
       y += 12;
 
       const passos = [
-        '1. LICENÇAS E PROJETOS → Cadastre e acompanhe todas as licenças ambientais. O sistema alerta automaticamente sobre vencimentos próximos.',
-        '2. GESTÃO DO CAR → Registre o número do CAR e atualize o status conforme análise do órgão ambiental (SICAR).',
-        '3. DOCUMENTOS → Anexe o CCIR atualizado e o comprovante de pagamento do ITR do exercício corrente.',
-        '4. GEORREFERENCIAMENTO → Registre os dados do georreferenciamento e a certidão SIGEF quando disponível.',
-        '5. PROCESSOS → Mantenha os processos atualizados, informe pagamentos de multa e TAC firmados para impactar positivamente a pontuação.',
-        '6. PRAD → Atualize o status dos projetos de recuperação conforme execução. Cada etapa concluída aumenta a pontuação.',
+        { titulo: '1. LICENCAS E PROJETOS', texto: 'Cadastre e acompanhe todas as licencas ambientais. O sistema alerta automaticamente sobre vencimentos proximos.' },
+        { titulo: '2. GESTAO DO CAR', texto: 'Registre o numero do CAR e atualize o status conforme analise do orgao ambiental (SICAR).' },
+        { titulo: '3. DOCUMENTOS', texto: 'Anexe o CCIR atualizado e o comprovante de pagamento do ITR do exercicio corrente.' },
+        { titulo: '4. GEORREFERENCIAMENTO', texto: 'Registre os dados do georreferenciamento e a certidao SIGEF quando disponivel.' },
+        { titulo: '5. PROCESSOS', texto: 'Mantenha os processos atualizados, informe pagamentos de multa e TAC firmados para impactar positivamente a pontuacao.' },
+        { titulo: '6. PRAD', texto: 'Atualize o status dos projetos de recuperacao conforme execucao. Cada etapa concluida aumenta a pontuacao.' },
       ];
 
       passos.forEach(p => {
-        checkSpace(8);
+        checkSpace(14);
+        doc.setFont(undefined, 'bold');
+        doc.setFontSize(9);
+        doc.text(p.titulo, M + 3, y);
+        y += 5;
         doc.setFont(undefined, 'normal');
         doc.setFontSize(8.5);
-        const pLines = doc.splitTextToSize(p, pageWidth - M * 2 - 5);
+        const pLines = doc.splitTextToSize(p.texto, pageWidth - M * 2 - 6);
         doc.text(pLines, M + 3, y);
-        y += pLines.length * 4.5 + 1;
+        y += pLines.length * 4.5 + 3;
       });
 
       // ── RODAPÉ ─────────────────────────────────────────────────────────────

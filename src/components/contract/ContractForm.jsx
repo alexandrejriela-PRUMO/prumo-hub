@@ -158,47 +158,13 @@ export default function ContractForm({ user, templates = [], onSubmit, onFormCha
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
 
-      {/* Modelos Disponíveis */}
-      {templates.length > 0 && (
-        <Card className="border-emerald-200 bg-emerald-50/40">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <FileText className="w-4 h-4 text-emerald-600" />
-              Modelos de Contrato Salvos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {templates.map(t => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setSelectedTemplateId(t.id)}
-                  className={`text-left p-3 rounded-lg border text-sm transition-all ${
-                    selectedTemplateId === t.id
-                      ? 'border-emerald-500 bg-emerald-100 text-emerald-900 font-semibold'
-                      : 'border-gray-200 hover:border-emerald-300 hover:bg-emerald-50'
-                  }`}
-                >
-                  <p className="font-medium">{t.name}</p>
-                  {t.contract_type && <p className="text-xs text-gray-500 mt-0.5">{t.contract_type}</p>}
-                  {selectedTemplateId === t.id && (
-                    <span className="inline-flex items-center gap-1 text-xs text-emerald-700 mt-1">
-                      <CheckCircle className="w-3 h-3" /> Selecionado
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-            {selectedTemplateId && (
-              <button type="button" onClick={() => setSelectedTemplateId('')}
-                className="mt-2 text-xs text-gray-400 hover:text-red-500 transition-colors">
-                Remover seleção de modelo
-              </button>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {/* Dica sobre usar contratos do histórico como modelos */}
+      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800 flex items-start gap-2">
+        <CheckCircle className="w-3.5 h-3.5 text-blue-600 mt-0.5 flex-shrink-0" />
+        <span>
+          <strong>💡 Dica:</strong> Acesse o histórico de contratos para usar qualquer contrato anterior como modelo — clique em "Usar como Modelo" para carregá-lo no editor.
+        </span>
+      </div>
 
       <Tabs defaultValue="basic">
         <TabsList className="grid grid-cols-3 w-full">

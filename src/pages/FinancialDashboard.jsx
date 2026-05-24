@@ -60,11 +60,7 @@ export default function FinancialDashboard() {
     queryFn: () => base44.entities.Expense.filter({ consultor_email: user.email }, '-date', 1000),
     enabled: !!user?.email,
   });
-  const { data: contracts = [] } = useQuery({
-    queryKey: ['fd-contracts', user?.email],
-    queryFn: () => base44.entities.ClientContract.filter({ consultor_email: user.email }, '-start_date', 500),
-    enabled: !!user?.email,
-  });
+
   const { data: accounts = [] } = useQuery({
     queryKey: ['fin-accounts', user?.email],
     queryFn: () => base44.entities.FinancialAccount.filter({ consultor_email: user.email }, 'name', 100),
@@ -119,49 +115,30 @@ export default function FinancialDashboard() {
     }, [effectiveCharges, effectiveManual]);
 
   // ── Next 12 months projection ─────────────────────────────────────────────
+  // Baseado EXCLUSIVAMENTE em parcelas futuras pendentes registradas em Expense
   const projecao = useMemo(() => {
     const now = new Date();
     const months = Array.from({ length: 13 }, (_, i) => format(addMonths(now, i), 'yyyy-MM'));
     const byMonth = {};
     months.forEach(m => { byMonth[m] = { receita: 0, despesa: 0 }; });
 
-    // Stripe/ConsultorCharges removidos da projeção para evitar conflito entre usuários
-    // Active contracts monthly split
-    contracts.filter(c => c.status==='Ativo' && c.total_value && c.start_date && c.end_date).forEach(c => {
-      const start = parseISO(c.start_date), end = parseISO(c.end_date);
-      if (!isValid(start) || !isValid(end)) return;
-      let cur = startOfMonth(start), count = 0;
-      while (cur <= end) { count++; cur = addMonths(cur,1); }
-      const monthly = count > 0 ? c.total_value / count : 0;
-      months.forEach(m => {
-        const mDate = parseISO(m+'-01');
-        if (byMonth[m] && mDate >= startOfMonth(start) && mDate <= end) byMonth[m].receita += monthly;
-      });
+    // Apenas parcelas futuras pendentes (installment_due_date >= hoje e status != Pago/Cancelado)
+    effectiveManual.forEach(e => {
+      if (e.category === 'Transferência entre Contas') return;
+      if (normalizeStatus(e.status) === 'Pago' || e.status === 'Cancelado') return;
+      // Usar data de vencimento da parcela se existir, senão data da transação
+      const dueDate = e.installment_due_date || e.date;
+      if (!dueDate) return;
+      const month = dueDate.substring(0, 7);
+      if (!byMonth[month]) return;
+      if (e.transaction_type === 'receita') byMonth[month].receita += e.amount || 0;
+      else byMonth[month].despesa += e.amount || 0;
     });
 
-    // Recurring expense average from last 3 months
-    const last3 = Array.from({ length:3 }, (_,i) => format(subMonths(now, i+1), 'yyyy-MM'));
-    const expCats = {};
-    effectiveManual.filter(e => e.transaction_type==='despesa' && last3.includes(e.competencia||e.date?.substring(0,7))).forEach(e => {
-      const cat = e.category||'Outros';
-      if (!expCats[cat]) expCats[cat] = [];
-      expCats[cat].push(e.amount || 0);
-    });
-    const avgExp = Object.values(expCats).reduce((s, vals) => s + vals.reduce((a,v)=>a+v,0)/3, 0);
-
-    // Receita média removida da projeção — só contratos ativos explícitos são projetados
-    const avgInc = 0;
-
-    // Serviços CRM removidos da projeção — já capturados pela média histórica (avgInc)
-
-    // Calcula saldo acumulado histórico independentemente (sem referenciar o useMemo historico)
+    // Saldo acumulado parte do resultado histórico dos últimos 12 meses
     const histMonths12 = Array.from({ length: 12 }, (_, i) => format(subMonths(now, 11-i), 'yyyy-MM'));
     const histByMonth = {};
     histMonths12.forEach(m => { histByMonth[m] = { receita: 0, despesa: 0 }; });
-    effectiveCharges.forEach(c => {
-      const month = (c.due_date || c.paid_at || '')?.substring(0,7);
-      if (histByMonth[month] && normalizeStatus(c.status) === 'Pago') histByMonth[month].receita += c.amount || 0;
-    });
     effectiveManual.forEach(e => {
       if (e.category === 'Transferência entre Contas') return;
       const month = e.competencia || e.date?.substring(0,7);
@@ -169,22 +146,24 @@ export default function FinancialDashboard() {
         if (e.transaction_type === 'receita') {
           if (normalizeStatus(e.status) === 'Pago') histByMonth[month].receita += e.amount || 0;
         } else {
-          histByMonth[month].despesa += e.amount || 0;
+          if (normalizeStatus(e.status) === 'Pago') histByMonth[month].despesa += e.amount || 0;
         }
       }
     });
     let accSaldo = histMonths12.reduce((s, m) => s + (histByMonth[m].receita - histByMonth[m].despesa), 0);
 
-    return months.map((m,i) => {
-      const projReceita = byMonth[m].receita + avgInc;
-      const projDespesa = byMonth[m].despesa + avgExp;
+    return months.map((m, i) => {
+      const projReceita = byMonth[m].receita;
+      const projDespesa = byMonth[m].despesa;
       const resultado = projReceita - projDespesa;
       accSaldo += resultado;
-      return { mes: format(parseISO(m+'-01'), 'MMM/yy', {locale:ptBR}), mesKey:m,
+      return {
+        mes: format(parseISO(m+'-01'), 'MMM/yy', { locale: ptBR }), mesKey: m,
         receita: Math.round(projReceita), despesa: Math.round(projDespesa),
-        resultado: Math.round(resultado), saldoAcumulado: Math.round(accSaldo), isCurrent: i===0 };
+        resultado: Math.round(resultado), saldoAcumulado: Math.round(accSaldo), isCurrent: i === 0
+      };
     });
-    }, [charges, effectiveManual, contracts, filterAccount]);
+  }, [effectiveManual, effectiveCharges]);
 
   const kpis = useMemo(() => {
     const totalReceita12 = historico.reduce((s,h)=>s+h.receita, 0);
@@ -361,7 +340,7 @@ export default function FinancialDashboard() {
                 <CalendarRange className="w-4 h-4 text-violet-600"/>Fluxo de Caixa Projetado — Próximos 12 Meses
               </CardTitle>
               <p className="text-xs text-gray-400 flex items-center gap-1.5">
-                <Info className="w-3 h-3"/>Estimativa baseada em contratos ativos e média de despesas dos últimos 3 meses
+                <Info className="w-3 h-3"/>Baseado em parcelas e lançamentos pendentes registrados em Transações Consolidadas
               </p>
             </CardHeader>
             <CardContent>

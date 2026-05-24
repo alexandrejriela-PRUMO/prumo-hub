@@ -173,29 +173,7 @@ export default function FinancialDashboard() {
     });
     const avgInc = Object.values(incByMonth).reduce((s,v)=>s+v,0)/3;
 
-    // Adicionar receitas de serviços parcelados e avista do CRM às projeções
-    crms.forEach(crm => {
-      if (!crm.services) return;
-      crm.services.forEach(svc => {
-        const value = parseFloat(svc.value) || 0;
-        if (!svc.received) {
-          // Serviço não completamente pago: adicionar como pendente
-          const month = svc.start_date?.substring(0,7) || format(new Date(), 'yyyy-MM');
-          if (byMonth[month]) byMonth[month].receita += value;
-        } else if (svc.payment_type === 'parcelado' && svc.installments_data?.length > 0) {
-          // Parcelado já recebido: somar parcelas por mês de recebimento
-          svc.installments_data.forEach(inst => {
-            if (inst.received && inst.received_at) {
-              const monthKey = inst.received_at.substring(0,7);
-              if (byMonth[monthKey]) {
-                const partialValue = value / svc.installments_data.length;
-                byMonth[monthKey].receita += partialValue;
-              }
-            }
-          });
-        }
-      });
-    });
+    // Serviços CRM removidos da projeção — já capturados pela média histórica (avgInc)
 
     // Calcula saldo acumulado histórico independentemente (sem referenciar o useMemo historico)
     const histMonths12 = Array.from({ length: 12 }, (_, i) => format(subMonths(now, 11-i), 'yyyy-MM'));

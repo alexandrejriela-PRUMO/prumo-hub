@@ -36,6 +36,7 @@ import LicenseChecklistPanel from '../components/license/LicenseChecklistPanel';
 import { toast } from 'sonner';
 import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
+import LicenseStatusInfographic from '../components/license/LicenseStatusInfographic';
 
 
 const licenseTypes = [
@@ -136,6 +137,7 @@ export default function Licenses() {
   const [newConditionDueDate, setNewConditionDueDate] = useState('');
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [docType, setDocType] = useState('Licença Principal');
+  const [statusFilter, setStatusFilter] = useState(null);
 
   // Detectar mudanças no formulário
   const isFormDirty = initialFormData && JSON.stringify(formData) !== JSON.stringify(initialFormData);
@@ -218,6 +220,18 @@ export default function Licenses() {
       setFormData(prev => ({ ...prev, property_id: allProperties[0].id }));
     }
   }, [allProperties]);
+
+  // Todas as licenças do consultor (para o infográfico — independente da propriedade selecionada)
+  const { data: allConsultorLicenses = [] } = useQuery({
+    queryKey: ['licenses-all-consultor', queryEmail],
+    queryFn: async () => {
+      const results = await Promise.all(
+        properties.map(p => base44.entities.License.filter({ property_id: p.id }))
+      );
+      return results.flat();
+    },
+    enabled: !!queryEmail && isConsultor && !isEquipeProdutor && properties.length > 0,
+  });
 
   const { data: licenses, isLoading } = useQuery({
     queryKey: ['licenses', consultorPropertyId, queryEmail, isClientConsultor],
@@ -457,6 +471,16 @@ export default function Licenses() {
           selectedPropertyId={consultorPropertyId}
           onSelect={setConsultorPropertyId}
           isLoading={propertiesLoading}
+        />
+      )}
+
+      {/* Infográfico geral de licenças — visível para consultor/equipe consultor */}
+      {isConsultor && !isClientConsultor && allConsultorLicenses.length > 0 && (
+        <LicenseStatusInfographic
+          allLicenses={allConsultorLicenses}
+          allProperties={allProperties}
+          activeFilter={statusFilter}
+          onFilterSelect={(key) => setStatusFilter(key)}
         />
       )}
 
@@ -748,7 +772,15 @@ export default function Licenses() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          {(licenses || []).map((license) => {
+          {(licenses || []).filter(license => {
+            if (!statusFilter) return true;
+            if (!license.expiry_date) return statusFilter === 'vigente';
+            const days = differenceInDays(parseISO(license.expiry_date), new Date());
+            if (statusFilter === 'vencida') return days < 0;
+            if (statusFilter === 'a_vencer') return days >= 0 && days <= 90;
+            if (statusFilter === 'vigente') return days > 90;
+            return true;
+          }).map((license) => {
             const statusInfo = getLicenseStatus(license);
             const StatusIcon = statusInfo.icon || Clock;
             return (

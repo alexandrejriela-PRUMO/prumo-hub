@@ -188,7 +188,7 @@ export default function FinancialTransactions() {
       esc(t.propertyName || ''),
       esc(t.accountLabel || ''),
       esc(t.competencia || ''),
-      esc(t.date ? format(parseISO(t.date), 'dd/MM/yyyy') : ''),
+      t.date ? `"'${format(parseISO(t.date), 'dd/MM/yyyy')}"` : '""',
       fmtCsv(t.amount),
       isTransfer(t) ? '=' : t.type === 'receita' ? '+' : '-',
       t.status || '',

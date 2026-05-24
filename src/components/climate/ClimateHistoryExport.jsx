@@ -23,11 +23,10 @@ export default function ClimateHistoryExport({ climateRecord, propertyName }) {
   const [endDate, setEndDate] = useState('');
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
+  const hasRecords = !!(climateRecord?.historical_records && climateRecord.historical_records.length > 0);
+
   const exportToCSV = () => {
-    if (!climateRecord?.historical_records || climateRecord.historical_records.length === 0) {
-      alert('Nenhum registro histórico disponível');
-      return;
-    }
+    if (!hasRecords) return;
 
     let records = climateRecord.historical_records;
     
@@ -68,10 +67,7 @@ export default function ClimateHistoryExport({ climateRecord, propertyName }) {
   };
 
   const exportToPDF = async () => {
-    if (!climateRecord?.historical_records || climateRecord.historical_records.length === 0) {
-      alert('Nenhum registro histórico disponível');
-      return;
-    }
+    if (!hasRecords) return;
 
     let records = climateRecord.historical_records;
     
@@ -175,7 +171,7 @@ export default function ClimateHistoryExport({ climateRecord, propertyName }) {
     link.click();
     URL.revokeObjectURL(url);
     
-    alert('Arquivo HTML gerado! Abra no navegador e use "Imprimir > Salvar como PDF" para gerar o PDF final.');
+    setExportDialogOpen(false);
   };
 
   // Calcular estatísticas
@@ -344,12 +340,17 @@ export default function ClimateHistoryExport({ climateRecord, propertyName }) {
                     onChange={(e) => setEndDate(e.target.value)}
                   />
                 </div>
+                {!hasRecords && (
+                  <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                    Nenhum registro histórico disponível. Aguarde a coleta automática de dados climáticos.
+                  </p>
+                )}
                 <div className="flex gap-2">
-                  <Button onClick={exportToCSV} variant="outline" className="flex-1">
+                  <Button onClick={exportToCSV} variant="outline" className="flex-1" disabled={!hasRecords}>
                     <FileText className="w-4 h-4 mr-2" />
                     Exportar CSV
                   </Button>
-                  <Button onClick={exportToPDF} className="flex-1 bg-red-600 hover:bg-red-700">
+                  <Button onClick={exportToPDF} className="flex-1 bg-red-600 hover:bg-red-700" disabled={!hasRecords}>
                     <FileText className="w-4 h-4 mr-2" />
                     Exportar PDF
                   </Button>

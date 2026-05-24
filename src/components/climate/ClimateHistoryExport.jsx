@@ -42,6 +42,15 @@ export default function ClimateHistoryExport({ climateRecord, propertyName }) {
 
   const hasRecords = !!(climateRecord?.historical_records && climateRecord.historical_records.length > 0);
 
+  // Retorna precipitação efetiva (corrigida se disponível) e eventos efetivos
+  const effectivePrecip = (r) => r.corrected_precipitation !== undefined ? r.corrected_precipitation : (r.precipitation ?? 0);
+  const effectiveEvents = (r) => {
+    if (r.corrected_events) {
+      return r.corrected_events.split(',').map(e => e.trim()).filter(Boolean);
+    }
+    return r.climate_events || [];
+  };
+
   const PERIOD_OPTIONS = [
     { label: '30 dias', value: 30 },
     { label: '60 dias', value: 60 },
@@ -57,13 +66,19 @@ export default function ClimateHistoryExport({ climateRecord, propertyName }) {
   const periodRecords = allRecords.slice(-periodDays).reverse();
 
   // Salvar observação de um dia no banco
-  const handleSaveObservation = async (date, { observation, divergence_type, divergence_detail }) => {
+  const handleSaveObservation = async (date, { observation, divergence_type, divergence_detail, corrected_precipitation, corrected_events }) => {
     if (!climateRecord?.id) return;
     setSaving(true);
     try {
       const updatedRecords = (climateRecord.historical_records || []).map(r => {
         if (r.date === date) {
-          return { ...r, observation, divergence_type, divergence_detail };
+          const updated = { ...r, observation, divergence_type, divergence_detail, corrected_events };
+          if (corrected_precipitation !== undefined) {
+            updated.corrected_precipitation = corrected_precipitation;
+          } else {
+            delete updated.corrected_precipitation;
+          }
+          return updated;
         }
         return r;
       });
@@ -96,7 +111,7 @@ export default function ClimateHistoryExport({ climateRecord, propertyName }) {
     const records = getFilteredRecords();
 
     const headers = [
-      'Data', 'Temp. Máx (°C)', 'Temp. Mín (°C)', 'Precipitação (mm)',
+      'Data', 'Temp. Máx (°C)', 'Temp. Mín (°C)', 'Precipitação Efetiva (mm)', 'Precip. Original API (mm)',
       'Umidade Média (%)', 'Vento Máx (km/h)', 'Eventos Climáticos',
       'Observação do Campo', 'Tipo de Divergência', 'Detalhe da Divergência'
     ].join(';');
@@ -105,10 +120,11 @@ export default function ClimateHistoryExport({ climateRecord, propertyName }) {
       format(parseISO(r.date), 'dd/MM/yyyy', { locale: ptBR }),
       r.temperature_max ?? '-',
       r.temperature_min ?? '-',
-      r.precipitation ?? '0',
+      effectivePrecip(r),
+      r.corrected_precipitation !== undefined ? `(API: ${r.precipitation ?? 0})` : '',
       r.humidity_avg ?? '-',
       r.wind_speed_max ?? '-',
-      (r.climate_events || []).join(' | '),
+      effectiveEvents(r).join(' | '),
       (r.observation || '').replace(/;/g, ','),
       r.divergence_type ? (DIVERGENCE_LABELS[r.divergence_type] || r.divergence_type) : '',
       (r.divergence_detail || '').replace(/;/g, ',')
@@ -134,7 +150,12 @@ export default function ClimateHistoryExport({ climateRecord, propertyName }) {
     const rowsHtml = records.map(r => {
       const hasDivergence = !!r.divergence_type;
       const hasObs = !!r.observation;
-      const rowStyle = hasDivergence ? 'background:#fff7ed;' : (hasObs ? 'background:#fefce8;' : '');
+      const hasCorrectedPrecip = r.corrected_precipitation !== undefined;
+      const hasCorrectedEvents = !!r.corrected_events;
+      const rowStyle = hasDivergence ? 'background:#fff7ed;' : (hasObs || hasCorrectedPrecip || hasCorrectedEvents ? 'background:#fefce8;' : '');
+      const precipDisplay = hasCorrectedPrecip
+        ? `<strong style="color:#1d4ed8;">${r.corrected_precipitation} mm</strong> <span style="color:#9ca3af;text-decoration:line-through;font-size:10px;">${r.precipitation ?? 0}</span>`
+        : `${r.precipitation ?? '0'}`;
       
       return `
         <tr style="${rowStyle}">
@@ -145,13 +166,14 @@ export default function ClimateHistoryExport({ climateRecord, propertyName }) {
             ${r.temperature_max ?? '-'} / ${r.temperature_min ?? '-'}
           </td>
           <td style="padding:8px 10px; border-bottom:1px solid #e5e7eb; text-align:center;">
-            ${r.precipitation ?? '0'}
+            ${precipDisplay}
           </td>
           <td style="padding:8px 10px; border-bottom:1px solid #e5e7eb; text-align:center;">
             ${r.humidity_avg ?? '-'}
           </td>
           <td style="padding:8px 10px; border-bottom:1px solid #e5e7eb;">
-            ${(r.climate_events || []).map(e => `<span style="background:#fee2e2;color:#991b1b;padding:2px 6px;border-radius:4px;font-size:11px;margin-right:3px;">${e}</span>`).join('')}
+            ${effectiveEvents(r).map(e => `<span style="background:#fee2e2;color:#991b1b;padding:2px 6px;border-radius:4px;font-size:11px;margin-right:3px;">${e}</span>`).join('')}
+            ${hasCorrectedPrecip ? `<div style="margin-top:5px;color:#1d4ed8;font-size:11px;"><strong>💧 Precipitação corrigida:</strong> ${r.corrected_precipitation} mm (API registrou ${r.precipitation ?? 0} mm)</div>` : ''}
             ${hasObs ? `<div style="margin-top:5px;color:#78350f;font-size:11px;"><strong>📝 Obs:</strong> ${r.observation}</div>` : ''}
             ${hasDivergence ? `
               <div style="margin-top:5px;background:#fff7ed;border:1px solid #fed7aa;border-radius:4px;padding:4px 8px;font-size:11px;">
@@ -233,11 +255,11 @@ export default function ClimateHistoryExport({ climateRecord, propertyName }) {
 
   <h2>📈 Resumo Estatístico</h2>
   <div class="stats-grid">
-    <div class="stat-box"><div class="stat-number">${records.length}</div><div class="stat-label">Dias com registros</div></div>
-    <div class="stat-box"><div class="stat-number">${records.reduce((s, r) => s + (r.precipitation || 0), 0).toFixed(1)} mm</div><div class="stat-label">Precipitação total</div></div>
-    <div class="stat-box"><div class="stat-number">${records.filter(r => (r.precipitation || 0) > 0).length}</div><div class="stat-label">Dias com chuva</div></div>
-    <div class="stat-box"><div class="stat-number">${annotatedCount}</div><div class="stat-label">Dias c/ observação</div></div>
-    <div class="stat-box"><div class="stat-number">${divergentCount}</div><div class="stat-label">Divergências registradas</div></div>
+  <div class="stat-box"><div class="stat-number">${records.length}</div><div class="stat-label">Dias com registros</div></div>
+  <div class="stat-box"><div class="stat-number">${records.reduce((s, r) => s + effectivePrecip(r), 0).toFixed(1)} mm</div><div class="stat-label">Precipitação total (efetiva)</div></div>
+  <div class="stat-box"><div class="stat-number">${records.filter(r => effectivePrecip(r) > 0).length}</div><div class="stat-label">Dias com chuva</div></div>
+  <div class="stat-box"><div class="stat-number">${annotatedCount}</div><div class="stat-label">Dias c/ observação</div></div>
+  <div class="stat-box"><div class="stat-number">${divergentCount}</div><div class="stat-label">Divergências registradas</div></div>
   </div>
 
   <h2>📅 Registros Diários</h2>
@@ -281,10 +303,10 @@ export default function ClimateHistoryExport({ climateRecord, propertyName }) {
     setExportDialogOpen(false);
   };
 
-  // Estatísticas baseadas no período selecionado
-  const totalPrecip = periodRecords.reduce((s, r) => s + (r.precipitation || 0), 0);
-  const daysWithRain = periodRecords.filter(r => (r.precipitation || 0) > 0).length;
-  const annotatedTotal = allRecords.filter(r => r.observation || r.divergence_type).length;
+  // Estatísticas baseadas no período selecionado, usando valores corrigidos quando disponíveis
+  const totalPrecip = periodRecords.reduce((s, r) => s + effectivePrecip(r), 0);
+  const daysWithRain = periodRecords.filter(r => effectivePrecip(r) > 0).length;
+  const annotatedTotal = allRecords.filter(r => r.observation || r.divergence_type || r.corrected_precipitation !== undefined || r.corrected_events).length;
 
   return (
     <Card>
@@ -344,7 +366,7 @@ export default function ClimateHistoryExport({ climateRecord, propertyName }) {
                 <p className="text-xs font-medium">Eventos Climáticos</p>
               </div>
               <p className="text-xl font-bold text-red-900">
-                {periodRecords.reduce((s, r) => s + (r.climate_events?.length || 0), 0)}
+                {periodRecords.reduce((s, r) => s + effectiveEvents(r).length, 0)}
               </p>
               <p className="text-xs text-red-700 mt-1">registros automáticos</p>
             </div>
@@ -392,10 +414,20 @@ export default function ClimateHistoryExport({ climateRecord, propertyName }) {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 flex-wrap">
                           <p className="font-medium text-sm">{format(parseISO(record.date), 'dd/MM/yyyy', { locale: ptBR })}</p>
-                          <div className="flex gap-2 text-xs text-gray-600">
+                          <div className="flex gap-2 text-xs text-gray-600 flex-wrap">
                             <span>🌡️ {record.temperature_max ?? '-'}°/{record.temperature_min ?? '-'}°C</span>
-                            <span>💧 {record.precipitation ?? 0} mm</span>
+                            {record.corrected_precipitation !== undefined ? (
+                              <span className="text-blue-700 font-semibold">
+                                💧 {record.corrected_precipitation} mm
+                                <span className="text-gray-400 font-normal line-through ml-1">{record.precipitation ?? 0}</span>
+                              </span>
+                            ) : (
+                              <span>💧 {record.precipitation ?? 0} mm</span>
+                            )}
                             <span>💨 {record.humidity_avg ?? '-'}%</span>
+                            {record.corrected_events && (
+                              <span className="text-purple-700 font-semibold">⚡ {record.corrected_events}</span>
+                            )}
                           </div>
                         </div>
                         {hasObs && (

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Pencil, Save, X, AlertTriangle, MessageSquare } from 'lucide-react';
 
@@ -21,14 +22,21 @@ export default function DayObservationEditor({ record, onSave }) {
   const [observation, setObservation] = useState(record.observation || '');
   const [divergenceType, setDivergenceType] = useState(record.divergence_type || '');
   const [divergenceDetail, setDivergenceDetail] = useState(record.divergence_detail || '');
+  const [correctedPrecipitation, setCorrectedPrecipitation] = useState(
+    record.corrected_precipitation !== undefined ? String(record.corrected_precipitation) : ''
+  );
+  const [correctedEvents, setCorrectedEvents] = useState(record.corrected_events || '');
 
-  const hasAnnotation = !!(record.observation || record.divergence_type);
+  const hasAnnotation = !!(record.observation || record.divergence_type || record.corrected_precipitation !== undefined || record.corrected_events);
 
   const handleSave = () => {
+    const corrPrecip = correctedPrecipitation !== '' ? parseFloat(correctedPrecipitation) : undefined;
     onSave(record.date, {
       observation: observation.trim(),
       divergence_type: divergenceType,
-      divergence_detail: divergenceDetail.trim()
+      divergence_detail: divergenceDetail.trim(),
+      corrected_precipitation: isNaN(corrPrecip) ? undefined : corrPrecip,
+      corrected_events: correctedEvents.trim()
     });
     setOpen(false);
   };
@@ -37,7 +45,9 @@ export default function DayObservationEditor({ record, onSave }) {
     setObservation('');
     setDivergenceType('');
     setDivergenceDetail('');
-    onSave(record.date, { observation: '', divergence_type: '', divergence_detail: '' });
+    setCorrectedPrecipitation('');
+    setCorrectedEvents('');
+    onSave(record.date, { observation: '', divergence_type: '', divergence_detail: '', corrected_precipitation: undefined, corrected_events: '' });
     setOpen(false);
   };
 
@@ -95,6 +105,49 @@ export default function DayObservationEditor({ record, onSave }) {
                 maxLength={500}
               />
               <p className="text-xs text-gray-400 text-right">{observation.length}/500</p>
+            </div>
+
+            {/* Correção de Precipitação */}
+            <div className="space-y-2">
+              <Label className="font-semibold flex items-center gap-2">
+                💧 Precipitação real na área (mm)
+              </Label>
+              <p className="text-xs text-gray-500">
+                Dado da API: <strong>{record.precipitation ?? 0} mm</strong>. Se o valor real na sua área foi diferente, informe aqui. Este valor será usado nas estatísticas e no relatório exportado.
+              </p>
+              <div className="flex items-center gap-3">
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={correctedPrecipitation}
+                  onChange={(e) => setCorrectedPrecipitation(e.target.value)}
+                  placeholder={`Valor da API: ${record.precipitation ?? 0}`}
+                  className="max-w-[180px]"
+                />
+                <span className="text-sm text-gray-500">mm</span>
+                {correctedPrecipitation !== '' && (
+                  <Badge variant="outline" className="text-blue-700 border-blue-300 bg-blue-50">
+                    Corrigido: {correctedPrecipitation} mm
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            {/* Eventos climáticos reais */}
+            <div className="space-y-2">
+              <Label className="font-semibold flex items-center gap-2">
+                ⚡ Eventos climáticos reais na área
+              </Label>
+              <p className="text-xs text-gray-500">
+                Informe eventos que ocorreram na área mas não foram capturados pela API (ex: granizo, geada, vento forte).
+              </p>
+              <Input
+                value={correctedEvents}
+                onChange={(e) => setCorrectedEvents(e.target.value)}
+                placeholder="Ex: Granizo, Geada, Vento forte"
+                className="w-full"
+              />
             </div>
 
             {/* Divergência de dados */}

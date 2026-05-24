@@ -6,13 +6,15 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import ContractForm from '@/components/contract/ContractForm';
 import ContractEditorWYSIWYG from '@/components/contract/ContractEditorWYSIWYG';
-import { ChevronLeft, Download, Copy, Trash2 } from 'lucide-react';
+import ContractEmailHistory from '@/components/contract/ContractEmailHistory';
+import { ChevronLeft, Download, Copy, Trash2, FileText, Mail, Plus } from 'lucide-react';
 import { useNavigationGuard } from '../hooks/useNavigationGuard';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 export default function ContractGenerator() {
   const [step, setStep] = React.useState('form');
+  const [historyTab, setHistoryTab] = React.useState('contracts');
   const [contractData, setContractData] = React.useState(null);
   const [user, setUser] = React.useState(null);
   const [selectedContract, setSelectedContract] = React.useState(null);
@@ -261,7 +263,48 @@ export default function ContractGenerator() {
         )}
 
         {step === 'history' && (
-          <div className="space-y-4">
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-bold text-emerald-900">Histórico de Contratos</h2>
+              </div>
+              <Button onClick={() => setStep('form')} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
+                <Plus className="w-4 h-4" /> Novo Contrato
+              </Button>
+            </div>
+
+            {/* Abas */}
+            <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl w-fit">
+              <button
+                onClick={() => setHistoryTab('contracts')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  historyTab === 'contracts'
+                    ? 'bg-white text-emerald-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <FileText className="w-4 h-4" />
+                Contratos ({contracts.length})
+              </button>
+              <button
+                onClick={() => setHistoryTab('emails')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  historyTab === 'emails'
+                    ? 'bg-white text-emerald-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <Mail className="w-4 h-4" />
+                E-mails Enviados
+              </button>
+            </div>
+
+            {historyTab === 'emails' && (
+              <ContractEmailHistory consultorEmail={user?.email} />
+            )}
+
+            {historyTab === 'contracts' && (
+            <div className="space-y-4">
             {contracts.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-600">Nenhum contrato criado ainda</p>
@@ -316,6 +359,8 @@ export default function ContractGenerator() {
                   </div>
                 </div>
               ))
+            )}
+            </div>
             )}
           </div>
         )}

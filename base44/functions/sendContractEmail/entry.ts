@@ -97,6 +97,22 @@ Deno.serve(async (req) => {
       replyTo: user.email,
     });
 
+    // Registrar log do e-mail enviado
+    try {
+      await base44.asServiceRole.entities.BudgetEmailLog.create({
+        budget_id: contract_id,
+        budget_number: contract.contract_number || `CTR-${contract_id}`,
+        consultor_email: user.email,
+        to,
+        subject,
+        message,
+        sent_at: new Date().toISOString(),
+        status: 'sent',
+      });
+    } catch (logErr) {
+      console.warn('Erro ao registrar log de e-mail:', logErr.message);
+    }
+
     // Atualizar status do contrato para "Em Assinatura" se ainda for Proposta
     if (contract.status === 'Proposta') {
       await base44.entities.ClientContract.update(contract_id, { status: 'Em Assinatura' });

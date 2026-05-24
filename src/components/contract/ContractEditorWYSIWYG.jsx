@@ -295,6 +295,21 @@ export default function ContractEditorWYSIWYG({
             ${pdfLink}
           </body></html>`,
         });
+
+        // Registrar log do e-mail enviado (para contrato não salvo)
+        try {
+          await base44.asServiceRole.entities.BudgetEmailLog.create({
+            budget_number: `CTR-${contractData?.client_name?.replace(/\s+/g, '-') || Date.now()}`,
+            consultor_email: contractData?.consultor_email,
+            to,
+            subject,
+            message,
+            sent_at: new Date().toISOString(),
+            status: 'sent',
+          });
+        } catch (logErr) {
+          console.warn('Erro ao registrar log de e-mail:', logErr.message);
+        }
       }
 
       toast.success('E-mail enviado com sucesso!');

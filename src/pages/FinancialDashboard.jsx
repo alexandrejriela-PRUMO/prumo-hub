@@ -165,13 +165,8 @@ export default function FinancialDashboard() {
     });
     const avgExp = Object.values(expCats).reduce((s, vals) => s + vals.reduce((a,v)=>a+v,0)/3, 0);
 
-    // Recurring income average (manual)
-    const incByMonth = {}; last3.forEach(m=>{incByMonth[m]=0;});
-    effectiveManual.filter(e => e.transaction_type==='receita' && last3.includes(e.competencia||e.date?.substring(0,7))).forEach(e => {
-      const m = e.competencia||e.date?.substring(0,7);
-      if (incByMonth[m]!==undefined) incByMonth[m] += e.amount||0;
-    });
-    const avgInc = Object.values(incByMonth).reduce((s,v)=>s+v,0)/3;
+    // Receita média removida da projeção — só contratos ativos explícitos são projetados
+    const avgInc = 0;
 
     // Serviços CRM removidos da projeção — já capturados pela média histórica (avgInc)
 

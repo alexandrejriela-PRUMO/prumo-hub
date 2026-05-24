@@ -52,6 +52,7 @@ export default function ClimateHistoryExport({ climateRecord, propertyName }) {
   };
 
   const PERIOD_OPTIONS = [
+    { label: '7 dias', value: 7 },
     { label: '30 dias', value: 30 },
     { label: '60 dias', value: 60 },
     { label: '90 dias', value: 90 },

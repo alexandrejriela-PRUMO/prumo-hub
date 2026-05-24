@@ -162,6 +162,32 @@ export default function DashboardFullExport({ user, selectedProperty, licenses =
             doc.text(lines, M + 5, y); y += lines.length * 4;
           }
           if (lic.conditions?.length) { doc.text(`Condicionantes: ${lic.conditions.length}`, M + 5, y); y += 4; }
+
+          // Andamentos recentes (últimos 3)
+          if (lic.updates?.length > 0) {
+            checkSpace(6);
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(8);
+            doc.setTextColor(22, 101, 52);
+            doc.text(`Andamentos recentes (${lic.updates.length} total):`, M + 5, y);
+            doc.setTextColor(0, 0, 0);
+            y += 4;
+            const recentUpdates = [...lic.updates].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 3);
+            recentUpdates.forEach(upd => {
+              checkSpace(8);
+              doc.setFont(undefined, 'normal');
+              doc.setFontSize(8);
+              const dateStr = upd.date ? format(new Date(upd.date), 'dd/MM/yyyy') : '—';
+              const resp = upd.responsible ? ` [${upd.responsible}]` : '';
+              doc.setFillColor(240, 253, 244);
+              doc.rect(M + 5, y - 3, pageWidth - M * 2 - 5, 5, 'F');
+              doc.setDrawColor(16, 185, 129);
+              doc.line(M + 5, y - 3, M + 5, y + 2);
+              const descLines = doc.splitTextToSize(`${dateStr}${resp} — ${upd.description || ''}`, pageWidth - M * 2 - 14);
+              doc.text(descLines.slice(0, 2), M + 8, y);
+              y += Math.min(descLines.length, 2) * 4 + 1;
+            });
+          }
           y += 2;
         });
       }
@@ -190,6 +216,32 @@ export default function DashboardFullExport({ user, selectedProperty, licenses =
           if (proc.fine_value) { doc.text(`Multa: R$ ${proc.fine_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, M + 5, y); y += 4; }
           if (proc.has_embargo) { doc.text(`Embargo: ${proc.embargo_respected ? 'Sendo respeitado' : 'NÃO RESPEITADO'}`, M + 5, y); y += 4; }
           if (proc.filing_date) { doc.text(`Propositura: ${format(new Date(proc.filing_date), 'dd/MM/yyyy')}`, M + 5, y); y += 4; }
+
+          // Andamentos processuais recentes (últimos 3)
+          if (proc.updates?.length > 0) {
+            checkSpace(6);
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(8);
+            doc.setTextColor(59, 130, 246);
+            doc.text(`Andamentos processuais (${proc.updates.length} total):`, M + 5, y);
+            doc.setTextColor(0, 0, 0);
+            y += 4;
+            const recentUpdates = [...proc.updates].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 3);
+            recentUpdates.forEach(upd => {
+              checkSpace(8);
+              doc.setFont(undefined, 'normal');
+              doc.setFontSize(8);
+              const dateStr = upd.date ? format(new Date(upd.date), 'dd/MM/yyyy') : '—';
+              const resp = upd.responsible ? ` [${upd.responsible}]` : '';
+              doc.setFillColor(239, 246, 255);
+              doc.rect(M + 5, y - 3, pageWidth - M * 2 - 5, 5, 'F');
+              doc.setDrawColor(59, 130, 246);
+              doc.line(M + 5, y - 3, M + 5, y + 2);
+              const descLines = doc.splitTextToSize(`${dateStr}${resp} — ${upd.description || ''}`, pageWidth - M * 2 - 14);
+              doc.text(descLines.slice(0, 2), M + 8, y);
+              y += Math.min(descLines.length, 2) * 4 + 1;
+            });
+          }
           y += 2;
         });
       }
@@ -217,6 +269,57 @@ export default function DashboardFullExport({ user, selectedProperty, licenses =
           if (prad.recovery_objective?.main_objective) { doc.text(`Objetivo: ${prad.recovery_objective.main_objective}`, M + 5, y); y += 4; }
           if (prad.monitoring?.survival_rate != null) { doc.text(`Taxa de sobrevivência: ${prad.monitoring.survival_rate}%`, M + 5, y); y += 4; }
           if (prad.annual_reports?.length) { doc.text(`Relatórios anuais: ${prad.annual_reports.length} registrado(s)`, M + 5, y); y += 4; }
+
+          // Andamentos do cronograma de execução (etapas recentes)
+          if (prad.execution_schedule?.length > 0) {
+            checkSpace(6);
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(8);
+            doc.setTextColor(139, 92, 246);
+            doc.text(`Cronograma de execução (${prad.execution_schedule.length} etapas):`, M + 5, y);
+            doc.setTextColor(0, 0, 0);
+            y += 4;
+            const recentStages = [...prad.execution_schedule].sort((a, b) => new Date(b.deadline) - new Date(a.deadline)).slice(0, 3);
+            recentStages.forEach(stage => {
+              checkSpace(8);
+              doc.setFont(undefined, 'normal');
+              doc.setFontSize(8);
+              const dateStr = stage.deadline ? format(new Date(stage.deadline), 'dd/MM/yyyy') : '—';
+              doc.setFillColor(245, 243, 255);
+              doc.rect(M + 5, y - 3, pageWidth - M * 2 - 5, 5, 'F');
+              doc.setDrawColor(139, 92, 246);
+              doc.line(M + 5, y - 3, M + 5, y + 2);
+              const stageLines = doc.splitTextToSize(`${stage.stage || '—'} — ${stage.status || '—'} (prazo: ${dateStr})`, pageWidth - M * 2 - 14);
+              doc.text(stageLines.slice(0, 2), M + 8, y);
+              y += Math.min(stageLines.length, 2) * 4 + 1;
+            });
+          }
+
+          // Relatórios de monitoramento recentes
+          if (prad.monitoring?.periodic_reports?.length > 0) {
+            checkSpace(6);
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(8);
+            doc.setTextColor(22, 101, 52);
+            doc.text(`Relatórios de monitoramento (${prad.monitoring.periodic_reports.length} total):`, M + 5, y);
+            doc.setTextColor(0, 0, 0);
+            y += 4;
+            const recentReports = [...prad.monitoring.periodic_reports].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 2);
+            recentReports.forEach(rep => {
+              checkSpace(8);
+              doc.setFont(undefined, 'normal');
+              doc.setFontSize(8);
+              const dateStr = rep.date ? format(new Date(rep.date), 'dd/MM/yyyy') : '—';
+              const survStr = rep.survival_rate != null ? ` | Sobrevivência: ${rep.survival_rate}%` : '';
+              doc.setFillColor(240, 253, 244);
+              doc.rect(M + 5, y - 3, pageWidth - M * 2 - 5, 5, 'F');
+              doc.setDrawColor(16, 185, 129);
+              doc.line(M + 5, y - 3, M + 5, y + 2);
+              const repLines = doc.splitTextToSize(`${dateStr}${survStr} — ${rep.observations || rep.report_type || ''}`, pageWidth - M * 2 - 14);
+              doc.text(repLines.slice(0, 2), M + 8, y);
+              y += Math.min(repLines.length, 2) * 4 + 1;
+            });
+          }
           y += 2;
         });
       }

@@ -31,9 +31,11 @@ export default function SendEmailModal({
 
   // Atualiza campos se props mudarem (ex: ao abrir o modal com dados diferentes)
   React.useEffect(() => {
-    setTo(defaultTo);
-    setSubject(defaultSubject);
-    setMessage(defaultMessage);
+    if (isOpen) {
+      setTo(defaultTo);
+      setSubject(defaultSubject);
+      setMessage(defaultMessage);
+    }
   }, [defaultTo, defaultSubject, defaultMessage, isOpen]);
 
   const handleSend = () => {

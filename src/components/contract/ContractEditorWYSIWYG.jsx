@@ -251,10 +251,18 @@ export default function ContractEditorWYSIWYG({
       const blob = pdf.output('blob');
       const fileName = `contrato-${contractData?.id || contractData?.client_name?.replace(/\s+/g,'-') || Date.now()}.pdf`;
       const file = new File([blob], fileName, { type: 'application/pdf' });
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      
+      toast.info('Enviando arquivo...');
+      const uploadResult = await base44.integrations.Core.UploadFile({ file });
+      const file_url = uploadResult?.file_url;
+
+      if (!file_url) {
+        throw new Error('Falha ao enviar arquivo para servidor');
+      }
 
       if (contractData?.id) {
         // Contrato já salvo: usa backend function (também atualiza status)
+        toast.info('Enviando e-mail...');
         await base44.functions.invoke('sendContractEmail', {
           contract_id: contractData.id,
           to,
@@ -264,6 +272,7 @@ export default function ContractEditorWYSIWYG({
         });
       } else {
         // Contrato ainda não salvo: envia diretamente via SendEmail
+        toast.info('Enviando e-mail...');
         const customMessage = (message || '').replace(/\n/g, '<br>');
         const pdfLink = `<div style="margin:24px 0;text-align:center;"><a href="${file_url}" target="_blank" style="display:inline-block;background:#1B4332;color:#fff;padding:14px 32px;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none;">📄 Visualizar / Baixar Contrato (PDF)</a></div>`;
         await base44.integrations.Core.SendEmail({
@@ -280,7 +289,8 @@ export default function ContractEditorWYSIWYG({
       toast.success('E-mail enviado com sucesso!');
       setShowEmailModal(false);
     } catch (error) {
-      toast.error('Erro ao enviar e-mail: ' + error.message);
+      console.error('Erro ao enviar e-mail:', error);
+      toast.error('Erro ao enviar e-mail: ' + (error?.message || 'Erro desconhecido'));
     } finally {
       setIsSendingEmail(false);
     }

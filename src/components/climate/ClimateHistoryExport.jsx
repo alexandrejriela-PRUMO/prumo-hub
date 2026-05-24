@@ -13,7 +13,8 @@ import {
   Sun, 
   AlertTriangle,
   TrendingUp,
-  MessageSquare
+  MessageSquare,
+  Filter
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -37,8 +38,23 @@ export default function ClimateHistoryExport({ climateRecord, propertyName }) {
   const [endDate, setEndDate] = useState('');
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [periodDays, setPeriodDays] = useState(30);
 
   const hasRecords = !!(climateRecord?.historical_records && climateRecord.historical_records.length > 0);
+
+  const PERIOD_OPTIONS = [
+    { label: '30 dias', value: 30 },
+    { label: '60 dias', value: 60 },
+    { label: '90 dias', value: 90 },
+    { label: '120 dias', value: 120 },
+    { label: '180 dias', value: 180 },
+    { label: '240 dias', value: 240 },
+    { label: '365 dias', value: 365 },
+  ];
+
+  // Registros filtrados pelo período selecionado (para stats + lista)
+  const allRecords = climateRecord?.historical_records || [];
+  const periodRecords = allRecords.slice(-periodDays).reverse();
 
   // Salvar observação de um dia no banco
   const handleSaveObservation = async (date, { observation, divergence_type, divergence_detail }) => {
@@ -265,11 +281,9 @@ export default function ClimateHistoryExport({ climateRecord, propertyName }) {
     setExportDialogOpen(false);
   };
 
-  // Estatísticas
-  const allRecords = climateRecord?.historical_records || [];
-  const recentRecords = allRecords.slice(-30).reverse();
-  const totalPrecip = allRecords.reduce((s, r) => s + (r.precipitation || 0), 0);
-  const daysWithRain = allRecords.filter(r => (r.precipitation || 0) > 0).length;
+  // Estatísticas baseadas no período selecionado
+  const totalPrecip = periodRecords.reduce((s, r) => s + (r.precipitation || 0), 0);
+  const daysWithRain = periodRecords.filter(r => (r.precipitation || 0) > 0).length;
   const annotatedTotal = allRecords.filter(r => r.observation || r.divergence_type).length;
 
   return (
@@ -281,6 +295,29 @@ export default function ClimateHistoryExport({ climateRecord, propertyName }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+
+        {/* Filtro de Período */}
+        {hasRecords && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <Filter className="w-4 h-4 text-gray-500 flex-shrink-0" />
+            <span className="text-sm text-gray-600 font-medium">Período:</span>
+            <div className="flex gap-1.5 flex-wrap">
+              {PERIOD_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setPeriodDays(opt.value)}
+                  className={`px-3 py-1 text-xs rounded-full border font-medium transition-colors ${
+                    periodDays === opt.value
+                      ? 'bg-emerald-600 text-white border-emerald-600'
+                      : 'bg-white text-gray-600 border-gray-300 hover:border-emerald-400 hover:text-emerald-700'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Estatísticas */}
         {hasRecords && (
@@ -298,8 +335,8 @@ export default function ClimateHistoryExport({ climateRecord, propertyName }) {
                 <Sun className="w-4 h-4" />
                 <p className="text-xs font-medium">Dias Secos</p>
               </div>
-              <p className="text-xl font-bold text-amber-900">{allRecords.length - daysWithRain}</p>
-              <p className="text-xs text-amber-700 mt-1">de {allRecords.length} dias</p>
+              <p className="text-xl font-bold text-amber-900">{periodRecords.length - daysWithRain}</p>
+              <p className="text-xs text-amber-700 mt-1">de {periodRecords.length} dias</p>
             </div>
             <div className="p-4 bg-red-50 rounded-lg">
               <div className="flex items-center gap-2 text-red-700 mb-1">
@@ -307,7 +344,7 @@ export default function ClimateHistoryExport({ climateRecord, propertyName }) {
                 <p className="text-xs font-medium">Eventos Climáticos</p>
               </div>
               <p className="text-xl font-bold text-red-900">
-                {allRecords.reduce((s, r) => s + (r.climate_events?.length || 0), 0)}
+                {periodRecords.reduce((s, r) => s + (r.climate_events?.length || 0), 0)}
               </p>
               <p className="text-xs text-red-700 mt-1">registros automáticos</p>
             </div>
@@ -328,7 +365,7 @@ export default function ClimateHistoryExport({ climateRecord, propertyName }) {
             <div className="flex items-center justify-between mb-3">
               <h4 className="font-semibold text-gray-900 flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
-                Últimos 30 Dias
+                Últimos {periodDays} Dias
               </h4>
               <p className="text-xs text-gray-500 flex items-center gap-1">
                 <MessageSquare className="w-3 h-3" />
@@ -337,7 +374,7 @@ export default function ClimateHistoryExport({ climateRecord, propertyName }) {
             </div>
 
             <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
-              {recentRecords.map((record, idx) => {
+              {periodRecords.map((record, idx) => {
                 const hasDivergence = !!record.divergence_type;
                 const hasObs = !!record.observation;
                 return (

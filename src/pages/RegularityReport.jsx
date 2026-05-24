@@ -20,10 +20,14 @@ import {
   MapPinned,
   ChevronLeft,
   TreePine,
-  Leaf
+  Leaf,
+  Loader
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import moment from 'moment';
+import { jsPDF } from 'jspdf';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
@@ -369,6 +373,230 @@ export default function RegularityReport() {
   };
 
   const scoreData = selectedProperty ? calculateDetailedScore() : { percentage: 0, categories: [] };
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+
+  const handleDownloadPDF = async () => {
+    if (!selectedProperty) { alert('Selecione uma propriedade primeiro.'); return; }
+    setIsGeneratingPDF(true);
+    try {
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      let y = 15;
+      const M = 15;
+
+      const newPage = () => { doc.addPage(); y = M; };
+      const checkSpace = (n = 25) => { if (y + n > pageHeight - 12) newPage(); };
+
+      // ── CAPA ──────────────────────────────────────────────────────────────
+      const pct = scoreData.percentage;
+      const barColor = pct >= 80 ? [22, 101, 52] : pct >= 50 ? [161, 98, 7] : [185, 28, 28];
+      doc.setFillColor(...barColor);
+      doc.rect(0, 0, pageWidth, 48, 'F');
+      doc.setFillColor(201, 162, 39);
+      doc.rect(0, 48, pageWidth, 2, 'F');
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(17);
+      doc.setFont(undefined, 'bold');
+      doc.text('PRUMO HUB', M, 15);
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'normal');
+      doc.text('Relatório de Regularidade Ambiental', M, 22);
+      doc.setFontSize(9);
+      doc.text(`Propriedade: ${selectedProperty.property_name}`, M, 30);
+      doc.text(`Usuário: ${user?.full_name || ''} (${user?.email || ''})`, M, 36);
+      doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`, M, 42);
+      doc.setTextColor(0, 0, 0);
+      y = 58;
+
+      // ── PONTUAÇÃO GERAL ───────────────────────────────────────────────────
+      doc.setFillColor(248, 250, 252);
+      doc.roundedRect(M, y, pageWidth - M * 2, 28, 3, 3, 'F');
+      doc.setFillColor(...barColor);
+      doc.roundedRect(M, y, pageWidth - M * 2, 28, 3, 3, 'S');
+
+      doc.setFontSize(36);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...barColor);
+      doc.text(`${pct}%`, M + 10, y + 19);
+
+      const statusLabel = pct >= 80 ? 'REGULAR' : pct >= 50 ? 'ATENÇÃO' : 'CRÍTICO';
+      doc.setFontSize(14);
+      doc.text(statusLabel, M + 42, y + 12);
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'normal');
+      const statusDesc = pct >= 80
+        ? 'A propriedade está em conformidade com as normas ambientais.'
+        : pct >= 50
+        ? 'Existem pendências que requerem atenção para evitar irregularidades.'
+        : 'Situação crítica — ação imediata necessária para evitar autos de infração.';
+      const descLines = doc.splitTextToSize(statusDesc, pageWidth - M * 2 - 50);
+      doc.text(descLines, M + 42, y + 18);
+      doc.setTextColor(0, 0, 0);
+      y += 34;
+
+      // ── ANÁLISE POR CATEGORIA ─────────────────────────────────────────────
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.setFillColor(...barColor);
+      doc.roundedRect(M, y, pageWidth - M * 2, 8, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.text('ANÁLISE DETALHADA POR CATEGORIA', M + 4, y + 5.5);
+      doc.setTextColor(0, 0, 0);
+      y += 12;
+
+      scoreData.categories.forEach(cat => {
+        checkSpace(22);
+        const catPct = cat.weight > 0 ? Math.round((cat.score / cat.weight) * 100) : 0;
+        const catRgb = cat.status === 'ok' ? [22, 101, 52] : cat.status === 'warning' ? [161, 98, 7] : [185, 28, 28];
+
+        doc.setFillColor(...catRgb);
+        doc.roundedRect(M, y, pageWidth - M * 2, 6, 1, 1, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'bold');
+        doc.text(cat.name, M + 3, y + 4.3);
+        doc.text(`${cat.score}/${cat.weight} pts`, pageWidth - M - 20, y + 4.3);
+        doc.setTextColor(0, 0, 0);
+        y += 8;
+
+        // Barra de progresso da categoria
+        if (cat.weight > 0) {
+          doc.setFillColor(229, 231, 235);
+          doc.roundedRect(M + 5, y, pageWidth - M * 2 - 10, 3, 1, 1, 'F');
+          doc.setFillColor(...catRgb);
+          doc.roundedRect(M + 5, y, (pageWidth - M * 2 - 10) * (Math.min(catPct, 100) / 100), 3, 1, 1, 'F');
+          y += 5;
+        }
+
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(8.5);
+        cat.details.forEach(detail => {
+          checkSpace(5);
+          const lines = doc.splitTextToSize(detail, pageWidth - M * 2 - 10);
+          doc.text(lines, M + 5, y);
+          y += lines.length * 4;
+        });
+        y += 3;
+      });
+
+      // ── ORIENTAÇÕES E PRÓXIMOS PASSOS ────────────────────────────────────
+      checkSpace(20);
+      doc.setFillColor(201, 162, 39);
+      doc.roundedRect(M, y, pageWidth - M * 2, 8, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text('ORIENTAÇÕES E PRÓXIMOS PASSOS', M + 4, y + 5.5);
+      doc.setTextColor(0, 0, 0);
+      y += 12;
+
+      // Orientações contextuais baseadas nas categorias com problema
+      const criticalCats = scoreData.categories.filter(c => c.status === 'critical');
+      const warningCats = scoreData.categories.filter(c => c.status === 'warning');
+
+      const orientacoes = [];
+
+      if (criticalCats.some(c => c.name.includes('Licença'))) {
+        orientacoes.push({ nivel: 'URGENTE', texto: 'Licenças Ambientais: Renove imediatamente as licenças vencidas junto ao órgão ambiental competente (Municipal, Estadual ou Federal). O prazo de renovação deve ser iniciado com antecedência mínima de 120 dias. Use o módulo "Licenças e Projetos" para registrar e acompanhar.' });
+      } else if (warningCats.some(c => c.name.includes('Licença'))) {
+        orientacoes.push({ nivel: 'ATENÇÃO', texto: 'Licenças Ambientais: Inicie o processo de renovação das licenças que estão próximas do vencimento. Acesse o módulo "Licenças e Projetos" para conferir os prazos.' });
+      }
+
+      if (criticalCats.some(c => c.name.includes('CAR'))) {
+        orientacoes.push({ nivel: 'URGENTE', texto: 'CAR: O Cadastro Ambiental Rural deve ser regularizado. Se não cadastrado, acesse o SICAR (car.gov.br) ou o sistema estadual correspondente. Se com inconsistências, acesse o módulo "Gestão do CAR" e providencie a retificação com auxílio técnico.' });
+      } else if (warningCats.some(c => c.name.includes('CAR'))) {
+        orientacoes.push({ nivel: 'ATENÇÃO', texto: 'CAR: Verifique e atualize o status do CAR no módulo "Gestão do CAR". Acompanhe a análise no SICAR e documente todas as movimentações.' });
+      }
+
+      if (criticalCats.some(c => c.name.includes('Processual'))) {
+        orientacoes.push({ nivel: 'URGENTE', texto: 'Processos: Há processos criminais em andamento que requerem acompanhamento jurídico imediato. Consulte um advogado especializado em direito ambiental. Para processos administrativos, verifique a possibilidade de TAC (Termo de Ajustamento de Conduta) ou quitação de multas para regularizar a situação.' });
+      } else if (warningCats.some(c => c.name.includes('Processual'))) {
+        orientacoes.push({ nivel: 'ATENÇÃO', texto: 'Processos: Existem processos em andamento. Certifique-se de que multas foram pagas ou TAC firmado. Registre os comprovantes no módulo "Processos" para atualizar a pontuação.' });
+      }
+
+      if (warningCats.some(c => c.name.includes('Documento'))) {
+        orientacoes.push({ nivel: 'ATENÇÃO', texto: 'Documentos Cadastrais: O CCIR (Certificado de Cadastro de Imóvel Rural) deve ser atualizado anualmente no INCRA. O ITR (Imposto Territorial Rural) deve ser declarado e pago anualmente na Receita Federal. Após regularizar, cadastre os documentos no módulo "Documentos".' });
+      }
+
+      if (!scoreData.categories.some(c => c.name.includes('Geo')) || warningCats.some(c => c.name.includes('Geo'))) {
+        orientacoes.push({ nivel: 'RECOMENDADO', texto: 'Georreferenciamento: O georreferenciamento é obrigatório para transações de imóveis rurais conforme Lei 10.267/01. Contrate um profissional credenciado no INCRA para a execução e certifique o imóvel no SIGEF. Registre no módulo "Georreferenciamento".' });
+      }
+
+      if (criticalCats.some(c => c.name.includes('PRAD'))) {
+        orientacoes.push({ nivel: 'URGENTE', texto: 'PRAD: Projetos de Recuperação de Área Degradada pendentes precisam ser iniciados. A não execução pode acarretar em auto de infração e impedir desembargos. Acione seu consultor ambiental e use o módulo "PRAD" para acompanhar o cronograma.' });
+      }
+
+      if (orientacoes.length === 0) {
+        orientacoes.push({ nivel: 'PARABÉNS', texto: 'A propriedade está em excelente situação de conformidade ambiental. Continue monitorando os prazos das licenças e mantendo os documentos atualizados no PRUMO Hub para manter esta pontuação.' });
+      }
+
+      orientacoes.forEach(o => {
+        checkSpace(18);
+        const nivelColor = o.nivel === 'URGENTE' ? [185, 28, 28] : o.nivel === 'ATENÇÃO' ? [161, 98, 7] : o.nivel === 'PARABÉNS' ? [22, 101, 52] : [30, 64, 175];
+        doc.setFillColor(...nivelColor);
+        doc.roundedRect(M, y, 28, 5, 1, 1, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(7);
+        doc.setFont(undefined, 'bold');
+        doc.text(o.nivel, M + 2, y + 3.5);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(8.5);
+        const oLines = doc.splitTextToSize(o.texto, pageWidth - M * 2 - 34);
+        doc.text(oLines, M + 31, y + 3.5);
+        y += Math.max(7, oLines.length * 4.2) + 3;
+      });
+
+      // ── COMO USAR O PRUMO HUB ─────────────────────────────────────────────
+      checkSpace(50);
+      doc.setFillColor(30, 64, 175);
+      doc.roundedRect(M, y, pageWidth - M * 2, 8, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text('COMO MELHORAR SUA PONTUAÇÃO NO PRUMO HUB', M + 4, y + 5.5);
+      doc.setTextColor(0, 0, 0);
+      y += 12;
+
+      const passos = [
+        '1. LICENÇAS E PROJETOS → Cadastre e acompanhe todas as licenças ambientais. O sistema alerta automaticamente sobre vencimentos próximos.',
+        '2. GESTÃO DO CAR → Registre o número do CAR e atualize o status conforme análise do órgão ambiental (SICAR).',
+        '3. DOCUMENTOS → Anexe o CCIR atualizado e o comprovante de pagamento do ITR do exercício corrente.',
+        '4. GEORREFERENCIAMENTO → Registre os dados do georreferenciamento e a certidão SIGEF quando disponível.',
+        '5. PROCESSOS → Mantenha os processos atualizados, informe pagamentos de multa e TAC firmados para impactar positivamente a pontuação.',
+        '6. PRAD → Atualize o status dos projetos de recuperação conforme execução. Cada etapa concluída aumenta a pontuação.',
+      ];
+
+      passos.forEach(p => {
+        checkSpace(8);
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(8.5);
+        const pLines = doc.splitTextToSize(p, pageWidth - M * 2 - 5);
+        doc.text(pLines, M + 3, y);
+        y += pLines.length * 4.5 + 1;
+      });
+
+      // ── RODAPÉ ─────────────────────────────────────────────────────────────
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let p = 1; p <= totalPages; p++) {
+        doc.setPage(p);
+        doc.setFontSize(7.5);
+        doc.setTextColor(150, 150, 150);
+        doc.text(`Página ${p} de ${totalPages}  •  PRUMO Hub  •  ${selectedProperty.property_name}  •  ${format(new Date(), 'dd/MM/yyyy')}`, pageWidth / 2, pageHeight - 6, { align: 'center' });
+        doc.setTextColor(0, 0, 0);
+      }
+
+      const safeName = selectedProperty.property_name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      doc.save(`PRUMO_Regularidade_${safeName}_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+    } catch (err) {
+      console.error('Erro ao gerar PDF:', err);
+      alert('Erro ao gerar o PDF. Tente novamente.');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
 
   const getStatusConfig = (percentage) => {
     if (percentage >= 80) return { 
@@ -422,9 +650,9 @@ export default function RegularityReport() {
           </h1>
           <p className="text-gray-500 mt-1 text-sm sm:text-base">{isConsultorFamily ? 'Análise completa da conformidade do cliente' : 'Análise completa e conformidade da propriedade'}</p>
         </div>
-        <Button variant="outline" className="gap-2 w-full sm:w-auto">
-          <Download className="w-4 h-4" />
-          Baixar PDF
+        <Button variant="outline" className="gap-2 w-full sm:w-auto" onClick={handleDownloadPDF} disabled={isGeneratingPDF || !selectedProperty}>
+          {isGeneratingPDF ? <Loader className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+          {isGeneratingPDF ? 'Gerando...' : 'Baixar PDF'}
         </Button>
       </div>
 

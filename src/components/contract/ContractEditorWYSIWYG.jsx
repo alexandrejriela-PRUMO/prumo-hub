@@ -170,7 +170,7 @@ export default function ContractEditorWYSIWYG({
 
   const exportPDF = async () => {
     try {
-      const pdf = await buildPdfFromHtml(documentHtml);
+      const pdf = await buildPdfFromHtml(generateCompleteHTML());
       pdf.save(`contrato-${Date.now()}.pdf`);
       toast.success('PDF exportado com sucesso!');
     } catch (error) {
@@ -203,25 +203,38 @@ export default function ContractEditorWYSIWYG({
   };
 
   const handleSendEmail = async ({ to, subject, message }) => {
-    if (!contractData?.id) {
-      toast.error('Salve o contrato antes de enviar por e-mail.');
-      return;
-    }
     setIsSendingEmail(true);
     try {
       toast.info('Gerando PDF...');
       const pdf = await buildPdfFromHtml(generateCompleteHTML());
       const blob = pdf.output('blob');
-      const file = new File([blob], `contrato-${contractData.id}.pdf`, { type: 'application/pdf' });
+      const fileName = `contrato-${contractData?.id || contractData?.client_name?.replace(/\s+/g,'-') || Date.now()}.pdf`;
+      const file = new File([blob], fileName, { type: 'application/pdf' });
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
 
-      await base44.functions.invoke('sendContractEmail', {
-        contract_id: contractData.id,
-        to,
-        subject,
-        message,
-        pdf_url: file_url,
-      });
+      if (contractData?.id) {
+        // Contrato já salvo: usa backend function (também atualiza status)
+        await base44.functions.invoke('sendContractEmail', {
+          contract_id: contractData.id,
+          to,
+          subject,
+          message,
+          pdf_url: file_url,
+        });
+      } else {
+        // Contrato ainda não salvo: envia diretamente via SendEmail
+        const customMessage = (message || '').replace(/\n/g, '<br>');
+        const pdfLink = `<div style="margin:24px 0;text-align:center;"><a href="${file_url}" target="_blank" style="display:inline-block;background:#1B4332;color:#fff;padding:14px 32px;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none;">📄 Visualizar / Baixar Contrato (PDF)</a></div>`;
+        await base44.integrations.Core.SendEmail({
+          to,
+          subject,
+          body: `<html><body style="font-family:Arial,sans-serif;color:#333;max-width:600px;margin:0 auto;padding:20px;">
+            <h2 style="color:#1B4332;">${subject}</h2>
+            <p>${customMessage}</p>
+            ${pdfLink}
+          </body></html>`,
+        });
+      }
 
       toast.success('E-mail enviado com sucesso!');
       setShowEmailModal(false);
@@ -434,7 +447,7 @@ export default function ContractEditorWYSIWYG({
             toast.info('Gerando PDF...');
             let pdfUrl = null;
             try {
-              const pdf = await buildPdfFromHtml(documentHtml);
+              const pdf = await buildPdfFromHtml(generateCompleteHTML());
               const blob = pdf.output('blob');
               const file = new File([blob], `contrato-${Date.now()}.pdf`, { type: 'application/pdf' });
               const result = await base44.integrations.Core.UploadFile({ file });

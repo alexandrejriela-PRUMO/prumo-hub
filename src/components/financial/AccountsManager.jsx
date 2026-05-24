@@ -79,18 +79,6 @@ export default function AccountsManager({ consultorEmail }) {
         </Button>
       </div>
 
-      {/* Caixa Manual (system default) */}
-      <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-3 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center">
-          <Banknote className="w-4 h-4 text-amber-600" />
-        </div>
-        <div className="flex-1">
-          <p className="text-sm font-semibold text-amber-800">Caixa Manual</p>
-          <p className="text-xs text-amber-600">Conta padrão para lançamentos manuais sem conta específica</p>
-        </div>
-        <Badge className="bg-amber-100 text-amber-700 border-0 text-xs">Padrão</Badge>
-      </div>
-
       {/* User accounts */}
       {userAccounts.length === 0 ? (
         <div className="text-center py-6 text-gray-400 text-sm border border-dashed border-gray-200 rounded-xl">

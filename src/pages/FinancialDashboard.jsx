@@ -80,17 +80,16 @@ export default function FinancialDashboard() {
 
   // Filter entries by account
   const filteredCharges = useMemo(() => {
-    if (filterAccount === '__all' || filterAccount === '__stripe') return filterAccount === '__stripe' ? charges : charges;
+    if (filterAccount === '__all') return charges;
     return [];
   }, [charges, filterAccount]);
 
   const filteredManual = useMemo(() => {
     if (filterAccount === '__all') return manualEntries;
-    if (filterAccount === '__caixa') return manualEntries.filter(e => !e.account_id);
     return manualEntries.filter(e => e.account_id === filterAccount);
   }, [manualEntries, filterAccount]);
 
-  const effectiveCharges = filterAccount === '__all' || filterAccount === '__stripe' ? charges : [];
+  const effectiveCharges = filterAccount === '__all' ? charges : [];
   const effectiveManual  = filteredManual;
 
   // ── Last 12 months history ────────────────────────────────────────────────
@@ -105,13 +104,13 @@ export default function FinancialDashboard() {
         if (byMonth[month] && normalizeStatus(c.status) === 'Pago') byMonth[month].receita += c.amount || 0;
       });
       effectiveManual.forEach(e => {
+        // Transferências não entram no balanço
+        if (e.category === 'Transferência entre Contas') return;
         const month = e.competencia || e.date?.substring(0,7);
         if (byMonth[month]) {
           if (e.transaction_type === 'receita') {
-            // Só conta receita manual se estiver paga
             if (normalizeStatus(e.status) === 'Pago') byMonth[month].receita += e.amount || 0;
           } else {
-            // Despesas contam independente do status (já foram lançadas)
             byMonth[month].despesa += e.amount || 0;
           }
         }
@@ -215,6 +214,7 @@ export default function FinancialDashboard() {
       if (histByMonth[month] && normalizeStatus(c.status) === 'Pago') histByMonth[month].receita += c.amount || 0;
     });
     effectiveManual.forEach(e => {
+      if (e.category === 'Transferência entre Contas') return;
       const month = e.competencia || e.date?.substring(0,7);
       if (histByMonth[month]) {
         if (e.transaction_type === 'receita') {
@@ -255,13 +255,24 @@ export default function FinancialDashboard() {
     return { totalReceita12, totalDespesa12, resultado12, melhorMes, piorMes, projFim12 };
   }, [historico, projecao]);
 
-  // Account filter options
+  // Account filter options — sem Stripe, sem Caixa Manual
   const accountFilterOptions = useMemo(() => [
     { value: '__all', label: 'Todas as contas' },
-    { value: '__stripe', label: 'Conta Stripe' },
-    { value: '__caixa', label: 'Caixa Manual' },
     ...accounts.filter(a=>!a.is_stripe).map(a=>({ value: a.id, label: a.name })),
   ], [accounts]);
+
+  // Saldo por conta: saldo_inicial + receitas_pagas - despesas (incluindo transferências)
+  const accountBalances = useMemo(() => {
+    return accounts.filter(a => !a.is_stripe).map(acc => {
+      const entradas = manualEntries
+        .filter(e => e.account_id === acc.id && e.transaction_type === 'receita' && (e.status === 'Pago' || e.category === 'Transferência entre Contas'))
+        .reduce((s, e) => s + (e.amount || 0), 0);
+      const saidas = manualEntries
+        .filter(e => e.account_id === acc.id && e.transaction_type === 'despesa')
+        .reduce((s, e) => s + (e.amount || 0), 0);
+      return { ...acc, balance: (acc.initial_balance || 0) + entradas - saidas };
+    });
+  }, [accounts, manualEntries]);
 
   return (
     <div className="space-y-6">
@@ -309,6 +320,29 @@ export default function FinancialDashboard() {
               <Button variant="outline" size="sm" onClick={()=>setFilterAccount('__all')}>Limpar filtro</Button>
             )}
           </div>
+
+          {/* Saldos por conta */}
+          {accountBalances.length > 0 && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {accountBalances.map(acc => {
+                const Icon = acc.account_type === 'Caixa' ? Wallet : PiggyBank;
+                return (
+                  <Card key={acc.id} className="border" style={{ borderColor: (acc.color || '#10b981') + '44' }}>
+                    <CardContent className="pt-3 pb-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: (acc.color || '#10b981') + '22' }}>
+                          <Icon className="w-3.5 h-3.5" style={{ color: acc.color || '#10b981' }} />
+                        </div>
+                        <p className="text-xs text-gray-500 font-medium truncate">{acc.name}</p>
+                      </div>
+                      <p className={`text-base font-bold ${acc.balance >= 0 ? 'text-gray-800' : 'text-red-600'}`}>{fmt(acc.balance)}</p>
+                      <p className="text-xs text-gray-400">{acc.account_type}</p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
 
           {/* KPIs */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

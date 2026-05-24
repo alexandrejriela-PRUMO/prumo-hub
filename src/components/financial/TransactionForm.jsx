@@ -324,9 +324,9 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
           {/* Transferência entre contas */}
           {isTransferencia && (
             <div className="border border-blue-200 bg-blue-50/40 rounded-xl p-4 space-y-4">
-              <p className="text-xs text-blue-700 font-semibold flex items-center gap-1.5">
-                <ArrowLeftRight className="w-3.5 h-3.5" />
-                Esta transferência <strong>não afeta o balanço</strong> de receitas/despesas. Fica registrada apenas como movimentação entre contas para auditoria.
+              <p className="text-xs text-blue-700 flex items-start gap-1.5 leading-relaxed">
+                <ArrowLeftRight className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                <span>Esta transferência <strong>não afeta o balanço</strong> de receitas/despesas. Fica registrada apenas como movimentação entre contas para auditoria.</span>
               </p>
 
               <div>

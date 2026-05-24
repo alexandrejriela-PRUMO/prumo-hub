@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import {
   TrendingUp, TrendingDown, ArrowLeftRight, Download, Search,
-  ChevronUp, ChevronDown, Plus, Pencil, Trash2, Banknote, Paperclip, FileText
+  ChevronUp, ChevronDown, Plus, Pencil, Trash2, Banknote, Paperclip, FileText, MoveRight
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
@@ -162,8 +162,10 @@ export default function FinancialTransactions() {
   }),[filtered,sortField,sortDir]);
 
   const toggleSort = (f) => { if(sortField===f)setSortDir(d=>d==='asc'?'desc':'asc'); else{setSortField(f);setSortDir('desc');} };
-  const totalReceitas = filtered.filter(t=>t.type==='receita' && t.status==='Pago').reduce((s,t)=>s+t.amount,0);
-  const totalDespesas = filtered.filter(t=>t.type==='despesa').reduce((s,t)=>s+t.amount,0);
+  // Transferências NÃO entram no balanço (category === 'Transferência entre Contas')
+  const isTransfer = (t) => t.source === 'Transferência entre Contas' || t.raw?.category === 'Transferência entre Contas';
+  const totalReceitas = filtered.filter(t=>t.type==='receita' && t.status==='Pago' && !isTransfer(t)).reduce((s,t)=>s+t.amount,0);
+  const totalDespesas = filtered.filter(t=>t.type==='despesa' && !isTransfer(t)).reduce((s,t)=>s+t.amount,0);
   const resultado = totalReceitas-totalDespesas;
   const fmt = (v)=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
@@ -188,7 +190,7 @@ export default function FinancialTransactions() {
       t.competencia || '',
       t.date ? format(parseISO(t.date), 'dd/MM/yyyy') : '',
       fmtCsv(t.amount),
-      t.type === 'receita' ? '+' : '-',
+      isTransfer(t) ? '=' : t.type === 'receita' ? '+' : '-',
       t.status || '',
       esc(t.payment_method || ''),
     ].join(sep));
@@ -314,8 +316,10 @@ export default function FinancialTransactions() {
                 <tr key={t.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1.5">
-                      {t.type==='receita'?<TrendingUp className="w-4 h-4 text-emerald-500"/>:<TrendingDown className="w-4 h-4 text-red-400"/>}
-                      <span className={`text-xs font-semibold ${t.type==='receita'?'text-emerald-600':'text-red-600'}`}>{t.type==='receita'?'Receita':'Despesa'}</span>
+                      {isTransfer(t) ? <MoveRight className="w-4 h-4 text-blue-500"/> : t.type==='receita'?<TrendingUp className="w-4 h-4 text-emerald-500"/>:<TrendingDown className="w-4 h-4 text-red-400"/>}
+                      <span className={`text-xs font-semibold ${isTransfer(t)?'text-blue-600':t.type==='receita'?'text-emerald-600':'text-red-600'}`}>
+                        {isTransfer(t)?'Transferência':t.type==='receita'?'Receita':'Despesa'}
+                      </span>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-500">{t.source}</td>
@@ -328,7 +332,9 @@ export default function FinancialTransactions() {
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-600">{t.client||<span className="text-gray-300">—</span>}</td>
                   <td className="px-4 py-3 text-xs text-gray-500">{t.date?format(parseISO(t.date),'dd/MM/yyyy'):'—'}</td>
-                  <td className={`px-4 py-3 text-right font-bold text-sm ${t.type==='receita'?'text-emerald-600':'text-red-600'}`}>{t.type==='despesa'?'- ':''}{fmt(t.amount)}</td>
+                  <td className={`px-4 py-3 text-right font-bold text-sm ${isTransfer(t)?'text-blue-600':t.type==='receita'?'text-emerald-600':'text-red-600'}`}>
+                    {isTransfer(t)?'':t.type==='despesa'?'- ':''}{fmt(t.amount)}
+                  </td>
                   <td className="px-4 py-3"><Badge className={`${STATUS_BADGES[t.status]||'bg-gray-100 text-gray-500'} border-0 text-xs`}>{t.status}</Badge></td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1 items-center">

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import {
   TrendingUp, TrendingDown, X, FileText,
-  Image as ImageIcon, Plus, Search, UserPlus, Loader2, Layers, Calendar
+  Image as ImageIcon, Plus, Search, UserPlus, Loader2, Layers, Calendar, ArrowLeftRight
 } from 'lucide-react';
 import SupabaseFileUpload from '@/components/storage/SupabaseFileUpload';
 import { format, addMonths, parseISO } from 'date-fns';
@@ -30,6 +30,9 @@ const EMPTY_BASE = {
   // parcelado
   num_installments: 2,
   installments: [], // array of { number, amount, due_date, received, received_date, payment_method, account_id, account_name, status, notes }
+  // transferência
+  transfer_from_account_id: '',
+  transfer_to_account_id: '',
 };
 
 function buildInstallments(total, count, firstDate, defaultAccountId, defaultAccountName, defaultMethod) {
@@ -97,6 +100,7 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
   const qc = useQueryClient();
 
   const isReceita = form.transaction_type === 'receita';
+  const isTransferencia = form.transaction_type === 'transferencia';
   const isParcelado = form.payment_type === 'parcelado' && isReceita;
 
   useEffect(() => {
@@ -175,12 +179,45 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
     if (!form.description) { toast.error('Informe a descrição do serviço/transação.'); return; }
     if (!form.date) { toast.error('Informe a data.'); return; }
     if (isReceita && !form.client_property_id) { toast.error('Selecione um cliente.'); return; }
+    if (isTransferencia) {
+      if (!form.transfer_from_account_id) { toast.error('Selecione a conta de origem.'); return; }
+      if (!form.transfer_to_account_id) { toast.error('Selecione a conta de destino.'); return; }
+      if (form.transfer_from_account_id === form.transfer_to_account_id) { toast.error('Conta de origem e destino não podem ser iguais.'); return; }
+      if (!form.amount || parseFloat(form.amount) <= 0) { toast.error('Informe o valor.'); return; }
+    }
 
     const clientProp = properties.find(p => p.id === form.client_property_id);
     const clientName = clientProp?.client_name || form.client_name || '';
 
     setSaving(true);
     try {
+      if (isTransferencia) {
+        const fromAcc = accounts.find(a => a.id === form.transfer_from_account_id);
+        const toAcc = accounts.find(a => a.id === form.transfer_to_account_id);
+        const valor = parseFloat(form.amount);
+        const base = {
+          consultor_email: consultorEmail,
+          description: form.description,
+          amount: valor,
+          date: form.date,
+          competencia: form.date.substring(0, 7),
+          category: 'Transferência entre Contas',
+          is_stripe: false,
+          status: 'Pago',
+          payment_method: form.payment_method || 'Transferência',
+          notes: form.notes || '',
+          attachments: form.attachments || [],
+        };
+        // Saída da conta origem
+        await base44.entities.Expense.create({ ...base, transaction_type: 'despesa', account_id: fromAcc?.id || '', account_name: fromAcc?.name || '' });
+        // Entrada na conta destino
+        await base44.entities.Expense.create({ ...base, transaction_type: 'receita', account_id: toAcc?.id || '', account_name: toAcc?.name || '' });
+        toast.success('Transferência registrada nas duas contas!');
+        qc.invalidateQueries(['fin-manual']);
+        onClose();
+        return;
+      }
+
       if (isParcelado) {
         if (!form.amount || parseFloat(form.amount) <= 0) { toast.error('Informe o valor total.'); setSaving(false); return; }
         const count = parseInt(form.num_installments) || 2;
@@ -270,17 +307,110 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
         <div className="flex gap-2">
           <button onClick={() => setF('transaction_type', 'receita')}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${isReceita ? 'bg-emerald-50 border-emerald-500 text-emerald-700' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'}`}>
-            <TrendingUp className="w-4 h-4" />Receita / Serviço
+            <TrendingUp className="w-4 h-4" />Receita
           </button>
           <button onClick={() => setF('transaction_type', 'despesa')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${!isReceita ? 'bg-red-50 border-red-400 text-red-700' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${form.transaction_type === 'despesa' ? 'bg-red-50 border-red-400 text-red-700' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'}`}>
             <TrendingDown className="w-4 h-4" />Despesa
+          </button>
+          <button onClick={() => setF('transaction_type', 'transferencia')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${isTransferencia ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+            <ArrowLeftRight className="w-4 h-4" />Transferência
           </button>
         </div>
 
         <div className="space-y-4">
+
+          {/* Transferência entre contas */}
+          {isTransferencia && (
+            <div className="border border-blue-200 bg-blue-50/40 rounded-xl p-4 space-y-4">
+              <p className="text-xs text-blue-700 font-semibold flex items-center gap-1.5">
+                <ArrowLeftRight className="w-3.5 h-3.5" />
+                Esta transferência <strong>não afeta o balanço</strong> de receitas/despesas. Fica registrada apenas como movimentação entre contas para auditoria.
+              </p>
+
+              <div>
+                <Label>Descrição *</Label>
+                <Input value={form.description} onChange={e => setF('description', e.target.value)} placeholder="Ex: Transferência caixa → conta corrente Bradesco" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Conta Origem *</Label>
+                  <Select value={form.transfer_from_account_id || ''} onValueChange={v => setF('transfer_from_account_id', v)}>
+                    <SelectTrigger><SelectValue placeholder="De qual conta sai" /></SelectTrigger>
+                    <SelectContent>
+                      {accounts.filter(a => !a.is_stripe).map(a => (
+                        <SelectItem key={a.id} value={a.id}>{a.name} · {a.account_type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Conta Destino *</Label>
+                  <Select value={form.transfer_to_account_id || ''} onValueChange={v => setF('transfer_to_account_id', v)}>
+                    <SelectTrigger><SelectValue placeholder="Para qual conta vai" /></SelectTrigger>
+                    <SelectContent>
+                      {accounts.filter(a => !a.is_stripe).map(a => (
+                        <SelectItem key={a.id} value={a.id}>{a.name} · {a.account_type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Valor (R$) *</Label>
+                  <Input type="number" step="0.01" value={form.amount} onChange={e => setF('amount', e.target.value)} placeholder="0,00" />
+                </div>
+                <div>
+                  <Label>Data *</Label>
+                  <Input type="date" value={form.date} onChange={e => setF('date', e.target.value)} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Forma de Pagamento</Label>
+                  <Select value={form.payment_method} onValueChange={v => setF('payment_method', v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{PAYMENT_METHODS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Observações</Label>
+                  <Input value={form.notes} onChange={e => setF('notes', e.target.value)} placeholder="Opcional" />
+                </div>
+              </div>
+
+              {/* Attachments */}
+              <div>
+                <Label className="flex items-center gap-2 mb-2"><FileText className="w-3.5 h-3.5"/>Comprovantes</Label>
+                {form.attachments.length > 0 && (
+                  <div className="space-y-1.5 mb-2">
+                    {form.attachments.map((att, i) => (
+                      <div key={i} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                        <FileText className="w-4 h-4 text-gray-500 flex-shrink-0"/>
+                        <span className="text-xs text-gray-700 flex-1 truncate">{att.name}</span>
+                        <button onClick={() => removeAttachment(i)}><X className="w-3 h-3 text-gray-400"/></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <SupabaseFileUpload
+                  folder="financeiro"
+                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                  onUploadDone={(filePath, fileName) => setForm(p => ({ ...p, attachments: [...p.attachments, { name: fileName, url: filePath, type: '' }] }))}
+                  label="Anexar comprovante"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Campos de Receita/Despesa — ocultos em modo transferência */}
           {/* Client selector */}
-          {isReceita && (
+          {isReceita && !isTransferencia && (
             <div>
               <Label className="flex items-center gap-1">Cliente <span className="text-red-500">*</span></Label>
               {selectedClient ? (
@@ -328,7 +458,7 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
           )}
 
           {/* Propriedade / Empreendimento — aparece após selecionar cliente */}
-          {isReceita && form.client_property_id && clientProperties.length > 0 && (
+          {isReceita && !isTransferencia && form.client_property_id && clientProperties.length > 0 && (
             <div>
               <Label>Propriedade / Empreendimento <span className="text-xs text-gray-400 font-normal">(opcional)</span></Label>
               <Select value={form.property_id || ''} onValueChange={v => {
@@ -347,12 +477,12 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
             </div>
           )}
 
-          <div>
+          {!isTransferencia && <div>
             <Label>Descrição / Serviço *</Label>
             <Input value={form.description} onChange={e => setF('description', e.target.value)} placeholder="Ex: Consultoria ambiental — Fazenda Boa Vista" />
-          </div>
+          </div>}
 
-          <div className="grid grid-cols-2 gap-4">
+          {!isTransferencia && <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Categoria</Label>
               <Select value={form.category} onValueChange={v => setF('category', v)}>
@@ -364,10 +494,10 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
               <Label>{isParcelado ? 'Data da 1ª Parcela' : 'Data *'}</Label>
               <Input type="date" value={form.date} onChange={e => setF('date', e.target.value)} />
             </div>
-          </div>
+          </div>}
 
           {/* Payment type toggle — only for receita and new records */}
-          {isReceita && !editing && (
+          {isReceita && !editing && !isTransferencia && (
             <div>
               <Label className="mb-2 block">Tipo de Pagamento</Label>
               <div className="flex gap-2">
@@ -384,7 +514,7 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
           )}
 
           {/* Parcelado config */}
-          {isParcelado && (
+          {isParcelado && !isTransferencia && (
             <div className="border border-amber-200 bg-amber-50/40 rounded-xl p-4 space-y-4">
               <div className="grid grid-cols-3 gap-3">
                 <div>
@@ -493,7 +623,7 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
           )}
 
           {/* À vista fields */}
-          {!isParcelado && (
+          {!isParcelado && !isTransferencia && (
             <>
               <div className="grid grid-cols-2 gap-4">
                 <div><Label>Valor (R$) *</Label><Input type="number" step="0.01" value={form.amount} onChange={e => setF('amount', e.target.value)} placeholder="0,00" /></div>
@@ -561,14 +691,14 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
           )}
 
           {/* Notes for parcelado */}
-          {isParcelado && (
+          {isParcelado && !isTransferencia && (
             <div><Label>Observações gerais</Label><Input value={form.notes} onChange={e => setF('notes', e.target.value)} placeholder="Notas do serviço"/></div>
           )}
 
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="outline" onClick={handleClose}>Cancelar</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={handleSubmit} disabled={saving}>
-              {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-1"/>Salvando...</> : isParcelado ? `Registrar ${form.num_installments} Parcelas` : 'Salvar'}
+            <Button className={`${isTransferencia ? 'bg-blue-600 hover:bg-blue-700' : 'bg-emerald-600 hover:bg-emerald-700'}`} onClick={handleSubmit} disabled={saving}>
+              {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-1"/>Salvando...</> : isTransferencia ? 'Registrar Transferência' : isParcelado ? `Registrar ${form.num_installments} Parcelas` : 'Salvar'}
             </Button>
           </div>
         </div>

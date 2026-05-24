@@ -79,11 +79,9 @@ export default function ClimateMonitoring() {
   const updateClimateDataMutation = useMutation({
     mutationFn: async () => {
       const prop = selectedProperty;
-      let locationLabel = '';
 
-      // Tentar usar coordenadas primeiro, depois fallback para cidade/estado
-      let lat, lng, hasCoords = false;
-
+      // Requer coordenadas GPS para dados precisos via Open-Meteo
+      let lat, lng;
       if (prop?.coordinates && typeof prop.coordinates === 'string') {
         const parts = prop.coordinates.split(',');
         if (parts.length === 2) {
@@ -92,129 +90,121 @@ export default function ClimateMonitoring() {
           if (!isNaN(parsedLat) && !isNaN(parsedLng) && parsedLat >= -90 && parsedLat <= 90 && parsedLng >= -180 && parsedLng <= 180) {
             lat = parsedLat;
             lng = parsedLng;
-            hasCoords = true;
-            locationLabel = `coordenadas ${lat},${lng}`;
           }
         }
       }
 
-      if (!hasCoords) {
-        const city = prop?.city;
-        const state = prop?.state;
-        if (!city && !state) {
-          toast.error('Propriedade sem coordenadas nem cidade/estado. Configure a localização antes de atualizar.');
-          return;
-        }
-        locationLabel = [city, state].filter(Boolean).join(', ') + ', Brasil';
+      if (!lat || !lng) {
+        toast.error('Coordenadas GPS obrigatórias para dados climáticos precisos. Configure latitude/longitude na propriedade.');
+        return;
       }
 
-      try {
-        const response = await base44.integrations.Core.InvokeLLM({
-          prompt: `Forneça dados climáticos atuais e previsão de 7 dias para ${locationLabel}. 
-          Inclua: temperatura atual (número), umidade (0-100%), precipitação (mm), velocidade do vento (km/h), 
-          direção do vento, índice UV (0-11), umidade do solo (0-100%), e previsão detalhada para cada dia dos próximos 7 dias.`,
-          add_context_from_internet: true,
-          response_json_schema: {
-            type: "object",
-            properties: {
-              temperature_current: { type: "number" },
-              humidity: { type: "number" },
-              precipitation: { type: "number" },
-              wind_speed: { type: "number" },
-              wind_direction: { type: "string" },
-              uv_index: { type: "number" },
-              soil_moisture: { type: "number" },
-              forecast_7days: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    date: { type: "string" },
-                    temp_max: { type: "number" },
-                    temp_min: { type: "number" },
-                    precipitation_chance: { type: "number" },
-                    description: { type: "string" }
-                  }
-                }
-              }
-            }
-          }
+      // Open-Meteo Forecast API — dados oficiais WMO/ECMWF, gratuita, sem API key
+      // Inclui dados atuais (current) + previsão 7 dias (daily) + umidade do solo (hourly)
+      const forecastUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
+        `&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,wind_direction_10m,uv_index` +
+        `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,weathercode` +
+        `&hourly=soil_moisture_0_to_1cm` +
+        `&timezone=America%2FSao_Paulo&forecast_days=7`;
+
+      const resp = await fetch(forecastUrl);
+      if (!resp.ok) {
+        const txt = await resp.text();
+        throw new Error(`Open-Meteo Forecast error: ${txt}`);
+      }
+      const data = await resp.json();
+
+      const cur = data.current;
+      const daily = data.daily;
+      const hourly = data.hourly;
+
+      // Direção do vento: graus → cardinal
+      const windDegToCardinal = (deg) => {
+        const dirs = ['N','NE','L','SE','S','SO','O','NO'];
+        return dirs[Math.round(deg / 45) % 8] || 'N';
+      };
+
+      // WMO Weather code → descrição em português
+      const wmoDescription = (code) => {
+        if (code <= 1) return 'Céu limpo';
+        if (code <= 3) return 'Parcialmente nublado';
+        if (code <= 49) return 'Neblina / névoa';
+        if (code <= 59) return 'Garoa';
+        if (code <= 69) return 'Chuva';
+        if (code <= 79) return 'Neve / granizo';
+        if (code <= 82) return 'Chuva forte';
+        if (code <= 86) return 'Neve forte';
+        if (code <= 99) return 'Tempestade';
+        return 'Sem informação';
+      };
+
+      // Umidade do solo: média das primeiras 6 horas disponíveis (0-1 cm, escala 0-1 → %)
+      const soilRaw = hourly?.soil_moisture_0_to_1cm?.slice(0, 6) || [];
+      const soilMoisture = soilRaw.length > 0
+        ? Math.round(soilRaw.reduce((a, v) => a + (v ?? 0), 0) / soilRaw.length * 100)
+        : 0;
+
+      const cleanedResponse = {
+        temperature_current: cur?.temperature_2m ?? 0,
+        humidity: Math.min(100, Math.max(0, cur?.relative_humidity_2m ?? 0)),
+        precipitation: cur?.precipitation ?? 0,
+        wind_speed: cur?.wind_speed_10m ?? 0,
+        wind_direction: windDegToCardinal(cur?.wind_direction_10m ?? 0),
+        uv_index: cur?.uv_index ?? 0,
+        soil_moisture: Math.min(100, Math.max(0, soilMoisture)),
+        forecast_7days: (daily?.time || []).map((date, i) => ({
+          date,
+          temp_max: daily.temperature_2m_max?.[i] ?? 0,
+          temp_min: daily.temperature_2m_min?.[i] ?? 0,
+          precipitation_chance: Math.min(100, Math.max(0, daily.precipitation_probability_max?.[i] ?? 0)),
+          description: wmoDescription(daily.weathercode?.[i] ?? 0)
+        }))
+      };
+
+      const mainLocation = climateData.find(c => c.location_name === `Principal - ${selectedProperty.property_name}`);
+
+      // Montar entrada histórica do dia com dados reais da API
+      const todayStr = new Date().toISOString().split('T')[0];
+      const newHistoricalEntry = {
+        date: todayStr,
+        temperature_max: daily?.temperature_2m_max?.[0] ?? cleanedResponse.temperature_current,
+        temperature_min: daily?.temperature_2m_min?.[0] ?? cleanedResponse.temperature_current,
+        precipitation: daily?.precipitation_sum?.[0] ?? cleanedResponse.precipitation,
+        humidity_avg: cleanedResponse.humidity,
+        climate_events: []
+      };
+
+      if (mainLocation) {
+        const existingHistory = Array.isArray(mainLocation.historical_records) ? mainLocation.historical_records : [];
+        const filteredHistory = existingHistory.filter(r => r.date !== todayStr);
+        const updatedHistory = [...filteredHistory, newHistoricalEntry].slice(-365);
+
+        await base44.entities.ClimateMonitoring.update(mainLocation.id, {
+          ...cleanedResponse,
+          last_update: new Date().toISOString(),
+          data_source: 'Open-Meteo (WMO/ECMWF)',
+          historical_records: updatedHistory
         });
-
-        // Validar resposta
-        if (!response || typeof response !== 'object') {
-          throw new Error('Resposta inválida da API');
-        }
-
-        console.log('[CLIMATE] Resposta da API recebida:', response);
-
-        const cleanedResponse = {
-          temperature_current: typeof response.temperature_current === 'number' ? response.temperature_current : 0,
-          humidity: Math.min(100, Math.max(0, response.humidity ?? 0)),
-          precipitation: typeof response.precipitation === 'number' ? response.precipitation : 0,
-          wind_speed: typeof response.wind_speed === 'number' ? response.wind_speed : 0,
-          wind_direction: response.wind_direction?.toString() || 'N',
-          uv_index: typeof response.uv_index === 'number' ? response.uv_index : 0,
-          soil_moisture: Math.min(100, Math.max(0, response.soil_moisture ?? 0)),
-          forecast_7days: Array.isArray(response.forecast_7days) ? (response.forecast_7days || []).map(day => ({
-            date: day?.date?.toString() || new Date().toISOString().split('T')[0],
-            temp_max: typeof day?.temp_max === 'number' ? day.temp_max : 25,
-            temp_min: typeof day?.temp_min === 'number' ? day.temp_min : 15,
-            precipitation_chance: Math.min(100, Math.max(0, day?.precipitation_chance ?? 0)),
-            description: day?.description?.toString() || 'Sem informação'
-          })) : []
-        };
-
-        const mainLocation = climateData.find(c => c.location_name === `Principal - ${selectedProperty.property_name}`);
-        
-        // Montar novo registro histórico do dia
-        const todayStr = new Date().toISOString().split('T')[0];
-        const newHistoricalEntry = {
-          date: todayStr,
-          temperature_max: cleanedResponse.temperature_current,
-          temperature_min: cleanedResponse.temperature_current,
-          precipitation: cleanedResponse.precipitation,
-          humidity_avg: cleanedResponse.humidity,
-          climate_events: []
-        };
-
-        if (mainLocation) {
-          // Acumular histórico: remover entrada do mesmo dia se existir e adicionar nova
-          const existingHistory = Array.isArray(mainLocation.historical_records) ? mainLocation.historical_records : [];
-          const filteredHistory = existingHistory.filter(r => r.date !== todayStr);
-          const updatedHistory = [...filteredHistory, newHistoricalEntry].slice(-365); // manter últimos 365 dias
-
-          await base44.entities.ClimateMonitoring.update(mainLocation.id, {
-            ...cleanedResponse,
-            last_update: new Date().toISOString(),
-            historical_records: updatedHistory
-          });
-          console.log('[CLIMATE] Registro atualizado:', mainLocation.id, '| histórico:', updatedHistory.length, 'dias');
-        } else {
-          await base44.entities.ClimateMonitoring.create({
-            property_id: selectedProperty.id,
-            location_name: `Principal - ${selectedProperty.property_name}`,
-            coordinates: selectedProperty.coordinates || locationLabel,
-            ...cleanedResponse,
-            last_update: new Date().toISOString(),
-            data_source: 'API Pública',
-            alerts: [],
-            historical_records: [newHistoricalEntry]
-          });
-          console.log('[CLIMATE] Novo registro criado com histórico inicial');
-        }
-
-        await refetchClimateData();
-        setSelectedLocation(null);
-        toast.success('Dados climáticos atualizados com sucesso!');
-      } catch (error) {
-        console.error('[CLIMATE] Erro ao buscar dados:', error);
-        toast.error(error?.message || 'Erro ao buscar dados climáticos. Tente novamente.');
+      } else {
+        await base44.entities.ClimateMonitoring.create({
+          property_id: selectedProperty.id,
+          location_name: `Principal - ${selectedProperty.property_name}`,
+          coordinates: selectedProperty.coordinates,
+          ...cleanedResponse,
+          last_update: new Date().toISOString(),
+          data_source: 'Open-Meteo (WMO/ECMWF)',
+          alerts: [],
+          historical_records: [newHistoricalEntry]
+        });
       }
+
+      await refetchClimateData();
+      setSelectedLocation(null);
+      toast.success('Dados climáticos atualizados — fonte: Open-Meteo (WMO/ECMWF)');
     },
     onError: (error) => {
       console.error('[CLIMATE] Erro na mutação:', error);
-      toast.error('Erro ao atualizar dados climáticos');
+      toast.error(error?.message || 'Erro ao atualizar dados climáticos');
     }
   });
 
@@ -295,31 +285,19 @@ export default function ClimateMonitoring() {
         <>
           {/* Botão Atualizar */}
           <div className="flex gap-2 flex-wrap">
-            {!currentProperty?.coordinates && (currentProperty?.city || currentProperty?.state) && (
-              <Card className="w-full border-blue-200 bg-blue-50">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <MapPin className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                  <p className="text-sm text-blue-900"><strong>Info:</strong> Sem coordenadas GPS — usando cidade/estado <strong>{[currentProperty.city, currentProperty.state].filter(Boolean).join(', ')}</strong> para buscar dados climáticos.</p>
-                </CardContent>
-              </Card>
-            )}
-            {!currentProperty?.coordinates && !currentProperty?.city && !currentProperty?.state && (
+            {!currentProperty?.coordinates && (
               <Card className="w-full border-amber-200 bg-amber-50">
                 <CardContent className="p-4 flex items-center gap-3">
                   <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
-                  <p className="text-sm text-amber-900"><strong>Aviso:</strong> Esta propriedade não possui coordenadas GPS nem cidade/estado. Configure a localização para ativar o monitoramento.</p>
+                  <p className="text-sm text-amber-900">
+                    <strong>Coordenadas GPS obrigatórias.</strong> Configure latitude/longitude na propriedade para buscar dados climáticos oficiais (Open-Meteo / WMO).
+                  </p>
                 </CardContent>
               </Card>
             )}
             <Button
-              onClick={() => {
-                if (!currentProperty?.coordinates && !currentProperty?.city && !currentProperty?.state) {
-                  toast.error('Propriedade sem localização. Configure coordenadas ou cidade/estado.');
-                  return;
-                }
-                updateClimateDataMutation.mutate();
-              }}
-              disabled={updateClimateDataMutation.isPending || (!currentProperty?.coordinates && !currentProperty?.city && !currentProperty?.state)}
+              onClick={() => updateClimateDataMutation.mutate()}
+              disabled={updateClimateDataMutation.isPending || !currentProperty?.coordinates}
               className="bg-blue-600 hover:bg-blue-700"
             >
               {updateClimateDataMutation.isPending ? (

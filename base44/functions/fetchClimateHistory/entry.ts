@@ -19,8 +19,9 @@ Deno.serve(async (req) => {
 
     const fmt = (d) => d.toISOString().split('T')[0];
 
-    // Open-Meteo Historical API — gratuita, sem chave
-    const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lng}&start_date=${fmt(startDate)}&end_date=${fmt(endDate)}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max,relative_humidity_2m_mean&timezone=America%2FSao_Paulo`;
+    // Open-Meteo Historical Weather API (ERA5/CERRA) — dados oficiais, gratuita, sem chave
+    // Referência: https://open-meteo.com/en/docs/historical-weather-api
+    const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lng}&start_date=${fmt(startDate)}&end_date=${fmt(endDate)}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,relative_humidity_2m_max&timezone=America%2FSao_Paulo`;
 
     const resp = await fetch(url);
     if (!resp.ok) {
@@ -41,8 +42,8 @@ Deno.serve(async (req) => {
       temperature_max: daily.temperature_2m_max?.[i] ?? null,
       temperature_min: daily.temperature_2m_min?.[i] ?? null,
       precipitation: daily.precipitation_sum?.[i] ?? 0,
-      humidity_avg: daily.relative_humidity_2m_mean?.[i] ?? null,
-      wind_speed_max: daily.windspeed_10m_max?.[i] ?? null,
+      humidity_avg: daily.relative_humidity_2m_max?.[i] ?? null,
+      wind_speed_max: daily.wind_speed_10m_max?.[i] ?? null,
       climate_events: []
     }));
 

@@ -46,22 +46,43 @@ Deno.serve(async (req) => {
       climate_events: []
     }));
 
-    // Buscar registro existente da propriedade
+    // Buscar TODOS os registros da propriedade e atualizar cada um
     const existing = await base44.entities.ClimateMonitoring.filter({ property_id }, '-created_date');
-    const record = existing?.[0];
 
-    if (record) {
+    if (!existing || existing.length === 0) {
+      return Response.json({ error: 'Nenhum registro climático encontrado para esta propriedade. Atualize os dados atuais primeiro.' }, { status: 404 });
+    }
+
+    for (const record of existing) {
+      // Preservar observações manuais já existentes (observation, divergence_type, divergence_detail)
+      const existingHistory = Array.isArray(record.historical_records) ? record.historical_records : [];
+      const annotationsMap = {};
+      existingHistory.forEach(r => {
+        if (r.observation || r.divergence_type) {
+          annotationsMap[r.date] = {
+            observation: r.observation,
+            divergence_type: r.divergence_type,
+            divergence_detail: r.divergence_detail
+          };
+        }
+      });
+
+      // Mesclar dados Open-Meteo com anotações existentes
+      const mergedRecords = historical_records.map(r => ({
+        ...r,
+        ...(annotationsMap[r.date] || {})
+      }));
+
       await base44.entities.ClimateMonitoring.update(record.id, {
-        historical_records,
+        historical_records: mergedRecords,
         data_source: 'Open-Meteo (ERA5)'
       });
-    } else {
-      return Response.json({ error: 'Nenhum registro climático encontrado para esta propriedade. Atualize os dados atuais primeiro.' }, { status: 404 });
     }
 
     return Response.json({
       success: true,
       days_imported: historical_records.length,
+      records_updated: existing.length,
       start_date: fmt(startDate),
       end_date: fmt(endDate)
     });

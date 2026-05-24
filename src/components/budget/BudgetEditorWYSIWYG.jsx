@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Download, Mail, Image as ImageIcon, RefreshCw } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import SendEmailModal from '@/components/shared/SendEmailModal';
@@ -257,36 +258,76 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
   };
 
   // Exportar para PDF usando o HTML completo
-  const exportPDF = async () => {
-    try {
-      const element = previewRef.current;
-      if (!element) return;
+   const exportPDF = async () => {
+     try {
+       const element = previewRef.current;
+       if (!element) return;
 
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        backgroundColor: '#fff',
-        logging: false,
-        useCORS: true,
-      });
+       const canvas = await html2canvas(element, {
+         scale: 2,
+         backgroundColor: '#fff',
+         logging: false,
+         useCORS: true,
+       });
 
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
+       const imgData = canvas.toDataURL('image/png');
+       const pdf = new jsPDF({
+         orientation: 'portrait',
+         unit: 'mm',
+         format: 'a4',
+       });
 
-      const imgWidth = 210;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+       const imgWidth = 210;
+       const imgHeight = (canvas.height * imgWidth) / canvas.width;
+       pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
 
-      pdf.save(`orcamento-${budgetData.budget_number || 'novo'}.pdf`);
-      toast.success('PDF gerado com sucesso!');
-    } catch (error) {
-      toast.error('Erro ao gerar PDF');
-      console.error(error);
-    }
-  };
+       pdf.save(`orcamento-${budgetData.budget_number || 'novo'}.pdf`);
+       toast.success('PDF gerado com sucesso!');
+     } catch (error) {
+       toast.error('Erro ao gerar PDF');
+       console.error(error);
+     }
+   };
+
+   const exportDocx = async () => {
+     try {
+       const htmlContent = generateCompleteHTML();
+       const textContent = htmlContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+
+       const doc = new Document({
+         sections: [{
+           properties: {},
+           children: [
+             new Paragraph({
+               text: 'ORÇAMENTO',
+               bold: true,
+               size: 28 * 2,
+               spacing: { line: 360, before: 200, after: 200 },
+             }),
+             new Paragraph({
+               text: textContent,
+               spacing: { line: 280 },
+             }),
+           ],
+         }],
+       });
+
+       const blob = await Packer.toBlob(doc);
+       const url = URL.createObjectURL(blob);
+       const a = document.createElement('a');
+       a.href = url;
+       a.download = `orcamento-${budgetData.budget_number || 'novo'}.docx`;
+       document.body.appendChild(a);
+       a.click();
+       document.body.removeChild(a);
+       URL.revokeObjectURL(url);
+
+       toast.success('Orçamento exportado em DOCX com sucesso!');
+     } catch (error) {
+       toast.error('Erro ao exportar DOCX');
+       console.error(error);
+     }
+   };
 
   const handleSave = () => {
     onSave({
@@ -417,10 +458,13 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
       {/* Rodapé com Ações */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg z-50">
         <div className="max-w-7xl mx-auto flex gap-3 justify-end">
-          <Button onClick={exportPDF} variant="outline" className="gap-2">
-            <Download className="w-4 h-4" /> Download PDF
-          </Button>
-          <Button onClick={handleSave} variant="outline" className="gap-2">
+            <Button onClick={exportPDF} variant="outline" className="gap-2">
+              <Download className="w-4 h-4" /> Download PDF
+            </Button>
+            <Button onClick={exportDocx} variant="outline" className="gap-2">
+              <Download className="w-4 h-4" /> Download DOCX
+            </Button>
+            <Button onClick={handleSave} variant="outline" className="gap-2">
             Salvar Orçamento
           </Button>
           <Button onClick={() => setShowEmailModal(true)} className="bg-emerald-600 hover:bg-emerald-700 gap-2">

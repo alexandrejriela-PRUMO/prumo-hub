@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Download, Save, Mail, Copy, ZoomIn, ZoomOut, Image as ImageIcon, RefreshCw } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { Document, Packer, Paragraph, TextRun, convertInchesToTwip } from 'docx';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import SendEmailModal from '@/components/shared/SendEmailModal';
@@ -175,6 +176,46 @@ export default function ContractEditorWYSIWYG({
       toast.success('PDF exportado com sucesso!');
     } catch (error) {
       toast.error('Erro ao exportar PDF');
+    }
+  };
+
+  const exportDocx = async () => {
+    try {
+      const htmlContent = generateCompleteHTML();
+      const textContent = htmlContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: [
+            new Paragraph({
+              text: 'CONTRATO',
+              bold: true,
+              size: 28 * 2,
+              spacing: { line: 360, before: 200, after: 200 },
+            }),
+            new Paragraph({
+              text: textContent,
+              spacing: { line: 280 },
+            }),
+          ],
+        }],
+      });
+
+      const blob = await Packer.toBlob(doc);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `contrato-${Date.now()}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success('Contrato exportado em DOCX com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao exportar DOCX');
+      console.error(error);
     }
   };
 
@@ -434,14 +475,21 @@ export default function ContractEditorWYSIWYG({
       </Card>
 
       {/* Actions */}
-      <div className="flex gap-3 justify-end flex-wrap">
-        <Button
-          onClick={exportPDF}
-          variant="outline"
-          className="gap-2"
-        >
-          <Download className="w-4 h-4" /> Download PDF
-        </Button>
+       <div className="flex gap-3 justify-end flex-wrap">
+         <Button
+           onClick={exportPDF}
+           variant="outline"
+           className="gap-2"
+         >
+           <Download className="w-4 h-4" /> Download PDF
+         </Button>
+         <Button
+           onClick={exportDocx}
+           variant="outline"
+           className="gap-2"
+         >
+           <Download className="w-4 h-4" /> Download DOCX
+         </Button>
         <Button
           onClick={async () => {
             toast.info('Gerando PDF...');

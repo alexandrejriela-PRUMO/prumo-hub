@@ -113,9 +113,9 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
   });
 
   const { data: environmentalAlerts = [], isLoading: loadingAlerts } = useQuery({
-    queryKey: ['environmental-alerts'],
-    queryFn: () => base44.entities.EnvironmentalAlert.list(),
-    enabled: true,
+    queryKey: ['environmental-alerts', effectiveEmail],
+    queryFn: () => base44.entities.EnvironmentalAlert.filter({ responsible_email: effectiveEmail }),
+    enabled: !!effectiveEmail && !effectiveLoading,
     initialData: []
   });
 
@@ -509,7 +509,15 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
             <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-2">Exportar Dados</h2>
             <p className="text-gray-600 text-xs sm:text-sm lg:text-base break-words">Baixe um relatório completo com suas informações em PDF ou Excel</p>
           </div>
-          <DashboardFullExport user={user} />
+          <DashboardFullExport 
+            user={user}
+            selectedProperty={selectedProperty}
+            licenses={filteredData.licenses}
+            documents={filteredData.documents}
+            processes={filteredData.processes}
+            alerts={filteredData.alerts}
+            prads={prads}
+          />
         </div>
       )}
 

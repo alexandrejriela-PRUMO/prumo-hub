@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Cloud, Droplets, Wind, Sun, AlertTriangle, Loader2, RefreshCw, MapPin } from 'lucide-react';
+import { Cloud, Droplets, Wind, Sun, AlertTriangle, Loader2, RefreshCw, MapPin, History } from 'lucide-react';
 import { toast } from 'sonner';
 import ClimateCard from '../components/climate/ClimateCard';
 import WeatherForecast from '../components/climate/WeatherForecast';
@@ -41,6 +41,39 @@ export default function ClimateMonitoring() {
     enabled: !!selectedProperty?.id,
     staleTime: 0,
     refetchOnWindowFocus: true
+  });
+
+  const importHistoryMutation = useMutation({
+    mutationFn: async () => {
+      const prop = selectedProperty;
+      let lat, lng;
+
+      if (prop?.coordinates) {
+        const parts = prop.coordinates.split(',');
+        lat = parseFloat(parts[0]?.trim());
+        lng = parseFloat(parts[1]?.trim());
+      }
+
+      if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
+        toast.error('Propriedade sem coordenadas GPS. Configure latitude/longitude para importar histórico real.');
+        return;
+      }
+
+      const response = await base44.functions.invoke('fetchClimateHistory', {
+        property_id: prop.id,
+        lat,
+        lng,
+        days: 365
+      });
+
+      if (response.data?.error) throw new Error(response.data.error);
+
+      await refetchClimateData();
+      toast.success(`Histórico importado: ${response.data.days_imported} dias (${response.data.start_date} a ${response.data.end_date})`);
+    },
+    onError: (error) => {
+      toast.error(error?.message || 'Erro ao importar histórico climático');
+    }
   });
 
   const updateClimateDataMutation = useMutation({
@@ -301,6 +334,28 @@ export default function ClimateMonitoring() {
                 </>
               )}
             </Button>
+
+            {climateData.length > 0 && (
+              <Button
+                onClick={() => importHistoryMutation.mutate()}
+                disabled={importHistoryMutation.isPending || !currentProperty?.coordinates}
+                variant="outline"
+                className="border-emerald-600 text-emerald-700 hover:bg-emerald-50"
+                title={!currentProperty?.coordinates ? 'Coordenadas GPS necessárias para importar histórico real' : ''}
+              >
+                {importHistoryMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Importando...
+                  </>
+                ) : (
+                  <>
+                    <History className="w-4 h-4 mr-2" />
+                    Importar Histórico Real (1 ano)
+                  </>
+                )}
+              </Button>
+            )}
           </div>
 
           {/* Localizações */}

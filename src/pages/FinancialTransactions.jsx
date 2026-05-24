@@ -181,7 +181,7 @@ export default function FinancialTransactions() {
     ].join(sep);
 
     const rows = sorted.map(t => [
-      t.type === 'receita' ? 'Receita' : 'Despesa',
+      isTransfer(t) ? (t.type === 'receita' ? 'Entrada (Transferência)' : 'Saída (Transferência)') : (t.type === 'receita' ? 'Receita' : 'Despesa'),
       esc(t.source),
       esc(t.description),
       esc(t.client || ''),

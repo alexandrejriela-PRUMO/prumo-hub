@@ -332,7 +332,6 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
   const handleSave = () => {
     onSave({
       documentHtml: generateCompleteHTML(),
-      logoBase64,
       rawHtml: htmlContent,
     });
   };
@@ -344,7 +343,6 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
       toast.info('Salvando orçamento antes de enviar...');
       const saved = await onSave({
         documentHtml: generateCompleteHTML(),
-        logoBase64,
         rawHtml: htmlContent,
         returnSaved: true,
       });
@@ -367,7 +365,7 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
 
       toast.success('E-mail enviado com sucesso!');
       setShowEmailModal(false);
-      if (onSend) onSend({ documentHtml: generateCompleteHTML(), logoBase64, rawHtml: htmlContent });
+      if (onSend) onSend({ documentHtml: generateCompleteHTML(), rawHtml: htmlContent });
     } catch (error) {
       console.error('Erro ao enviar e-mail:', error);
       toast.error('Erro ao enviar e-mail: ' + (error.message || 'Erro desconhecido'));

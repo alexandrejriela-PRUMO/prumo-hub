@@ -136,7 +136,6 @@ export default function BudgetGenerator() {
       services,
       additional_fees,
       document_html: editorData.documentHtml,
-      logo_url: editorData.logoBase64 || budgetData.logo_url,
     };
 
     // Se chamado com returnSaved=true (pelo editor antes de enviar email), retorna o budget salvo

@@ -134,12 +134,29 @@ export default function ClimateMonitoring() {
 
         const mainLocation = climateData.find(c => c.location_name === `Principal - ${selectedProperty.property_name}`);
         
+        // Montar novo registro histórico do dia
+        const todayStr = new Date().toISOString().split('T')[0];
+        const newHistoricalEntry = {
+          date: todayStr,
+          temperature_max: cleanedResponse.temperature_current,
+          temperature_min: cleanedResponse.temperature_current,
+          precipitation: cleanedResponse.precipitation,
+          humidity_avg: cleanedResponse.humidity,
+          climate_events: []
+        };
+
         if (mainLocation) {
+          // Acumular histórico: remover entrada do mesmo dia se existir e adicionar nova
+          const existingHistory = Array.isArray(mainLocation.historical_records) ? mainLocation.historical_records : [];
+          const filteredHistory = existingHistory.filter(r => r.date !== todayStr);
+          const updatedHistory = [...filteredHistory, newHistoricalEntry].slice(-365); // manter últimos 365 dias
+
           await base44.entities.ClimateMonitoring.update(mainLocation.id, {
             ...cleanedResponse,
-            last_update: new Date().toISOString()
+            last_update: new Date().toISOString(),
+            historical_records: updatedHistory
           });
-          console.log('[CLIMATE] Registro atualizado:', mainLocation.id);
+          console.log('[CLIMATE] Registro atualizado:', mainLocation.id, '| histórico:', updatedHistory.length, 'dias');
         } else {
           await base44.entities.ClimateMonitoring.create({
             property_id: selectedProperty.id,
@@ -148,9 +165,10 @@ export default function ClimateMonitoring() {
             ...cleanedResponse,
             last_update: new Date().toISOString(),
             data_source: 'API Pública',
-            alerts: []
+            alerts: [],
+            historical_records: [newHistoricalEntry]
           });
-          console.log('[CLIMATE] Novo registro criado');
+          console.log('[CLIMATE] Novo registro criado com histórico inicial');
         }
 
         await refetchClimateData();

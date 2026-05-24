@@ -521,18 +521,12 @@ export default function ContractEditorWYSIWYG({
           <Save className="w-4 h-4" /> Salvar Contrato
         </Button>
         <Button
-          onClick={() => setShowEmailModal(true)}
-          variant="outline"
-          className="gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-        >
-          <Mail className="w-4 h-4" /> Enviar por E-mail
-        </Button>
-        <Button
-          onClick={() => onSendToSign({ documentHtml: generateCompleteHTML(), selectedTemplate, logoBase64 })}
-          className="bg-emerald-600 hover:bg-emerald-700 gap-2"
-        >
-          <Mail className="w-4 h-4" /> Enviar para Assinatura
-        </Button>
+           onClick={() => setShowEmailModal(true)}
+           variant="outline"
+           className="gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+         >
+           <Mail className="w-4 h-4" /> Enviar por E-mail
+         </Button>
       </div>
 
       <SendEmailModal

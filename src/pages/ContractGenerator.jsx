@@ -231,18 +231,9 @@ export default function ContractGenerator() {
             )}
           </div>
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-emerald-900 mb-2">
-                {step === 'form' ? 'Gerador de Contratos' : step === 'editor' ? 'Editar Contrato' : 'Meus Contratos'}
-              </h1>
-              <p className="text-gray-600">
-                {step === 'form'
-                  ? 'Crie um novo contrato e envie para assinatura digital'
-                  : step === 'editor'
-                  ? 'Customize o contrato e envie para assinatura'
-                  : 'Visualize, edite e gerencie seus contratos'}
-              </p>
-            </div>
+            <h1 className="text-3xl font-bold text-emerald-900">
+              {step === 'form' ? 'Gerador de Contratos' : step === 'editor' ? 'Editar Contrato' : 'Meus Contratos'}
+            </h1>
             {step === 'form' && (
               <Button
                 onClick={() => setStep('history')}

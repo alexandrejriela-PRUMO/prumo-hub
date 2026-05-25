@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { budget_id, to, subject, message } = body;
+    const { budget_id, to, subject, message, pdf_url } = body;
 
     if (!budget_id || !to || !subject) {
       return Response.json({ error: 'Campos obrigatórios: budget_id, to, subject' }, { status: 400 });
@@ -136,6 +136,13 @@ Deno.serve(async (req) => {
           ${budget.additional_fees && budget.additional_fees.map(f => `<tr><td style="padding:8px 0; color:#6b7280;">${f.name}</td><td style="text-align:right; font-weight:600; color:#111827;">R$ ${fmt(f.amount)}</td></tr>`).join('')}
           ${budget.discount_percentage > 0 ? `<tr style="color:#dc2626;"><td style="padding:8px 0;"><strong>Desconto (${budget.discount_percentage}%)</strong></td><td style="text-align:right; font-weight:600;">- R$ ${fmt((budget.total_amount * budget.discount_percentage) / 100)}</td></tr>` : ''}
         </table>
+      </div>` : ''}
+
+      <!-- Botão PDF -->
+      ${pdf_url ? `<div style="margin:24px 0; text-align:center;">
+        <a href="${pdf_url}" target="_blank" style="display:inline-block; background:#1B4332; color:#fff; padding:14px 32px; border-radius:8px; font-weight:700; font-size:15px; text-decoration:none;">
+          📄 Visualizar / Baixar Orçamento (PDF)
+        </a>
       </div>` : ''}
 
       <!-- Nota reply-to -->

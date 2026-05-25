@@ -339,8 +339,8 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
   const handleSendEmail = async ({ to, subject, message }) => {
     setIsSendingEmail(true);
     try {
-      // Sempre salva antes de enviar para garantir que o backend tem o HTML mais recente
-      toast.info('Salvando orçamento antes de enviar...');
+      // 1. Salva antes de enviar
+      toast.info('Salvando orçamento...');
       const saved = await onSave({
         documentHtml: generateCompleteHTML(),
         rawHtml: htmlContent,
@@ -353,12 +353,51 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
         return;
       }
 
-      // Não envia document_html no payload — o backend usa o que está salvo no banco
+      // 2. Gerar PDF a partir do preview
+      toast.info('Gerando PDF...');
+      const element = previewRef.current;
+      let pdfUrl = null;
+
+      if (element) {
+        const canvas = await html2canvas(element, {
+          scale: 2,
+          backgroundColor: '#fff',
+          logging: false,
+          useCORS: true,
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const imgWidth = 210;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        // Se o conteúdo tiver mais de uma página, adicionar páginas
+        let heightLeft = imgHeight;
+        let position = 0;
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= 297;
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= 297;
+        }
+
+        // 3. Upload do PDF
+        const pdfBlob = pdf.output('blob');
+        const pdfFile = new File([pdfBlob], `orcamento-${budgetData.budget_number || budgetId}.pdf`, { type: 'application/pdf' });
+        const uploadRes = await base44.integrations.Core.UploadFile({ file: pdfFile });
+        pdfUrl = uploadRes?.file_url || null;
+      }
+
+      // 4. Enviar email com link do PDF
+      toast.info('Enviando e-mail...');
       const response = await base44.functions.invoke('sendBudgetEmail', {
         budget_id: budgetId,
         to,
         subject,
         message,
+        pdf_url: pdfUrl,
       });
 
       if (response.data?.error) throw new Error(response.data.error);

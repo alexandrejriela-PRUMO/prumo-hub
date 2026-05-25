@@ -5,134 +5,107 @@ import { Progress } from '@/components/ui/progress';
 import { Upload, X, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
 
 /**
- * Componente de upload universal — envia arquivos para o Cloudflare R2.
- * Mantém a mesma interface de props de antes para compatibilidade total.
+ * Upload universal para Cloudflare R2.
  *
- * Estratégia de upload:
- *   - Arquivos < 10 MB: Base64 via r2UploadProxy (simples, sem CORS)
- *   - Arquivos >= 10 MB ou TIFF/TIF: URL pré-assinada PUT direto ao R2 (suporta qualquer tamanho)
- *
- * Props:
- *   folder       - subpasta no bucket (ex: 'documentos', 'mapeamentos')
- *   accept       - tipos aceitos (ex: '.pdf,.zip,.tif')
- *   onUploadDone - callback(filePath, fileName) após upload bem-sucedido
- *   label        - texto do botão (opcional)
+ * < 4MB  → base64 via r2UploadProxy (1 request, sem CORS)
+ * >= 4MB → S3 Multipart Upload via r2UploadLarge (3 fases, qualquer tamanho)
+ *           Cada part = ~5MB de dados binários (~6.7MB base64)
  */
 
-const LARGE_FILE_THRESHOLD = 4 * 1024 * 1024; // 4 MB (limite seguro para base64 no proxy)
-
-const isTiffFile = (name) => {
-  const lower = name.toLowerCase();
-  return lower.endsWith('.tif') || lower.endsWith('.tiff');
-};
+const SMALL_THRESHOLD = 4 * 1024 * 1024;   // 4 MB
+const PART_SIZE       = 5 * 1024 * 1024;   // 5 MB por part (mínimo S3 é 5MB exceto último)
 
 export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploadDone, label = 'Selecionar Arquivo' }) {
-  const [status, setStatus] = useState('idle'); // idle | uploading | success | error
+  const [status, setStatus]     = useState('idle');
   const [progress, setProgress] = useState(0);
   const [fileName, setFileName] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const inputRef = useRef(null);
 
-  // Upload via Base64 proxy — adequado para arquivos pequenos (< 10 MB)
-  const uploadViaBase64 = async (file) => {
-    const fileBase64 = await fileToBase64(file);
-    setProgress(40);
-
-    const uploadRes = await base44.functions.invoke('r2UploadProxy', {
-      fileName: file.name,
-      contentType: file.type || 'application/octet-stream',
-      folder,
-      fileBase64,
-    });
-
-    if (!uploadRes.data?.filePath) {
-      throw new Error(uploadRes.data?.error || 'Erro no upload');
+  const toBase64 = (bytes) => {
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 8192) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
     }
-
-    setProgress(100);
-    return uploadRes.data.filePath;
+    return btoa(binary);
   };
 
-  // Upload via URL pré-assinada — adequado para arquivos grandes e TIFF
-  const uploadViaPresignedUrl = async (file) => {
-    const urlRes = await base44.functions.invoke('r2GetUploadUrl', {
+  const readFile = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve(new Uint8Array(reader.result));
+    reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
+    reader.readAsArrayBuffer(file);
+  });
+
+  // Upload pequeno: base64 via proxy (sem CORS)
+  const uploadSmall = async (file) => {
+    setProgress(20);
+    const bytes = await readFile(file);
+    setProgress(50);
+
+    const res = await base44.functions.invoke('r2UploadProxy', {
       fileName: file.name,
       contentType: file.type || 'application/octet-stream',
       folder,
+      fileBase64: toBase64(bytes),
     });
 
-    const { uploadUrl, filePath } = urlRes.data || {};
-    if (!uploadUrl || !filePath) {
-      throw new Error(urlRes.data?.error || 'Erro ao obter URL de upload');
+    if (!res.data?.filePath) throw new Error(res.data?.error || 'Erro no upload');
+    setProgress(100);
+    return res.data.filePath;
+  };
+
+  // Upload grande: S3 Multipart via r2UploadLarge (qualquer tamanho)
+  const uploadLarge = async (file) => {
+    setProgress(2);
+    const bytes    = await readFile(file);
+    const mimeType = file.type || 'application/octet-stream';
+    const totalParts = Math.ceil(bytes.length / PART_SIZE);
+
+    // 1. Inicia o multipart upload — recebe uploadId e filePath definitivo
+    const initRes = await base44.functions.invoke('r2UploadLarge', {
+      action: 'initiate',
+      fileName: file.name,
+      contentType: mimeType,
+      folder,
+    });
+    if (initRes.data?.error) throw new Error(initRes.data.error);
+    const { uploadId, filePath } = initRes.data;
+    setProgress(5);
+
+    // 2. Envia cada part
+    const parts = [];
+    for (let i = 0; i < totalParts; i++) {
+      const start    = i * PART_SIZE;
+      const chunk    = bytes.subarray(start, start + PART_SIZE);
+      const partRes  = await base44.functions.invoke('r2UploadLarge', {
+        action:      'uploadPart',
+        filePath,
+        uploadId,
+        partNumber:  i + 1,
+        chunkBase64: toBase64(chunk),
+      });
+      if (partRes.data?.error) throw new Error(partRes.data.error);
+      parts.push({ partNumber: i + 1, etag: partRes.data.etag });
+      setProgress(5 + Math.round(((i + 1) / totalParts) * 88));
     }
 
-    setProgress(10);
-
-    await new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open('PUT', uploadUrl);
-      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
-
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          // Reserva 10% inicial para obtenção da URL; progresso real vai de 10 a 100
-          const uploadPercent = Math.round((event.loaded / event.total) * 90);
-          setProgress(10 + uploadPercent);
-        }
-      };
-
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) resolve();
-        else reject(new Error(`Upload falhou: HTTP ${xhr.status}`));
-      };
-
-      xhr.onerror = () => reject(new Error('Erro de rede durante o upload.'));
-      xhr.send(file);
+    // 3. Completa o multipart upload
+    const completeRes = await base44.functions.invoke('r2UploadLarge', {
+      action: 'complete',
+      filePath,
+      uploadId,
+      parts,
     });
+    if (completeRes.data?.error) throw new Error(completeRes.data.error);
 
     setProgress(100);
     return filePath;
   };
 
-  const fileToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const arrayBuffer = reader.result;
-          if (!arrayBuffer) throw new Error('ArrayBuffer vazio');
-
-          // Usa btoa direto com Uint8Array para melhor performance em arquivos grandes
-          const bytes = new Uint8Array(arrayBuffer);
-          const chunkSize = 8192;
-          let binary = '';
-          for (let i = 0; i < bytes.length; i += chunkSize) {
-            binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
-          }
-          resolve(btoa(binary));
-        } catch (err) {
-          reject(new Error('Erro ao converter: ' + err.message));
-        }
-      };
-      reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
-      reader.onabort = () => reject(new Error('Leitura abortada'));
-      reader.readAsArrayBuffer(file);
-    });
-  };
-
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Limite de 50MB para TIFs (base64 via proxy)
-    const MAX_TIFF_SIZE = 50 * 1024 * 1024;
-    if (isTiffFile(file.name) && file.size > MAX_TIFF_SIZE) {
-      setFileName(file.name);
-      setStatus('error');
-      setErrorMsg(`Arquivo TIF muito grande (${(file.size / 1024 / 1024).toFixed(0)}MB). Máximo permitido: 50MB.`);
-      if (inputRef.current) inputRef.current.value = '';
-      return;
-    }
 
     setFileName(file.name);
     setStatus('uploading');
@@ -140,12 +113,9 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
     setErrorMsg('');
 
     try {
-      // Sempre usa proxy para evitar bloqueio CORS do PUT pré-assinado direto ao R2
-      // URL pré-assinada só para arquivos não-TIFF muito grandes (>4MB)
-      const useLargeUpload = !isTiffFile(file.name) && file.size >= LARGE_FILE_THRESHOLD;
-      const filePath = useLargeUpload
-        ? await uploadViaPresignedUrl(file)
-        : await uploadViaBase64(file);
+      const filePath = file.size < SMALL_THRESHOLD
+        ? await uploadSmall(file)
+        : await uploadLarge(file);
 
       setStatus('success');
       onUploadDone?.(filePath, file.name);
@@ -197,7 +167,7 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
           </div>
           <Progress value={progress} className="h-2" />
           <p className="text-xs text-slate-500">
-            {progress < 10 ? 'Preparando upload...' : 'Enviando para Cloudflare R2...'}
+            {progress < 5 ? 'Iniciando upload...' : progress < 95 ? `Enviando... ${progress}%` : 'Finalizando...'}
           </p>
         </div>
       )}

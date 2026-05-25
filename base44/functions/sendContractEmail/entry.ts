@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
     // Registrar log do e-mail enviado
     try {
       await base44.asServiceRole.entities.BudgetEmailLog.create({
-        budget_id: contract_id,
+        contract_id,
         budget_number: contract.contract_number || `CTR-${contract_id}`,
         consultor_email: user.email,
         to,
@@ -108,6 +108,7 @@ Deno.serve(async (req) => {
         message,
         sent_at: new Date().toISOString(),
         status: 'sent',
+        log_type: 'contract',
       });
     } catch (logErr) {
       console.warn('Erro ao registrar log de e-mail:', logErr.message);

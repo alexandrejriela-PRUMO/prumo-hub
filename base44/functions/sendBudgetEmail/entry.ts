@@ -218,6 +218,7 @@ Deno.serve(async (req) => {
       message: message || '',
       sent_at: new Date().toISOString(),
       status: emailSent ? 'sent' : 'error',
+      log_type: 'budget',
     });
 
     if (!emailSent) {

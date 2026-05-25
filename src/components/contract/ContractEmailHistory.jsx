@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Mail, ChevronDown, ChevronUp, Clock, User } from 'lucide-react';
+import { Mail, ChevronDown, ChevronUp, Clock, User, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function ContractEmailHistory({ consultorEmail, contractId = null }) {
   const [expandedId, setExpandedId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const queryClient = useQueryClient();
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ['contractEmailLogs', consultorEmail, contractId],
@@ -14,10 +17,39 @@ export default function ContractEmailHistory({ consultorEmail, contractId = null
       const filter = contractId
         ? { consultor_email: consultorEmail, contract_id: contractId }
         : { consultor_email: consultorEmail };
-      return base44.entities.BudgetEmailLog.filter(filter, '-sent_at', 100);
+      // Filtrar apenas logs de contrato
+      return base44.entities.BudgetEmailLog.filter(
+        { ...filter, log_type: 'contract' },
+        '-sent_at', 100
+      ).catch(() =>
+        // fallback: busca sem log_type e filtra pelo campo contract_id
+        base44.entities.BudgetEmailLog.filter(
+          contractId ? { consultor_email: consultorEmail } : { consultor_email: consultorEmail },
+          '-sent_at', 200
+        ).then(all => all.filter(l =>
+          l.log_type === 'contract' ||
+          (contractId ? l.contract_id === contractId || l.budget_id === contractId : false) ||
+          (!l.log_type && !l.budget_id && l.contract_id)
+        ))
+      );
     },
     enabled: !!consultorEmail,
   });
+
+  const handleDelete = async (e, logId) => {
+    e.stopPropagation();
+    setDeletingId(logId);
+    try {
+      await base44.entities.BudgetEmailLog.delete(logId);
+      queryClient.invalidateQueries({ queryKey: ['contractEmailLogs', consultorEmail, contractId] });
+      toast.success('Registro removido');
+      if (expandedId === logId) setExpandedId(null);
+    } catch (err) {
+      toast.error('Erro ao remover registro');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -59,20 +91,18 @@ export default function ContractEmailHistory({ consultorEmail, contractId = null
                 className="flex items-center gap-4 p-4 cursor-pointer"
                 onClick={() => setExpandedId(isExpanded ? null : log.id)}
               >
-                {/* Ícone */}
-                <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0">
-                  <Mail className="w-5 h-5 text-emerald-600" />
+                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+                  <Mail className="w-5 h-5 text-blue-600" />
                 </div>
 
-                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     {log.budget_number && (
-                      <span className="text-xs font-mono font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+                      <span className="text-xs font-mono font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
                         {log.budget_number}
                       </span>
                     )}
-                    <Badge className="bg-blue-100 text-blue-800 border-0 text-xs">Enviado</Badge>
+                    <Badge className="bg-purple-100 text-purple-800 border-0 text-xs">Contrato Enviado</Badge>
                   </div>
                   <p className="font-semibold text-gray-900 text-sm mt-1 truncate">{log.subject}</p>
                   <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
@@ -85,13 +115,24 @@ export default function ContractEmailHistory({ consultorEmail, contractId = null
                   </div>
                 </div>
 
-                {/* Expandir */}
-                <div className="text-gray-400 flex-shrink-0">
-                  {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={(e) => handleDelete(e, log.id)}
+                    disabled={deletingId === log.id}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+                    title="Excluir registro"
+                  >
+                    {deletingId === log.id
+                      ? <div className="w-4 h-4 border-2 border-red-300 border-t-transparent rounded-full animate-spin" />
+                      : <Trash2 className="w-4 h-4" />
+                    }
+                  </button>
+                  <div className="text-gray-400">
+                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </div>
                 </div>
               </div>
 
-              {/* Detalhes expandidos */}
               {isExpanded && (
                 <div className="border-t border-gray-100 px-4 py-4 bg-gray-50">
                   <div className="space-y-3">

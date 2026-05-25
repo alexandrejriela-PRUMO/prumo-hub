@@ -4,11 +4,24 @@
   "properties": {
     "budget_id": {
       "type": "string",
-      "description": "ID do or\u00e7amento"
+      "description": "ID do or\u00e7amento (quando log_type = budget)"
+    },
+    "contract_id": {
+      "type": "string",
+      "description": "ID do contrato (quando log_type = contract)"
+    },
+    "log_type": {
+      "type": "string",
+      "enum": [
+        "budget",
+        "contract"
+      ],
+      "default": "budget",
+      "description": "Tipo de log: or\u00e7amento ou contrato"
     },
     "budget_number": {
       "type": "string",
-      "description": "N\u00famero do or\u00e7amento"
+      "description": "N\u00famero do or\u00e7amento ou contrato"
     },
     "consultor_email": {
       "type": "string",
@@ -42,7 +55,6 @@
     }
   },
   "required": [
-    "budget_id",
     "consultor_email",
     "to",
     "subject"

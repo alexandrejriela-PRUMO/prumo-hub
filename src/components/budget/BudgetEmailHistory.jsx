@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Mail, ChevronDown, ChevronUp, Clock, User, FileText } from 'lucide-react';
+import { Mail, ChevronDown, ChevronUp, Clock, User, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function BudgetEmailHistory({ consultorEmail, budgetId = null }) {
   const [expandedId, setExpandedId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const queryClient = useQueryClient();
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ['budgetEmailLogs', consultorEmail, budgetId],
@@ -14,10 +17,33 @@ export default function BudgetEmailHistory({ consultorEmail, budgetId = null }) 
       const filter = budgetId
         ? { consultor_email: consultorEmail, budget_id: budgetId }
         : { consultor_email: consultorEmail };
-      return base44.entities.BudgetEmailLog.filter(filter, '-sent_at', 100);
+      // Filtrar apenas logs de orçamento (não contratos)
+      return base44.entities.BudgetEmailLog.filter(
+        { ...filter, log_type: 'budget' },
+        '-sent_at', 100
+      ).catch(() =>
+        // fallback: se log_type não existir ainda, busca sem esse filtro
+        base44.entities.BudgetEmailLog.filter(filter, '-sent_at', 100)
+          .then(all => all.filter(l => !l.log_type || l.log_type === 'budget'))
+      );
     },
     enabled: !!consultorEmail,
   });
+
+  const handleDelete = async (e, logId) => {
+    e.stopPropagation();
+    setDeletingId(logId);
+    try {
+      await base44.entities.BudgetEmailLog.delete(logId);
+      queryClient.invalidateQueries({ queryKey: ['budgetEmailLogs', consultorEmail, budgetId] });
+      toast.success('Registro removido');
+      if (expandedId === logId) setExpandedId(null);
+    } catch (err) {
+      toast.error('Erro ao remover registro');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -59,12 +85,10 @@ export default function BudgetEmailHistory({ consultorEmail, budgetId = null }) 
                 className="flex items-center gap-4 p-4 cursor-pointer"
                 onClick={() => setExpandedId(isExpanded ? null : log.id)}
               >
-                {/* Ícone */}
                 <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0">
                   <Mail className="w-5 h-5 text-emerald-600" />
                 </div>
 
-                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     {log.budget_number && (
@@ -85,13 +109,24 @@ export default function BudgetEmailHistory({ consultorEmail, budgetId = null }) 
                   </div>
                 </div>
 
-                {/* Expandir */}
-                <div className="text-gray-400 flex-shrink-0">
-                  {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={(e) => handleDelete(e, log.id)}
+                    disabled={deletingId === log.id}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+                    title="Excluir registro"
+                  >
+                    {deletingId === log.id
+                      ? <div className="w-4 h-4 border-2 border-red-300 border-t-transparent rounded-full animate-spin" />
+                      : <Trash2 className="w-4 h-4" />
+                    }
+                  </button>
+                  <div className="text-gray-400">
+                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </div>
                 </div>
               </div>
 
-              {/* Detalhes expandidos */}
               {isExpanded && (
                 <div className="border-t border-gray-100 px-4 py-4 bg-gray-50">
                   <div className="space-y-3">

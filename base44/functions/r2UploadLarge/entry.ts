@@ -1,12 +1,11 @@
 /**
  * r2UploadLarge — Upload de arquivos grandes para R2 via S3 Multipart Upload.
  *
- * Fluxo:
- *   1. chunkIndex=0: inicia o multipart upload no R2, retorna uploadId
- *   2. chunkIndex=1..N-1: envia cada part, retorna ETag
- *   3. chunkIndex=totalChunks-1 (último): completa o multipart upload
- *
- * Frontend envia chunks de ~5MB em base64.
+ * Fluxo zero-memória (frontend usa file.slice() + fetch direto):
+ *   1. action=initiate   → cria multipart upload, retorna uploadId + filePath
+ *   2. action=getPartUrl → retorna URL pré-assinada para PUT de uma part
+ *   3. Frontend faz fetch PUT diretamente para a URL pré-assinada com o Blob
+ *   4. action=complete   → finaliza com lista de ETags
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
@@ -111,36 +110,47 @@ async function initiateMultipartUpload(filePath, contentType) {
   return uploadId;
 }
 
-async function uploadPart(filePath, uploadId, partNumber, partBytes) {
+/**
+ * Gera uma URL pré-assinada para PUT de uma part (expiração 1h).
+ * O frontend faz o PUT diretamente com file.slice() — zero bytes na memória do servidor.
+ */
+async function getPresignedPartUrl(filePath, uploadId, partNumber, expiresIn = 3600) {
   const { bucketHost, canonicalUri } = getBaseInfo(filePath);
   const now       = new Date();
   const amzDate   = now.toISOString().replace(/[:\-]|\.\d{3}/g,'').slice(0,15)+'Z';
   const dateStamp = amzDate.slice(0,8);
-  const payloadHash = await sha256HexBytes(partBytes);
-  const qs = `partNumber=${partNumber}&uploadId=${encodeURIComponent(uploadId)}`;
+  const region    = 'auto';
+  const service   = 's3';
+  const credScope = `${dateStamp}/${region}/${service}/aws4_request`;
+  const credential = `${R2_ACCESS_KEY_ID}/${credScope}`;
 
-  const { authorization } = await signRequest({
-    method: 'PUT', bucketHost, canonicalUri,
-    queryString: qs,
-    amzDate, dateStamp, payloadHash,
-  });
+  // Para presigned URLs o payload hash é sempre UNSIGNED-PAYLOAD
+  const payloadHash = 'UNSIGNED-PAYLOAD';
 
-  const url = `https://${bucketHost}${canonicalUri}?${qs}`;
-  const resp = await fetch(url, {
-    method: 'PUT',
-    headers: {
-      'Host': bucketHost,
-      'x-amz-date': amzDate,
-      'x-amz-content-sha256': payloadHash,
-      'Authorization': authorization,
-    },
-    body: partBytes,
-  });
+  const qs = new URLSearchParams({
+    'X-Amz-Algorithm':  'AWS4-HMAC-SHA256',
+    'X-Amz-Credential': credential,
+    'X-Amz-Date':       amzDate,
+    'X-Amz-Expires':    String(expiresIn),
+    'X-Amz-SignedHeaders': 'host',
+    'partNumber': String(partNumber),
+    'uploadId': uploadId,
+  }).toString();
 
-  if (!resp.ok) throw new Error(`Upload part ${partNumber} falhou: ${resp.status} ${await resp.text()}`);
-  const etag = resp.headers.get('etag') || resp.headers.get('ETag') || '';
-  console.log(`[r2UploadLarge] Part ${partNumber} ETag: ${etag}`);
-  return etag;
+  const canonicalHeaders = `host:${bucketHost}\n`;
+  const signedHeaders    = 'host';
+
+  const canonicalReq = ['PUT', canonicalUri, qs, canonicalHeaders, signedHeaders, payloadHash].join('\n');
+  const reqHash      = await sha256Hex(canonicalReq);
+  const stringToSign = ['AWS4-HMAC-SHA256', amzDate, credScope, reqHash].join('\n');
+
+  const kDate = await hmacSha256(`AWS4${R2_SECRET_ACCESS_KEY}`, dateStamp);
+  const kReg  = await hmacSha256(kDate, region);
+  const kSvc  = await hmacSha256(kReg, service);
+  const kSign = await hmacSha256(kSvc, 'aws4_request');
+  const sig   = toHex(await hmacSha256(kSign, stringToSign));
+
+  return `https://${bucketHost}${canonicalUri}?${qs}&X-Amz-Signature=${sig}`;
 }
 
 async function completeMultipartUpload(filePath, uploadId, parts) {
@@ -206,17 +216,14 @@ Deno.serve(async (req) => {
       return Response.json({ uploadId, filePath });
     }
 
-    // ── Ação: enviar uma part ──────────────────────────────────────────────────
-    if (action === 'uploadPart') {
-      const { uploadId, partNumber, chunkBase64 } = body;
-      if (!uploadId || !chunkBase64 || partNumber == null) {
-        return Response.json({ error: 'uploadId, partNumber e chunkBase64 são obrigatórios' }, { status: 400 });
+    // ── Ação: URL pré-assinada para uma part (frontend faz PUT direto) ───────────
+    if (action === 'getPartUrl') {
+      const { uploadId, partNumber } = body;
+      if (!uploadId || partNumber == null) {
+        return Response.json({ error: 'uploadId e partNumber são obrigatórios' }, { status: 400 });
       }
-      const bin = atob(chunkBase64);
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      const etag = await uploadPart(filePath, uploadId, partNumber, bytes);
-      return Response.json({ etag, partNumber });
+      const url = await getPresignedPartUrl(filePath, uploadId, partNumber);
+      return Response.json({ url, partNumber });
     }
 
     // ── Ação: completar multipart ──────────────────────────────────────────────
@@ -229,43 +236,7 @@ Deno.serve(async (req) => {
       return Response.json({ filePath, fileName });
     }
 
-    // ── Fallback: upload simples (1 chunk, compatibilidade) ───────────────────
-    const { chunkBase64 } = body;
-    if (!chunkBase64) return Response.json({ error: 'action ou chunkBase64 obrigatório' }, { status: 400 });
-
-    const bin = atob(chunkBase64);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-
-    // Usa r2UploadProxy logic inline para arquivo pequeno
-    const { bucketHost, canonicalUri } = getBaseInfo(filePath);
-    const now       = new Date();
-    const amzDate   = now.toISOString().replace(/[:\-]|\.\d{3}/g,'').slice(0,15)+'Z';
-    const dateStamp = amzDate.slice(0,8);
-    const payloadHash = await sha256HexBytes(bytes);
-
-    const { authorization } = await signRequest({
-      method: 'PUT', bucketHost, canonicalUri,
-      queryString: '',
-      amzDate, dateStamp, payloadHash,
-      extraHeaders: { 'content-type': mimeType },
-    });
-
-    const url = `https://${bucketHost}${canonicalUri}`;
-    const resp = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': mimeType,
-        'Host': bucketHost,
-        'x-amz-date': amzDate,
-        'x-amz-content-sha256': payloadHash,
-        'Authorization': authorization,
-      },
-      body: bytes,
-    });
-
-    if (!resp.ok) throw new Error(`Upload falhou: ${resp.status} ${await resp.text()}`);
-    return Response.json({ filePath, fileName });
+    return Response.json({ error: 'action inválida. Use: initiate, getPartUrl, complete' }, { status: 400 });
 
   } catch (err) {
     console.error('[r2UploadLarge] Erro:', err.message);

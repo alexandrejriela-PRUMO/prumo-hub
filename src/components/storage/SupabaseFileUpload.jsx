@@ -19,7 +19,7 @@ import { Upload, X, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
  *   label        - texto do botão (opcional)
  */
 
-const LARGE_FILE_THRESHOLD = 10 * 1024 * 1024; // 10 MB
+const LARGE_FILE_THRESHOLD = 4 * 1024 * 1024; // 4 MB (limite seguro para base64 no proxy)
 
 const isTiffFile = (name) => {
   const lower = name.toLowerCase();
@@ -102,14 +102,13 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
           const arrayBuffer = reader.result;
           if (!arrayBuffer) throw new Error('ArrayBuffer vazio');
 
+          // Usa btoa direto com Uint8Array para melhor performance em arquivos grandes
           const bytes = new Uint8Array(arrayBuffer);
+          const chunkSize = 8192;
           let binary = '';
-          const chunkSize = 32768;
           for (let i = 0; i < bytes.length; i += chunkSize) {
-            const end = Math.min(i + chunkSize, bytes.length);
-            binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, end)));
+            binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
           }
-
           resolve(btoa(binary));
         } catch (err) {
           reject(new Error('Erro ao converter: ' + err.message));
@@ -125,13 +124,25 @@ export default function SupabaseFileUpload({ folder = 'uploads', accept, onUploa
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Limite de 50MB para TIFs (base64 via proxy)
+    const MAX_TIFF_SIZE = 50 * 1024 * 1024;
+    if (isTiffFile(file.name) && file.size > MAX_TIFF_SIZE) {
+      setFileName(file.name);
+      setStatus('error');
+      setErrorMsg(`Arquivo TIF muito grande (${(file.size / 1024 / 1024).toFixed(0)}MB). Máximo permitido: 50MB.`);
+      if (inputRef.current) inputRef.current.value = '';
+      return;
+    }
+
     setFileName(file.name);
     setStatus('uploading');
     setProgress(0);
     setErrorMsg('');
 
     try {
-      const useLargeUpload = file.size >= LARGE_FILE_THRESHOLD || isTiffFile(file.name);
+      // Sempre usa proxy para evitar bloqueio CORS do PUT pré-assinado direto ao R2
+      // URL pré-assinada só para arquivos não-TIFF muito grandes (>4MB)
+      const useLargeUpload = !isTiffFile(file.name) && file.size >= LARGE_FILE_THRESHOLD;
       const filePath = useLargeUpload
         ? await uploadViaPresignedUrl(file)
         : await uploadViaBase64(file);

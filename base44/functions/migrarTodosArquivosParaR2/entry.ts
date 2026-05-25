@@ -89,16 +89,28 @@ function isR2Url(url) {
   return url && url.includes(R2_DOMAIN);
 }
 
-function isAlreadyMigrated(url) {
-  return !url || isR2Url(url);
+/**
+ * Retorna o tipo da URL para decidir o que fazer:
+ *   'r2'       → já está no R2 (URL absoluta com r2.cloudflarestorage.com)
+ *   'r2_path'  → caminho relativo já armazenado no R2 (ex: "licencas/user/arquivo.pdf")
+ *   'supabase' → Supabase Storage privado (precisa de auth header)
+ *   'public'   → URL http pública qualquer (base44 CDN, qtrypzzcjebvfcihiynt, etc.)
+ *   null       → vazio / não é URL de arquivo
+ */
+function classifyUrl(url) {
+  if (!url || typeof url !== 'string' || url.trim() === '') return null;
+  if (isR2Url(url)) return 'r2';
+  // Caminho relativo (sem protocolo) → já está no R2
+  if (!url.startsWith('http')) return 'r2_path';
+  // Supabase Storage (projeto do cliente)
+  if (url.includes('supabase.co') && url.includes('/storage/v1/')) return 'supabase';
+  // Base44 CDN ou qualquer URL pública
+  return 'public';
 }
 
-function classifyUrl(url) {
-  if (!url || typeof url !== 'string' || !url.startsWith('http')) return null;
-  if (isR2Url(url)) return 'r2'; // já migrado
-  if (url.includes('supabase.co') && url.includes('/storage/v1/')) return 'supabase';
-  if (url.startsWith('http')) return 'public'; // base44 storage ou outro URL público
-  return null;
+function isAlreadyMigrated(url) {
+  const t = classifyUrl(url);
+  return !t || t === 'r2' || t === 'r2_path';
 }
 
 // ── Download helpers ──────────────────────────────────────────────────────────

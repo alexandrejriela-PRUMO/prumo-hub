@@ -17,13 +17,24 @@ export default function GoogleCalendarConnect({ user, onConnected }) {
       const url = await base44.connectors.connectAppUser(CONNECTOR_ID);
       const popup = window.open(url, '_blank', 'width=600,height=700');
 
-      // Polling: detecta quando o popup fechar e notifica o pai
-      const timer = setInterval(() => {
+      const timer = setInterval(async () => {
         if (!popup || popup.closed) {
           clearInterval(timer);
+          // Aguarda o callback OAuth ser processado pelo backend antes de verificar
+          await new Promise(r => setTimeout(r, 1500));
+          try {
+            const result = await base44.connectors.getAppUserStatus(CONNECTOR_ID);
+            const connected = result?.status === 'connected' || result?.connected === true;
+            if (connected) {
+              toast.success('Google Calendar conectado com sucesso!');
+              if (onConnected) onConnected();
+            } else {
+              toast.error('Conexão não confirmada. Tente novamente.');
+            }
+          } catch {
+            toast.error('Não foi possível verificar a conexão. Tente novamente.');
+          }
           setLoading(false);
-          toast.success('Google Calendar conectado com sucesso!');
-          if (onConnected) onConnected();
         }
       }, 500);
     } catch (error) {

@@ -13,6 +13,7 @@ import AgendaCalendarView from '../components/agenda/AgendaCalendarView';
 import AgendaSidePanel from '../components/agenda/AgendaSidePanel';
 import AgendaEventModal from '../components/agenda/AgendaEventModal';
 import AgendaEventDetail from '../components/agenda/AgendaEventDetail';
+import GoogleCalendarBanner from '../components/agenda/GoogleCalendarBanner';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 function AgendaContent() {
@@ -26,6 +27,7 @@ function AgendaContent() {
   const [search, setSearch] = useState('');
 
   const qc = useQueryClient();
+  const [gcalConnected, setGcalConnected] = useState(false);
 
   // Load data
   const { data: agendaEvents = [] } = useQuery({
@@ -44,6 +46,16 @@ function AgendaContent() {
     queryKey: ['agendaCRM', effectiveEmail],
     queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: effectiveEmail }, '-updated_date', 100),
     enabled: !!effectiveEmail && !effectiveLoading,
+  });
+
+  const { data: googleEvents = [] } = useQuery({
+    queryKey: ['gcalEvents', effectiveEmail],
+    queryFn: async () => {
+      const res = await base44.functions.fetchGoogleCalendarEvents({});
+      return (res?.events || []).map(e => ({ ...e, _source: 'google' }));
+    },
+    enabled: !!effectiveEmail && !effectiveLoading && gcalConnected,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: teamMembers = [] } = useQuery({
@@ -116,8 +128,9 @@ function AgendaContent() {
     return [
       ...(agendaEvents || []).map(e => ({ ...e, _source: 'agenda' })),
       ...crmEvents,
+      ...(googleEvents || []),
     ];
-  }, [agendaEvents, crmEvents]);
+  }, [agendaEvents, crmEvents, googleEvents]);
 
   // Filtered events
   const filteredEvents = useMemo(() => {
@@ -220,6 +233,14 @@ function AgendaContent() {
           <Plus className="w-4 h-4" /> Novo Evento
         </Button>
       </div>
+
+      {/* Google Calendar banner */}
+      <GoogleCalendarBanner
+        onConnected={() => {
+          setGcalConnected(true);
+          qc.invalidateQueries(['gcalEvents']);
+        }}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

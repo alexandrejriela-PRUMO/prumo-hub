@@ -13,7 +13,7 @@ import AgendaEventDetail from '../components/agenda/AgendaEventDetail';
 import GoogleCalendarBanner from '../components/agenda/GoogleCalendarBanner';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
-const GCAL_CONNECTOR_ID = '69cb25ebd88e121c980a50c0';
+const GCAL_CONNECTOR_ID = '6a162a2643253d1b5412e449';
 
 function AgendaContent() {
   const { user, effectiveEmail, isLoading: effectiveLoading } = useEffectiveUser();

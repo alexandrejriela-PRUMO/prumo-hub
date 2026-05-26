@@ -72,6 +72,30 @@ async function generatePresignedGetUrl(filePath, expiresIn = 300) {
   return `https://${host}${canonicalUri}?${canonicalQueryString}&X-Amz-Signature=${signature}`;
 }
 
+// OWASP A01 - Path Traversal: lista de extensões permitidas
+const ALLOWED_EXTENSIONS = new Set([
+  'pdf','jpg','jpeg','png','gif','webp','svg',
+  'doc','docx','xls','xlsx','csv','txt','zip',
+  'kml','kmz','geojson','shp','dbf','prj','shx',
+  'mp4','mp3','ogg','wav','tif','tiff'
+]);
+
+// OWASP A01 - Sanitiza e valida filePath contra path traversal
+function sanitizeFilePath(filePath) {
+  if (!filePath || typeof filePath !== 'string') return null;
+  // Bloqueia tentativas de path traversal
+  if (filePath.includes('..') || filePath.includes('//') || filePath.startsWith('/')) return null;
+  // Apenas caracteres seguros
+  if (!/^[a-zA-Z0-9_\-/.@]+$/.test(filePath)) return null;
+  const ext = filePath.split('.').pop()?.toLowerCase();
+  if (!ALLOWED_EXTENSIONS.has(ext)) return null;
+  // Limite de tamanho do path
+  if (filePath.length > 512) return null;
+  return filePath;
+}
+
+const R2_HOST_SUFFIX = '.r2.cloudflarestorage.com';
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return Response.json({ error: 'Method not allowed' }, { status: 405 });
 
@@ -80,28 +104,49 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { filePath } = await req.json();
-    if (!filePath) return Response.json({ error: 'filePath é obrigatório' }, { status: 400 });
+    const body = await req.json();
+    // OWASP A01 - Sanitiza filePath antes de qualquer operação
+    const filePath = sanitizeFilePath(body?.filePath);
+    if (!filePath) return Response.json({ error: 'filePath inválido ou não permitido' }, { status: 400 });
 
-    // Gera signed URL e faz fetch server-side (evita CORS)
     const signedUrl = await generatePresignedGetUrl(filePath, 300);
+
+    // OWASP A10 - SSRF: valida que a URL gerada aponta APENAS para o bucket R2 esperado
+    const parsedUrl = new URL(signedUrl);
+    if (!parsedUrl.hostname.endsWith(R2_HOST_SUFFIX)) {
+      return Response.json({ error: 'Destino de download inválido' }, { status: 403 });
+    }
+
     const r2Response = await fetch(signedUrl);
 
     if (!r2Response.ok) {
       return Response.json({ error: `R2 retornou ${r2Response.status}` }, { status: 502 });
     }
 
-    const contentType = r2Response.headers.get('content-type') || 'application/octet-stream';
-    const body = await r2Response.arrayBuffer();
+    // OWASP A05 - Limita tamanho de resposta (100 MB)
+    const contentLength = parseInt(r2Response.headers.get('content-length') || '0', 10);
+    if (contentLength > 100 * 1024 * 1024) {
+      return Response.json({ error: 'Arquivo excede o limite de 100 MB' }, { status: 413 });
+    }
 
-    return new Response(body, {
+    const contentType = r2Response.headers.get('content-type') || 'application/octet-stream';
+    const responseBody = await r2Response.arrayBuffer();
+
+    // OWASP A03 - Sanitiza o nome do arquivo no header para evitar header injection
+    const safeFileName = filePath.split('/').pop().replace(/[^\w.\-]/g, '_');
+
+    return new Response(responseBody, {
       status: 200,
       headers: {
         'Content-Type': contentType,
-        'Content-Disposition': `attachment; filename="${filePath.split('/').pop()}"`,
+        'Content-Disposition': `attachment; filename="${safeFileName}"`,
+        'X-Content-Type-Options': 'nosniff',
+        'Cache-Control': 'private, no-store',
       },
     });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    // OWASP A09 - Não expõe detalhes internos do erro
+    console.error('[r2DownloadProxy] Erro:', error.message);
+    return Response.json({ error: 'Erro ao processar download' }, { status: 500 });
   }
 });

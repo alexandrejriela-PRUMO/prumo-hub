@@ -205,10 +205,47 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { fileName, contentType, folder, action } = body;
 
-    const safeFolder = (folder || 'uploads').replace(/[^a-zA-Z0-9_\-\/]/g, '_');
-    const safeName   = (fileName || 'file').replace(/[^a-zA-Z0-9._\-]/g, '_');
-    const mimeType   = contentType || 'application/octet-stream';
-    const filePath   = body.filePath || `${safeFolder}/${user.email}/${Date.now()}_${safeName}`;
+    // OWASP A05 - Valida MIME type contra lista de tipos permitidos
+    const ALLOWED_MIME_TYPES = new Set([
+      'application/pdf','image/jpeg','image/png','image/gif','image/webp','image/svg+xml','image/tiff',
+      'application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'text/csv','text/plain','application/zip','application/octet-stream',
+      'application/vnd.google-earth.kml+xml','application/vnd.google-earth.kmz',
+      'application/geo+json','video/mp4','audio/mpeg','audio/ogg','audio/wav',
+    ]);
+
+    const mimeType = contentType || 'application/octet-stream';
+    if (!ALLOWED_MIME_TYPES.has(mimeType)) {
+      return Response.json({ error: `Tipo de arquivo não permitido: ${mimeType}` }, { status: 415 });
+    }
+
+    // OWASP A01 - Sanitiza folder e fileName
+    const safeFolder = (folder || 'uploads').replace(/[^a-zA-Z0-9_\-]/g, '_').substring(0, 64);
+    const safeName   = (fileName || 'file').replace(/[^a-zA-Z0-9._\-]/g, '_').substring(0, 255);
+
+    // OWASP A01 - Valida extensão do arquivo
+    const ALLOWED_EXTENSIONS = new Set([
+      'pdf','jpg','jpeg','png','gif','webp','svg','tif','tiff',
+      'doc','docx','xls','xlsx','csv','txt','zip',
+      'kml','kmz','geojson','shp','dbf','prj','shx','mp4','mp3','ogg','wav'
+    ]);
+    const ext = safeName.split('.').pop()?.toLowerCase();
+    if (!ALLOWED_EXTENSIONS.has(ext)) {
+      return Response.json({ error: `Extensão de arquivo não permitida: .${ext}` }, { status: 415 });
+    }
+
+    // OWASP A01 - Valida filePath se fornecido (path traversal)
+    let filePath;
+    if (body.filePath) {
+      const fp = body.filePath;
+      if (fp.includes('..') || fp.includes('//') || fp.startsWith('/') || fp.length > 512) {
+        return Response.json({ error: 'filePath inválido' }, { status: 400 });
+      }
+      filePath = fp;
+    } else {
+      filePath = `${safeFolder}/${user.email}/${Date.now()}_${safeName}`;
+    }
 
     // ── Ação: iniciar multipart ────────────────────────────────────────────────
     if (action === 'initiate') {

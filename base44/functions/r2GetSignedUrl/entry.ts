@@ -72,17 +72,48 @@ async function generatePresignedGetUrl(filePath, expiresIn = 3600) {
   return `https://${host}${canonicalUri}?${canonicalQueryString}&X-Amz-Signature=${signature}`;
 }
 
+const ALLOWED_EXTENSIONS = new Set([
+  'pdf','jpg','jpeg','png','gif','webp','svg',
+  'doc','docx','xls','xlsx','csv','txt','zip',
+  'kml','kmz','geojson','shp','dbf','prj','shx',
+  'mp4','mp3','ogg','wav','tif','tiff'
+]);
+
+// OWASP A01 - Sanitiza filePath contra path traversal
+function sanitizeFilePath(filePath) {
+  if (!filePath || typeof filePath !== 'string') return null;
+  if (filePath.includes('..') || filePath.includes('//') || filePath.startsWith('/')) return null;
+  if (!/^[a-zA-Z0-9_\-/.@]+$/.test(filePath)) return null;
+  const ext = filePath.split('.').pop()?.toLowerCase();
+  if (!ALLOWED_EXTENSIONS.has(ext)) return null;
+  if (filePath.length > 512) return null;
+  return filePath;
+}
+
+// OWASP A04 - Limite máximo de expiração: 1 hora
+const MAX_EXPIRES_IN = 3600;
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return Response.json({ error: 'Method not allowed' }, { status: 405 });
 
-  const base44 = createClientFromRequest(req);
-  const user = await base44.auth.me();
-  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { filePath, expiresIn } = await req.json();
-  if (!filePath) return Response.json({ error: 'filePath é obrigatório' }, { status: 400 });
+    const body = await req.json();
+    // OWASP A01 - Sanitiza filePath
+    const filePath = sanitizeFilePath(body?.filePath);
+    if (!filePath) return Response.json({ error: 'filePath inválido ou não permitido' }, { status: 400 });
 
-  const signedUrl = await generatePresignedGetUrl(filePath, expiresIn || 3600);
+    // OWASP A04 - Limita expiresIn para no máximo 1 hora
+    const rawExpires = parseInt(body?.expiresIn, 10) || 3600;
+    const expiresIn = Math.min(Math.max(rawExpires, 60), MAX_EXPIRES_IN);
 
-  return Response.json({ signedUrl });
+    const signedUrl = await generatePresignedGetUrl(filePath, expiresIn);
+    return Response.json({ signedUrl });
+  } catch (error) {
+    console.error('[r2GetSignedUrl] Erro:', error.message);
+    return Response.json({ error: 'Erro ao gerar URL' }, { status: 500 });
+  }
 });

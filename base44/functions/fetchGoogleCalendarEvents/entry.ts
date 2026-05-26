@@ -10,7 +10,33 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { accessToken } = await base44.asServiceRole.connectors.getCurrentAppUserConnection(CONNECTOR_ID);
+    console.log('[GCal] user:', user.email, 'connector_id:', CONNECTOR_ID);
+
+    let accessToken;
+    try {
+      const conn = await base44.asServiceRole.connectors.getCurrentAppUserConnection(CONNECTOR_ID);
+      accessToken = conn.accessToken;
+      console.log('[GCal] connection found for', CONNECTOR_ID);
+    } catch (connErr) {
+      console.error('[GCal] No connection on', CONNECTOR_ID, '-', connErr.message);
+      // Try fallback connectors
+      const FALLBACKS = ['69cb271252e5869906bb2e32', '69cb25ebd88e121c980a50c0'];
+      let found = false;
+      for (const fbId of FALLBACKS) {
+        try {
+          const conn = await base44.asServiceRole.connectors.getCurrentAppUserConnection(fbId);
+          accessToken = conn.accessToken;
+          console.log('[GCal] found connection on fallback connector:', fbId);
+          found = true;
+          break;
+        } catch (e) {
+          console.warn('[GCal] No connection on fallback', fbId, '-', e.message);
+        }
+      }
+      if (!found) {
+        return Response.json({ error: 'No active connection found for this connector' }, { status: 404 });
+      }
+    }
 
     const now = new Date();
     const timeMin = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();

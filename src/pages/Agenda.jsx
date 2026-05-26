@@ -30,6 +30,7 @@ function AgendaContent() {
   const [gcalLoading, setGcalLoading] = useState(true);
   const [gcalSyncing, setGcalSyncing] = useState(false);
   const [gcalEvents, setGcalEvents] = useState([]);
+  const [gcalConnecting, setGcalConnecting] = useState(false);
 
   const qc = useQueryClient();
 
@@ -108,14 +109,26 @@ function AgendaContent() {
   }, [fetchGcalEvents]);
 
   const handleGcalConnect = async () => {
+    setGcalConnecting(true);
     const url = await base44.connectors.connectAppUser(GCAL_CONNECTOR_ID);
-    const popup = window.open(url, '_blank');
-    const timer = setInterval(() => {
+    const popup = window.open(url, '_blank', 'width=600,height=700');
+    const timer = setInterval(async () => {
       if (!popup || popup.closed) {
         clearInterval(timer);
-        fetchGcalEvents();
+        setGcalConnecting(false);
+        setGcalLoading(true);
+        await new Promise(r => setTimeout(r, 2000));
+        await fetchGcalEvents();
       }
-    }, 500);
+    }, 800);
+    setTimeout(() => { clearInterval(timer); setGcalConnecting(false); }, 180000);
+  };
+
+  const handleGcalForceRefresh = async () => {
+    setGcalConnecting(false);
+    setGcalLoading(true);
+    await new Promise(r => setTimeout(r, 1500));
+    await fetchGcalEvents();
   };
 
   const handleGcalDisconnect = async () => {
@@ -272,9 +285,11 @@ function AgendaContent() {
         connected={gcalConnected}
         loading={gcalLoading}
         syncing={gcalSyncing}
+        connecting={gcalConnecting}
         onConnect={handleGcalConnect}
         onDisconnect={handleGcalDisconnect}
         onRefresh={fetchGcalEvents}
+        onForceRefresh={handleGcalForceRefresh}
       />
 
       {/* Stats */}

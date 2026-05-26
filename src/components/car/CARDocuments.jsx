@@ -5,8 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { FileText, Plus, Trash2, Upload } from 'lucide-react';
-import SupabaseFileUpload from '@/components/storage/SupabaseFileUpload';
-import SupabaseFileLink from '@/components/storage/SupabaseFileLink';
+import R2FileUpload from '@/components/storage/SupabaseFileUpload';
+import R2FileLink from '@/components/storage/SupabaseFileLink';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { base44 } from '@/api/base44Client';
@@ -89,7 +89,7 @@ export default function CARDocuments({ carRecord, onUpdate, canEdit }) {
             <div>
               <Label className="text-xs">Arquivo</Label>
               <div className="mt-1">
-                <SupabaseFileUpload
+                <R2FileUpload
                   folder="car"
                   onUploadDone={(url, name) => setPendingFile({ url, name })}
                   label="Selecionar Arquivo"
@@ -127,7 +127,7 @@ export default function CARDocuments({ carRecord, onUpdate, canEdit }) {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <Badge className={`text-xs ${typeColors[doc.type] || 'bg-gray-100 text-gray-600'}`}>{doc.type}</Badge>
-                  <SupabaseFileLink filePath={doc.url} label="Baixar" asLink={true} />
+                  <R2FileLink filePath={doc.url} label="Baixar" asLink={true} />
                   {canEdit && (
                     <button onClick={() => handleDelete(idx)} className="p-1 hover:bg-red-50 rounded text-red-400 hover:text-red-600 transition-colors">
                       <Trash2 className="w-3.5 h-3.5" />

@@ -9,8 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileText, Plus, Trash2, ExternalLink } from 'lucide-react';
-import SupabaseFileUpload from '@/components/storage/SupabaseFileUpload';
-import SupabaseFileLink from '@/components/storage/SupabaseFileLink';
+import R2FileUpload from '@/components/storage/SupabaseFileUpload';
+import R2FileLink from '@/components/storage/SupabaseFileLink';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -94,7 +94,7 @@ export default function PRADDocuments({ prad, userEmail, onUpdate }) {
               <div>
                 <label className="text-sm font-medium">Fazer Upload do Arquivo *</label>
                 <div className="mt-1">
-                  <SupabaseFileUpload
+                  <R2FileUpload
                     folder="prad"
                     accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
                     onUploadDone={(filePath, fileName) => setFormData(f => ({ ...f, file_url: filePath, file_name: fileName }))}
@@ -145,7 +145,7 @@ export default function PRADDocuments({ prad, userEmail, onUpdate }) {
                     </div>
                   </div>
                   <div className="flex gap-1 ml-2">
-                    <SupabaseFileLink filePath={doc.url} label="Abrir" asLink={true} />
+                    <R2FileLink filePath={doc.url} label="Abrir" asLink={true} />
                     <Button
                       size="sm"
                       variant="destructive"

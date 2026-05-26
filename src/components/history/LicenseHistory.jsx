@@ -8,8 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Clock, Plus, User, FileCheck, Calendar, Building, FileText, Edit2, History, AlertCircle, Trash2 } from 'lucide-react';
-import SupabaseFileUpload from '@/components/storage/SupabaseFileUpload';
-import SupabaseFileLink from '@/components/storage/SupabaseFileLink';
+import R2FileUpload from '@/components/storage/SupabaseFileUpload';
+import R2FileLink from '@/components/storage/SupabaseFileLink';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { base44 } from '@/api/base44Client';
@@ -269,7 +269,7 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate, onD
                 <div>
                   <Label>Anexar Documento (opcional)</Label>
                   <div className="mt-2">
-                    <SupabaseFileUpload
+                    <R2FileUpload
                       folder="andamentos"
                       onUploadDone={(filePath, fileName) => setNewUpdate(u => ({ ...u, file_url: filePath, file_name: fileName }))}
                       label="Selecionar Arquivo"
@@ -350,7 +350,7 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate, onD
                 <div>
                   <Label>Anexar Documento (opcional)</Label>
                   <div className="mt-2">
-                    <SupabaseFileUpload
+                    <R2FileUpload
                       folder="andamentos"
                       onUploadDone={(filePath, fileName) => setEditUpdate(u => ({ ...u, file_url: filePath, file_name: fileName }))}
                       label="Selecionar Arquivo"
@@ -477,7 +477,7 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate, onD
                         <div className="mb-2 flex items-center gap-2">
                           <FileText className="w-4 h-4 text-emerald-600" />
                           <span className="text-sm text-emerald-700">{update.file_name || 'Documento anexo'}</span>
-                          <SupabaseFileLink filePath={update.file_url} label="Baixar" asLink={true} />
+                          <R2FileLink filePath={update.file_url} label="Baixar" asLink={true} />
                         </div>
                       )}
 

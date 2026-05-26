@@ -1,0 +1,226 @@
+{
+  "name": "CARManagement",
+  "type": "object",
+  "properties": {
+    "property_id": {
+      "type": "string",
+      "description": "ID da propriedade"
+    },
+    "owner_email": {
+      "type": "string",
+      "description": "Email do propriet\u00e1rio"
+    },
+    "consultor_email": {
+      "type": "string",
+      "description": "Email do consultor respons\u00e1vel"
+    },
+    "car_number": {
+      "type": "string",
+      "description": "N\u00famero do CAR"
+    },
+    "car_status": {
+      "type": "string",
+      "enum": [
+        "Validado",
+        "Em an\u00e1lise pelo \u00f3rg\u00e3o ambiental",
+        "Pendente de an\u00e1lise",
+        "Com inconsist\u00eancias",
+        "Cancelado",
+        "Necessita retifica\u00e7\u00e3o"
+      ],
+      "default": "Pendente de an\u00e1lise",
+      "description": "Situa\u00e7\u00e3o do CAR"
+    },
+    "car_registration_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de cadastro do CAR"
+    },
+    "car_last_update": {
+      "type": "string",
+      "format": "date",
+      "description": "Data da \u00faltima atualiza\u00e7\u00e3o do CAR"
+    },
+    "car_area_hectares": {
+      "type": "number",
+      "description": "\u00c1rea total declarada no CAR (ha)"
+    },
+    "car_inconsistencies": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o das inconsist\u00eancias apontadas"
+    },
+    "car_notes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es gerais do CAR"
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "CAR PDF",
+              "Shapefile/KML",
+              "Recibo de Cadastro",
+              "Retifica\u00e7\u00e3o",
+              "Outro"
+            ]
+          },
+          "upload_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "uploaded_by": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Documentos do CAR (PDF, shapefiles, recibos, etc.)",
+      "default": []
+    },
+    "pra_status": {
+      "type": "string",
+      "enum": [
+        "N\u00e3o aderido",
+        "Em processo de ades\u00e3o",
+        "Aderido",
+        "Em execu\u00e7\u00e3o",
+        "Conclu\u00eddo"
+      ],
+      "default": "N\u00e3o aderido",
+      "description": "Status do PRA"
+    },
+    "pra_term_number": {
+      "type": "string",
+      "description": "N\u00famero do termo de compromisso PRA"
+    },
+    "pra_adhesion_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de ades\u00e3o ao PRA"
+    },
+    "pra_deadline": {
+      "type": "string",
+      "format": "date",
+      "description": "Prazo de regulariza\u00e7\u00e3o do PRA"
+    },
+    "pra_environmental_agency": {
+      "type": "string",
+      "description": "\u00d3rg\u00e3o ambiental respons\u00e1vel pelo PRA"
+    },
+    "pra_notes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es do PRA"
+    },
+    "environmental_liabilities": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "D\u00e9ficit de Reserva Legal",
+          "D\u00e9ficit de APP",
+          "\u00c1rea degradada",
+          "Uso irregular em APP",
+          "Compensa\u00e7\u00e3o de Reserva Legal",
+          "Servid\u00e3o ambiental",
+          "Outro"
+        ]
+      },
+      "description": "Tipos de passivo ambiental",
+      "default": []
+    },
+    "recovery_project_status": {
+      "type": "string",
+      "enum": [
+        "N\u00e3o possui",
+        "PRAD em elabora\u00e7\u00e3o",
+        "PRAD aprovado",
+        "PRAD em execu\u00e7\u00e3o",
+        "PRAD conclu\u00eddo"
+      ],
+      "default": "N\u00e3o possui",
+      "description": "Status do projeto de recupera\u00e7\u00e3o ambiental"
+    },
+    "recovery_technician": {
+      "type": "string",
+      "description": "Respons\u00e1vel t\u00e9cnico do projeto de recupera\u00e7\u00e3o"
+    },
+    "recovery_start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de in\u00edcio do projeto de recupera\u00e7\u00e3o"
+    },
+    "recovery_deadline": {
+      "type": "string",
+      "format": "date",
+      "description": "Prazo de execu\u00e7\u00e3o do projeto"
+    },
+    "recovery_area_hectares": {
+      "type": "number",
+      "description": "\u00c1rea em recupera\u00e7\u00e3o (ha)"
+    },
+    "recovery_notes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es do projeto de recupera\u00e7\u00e3o"
+    },
+    "map_layers": {
+      "type": "object",
+      "properties": {
+        "car_polygon_url": {
+          "type": "string"
+        },
+        "app_layer_url": {
+          "type": "string"
+        },
+        "legal_reserve_url": {
+          "type": "string"
+        },
+        "consolidated_area_url": {
+          "type": "string"
+        },
+        "recovery_area_url": {
+          "type": "string"
+        },
+        "ai_analysis": {
+          "type": "string"
+        }
+      },
+      "description": "Camadas do mapa da propriedade"
+    },
+    "update_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "action": {
+            "type": "string"
+          },
+          "responsible": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "default": []
+    }
+  },
+  "required": [
+    "property_id",
+    "owner_email",
+    "car_status"
+  ]
+}

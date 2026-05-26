@@ -7,14 +7,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Clock, Plus, User, FileCheck, Calendar, Building, FileText, Edit2, History, AlertCircle } from 'lucide-react';
+import { Clock, Plus, User, FileCheck, Calendar, Building, FileText, Edit2, History, AlertCircle, Trash2 } from 'lucide-react';
 import SupabaseFileUpload from '@/components/storage/SupabaseFileUpload';
 import SupabaseFileLink from '@/components/storage/SupabaseFileLink';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { base44 } from '@/api/base44Client';
 
-export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
+export default function LicenseHistory({ license, onAddUpdate, onEditUpdate, onDeleteUpdate }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -91,6 +91,26 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
       edit_reason: ''
     });
     setEditDialogOpen(true);
+  };
+
+  const handleDeleteClick = (originalIndex) => {
+    const update = updates[originalIndex];
+    const desc = update.description?.substring(0, 60) || 'este andamento';
+    if (!confirm(`Excluir o andamento "${desc}..."?\n\nEsta ação será registrada na auditoria.`)) return;
+    const deleteEntry = {
+      ...update,
+      _deleted: true,
+      audit_trail: [
+        ...(update.audit_trail || []),
+        {
+          action: 'deleted',
+          timestamp: new Date().toISOString(),
+          user_email: currentUser?.email || 'desconhecido',
+          user_role: currentUser?.role || 'user',
+        }
+      ]
+    };
+    onDeleteUpdate(originalIndex, deleteEntry);
   };
 
   const handleEditSubmit = (e) => {
@@ -173,6 +193,7 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
               <span>
                 {audit.action === 'created' && 'Criado'}
                 {audit.action === 'edited' && 'Editado'}
+                {audit.action === 'deleted' && '🗑️ Excluído'}
                 {' por '}
                 <span className="font-medium">{audit.user_role === 'admin' ? 'Administrador' : 'Usuário'}</span>
                 {' '}({audit.user_email})
@@ -426,6 +447,15 @@ export default function LicenseHistory({ license, onAddUpdate, onEditUpdate }) {
                             title="Editar andamento"
                           >
                             <Edit2 className="w-3 h-3 text-blue-600" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDeleteClick(originalIndex)}
+                            className="h-7 w-7 p-0 hover:bg-red-50"
+                            title="Excluir andamento"
+                          >
+                            <Trash2 className="w-3 h-3 text-red-500" />
                           </Button>
                         </div>
                       </div>

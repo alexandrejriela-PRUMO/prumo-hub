@@ -1179,17 +1179,28 @@ export default function Licenses() {
                   setSelectedLicense(updatedLicense);
                 }}
                 onEditUpdate={(index, editedUpdate) => {
-                  const newUpdates = [...(selectedLicense.updates || [])];
-                  newUpdates[index] = editedUpdate;
-                  const updatedLicense = {
-                    ...selectedLicense,
-                    updates: newUpdates
-                  };
-                  updateMutation.mutate({ id: selectedLicense.id, data: updatedLicense });
-                  setSelectedLicense(updatedLicense);
-                  toast.success('Andamento editado com sucesso!');
+                 const newUpdates = [...(selectedLicense.updates || [])];
+                 newUpdates[index] = editedUpdate;
+                 const updatedLicense = {
+                   ...selectedLicense,
+                   updates: newUpdates
+                 };
+                 updateMutation.mutate({ id: selectedLicense.id, data: updatedLicense });
+                 setSelectedLicense(updatedLicense);
+                 toast.success('Andamento editado com sucesso!');
                 }}
-              />
+                onDeleteUpdate={(index, deletedUpdate) => {
+                 const newUpdates = [...(selectedLicense.updates || [])];
+                 newUpdates[index] = deletedUpdate;
+                 const updatedLicense = {
+                   ...selectedLicense,
+                   updates: newUpdates
+                 };
+                 updateMutation.mutate({ id: selectedLicense.id, data: updatedLicense });
+                 setSelectedLicense(updatedLicense);
+                 toast.success('Andamento excluído e registrado na auditoria.');
+                }}
+                />
             </div>
           )}
         </DialogContent>

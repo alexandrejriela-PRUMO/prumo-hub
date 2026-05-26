@@ -18,6 +18,7 @@ import CARStatusBadge from '@/components/car/CARStatusBadge';
 import CARAlerts from '@/components/car/CARAlerts';
 import CARForm from '@/components/car/CARForm';
 import CARMapLayers from '@/components/car/CARMapLayers';
+import CARDocuments from '@/components/car/CARDocuments';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 function fmtDate(d) {
@@ -253,6 +254,13 @@ export default function CARModule() {
                       )}
                     </CardContent>
                   </Card>
+
+                  {/* Documentos */}
+                  <CARDocuments
+                    carRecord={carRecord}
+                    onUpdate={(data) => updateMapLayers.mutate(data)}
+                    canEdit={canEdit}
+                  />
 
                   {/* Summary badges */}
                   <div className="grid sm:grid-cols-2 gap-4">

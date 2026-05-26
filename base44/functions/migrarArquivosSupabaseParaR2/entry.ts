@@ -171,7 +171,7 @@ async function migrateFile(rawValue) {
   // ── Caminho relativo: verificar no R2 e copiar do Supabase se ausente ──────
   if (isRelative) {
     const exists = await r2FileExists(rawValue);
-    if (exists) return { status: 'r2_ok', r2Path: rawValue }; // já correto, sem update necessário
+    if (exists) return { status: 'r2_ok', r2Path: rawValue, newUrl: rawValue }; // path relativo confirmado no R2 → pode precisar update se banco tinha URL absoluta
 
     // Não existe no R2 → baixar do Supabase com service role
     const supabaseUrl = `${SUPABASE_URL}/storage/v1/object/authenticated/${SUPABASE_BUCKET}/${rawValue}`;
@@ -290,12 +290,12 @@ async function walkAndMigrate(obj, stats) {
       const res = await migrateFileSafe(val);
       const statusKey = res.status.startsWith('r2_ok') ? 'r2_ok' : res.status;
       stats[statusKey] = (stats[statusKey] || 0) + 1;
-      // Atualizar banco se: arquivo copiado E tem newUrl, OU URL absoluta já estava no R2 mas banco desatualizado
-      if (res.newUrl && (res.status.startsWith('copied') || res.status === 'r2_ok_needs_db_update')) {
+      // Atualizar banco se: newUrl existe E é diferente do valor original (URL absoluta → relativa)
+      if (res.newUrl && res.newUrl !== val) {
         result[key] = res.newUrl;
         changed = true;
         stats.db_updated++;
-        console.log(`[migrate] ✓ ${key}: ${val.slice(0,60)} → ${res.r2Path}`);
+        console.log(`[migrate] ✓ ${key}: ${val.slice(0,80)} → ${res.newUrl}`);
       } else if (res.status === 'not_found') {
         stats.errors.push({ field: key, val: val.slice(0,80), reason: res.reason });
         console.warn(`[migrate] ✗ not_found: ${val.slice(0,80)}`);
@@ -395,7 +395,7 @@ Deno.serve(async (req) => {
               const res = await migrateFileSafe(val);
               const statusKey = res.status.startsWith('r2_ok') ? 'r2_ok' : res.status;
               localStats[statusKey] = (localStats[statusKey] || 0) + 1;
-              if (res.newUrl && (res.status.startsWith('copied') || res.status === 'r2_ok_needs_db_update')) {
+              if (res.newUrl && res.newUrl !== val) {
                 updatedFields[field] = res.newUrl;
                 recordChanged = true;
                 localStats.db_updated++;

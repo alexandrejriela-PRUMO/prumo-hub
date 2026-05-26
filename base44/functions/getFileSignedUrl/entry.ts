@@ -163,18 +163,14 @@ Deno.serve(async (req) => {
       return Response.json({ signedUrl: supUrl, source: 'supabase' });
     }
 
-    // Auto-detect: tenta R2 primeiro, depois Supabase
-    const looksLikeR2 = /^\w+\/[^/]+\/\d+_/.test(filePath);
-    
-    if (looksLikeR2) {
-      const r2Exists = await r2FileExists(filePath);
-      if (r2Exists) {
-        const r2Url = await r2SignedUrl(filePath, expiresIn);
-        return Response.json({ signedUrl: r2Url, source: 'r2' });
-      }
+    // Auto-detect: tenta R2 primeiro (todos os paths relativos já migrados para R2), depois Supabase como fallback
+    const r2Exists = await r2FileExists(filePath);
+    if (r2Exists) {
+      const r2Url = await r2SignedUrl(filePath, expiresIn);
+      return Response.json({ signedUrl: r2Url, source: 'r2' });
     }
 
-    // Tenta Supabase se R2 falhou ou não parecia R2
+    // Fallback: Supabase (arquivos antigos ainda não migrados)
     const supUrl = await supabaseSignedUrl(filePath, expiresIn);
     if (supUrl) return Response.json({ signedUrl: supUrl, source: 'supabase' });
 

@@ -136,11 +136,32 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { filePath, expiresIn = 3600, storage } = await req.json();
-    if (!filePath) return Response.json({ error: 'filePath é obrigatório' }, { status: 400 });
+    const body = await req.json();
+    const rawFilePath = body?.filePath;
+    const storage = body?.storage;
 
-    // Se for URL absoluta, retorna direto
-    if (filePath.startsWith('http')) return Response.json({ signedUrl: filePath, source: 'direct' });
+    if (!rawFilePath) return Response.json({ error: 'filePath é obrigatório' }, { status: 400 });
+
+    // OWASP A04 - Limite de expiração: no máximo 1 hora
+    const expiresIn = Math.min(Math.max(parseInt(body?.expiresIn, 10) || 3600, 60), 3600);
+
+    // Se for URL absoluta, retorna direto (arquivos legados CDN)
+    if (rawFilePath.startsWith('http')) return Response.json({ signedUrl: rawFilePath, source: 'direct' });
+
+    // OWASP A01 - Sanitiza e valida filePath contra path traversal
+    const ALLOWED_EXTENSIONS = new Set([
+      'pdf','jpg','jpeg','png','gif','webp','svg','tif','tiff',
+      'doc','docx','xls','xlsx','csv','txt','zip',
+      'kml','kmz','geojson','shp','dbf','prj','shx','mp4','mp3','ogg','wav'
+    ]);
+    if (rawFilePath.includes('..') || rawFilePath.includes('//') || rawFilePath.startsWith('/') || rawFilePath.length > 512) {
+      return Response.json({ error: 'filePath inválido' }, { status: 400 });
+    }
+    const ext = rawFilePath.split('.').pop()?.toLowerCase();
+    if (!ALLOWED_EXTENSIONS.has(ext)) {
+      return Response.json({ error: 'Tipo de arquivo não permitido' }, { status: 400 });
+    }
+    const filePath = rawFilePath;
 
     // Se explicitamente marcado como supabase
     if (storage === 'supabase') {

@@ -23,8 +23,8 @@ import {
   ChevronLeft,
   ClipboardList
 } from 'lucide-react';
-import SupabaseFileUpload from '../components/storage/SupabaseFileUpload';
-import SupabaseFileLink from '../components/storage/SupabaseFileLink';
+import R2FileUpload from '../components/storage/SupabaseFileUpload';
+import R2FileLink from '../components/storage/SupabaseFileLink';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { format, parseISO, differenceInDays } from 'date-fns';
@@ -718,11 +718,11 @@ export default function Licenses() {
                       <SelectItem value="Outro">Outro</SelectItem>
                     </SelectContent>
                   </Select>
-                  <SupabaseFileUpload
-                    folder="licencas"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    label="Selecionar Arquivo (PDF, JPG, PNG)"
-                    onUploadDone={handleSupabaseUpload}
+                  <R2FileUpload
+                   folder="licencas"
+                   accept=".pdf,.jpg,.jpeg,.png"
+                   label="Selecionar Arquivo (PDF, JPG, PNG)"
+                   onUploadDone={handleSupabaseUpload}
                   />
                 </div>
                 {formData.documents.length > 0 && (
@@ -857,7 +857,7 @@ export default function Licenses() {
                             <div key={idx} className="flex items-center gap-1 sm:gap-2 p-1.5 sm:p-2 bg-gray-50 rounded text-xs hover:bg-gray-100 transition-colors group">
                               <FileText className="w-3 h-3 text-emerald-600 flex-shrink-0" />
                               <span className="flex-1 truncate">{doc.name}</span>
-                              <SupabaseFileLink filePath={doc.url} label="Ver" mode="view" asLink={true} />
+                              <R2FileLink filePath={doc.url} label="Ver" mode="view" asLink={true} />
                             </div>
                           ))}
                           {license.documents.length > 2 && (
@@ -1103,7 +1103,7 @@ export default function Licenses() {
                     <SelectItem value="Outro">Outro</SelectItem>
                   </SelectContent>
                 </Select>
-                <SupabaseFileUpload
+                <R2FileUpload
                   folder="licencas"
                   accept=".pdf,.jpg,.jpeg,.png"
                   label="Selecionar Arquivo (PDF, JPG, PNG)"
@@ -1179,17 +1179,28 @@ export default function Licenses() {
                   setSelectedLicense(updatedLicense);
                 }}
                 onEditUpdate={(index, editedUpdate) => {
-                  const newUpdates = [...(selectedLicense.updates || [])];
-                  newUpdates[index] = editedUpdate;
-                  const updatedLicense = {
-                    ...selectedLicense,
-                    updates: newUpdates
-                  };
-                  updateMutation.mutate({ id: selectedLicense.id, data: updatedLicense });
-                  setSelectedLicense(updatedLicense);
-                  toast.success('Andamento editado com sucesso!');
+                 const newUpdates = [...(selectedLicense.updates || [])];
+                 newUpdates[index] = editedUpdate;
+                 const updatedLicense = {
+                   ...selectedLicense,
+                   updates: newUpdates
+                 };
+                 updateMutation.mutate({ id: selectedLicense.id, data: updatedLicense });
+                 setSelectedLicense(updatedLicense);
+                 toast.success('Andamento editado com sucesso!');
                 }}
-              />
+                onDeleteUpdate={(index, deletedUpdate) => {
+                 const newUpdates = [...(selectedLicense.updates || [])];
+                 newUpdates[index] = deletedUpdate;
+                 const updatedLicense = {
+                   ...selectedLicense,
+                   updates: newUpdates
+                 };
+                 updateMutation.mutate({ id: selectedLicense.id, data: updatedLicense });
+                 setSelectedLicense(updatedLicense);
+                 toast.success('Andamento excluído e registrado na auditoria.');
+                }}
+                />
             </div>
           )}
         </DialogContent>

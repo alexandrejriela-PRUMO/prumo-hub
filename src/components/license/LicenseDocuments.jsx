@@ -7,8 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { FileText, Trash2, ExternalLink, Plus } from 'lucide-react';
-import SupabaseFileUpload from '@/components/storage/SupabaseFileUpload';
-import SupabaseFileLink from '@/components/storage/SupabaseFileLink';
+import R2FileUpload from '@/components/storage/SupabaseFileUpload';
+import R2FileLink from '@/components/storage/SupabaseFileLink';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -103,7 +103,7 @@ export default function LicenseDocuments({ license, onUpdate }) {
                 <div>
                   <Label>Selecionar Arquivo</Label>
                   <div className="mt-2">
-                    <SupabaseFileUpload
+                    <R2FileUpload
                       folder="licencas"
                       accept=".pdf,.jpg,.jpeg,.png"
                       onUploadDone={(filePath, fileName) => { setPendingFilePath(filePath); setPendingFileName(fileName); }}
@@ -152,8 +152,8 @@ export default function LicenseDocuments({ license, onUpdate }) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <SupabaseFileLink filePath={doc.url} label="" asLink={true} mode="view" />
-                  <SupabaseFileLink filePath={doc.url} label="" asLink={false} mode="download" />
+                  <R2FileLink filePath={doc.url} label="" asLink={true} mode="view" />
+                  <R2FileLink filePath={doc.url} label="" asLink={false} mode="download" />
                   <Button
                     variant="ghost"
                     size="icon"

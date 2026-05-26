@@ -1,20 +1,19 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Calendar, Users, Building2, Filter } from 'lucide-react';
 import { toast } from 'sonner';
-import { format, parseISO } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import AgendaCalendarView from '../components/agenda/AgendaCalendarView';
 import AgendaSidePanel from '../components/agenda/AgendaSidePanel';
 import AgendaEventModal from '../components/agenda/AgendaEventModal';
 import AgendaEventDetail from '../components/agenda/AgendaEventDetail';
 import GoogleCalendarBanner from '../components/agenda/GoogleCalendarBanner';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
+
+const GCAL_CONNECTOR_ID = '6a162a2643253d1b5412e449';
 
 function AgendaContent() {
   const { user, effectiveEmail, isLoading: effectiveLoading } = useEffectiveUser();
@@ -26,10 +25,17 @@ function AgendaContent() {
   const [filterType, setFilterType] = useState('all');
   const [search, setSearch] = useState('');
 
-  const qc = useQueryClient();
+  // Google Calendar state
   const [gcalConnected, setGcalConnected] = useState(false);
+  const [gcalLoading, setGcalLoading] = useState(true);
+  const [gcalSyncing, setGcalSyncing] = useState(false);
+  const [gcalEvents, setGcalEvents] = useState([]);
+  const [gcalConnecting, setGcalConnecting] = useState(false);
 
-  // Load data
+  const qc = useQueryClient();
+
+  // ── Data queries ─────────────────────────────────────────────────────────
+
   const { data: agendaEvents = [] } = useQuery({
     queryKey: ['agendaEvents', effectiveEmail],
     queryFn: () => base44.entities.AgendaEvent.filter({ consultor_email: effectiveEmail }, '-start_datetime', 200),
@@ -46,16 +52,6 @@ function AgendaContent() {
     queryKey: ['agendaCRM', effectiveEmail],
     queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: effectiveEmail }, '-updated_date', 100),
     enabled: !!effectiveEmail && !effectiveLoading,
-  });
-
-  const { data: googleEvents = [] } = useQuery({
-    queryKey: ['gcalEvents', effectiveEmail],
-    queryFn: async () => {
-      const res = await base44.functions.fetchGoogleCalendarEvents({});
-      return (res?.events || []).map(e => ({ ...e, _source: 'google' }));
-    },
-    enabled: !!effectiveEmail && !effectiveLoading && gcalConnected,
-    staleTime: 5 * 60 * 1000,
   });
 
   const { data: teamMembers = [] } = useQuery({
@@ -76,14 +72,86 @@ function AgendaContent() {
     enabled: !!effectiveEmail && !effectiveLoading,
   });
 
-  // Extract CRM events (tasks + interactions with next_action_date)
+  // ── Google Calendar ───────────────────────────────────────────────────────
+
+  const fetchGcalEvents = useCallback(async () => {
+    setGcalSyncing(true);
+    try {
+      const res = await base44.functions.invoke('fetchGoogleCalendarEvents', {});
+      const data = res?.data;
+      if (data?.error) {
+        setGcalConnected(false);
+        setGcalEvents([]);
+      } else {
+        setGcalConnected(true);
+        const mapped = (data?.events || []).map(ev => ({
+          id: `gcal_${ev.id}`,
+          title: ev.summary || '(sem título)',
+          start_datetime: ev.start?.dateTime || ev.start?.date,
+          _date: ev.start?.dateTime || ev.start?.date,
+          _source: 'gcal',
+          description: ev.description || '',
+          location: ev.location || '',
+        }));
+        setGcalEvents(mapped);
+      }
+    } catch {
+      setGcalConnected(false);
+      setGcalEvents([]);
+    } finally {
+      setGcalSyncing(false);
+      setGcalLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchGcalEvents();
+  }, [fetchGcalEvents]);
+
+  const handleGcalConnect = async () => {
+    setGcalConnecting(true);
+    try {
+      const url = await base44.connectors.connectAppUser(GCAL_CONNECTOR_ID);
+      const popup = window.open(url, '_blank', 'width=600,height=700');
+      const timer = setInterval(async () => {
+        if (!popup || popup.closed) {
+          clearInterval(timer);
+          setGcalConnecting(false);
+          setGcalLoading(true);
+          // Aguarda o callback OAuth ser processado antes de verificar
+          await new Promise(r => setTimeout(r, 2000));
+          await fetchGcalEvents();
+        }
+      }, 800);
+      // Timeout de segurança: encerra o polling após 3 minutos
+      setTimeout(() => { clearInterval(timer); setGcalConnecting(false); }, 180000);
+    } catch (error) {
+      setGcalConnecting(false);
+      toast.error('Erro ao iniciar conexão: ' + error.message);
+    }
+  };
+
+  const handleGcalForceRefresh = async () => {
+    setGcalConnecting(false);
+    setGcalLoading(true);
+    await new Promise(r => setTimeout(r, 1500));
+    await fetchGcalEvents();
+  };
+
+  const handleGcalDisconnect = async () => {
+    await base44.connectors.disconnectAppUser(GCAL_CONNECTOR_ID);
+    setGcalConnected(false);
+    setGcalEvents([]);
+  };
+
+  // ── CRM events ────────────────────────────────────────────────────────────
+
   const crmEvents = useMemo(() => {
     const evs = [];
     (crmRecords || []).forEach(crm => {
       const prop = properties?.find(p => p?.id === crm?.property_id);
       const clientName = prop?.client_name || prop?.property_name || crm?.client_email || '';
 
-      // Pending tasks with due_date
       (crm?.tasks || []).forEach(task => {
         if (!task?.done && task?.due_date) {
           evs.push({
@@ -102,7 +170,6 @@ function AgendaContent() {
         }
       });
 
-      // Interactions with next_action_date
       (crm?.interactions || []).forEach(inter => {
         if (inter?.next_action_date) {
           evs.push({
@@ -123,22 +190,23 @@ function AgendaContent() {
     return evs;
   }, [crmRecords, properties]);
 
-  // All events merged
-  const allEvents = useMemo(() => {
-    return [
-      ...(agendaEvents || []).map(e => ({ ...e, _source: 'agenda' })),
-      ...crmEvents,
-      ...(googleEvents || []),
-    ];
-  }, [agendaEvents, crmEvents, googleEvents]);
+  // ── Merge all events ──────────────────────────────────────────────────────
 
-  // Filtered events
+  const allEvents = useMemo(() => [
+    ...(agendaEvents || []).map(e => ({ ...e, _source: 'agenda' })),
+    ...crmEvents,
+    ...gcalEvents,
+  ], [agendaEvents, crmEvents, gcalEvents]);
+
+  // ── Filtered events ───────────────────────────────────────────────────────
+
   const filteredEvents = useMemo(() => {
-    return (allEvents || []).filter(ev => {
+    return allEvents.filter(ev => {
       if (filterAssignee !== 'all' && ev?.assigned_to_email !== filterAssignee) return false;
       if (filterType !== 'all') {
         if (filterType === 'crm' && ev?._source !== 'crm_task' && ev?._source !== 'crm_interaction') return false;
         if (filterType === 'agenda' && ev?._source !== 'agenda') return false;
+        if (filterType === 'gcal' && ev?._source !== 'gcal') return false;
       }
       if (search && !ev?.title?.toLowerCase().includes(search.toLowerCase()) &&
           !ev?.client_name?.toLowerCase().includes(search.toLowerCase())) return false;
@@ -146,21 +214,22 @@ function AgendaContent() {
     });
   }, [allEvents, filterAssignee, filterType, search]);
 
-  // Stats
+  // ── Stats ─────────────────────────────────────────────────────────────────
+
   const stats = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
     return {
-      total: (allEvents || []).length,
-      today: (allEvents || []).filter(e => (e?.start_datetime || e?._date || '')?.startsWith(today)).length,
-      crm: (crmEvents || []).length,
-      delegated: (agendaEvents || []).filter(e => e?.assigned_to_email && e?.assigned_to_email !== user?.email).length,
+      total: allEvents.length,
+      today: allEvents.filter(e => (e?.start_datetime || e?._date || '')?.startsWith(today)).length,
+      crm: crmEvents.length,
+      gcal: gcalEvents.length,
     };
-  }, [allEvents, crmEvents, agendaEvents, user]);
+  }, [allEvents, crmEvents, gcalEvents]);
+
+  // ── Mutations ─────────────────────────────────────────────────────────────
 
   const deleteEventMutation = useMutation({
-    mutationFn: async (ev) => {
-        await base44.entities.AgendaEvent.delete(ev.id);
-    },
+    mutationFn: async (ev) => { await base44.entities.AgendaEvent.delete(ev.id); },
     onMutate: async (ev) => {
       await qc.cancelQueries(['agendaEvents']);
       const previousData = qc.getQueryData(['agendaEvents']);
@@ -168,9 +237,7 @@ function AgendaContent() {
       return { previousData };
     },
     onError: (err, vars, context) => {
-      if (context?.previousData) {
-        qc.setQueryData(['agendaEvents'], context.previousData);
-      }
+      if (context?.previousData) qc.setQueryData(['agendaEvents'], context.previousData);
     },
     onSuccess: () => {
       toast.success('Evento removido!');
@@ -178,38 +245,22 @@ function AgendaContent() {
     },
   });
 
-  const deleteEvent = async (ev) => {
+  const deleteEvent = (ev) => {
     if (!confirm('Remover este evento?')) return;
     deleteEventMutation.mutate(ev);
   };
 
-  const handleDayClick = (day) => {
-    setSelectedDate(day);
-    setEditingEvent(null);
-    setShowModal(true);
-  };
+  // ── Handlers ──────────────────────────────────────────────────────────────
 
-  const handleEventClick = (ev) => {
-    setDetailEvent(ev);
-  };
-
-  const handleEdit = () => {
-    setShowModal(true);
-    setEditingEvent(detailEvent);
-    setDetailEvent(null);
-  };
-
-  const handleSaved = () => {
-    setShowModal(false);
-    setEditingEvent(null);
-    setSelectedDate(null);
-    qc.invalidateQueries(['agendaEvents']);
-  };
+  const handleDayClick = (day) => { setSelectedDate(day); setEditingEvent(null); setShowModal(true); };
+  const handleEventClick = (ev) => { setDetailEvent(ev); };
+  const handleEdit = () => { setShowModal(true); setEditingEvent(detailEvent); setDetailEvent(null); };
+  const handleSaved = () => { setShowModal(false); setEditingEvent(null); setSelectedDate(null); qc.invalidateQueries(['agendaEvents']); };
 
   const allAssignees = useMemo(() => {
     const seen = new Set();
     const arr = [];
-    (allEvents || []).forEach(e => {
+    allEvents.forEach(e => {
       if (e?.assigned_to_email && !seen.has(e.assigned_to_email)) {
         seen.add(e.assigned_to_email);
         arr.push({ email: e.assigned_to_email, name: e?.assigned_to_name || e?.assigned_to_email });
@@ -217,6 +268,8 @@ function AgendaContent() {
     });
     return arr;
   }, [allEvents]);
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-6">
@@ -234,12 +287,16 @@ function AgendaContent() {
         </Button>
       </div>
 
-      {/* Google Calendar banner */}
+      {/* Google Calendar Banner */}
       <GoogleCalendarBanner
-        onConnected={() => {
-          setGcalConnected(true);
-          qc.invalidateQueries(['gcalEvents']);
-        }}
+        connected={gcalConnected}
+        loading={gcalLoading}
+        syncing={gcalSyncing}
+        connecting={gcalConnecting}
+        onConnect={handleGcalConnect}
+        onDisconnect={handleGcalDisconnect}
+        onRefresh={fetchGcalEvents}
+        onForceRefresh={handleGcalForceRefresh}
       />
 
       {/* Stats */}
@@ -248,7 +305,7 @@ function AgendaContent() {
           { label: 'Total', value: stats.total, icon: Calendar, color: 'text-blue-600 bg-blue-50' },
           { label: 'Hoje', value: stats.today, icon: Calendar, color: 'text-emerald-600 bg-emerald-50' },
           { label: 'Do CRM', value: stats.crm, icon: Building2, color: 'text-amber-600 bg-amber-50' },
-          { label: 'Delegados', value: stats.delegated, icon: Users, color: 'text-purple-600 bg-purple-50' },
+          { label: 'Google', value: stats.gcal, icon: Calendar, color: 'text-indigo-600 bg-indigo-50' },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-xl border border-gray-100 p-4 flex items-center gap-3">
             <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${s.color}`}>
@@ -272,12 +329,13 @@ function AgendaContent() {
           className="w-48 h-8 text-sm"
         />
         <Select value={filterType} onValueChange={setFilterType}>
-        <SelectTrigger className="h-8 w-36 text-sm"><SelectValue placeholder="Tipo" /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todos</SelectItem>
-          <SelectItem value="agenda">Meus Eventos</SelectItem>
-          <SelectItem value="crm">Do CRM</SelectItem>
-        </SelectContent>
+          <SelectTrigger className="h-8 w-36 text-sm"><SelectValue placeholder="Tipo" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="agenda">Meus Eventos</SelectItem>
+            <SelectItem value="crm">Do CRM</SelectItem>
+            <SelectItem value="gcal">Google Calendar</SelectItem>
+          </SelectContent>
         </Select>
         {allAssignees.length > 0 && (
           <Select value={filterAssignee} onValueChange={setFilterAssignee}>
@@ -293,6 +351,7 @@ function AgendaContent() {
             <div className="w-2.5 h-2.5 rounded-full bg-blue-500" /><span className="text-xs text-gray-500">Evento</span>
             <div className="w-2.5 h-2.5 rounded-full bg-amber-500 ml-2" /><span className="text-xs text-gray-500">Tarefa CRM</span>
             <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 ml-2" /><span className="text-xs text-gray-500">Follow-up</span>
+            <div className="w-2.5 h-2.5 rounded-full bg-indigo-400 ml-2" /><span className="text-xs text-gray-500">Google</span>
           </div>
         </div>
       </div>

@@ -9,7 +9,20 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { property_id, message, conversation_history } = await req.json();
+    const reqBody = await req.json();
+
+    // OWASP A03 - Sanitiza e limita inputs para evitar prompt injection e DoS
+    const property_id = typeof reqBody?.property_id === 'string' ? reqBody.property_id.substring(0, 128) : null;
+    const rawMessage = typeof reqBody?.message === 'string' ? reqBody.message : '';
+    // Remove caracteres de controle e limita tamanho da mensagem
+    const message = rawMessage.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, '').substring(0, 2000);
+    if (!message.trim()) return Response.json({ error: 'Mensagem inválida' }, { status: 400 });
+    // OWASP A03 - Limita histórico para evitar context stuffing
+    const rawHistory = Array.isArray(reqBody?.conversation_history) ? reqBody.conversation_history : [];
+    const conversation_history = rawHistory.slice(-20).map(m => ({
+      role: m.role === 'user' ? 'user' : 'assistant',
+      content: typeof m.content === 'string' ? m.content.substring(0, 1000) : ''
+    }));
 
     // Fetch property and related data
     const properties = await base44.entities.Property.filter({ id: property_id });

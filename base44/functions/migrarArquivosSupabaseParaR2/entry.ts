@@ -157,11 +157,13 @@ function extractRelativePath(url) {
 }
 
 // ── Migrar um arquivo: retorna { status, r2Path, newUrl? } ───────────────────
+// IMPORTANTE: newUrl é preenchido sempre que o valor no banco deve ser trocado
+// (URL absoluta → path relativo) OU quando o arquivo foi copiado (para forçar update)
 
 async function migrateFile(rawValue) {
   const isAbsolute = typeof rawValue === 'string' && rawValue.startsWith('http');
   const isBase44   = isAbsolute && rawValue.includes('media.base44.com');
-  const isSupabase = isAbsolute && rawValue.includes('supabase.co');
+  const isSupabase = isAbsolute && (rawValue.includes('supabase.co') || rawValue.includes('supabase.in'));
   const isRelative = typeof rawValue === 'string' && !isAbsolute && rawValue.trim() !== '';
 
   if (!rawValue) return { status: 'skip', reason: 'empty' };
@@ -169,24 +171,28 @@ async function migrateFile(rawValue) {
   // ── Caminho relativo: verificar no R2 e copiar do Supabase se ausente ──────
   if (isRelative) {
     const exists = await r2FileExists(rawValue);
-    if (exists) return { status: 'r2_ok', r2Path: rawValue };
+    if (exists) return { status: 'r2_ok', r2Path: rawValue }; // já correto, sem update necessário
 
-    // Não existe no R2 → baixar do Supabase
+    // Não existe no R2 → baixar do Supabase com service role
     const supabaseUrl = `${SUPABASE_URL}/storage/v1/object/authenticated/${SUPABASE_BUCKET}/${rawValue}`;
-    const resp = await fetch(supabaseUrl, {
-      headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` },
-    });
+    const resp = await fetch(supabaseUrl, { headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` } });
     if (!resp.ok) {
       // Tentar bucket público também
       const pubUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${rawValue}`;
       const pubResp = await fetch(pubUrl);
       if (!pubResp.ok) {
-        return { status: 'not_found', r2Path: rawValue, reason: `Supabase ${resp.status}` };
+        return { status: 'not_found', r2Path: rawValue, reason: `Supabase auth:${resp.status} pub:${pubResp.status}` };
       }
       await r2PutStream(rawValue, pubResp.body, getContentType(rawValue));
+      // newUrl = mesmo path relativo (já estava correto no banco, mas arquivo foi copiado)
+      // Retornar newUrl aqui para sinalizar que o registro precisa ser re-verificado — na verdade
+      // o path já estava certo, portanto NÃO retornamos newUrl (não precisa alterar o banco).
+      // Apenas contamos como copiado.
       return { status: 'copied_from_supabase_public', r2Path: rawValue };
     }
     await r2PutStream(rawValue, resp.body, getContentType(rawValue));
+    // Path relativo já era correto — arquivo só foi copiado para o R2.
+    // O banco NÃO precisa de update (o path estava correto), apenas o arquivo físico foi movido.
     return { status: 'copied_from_supabase', r2Path: rawValue };
   }
 
@@ -196,14 +202,21 @@ async function migrateFile(rawValue) {
     if (!relPath) return { status: 'skip', reason: 'cannot extract path' };
 
     const exists = await r2FileExists(relPath);
-    if (exists) return { status: 'r2_ok', r2Path: relPath, newUrl: relPath };
+    if (exists) {
+      // Arquivo já no R2 mas banco ainda tem URL absoluta → atualizar banco para path relativo
+      return { status: 'r2_ok_needs_db_update', r2Path: relPath, newUrl: relPath };
+    }
 
     // Baixar do Supabase com service role
-    const resp = await fetch(rawValue, {
-      headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` },
-    });
+    const resp = await fetch(rawValue, { headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` } });
     if (!resp.ok) {
-      return { status: 'not_found', r2Path: relPath, reason: `fetch ${resp.status}` };
+      // Tentar URL pública (signed URLs expiram)
+      const cleanPath = extractRelativePath(rawValue);
+      const pubUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${cleanPath}`;
+      const pubResp = await fetch(pubUrl);
+      if (!pubResp.ok) return { status: 'not_found', r2Path: relPath, reason: `fetch ${resp.status}` };
+      await r2PutStream(relPath, pubResp.body, getContentType(relPath));
+      return { status: 'copied_from_supabase', r2Path: relPath, newUrl: relPath };
     }
     await r2PutStream(relPath, resp.body, getContentType(relPath));
     return { status: 'copied_from_supabase', r2Path: relPath, newUrl: relPath };
@@ -215,7 +228,9 @@ async function migrateFile(rawValue) {
     if (!relPath) return { status: 'skip', reason: 'cannot extract path' };
 
     const exists = await r2FileExists(relPath);
-    if (exists) return { status: 'r2_ok', r2Path: relPath, newUrl: relPath };
+    if (exists) {
+      return { status: 'r2_ok_needs_db_update', r2Path: relPath, newUrl: relPath };
+    }
 
     const resp = await fetch(rawValue);
     if (!resp.ok) return { status: 'not_found', r2Path: relPath, reason: `fetch ${resp.status}` };
@@ -226,29 +241,57 @@ async function migrateFile(rawValue) {
   return { status: 'skip', reason: 'unknown format' };
 }
 
-// ── Walk object, migrate all URL fields, return { updated, changes } ─────────
+// Wrapper seguro que nunca lança exceção
+async function migrateFileSafe(val) {
+  try { return await migrateFile(val); }
+  catch (e) { return { status: 'not_found', r2Path: val, reason: `exception: ${e.message}` }; }
+}
+
+// ── Walk object/array/string-JSON, migrate all URL fields ────────────────────
 
 async function walkAndMigrate(obj, stats) {
-  if (!obj || typeof obj !== 'object') return { val: obj, changed: false };
+  if (!obj) return { val: obj, changed: false };
+
+  // String que pode ser JSON embutido (ex: rural_extra, kml_layers, boundaries)
+  if (typeof obj === 'string') {
+    const trimmed = obj.trim();
+    if ((trimmed.startsWith('{') || trimmed.startsWith('[')) ) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        const r = await walkAndMigrate(parsed, stats);
+        if (r.changed) return { val: JSON.stringify(r.val), changed: true };
+        return { val: obj, changed: false };
+      } catch { /* not JSON, fall through */ }
+    }
+    return { val: obj, changed: false };
+  }
+
+  if (typeof obj !== 'object') return { val: obj, changed: false };
+
   if (Array.isArray(obj)) {
     let changed = false;
-    const arr = await Promise.all(obj.map(async item => {
+    const arr = [];
+    for (const item of obj) {
       const r = await walkAndMigrate(item, stats);
       if (r.changed) changed = true;
-      return r.val;
-    }));
+      arr.push(r.val);
+    }
     return { val: arr, changed };
   }
+
   const result = { ...obj };
   let changed = false;
   for (const key of Object.keys(result)) {
     const val = result[key];
-    const isUrlField = /^(url|file_url|image_url|documento|arquivo|path|src|href|link|download_url|attachment_url|photo_url)$/i.test(key);
+    const isUrlField = /^(url|file_url|image_url|documento|arquivo|path|src|href|link|download_url|attachment_url|photo_url|certificate_url|logo_url|before_url|after_url|image_url|satellite_url)$/i.test(key);
+
     if (isUrlField && typeof val === 'string' && val.trim() !== '') {
       stats.scanned++;
-      const res = await migrateFile(val);
-      stats[res.status] = (stats[res.status] || 0) + 1;
-      if (res.status.startsWith('copied') && res.newUrl) {
+      const res = await migrateFileSafe(val);
+      const statusKey = res.status.startsWith('r2_ok') ? 'r2_ok' : res.status;
+      stats[statusKey] = (stats[statusKey] || 0) + 1;
+      // Atualizar banco se: arquivo copiado E tem newUrl, OU URL absoluta já estava no R2 mas banco desatualizado
+      if (res.newUrl && (res.status.startsWith('copied') || res.status === 'r2_ok_needs_db_update')) {
         result[key] = res.newUrl;
         changed = true;
         stats.db_updated++;
@@ -257,6 +300,13 @@ async function walkAndMigrate(obj, stats) {
         stats.errors.push({ field: key, val: val.slice(0,80), reason: res.reason });
         console.warn(`[migrate] ✗ not_found: ${val.slice(0,80)}`);
       }
+    } else if (typeof val === 'string' && val.trim().startsWith('{') || typeof val === 'string' && val.trim().startsWith('[')) {
+      // Pode ser JSON string embutido — tentar parsear e varrer
+      try {
+        const parsed = JSON.parse(val);
+        const r = await walkAndMigrate(parsed, stats);
+        if (r.changed) { result[key] = JSON.stringify(r.val); changed = true; }
+      } catch { /* not JSON */ }
     } else if (val && typeof val === 'object') {
       const r = await walkAndMigrate(val, stats);
       if (r.changed) { result[key] = r.val; changed = true; }
@@ -289,8 +339,8 @@ const ENTITY_CONFIGS = [
   { name: 'GreenLoan',          fields: ['documents'] },
   { name: 'TaxIncentive',       fields: ['documents'] },
   { name: 'Document',           fields: ['file_url', 'files'] },
-  // Property: pode ter URLs media.base44.com em campos JSON string
-  { name: 'Property',           fields: ['boundaries', 'kml_layers', 'rural_extra'] },
+  // Property: campos JSON string com possíveis URLs absolutas (media.base44.com, supabase)
+  { name: 'Property',           fields: ['boundaries', 'kml_layers', 'rural_extra', 'neighbors', 'owner_names_list'] },
 ];
 
 // ── Main handler ──────────────────────────────────────────────────────────────
@@ -325,6 +375,7 @@ Deno.serve(async (req) => {
     try {
       const records = await entity.list('-created_date', 5000);
       tStats.records = records.length;
+      tStats.error = undefined; // limpar erro anterior
       console.log(`[migrar] ${cfg.name}: ${records.length} registros`);
 
       for (const record of records) {
@@ -334,7 +385,28 @@ Deno.serve(async (req) => {
 
         for (const field of cfg.fields) {
           const val = record[field];
-          if (val === undefined || val === null) continue;
+          if (val === undefined || val === null || val === '') continue;
+
+          // Campo string URL direta no nível raiz (ex: logo_url, certificate_url, file_url)
+          if (typeof val === 'string' && !val.trim().startsWith('{') && !val.trim().startsWith('[')) {
+            const isUrlField = /^(url|file_url|image_url|logo_url|certificate_url|photo_url|attachment_url)$/i.test(field);
+            if (isUrlField) {
+              localStats.scanned++;
+              const res = await migrateFileSafe(val);
+              const statusKey = res.status.startsWith('r2_ok') ? 'r2_ok' : res.status;
+              localStats[statusKey] = (localStats[statusKey] || 0) + 1;
+              if (res.newUrl && (res.status.startsWith('copied') || res.status === 'r2_ok_needs_db_update')) {
+                updatedFields[field] = res.newUrl;
+                recordChanged = true;
+                localStats.db_updated++;
+                console.log(`[migrate] ✓ root field ${field}: ${val.slice(0,60)} → ${res.newUrl}`);
+              } else if (res.status === 'not_found') {
+                localStats.errors.push({ field, val: val.slice(0,80), reason: res.reason });
+              }
+              continue;
+            }
+          }
+
           const r = await walkAndMigrate({ [field]: val }, localStats);
           if (r.changed) {
             updatedFields[field] = r.val[field];

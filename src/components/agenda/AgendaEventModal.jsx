@@ -98,22 +98,29 @@ export default function AgendaEventModal({ event, initialDate, user, properties,
         end_datetime: form.end_datetime ? new Date(form.end_datetime).toISOString() : new Date(form.start_datetime).toISOString(),
       };
 
-      let savedEvent;
+      let savedId = event?.id;
       if (event?.id) {
-        savedEvent = await base44.entities.AgendaEvent.update(event.id, payload);
+        await base44.entities.AgendaEvent.update(event.id, payload);
       } else {
-        savedEvent = await base44.entities.AgendaEvent.create(payload);
+        // Create and find the newly created record to get its ID
+        await base44.entities.AgendaEvent.create(payload);
+        // Fetch the most recently created event for this consultor to get the ID
+        const recent = await base44.entities.AgendaEvent.filter(
+          { consultor_email: user.email },
+          '-created_date',
+          1
+        );
+        savedId = recent?.[0]?.id;
       }
 
       // Sync to Google Calendar (silently — don't block on failure)
       try {
         const action = event?.id ? 'update' : 'create';
-        const syncPayload = savedEvent || { ...payload, google_calendar_event_id: event?.google_calendar_event_id };
+        const syncPayload = { ...payload, id: savedId, google_calendar_event_id: event?.google_calendar_event_id };
         const syncRes = await base44.functions.invoke('syncAgendaEventToGCal', { action, event: syncPayload });
-        // If GCal returned a new event ID, save it back
         const gcalId = syncRes?.data?.google_calendar_event_id;
-        if (gcalId && gcalId !== syncPayload.google_calendar_event_id && (savedEvent?.id || event?.id)) {
-          await base44.entities.AgendaEvent.update(savedEvent?.id || event.id, { google_calendar_event_id: gcalId });
+        if (gcalId && savedId) {
+          await base44.entities.AgendaEvent.update(savedId, { google_calendar_event_id: gcalId });
         }
       } catch (syncErr) {
         console.warn('[GCal] Sync failed (non-blocking):', syncErr.message);

@@ -20,6 +20,7 @@ const TYPE_COLORS = {
 
 export default function AgendaCalendarView({ events = [], onDayClick, onEventClick }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDay, setSelectedDay] = useState(null);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -80,13 +81,21 @@ export default function AgendaCalendarView({ events = [], onDayClick, onEventCli
           return (
             <div
               key={i}
-              onClick={() => day && onDayClick(day)}
+              onClick={() => {
+                if (!day) return;
+                if (dayEvents.length > 0) {
+                  setSelectedDay(selectedDay && isSameDay(selectedDay, day) ? null : day);
+                } else {
+                  onDayClick(day);
+                }
+              }}
               className={cn(
-                "min-h-[90px] p-1.5 border-b border-r border-gray-50 cursor-pointer transition-colors",
+                "min-h-[90px] p-1.5 border-b border-r border-gray-50 cursor-pointer transition-colors relative",
                 !day && "bg-gray-50/50",
                 day && "hover:bg-emerald-50/60",
                 !isCurrentMonth && day && "opacity-40",
-                _isToday && "bg-emerald-50"
+                _isToday && "bg-emerald-50",
+                day && selectedDay && isSameDay(selectedDay, day) && "ring-2 ring-inset ring-emerald-400"
               )}
             >
               {day && (
@@ -115,6 +124,45 @@ export default function AgendaCalendarView({ events = [], onDayClick, onEventCli
                       <div className="text-xs text-gray-400 pl-1">+{dayEvents.length - 3} mais</div>
                     )}
                   </div>
+
+                  {/* Day popup: show all events when day is selected */}
+                  {selectedDay && isSameDay(selectedDay, day) && dayEvents.length > 0 && (
+                    <div
+                      className="absolute z-30 top-full left-0 mt-1 w-64 bg-white rounded-xl shadow-xl border border-gray-200 p-3 space-y-2"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-xs font-bold text-gray-700 capitalize">
+                          {format(day, "EEEE, d 'de' MMMM", { locale: ptBR })}
+                        </p>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => { setSelectedDay(null); onDayClick(day); }}
+                            className="text-xs text-emerald-700 hover:underline font-medium"
+                          >+ Novo</button>
+                          <button onClick={() => setSelectedDay(null)} className="text-gray-400 hover:text-gray-600 ml-1 text-sm leading-none">✕</button>
+                        </div>
+                      </div>
+                      {dayEvents.map((ev, idx) => (
+                        <div
+                          key={idx}
+                          onClick={() => { setSelectedDay(null); onEventClick(ev); }}
+                          className="flex items-start gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer group"
+                        >
+                          <div className={cn("w-2 h-2 rounded-full mt-1.5 flex-shrink-0", TYPE_COLORS[ev.event_type] || TYPE_COLORS[ev._source] || 'bg-gray-400')} />
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium text-gray-800 truncate group-hover:text-emerald-700">{ev.title}</p>
+                            {ev.start_datetime && (
+                              <p className="text-xs text-gray-400">
+                                {ev.start_datetime.includes('T') ? ev.start_datetime.slice(11, 16) : ''}
+                                {ev.client_name ? ` · ${ev.client_name}` : ''}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </>
               )}
             </div>

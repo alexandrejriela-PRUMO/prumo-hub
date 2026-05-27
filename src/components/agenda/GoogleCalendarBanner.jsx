@@ -2,7 +2,14 @@ import { Calendar, RefreshCw, Unplug, Plug, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function GoogleCalendarBanner({ connected, loading, syncing, connecting, onConnect, onDisconnect, onRefresh, onForceRefresh }) {
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="flex items-center gap-3 bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3">
+        <RefreshCw className="w-4 h-4 text-indigo-400 animate-spin" />
+        <p className="text-sm text-indigo-600">Verificando conexão com Google Calendar...</p>
+      </div>
+    );
+  }
 
   if (!connected) {
     return (
@@ -16,7 +23,7 @@ export default function GoogleCalendarBanner({ connected, loading, syncing, conn
             <p className="text-xs text-indigo-500">
               {connecting
                 ? 'Autorize na janela aberta e clique em "Já autorizei" abaixo'
-                : 'Visualize seus eventos do Google diretamente na agenda'}
+                : 'Sincronize seus compromissos do Google diretamente na agenda'}
             </p>
           </div>
         </div>
@@ -32,7 +39,7 @@ export default function GoogleCalendarBanner({ connected, loading, syncing, conn
             </>
           ) : (
             <Button size="sm" onClick={onConnect} className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2">
-              <Plug className="w-4 h-4" /> Conectar
+              <Plug className="w-4 h-4" /> Conectar Google Calendar
             </Button>
           )}
         </div>

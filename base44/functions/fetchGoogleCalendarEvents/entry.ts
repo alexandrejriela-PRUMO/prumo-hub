@@ -1,7 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-const CONNECTOR_ID = '6a162a2643253d1b5412e449';
-const FALLBACKS = ['69cb271252e5869906bb2e32', '69cb25ebd88e121c980a50c0'];
+const CONNECTOR_IDS = [
+  '6a162a2643253d1b5412e449',
+  '69cb271252e5869906bb2e32',
+  '69cb25ebd88e121c980a50c0',
+];
 
 Deno.serve(async (req) => {
   try {
@@ -11,15 +14,15 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log('[GCal] user:', user.email, 'connector_id:', CONNECTOR_ID);
+    console.log('[GCal] user:', user.email);
 
     let accessToken;
 
-    // Use base44.connectors (user-scoped), NOT asServiceRole
-    const allIds = [CONNECTOR_ID, ...FALLBACKS];
-    for (const id of allIds) {
+    // asServiceRole.connectors.getCurrentAppUserConnection requires
+    // createClientFromRequest so the runtime knows which user to look up
+    for (const id of CONNECTOR_IDS) {
       try {
-        const conn = await base44.connectors.getCurrentAppUserConnection(id);
+        const conn = await base44.asServiceRole.connectors.getCurrentAppUserConnection(id);
         if (conn?.accessToken) {
           accessToken = conn.accessToken;
           console.log('[GCal] connection found on connector:', id);
@@ -46,12 +49,15 @@ Deno.serve(async (req) => {
 
     if (!res.ok) {
       const err = await res.json();
+      console.error('[GCal] Google API error:', err);
       return Response.json({ error: err.error?.message || 'Google API error' }, { status: res.status });
     }
 
     const data = await res.json();
+    console.log('[GCal] events fetched:', data.items?.length || 0);
     return Response.json({ events: data.items || [] });
   } catch (error) {
+    console.error('[GCal] Fatal error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });

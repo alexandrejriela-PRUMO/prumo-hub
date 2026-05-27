@@ -1,4 +1,4 @@
-import { format, parseISO, isToday, isTomorrow, isPast } from 'date-fns';
+import { format, parseISO, isToday, isTomorrow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { CalendarDays, User, Building2, Clock } from 'lucide-react';
@@ -18,18 +18,23 @@ const PRIORITY_DOT = {
 };
 
 export default function AgendaSidePanel({ events = [], selectedDate, onEventClick }) {
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+
   const upcoming = events
     .filter(ev => {
       const d = ev.start_datetime || ev._date || ev.due_date;
       if (!d) return false;
-      try { return !isPast(parseISO(d.split('T')[0] + 'T23:59:59')); } catch { return false; }
+      // Compare by date string only (YYYY-MM-DD), treating today as "not past"
+      const evDateStr = d.split('T')[0];
+      return evDateStr >= todayStr;
     })
     .sort((a, b) => {
       const da = a.start_datetime || a._date || a.due_date || '';
       const db = b.start_datetime || b._date || b.due_date || '';
       return da.localeCompare(db);
     })
-    .slice(0, 12);
+    .slice(0, 15);
 
   const groupedByDay = upcoming.reduce((acc, ev) => {
     const d = (ev.start_datetime || ev._date || ev.due_date || '').split('T')[0];

@@ -257,6 +257,7 @@ function AgendaContent() {
 
   const deleteEvent = (ev) => {
     if (!confirm('Remover este evento?')) return;
+    setDetailEvent(null);
     deleteEventMutation.mutate(ev);
   };
 

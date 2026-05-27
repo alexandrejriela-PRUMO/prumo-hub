@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, isSameMonth, isToday, addMonths, subMonths, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const TYPE_COLORS = {
   'Reunião': 'bg-blue-500',
@@ -125,50 +126,54 @@ export default function AgendaCalendarView({ events = [], onDayClick, onEventCli
                     )}
                   </div>
 
-                  {/* Day popup: show all events when day is selected */}
-                  {selectedDay && isSameDay(selectedDay, day) && dayEvents.length > 0 && (
-                    <div
-                      className="absolute z-30 top-full left-0 mt-1 w-64 bg-white rounded-xl shadow-xl border border-gray-200 p-3 space-y-2"
-                      onClick={e => e.stopPropagation()}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="text-xs font-bold text-gray-700 capitalize">
-                          {format(day, "EEEE, d 'de' MMMM", { locale: ptBR })}
-                        </p>
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => { setSelectedDay(null); onDayClick(day); }}
-                            className="text-xs text-emerald-700 hover:underline font-medium"
-                          >+ Novo</button>
-                          <button onClick={() => setSelectedDay(null)} className="text-gray-400 hover:text-gray-600 ml-1 text-sm leading-none">✕</button>
-                        </div>
-                      </div>
-                      {dayEvents.map((ev, idx) => (
-                        <div
-                          key={idx}
-                          onClick={() => { setSelectedDay(null); onEventClick(ev); }}
-                          className="flex items-start gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer group"
-                        >
-                          <div className={cn("w-2 h-2 rounded-full mt-1.5 flex-shrink-0", TYPE_COLORS[ev.event_type] || TYPE_COLORS[ev._source] || 'bg-gray-400')} />
-                          <div className="min-w-0">
-                            <p className="text-xs font-medium text-gray-800 truncate group-hover:text-emerald-700">{ev.title}</p>
-                            {ev.start_datetime && (
-                              <p className="text-xs text-gray-400">
-                                {ev.start_datetime.includes('T') ? ev.start_datetime.slice(11, 16) : ''}
-                                {ev.client_name ? ` · ${ev.client_name}` : ''}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  {/* placeholder — day dialog rendered outside grid below */}
                 </>
               )}
             </div>
           );
         })}
       </div>
+      {/* Day events dialog */}
+      {selectedDay && (() => {
+        const dayEvs = getEventsForDay(selectedDay);
+        return (
+          <Dialog open={!!selectedDay} onOpenChange={() => setSelectedDay(null)}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle className="text-emerald-900 capitalize text-base">
+                  {format(selectedDay, "EEEE, d 'de' MMMM", { locale: ptBR })}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-2 max-h-80 overflow-y-auto">
+                {dayEvs.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-4">Nenhum evento neste dia.</p>
+                ) : dayEvs.map((ev, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => { setSelectedDay(null); onEventClick(ev); }}
+                    className="flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer border border-transparent hover:border-gray-200 transition-all"
+                  >
+                    <div className={cn("w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0", TYPE_COLORS[ev.event_type] || TYPE_COLORS[ev._source] || 'bg-gray-400')} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-800">{ev.title}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {ev.start_datetime?.includes('T') ? ev.start_datetime.slice(11, 16) : ''}
+                        {ev.client_name ? ` · ${ev.client_name}` : ''}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => { setSelectedDay(null); onDayClick(selectedDay); }}
+                className="w-full mt-1 text-sm text-emerald-700 hover:text-emerald-900 font-medium py-2 border border-emerald-200 rounded-xl hover:bg-emerald-50 transition"
+              >
+                + Novo evento neste dia
+              </button>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
     </div>
   );
 }

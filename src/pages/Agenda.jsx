@@ -229,7 +229,17 @@ function AgendaContent() {
   // ── Mutations ─────────────────────────────────────────────────────────────
 
   const deleteEventMutation = useMutation({
-    mutationFn: async (ev) => { await base44.entities.AgendaEvent.delete(ev.id); },
+    mutationFn: async (ev) => {
+      // Sync deletion to GCal first (silently)
+      if (ev.google_calendar_event_id) {
+        try {
+          await base44.functions.invoke('syncAgendaEventToGCal', { action: 'delete', event: ev });
+        } catch (syncErr) {
+          console.warn('[GCal] Delete sync failed (non-blocking):', syncErr.message);
+        }
+      }
+      await base44.entities.AgendaEvent.delete(ev.id);
+    },
     onMutate: async (ev) => {
       await qc.cancelQueries(['agendaEvents']);
       const previousData = qc.getQueryData(['agendaEvents']);

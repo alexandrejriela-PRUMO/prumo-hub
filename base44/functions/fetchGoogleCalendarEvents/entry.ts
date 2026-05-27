@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const CONNECTOR_ID = '6a162a2643253d1b5412e449';
+const FALLBACKS = ['69cb271252e5869906bb2e32', '69cb25ebd88e121c980a50c0'];
 
 Deno.serve(async (req) => {
   try {
@@ -13,29 +14,24 @@ Deno.serve(async (req) => {
     console.log('[GCal] user:', user.email, 'connector_id:', CONNECTOR_ID);
 
     let accessToken;
-    try {
-      const conn = await base44.asServiceRole.connectors.getCurrentAppUserConnection(CONNECTOR_ID);
-      accessToken = conn.accessToken;
-      console.log('[GCal] connection found for', CONNECTOR_ID);
-    } catch (connErr) {
-      console.error('[GCal] No connection on', CONNECTOR_ID, '-', connErr.message);
-      // Try fallback connectors
-      const FALLBACKS = ['69cb271252e5869906bb2e32', '69cb25ebd88e121c980a50c0'];
-      let found = false;
-      for (const fbId of FALLBACKS) {
-        try {
-          const conn = await base44.asServiceRole.connectors.getCurrentAppUserConnection(fbId);
+
+    // Use base44.connectors (user-scoped), NOT asServiceRole
+    const allIds = [CONNECTOR_ID, ...FALLBACKS];
+    for (const id of allIds) {
+      try {
+        const conn = await base44.connectors.getCurrentAppUserConnection(id);
+        if (conn?.accessToken) {
           accessToken = conn.accessToken;
-          console.log('[GCal] found connection on fallback connector:', fbId);
-          found = true;
+          console.log('[GCal] connection found on connector:', id);
           break;
-        } catch (e) {
-          console.warn('[GCal] No connection on fallback', fbId, '-', e.message);
         }
+      } catch (e) {
+        console.warn('[GCal] No connection on connector', id, '-', e.message);
       }
-      if (!found) {
-        return Response.json({ error: 'No active connection found for this connector' }, { status: 404 });
-      }
+    }
+
+    if (!accessToken) {
+      return Response.json({ error: 'No active Google Calendar connection found' }, { status: 404 });
     }
 
     const now = new Date();

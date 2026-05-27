@@ -9,11 +9,13 @@ async function getAccessToken(base44) {
 
 Deno.serve(async (req) => {
   try {
+    // Clone req before createClientFromRequest consumes the body
+    const bodyText = await req.text();
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { action, event } = await req.json();
+    const { action, event } = JSON.parse(bodyText);
     // action: 'create' | 'update' | 'delete'
     // event: AgendaEvent object
 

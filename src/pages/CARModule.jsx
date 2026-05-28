@@ -196,10 +196,27 @@ export default function CARModule() {
       )}
 
       {carRecords.length > 0 && (
-        <div className="space-y-4">
-          {carRecords.map((carRecord) => (
-            <div key={carRecord.id}>
-              <Tabs defaultValue="overview" className="space-y-4">
+        <div className="space-y-6">
+          {carRecords.map((carRecord, idx) => (
+            <Card key={carRecord.id} className="border-2 border-emerald-200 overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-emerald-50 to-transparent pb-3 border-b border-emerald-100">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div>
+                    <h2 className="text-lg font-bold text-emerald-900">
+                      {selectedProperty?.property_name || 'Propriedade'} {carRecords.length > 1 && `• CAR ${idx + 1}`}
+                    </h2>
+                    {carRecord.car_number && <p className="text-sm text-emerald-600 mt-1">CAR: {carRecord.car_number}</p>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CARStatusBadge status={carRecord.car_status} large />
+                    {canEdit && <Button variant="outline" size="sm" onClick={() => { setEditingCarId(carRecord.id); setEditOpen(true); }}>
+                      <Edit className="w-4 h-4" />
+                    </Button>}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <Tabs defaultValue="overview" className="space-y-4">
                 <TabsList className="grid grid-cols-3 w-full max-w-md">
                   <TabsTrigger value="overview">Visão Geral</TabsTrigger>
                   <TabsTrigger value="pra">PRA / Recuperação</TabsTrigger>
@@ -211,23 +228,9 @@ export default function CARModule() {
                   {/* Alertas */}
                   <CARAlerts carRecord={carRecord} />
 
-                  {/* Status Card */}
-                  <Card className="border-2">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between flex-wrap gap-3">
-                        <div>
-                          <CardTitle className="text-lg">{selectedProperty?.property_name || 'Propriedade'}</CardTitle>
-                          {carRecord.car_number && <p className="text-sm text-gray-500 mt-1">CAR: {carRecord.car_number}</p>}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <CARStatusBadge status={carRecord.car_status} large />
-                          {canEdit && <Button variant="outline" size="sm" onClick={() => { setEditingCarId(carRecord.id); setEditOpen(true); }}>
-                            <Edit className="w-4 h-4" />
-                            </Button>}
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                  {/* Status Info */}
+                  <Card className="border border-gray-100">
+                    <CardContent className="pt-4 grid sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                       <div>
                         <p className="text-gray-500">Data de Cadastro</p>
                         <p className="font-semibold">{fmtDate(carRecord.car_registration_date)}</p>
@@ -351,7 +354,8 @@ export default function CARModule() {
                   <CARMapLayers carRecord={carRecord} onUpdate={(data) => updateMapLayers.mutate(data)} />
                 </TabsContent>
               </Tabs>
-            </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}

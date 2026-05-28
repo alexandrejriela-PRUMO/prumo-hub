@@ -30,12 +30,12 @@ export default function CARDocuments({ carRecord, onUpdate, canEdit }) {
 
   const documents = carRecord?.documents || [];
 
-  const handleAddDocument = async () => {
-    if (!pendingFile) return;
+  const handleAddDocument = async (fileToAdd = pendingFile) => {
+    if (!fileToAdd) return;
     try {
       const newDoc = {
-        name: pendingFile.name,
-        url: pendingFile.url,
+        name: fileToAdd.name,
+        url: fileToAdd.url,
         type: pendingType,
         upload_date: new Date().toISOString(),
       };
@@ -91,17 +91,20 @@ export default function CARDocuments({ carRecord, onUpdate, canEdit }) {
               <div className="mt-1">
                 <R2FileUpload
                   folder="car"
-                  onUploadDone={(url, name) => setPendingFile({ url, name })}
+                  onUploadDone={(url, name) => {
+                    const file = { url, name };
+                    setPendingFile(file);
+                    handleAddDocument(file);
+                  }}
                   label="Selecionar Arquivo"
                 />
               </div>
             </div>
             {pendingFile && (
-              <div className="flex items-center justify-between text-sm text-emerald-700 bg-white rounded p-2 border border-emerald-200">
-                <span className="truncate">{pendingFile.name}</span>
-                <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 ml-2 shrink-0" onClick={handleAddDocument}>
-                  <Plus className="w-3 h-3 mr-1" />Adicionar
-                </Button>
+              <div className="flex items-center gap-2 text-sm text-emerald-700 bg-white rounded p-2 border border-emerald-200">
+                <FileText className="w-4 h-4 shrink-0" />
+                <span className="truncate flex-1">{pendingFile.name}</span>
+                <span className="text-xs text-gray-400 shrink-0">Salvando...</span>
               </div>
             )}
           </div>

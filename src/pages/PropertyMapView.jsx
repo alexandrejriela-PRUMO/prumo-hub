@@ -102,8 +102,16 @@ function LayerLegend({ activeLayers, kmlLayers }) {
   const kmlVisible = kmlLayers.filter(l => l.visible);
   if (!builtins.length && !kmlVisible.length) return null;
 
+  // Group KML layers by CAR number for organized display
+  const kmlByCAR = kmlVisible.reduce((acc, l) => {
+    const key = l.car_number ? `CAR: ${l.car_number}` : 'Importados';
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(l);
+    return acc;
+  }, {});
+
   return (
-    <div className="absolute bottom-8 left-4 z-[1000] bg-white/95 backdrop-blur rounded-xl shadow-lg p-3 border border-gray-200 max-w-[220px]">
+    <div className="absolute bottom-8 left-4 z-[1000] bg-white/95 backdrop-blur rounded-xl shadow-lg p-3 border border-gray-200 max-w-[240px]">
       <p className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Legenda</p>
       <div className="space-y-1.5">
         {builtins.map(i => (
@@ -112,10 +120,15 @@ function LayerLegend({ activeLayers, kmlLayers }) {
             <span className="text-xs text-gray-600 leading-tight">{i.label}</span>
           </div>
         ))}
-        {kmlVisible.map(l => (
-          <div key={l.id} className="flex items-center gap-2">
-            <div className="w-4 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: l.color, opacity: 0.7 }} />
-            <span className="text-xs text-gray-600 leading-tight truncate max-w-[150px]">{l.name}</span>
+        {Object.entries(kmlByCAR).map(([carLabel, layers]) => (
+          <div key={carLabel}>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-2 mb-1">{carLabel}</p>
+            {layers.map(l => (
+              <div key={l.id} className="flex items-center gap-2 ml-1">
+                <div className="w-4 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: l.color, opacity: 0.7 }} />
+                <span className="text-xs text-gray-600 leading-tight truncate max-w-[170px]" title={l.name}>{l.name}</span>
+              </div>
+            ))}
           </div>
         ))}
       </div>
@@ -499,7 +512,12 @@ export default function PropertyMapView() {
                   title={areaHa ? `${areaHa} ha` : undefined}
                 >
                   <FileText className="w-3 h-3" />
-                  <span className="max-w-[120px] truncate">{layer.name}</span>
+                  <span className="max-w-[100px] truncate" title={layer.name}>{layer.name}</span>
+                  {layer.car_number && (
+                    <span className="text-[9px] opacity-60 font-normal border-l border-current pl-1 ml-0.5 truncate max-w-[60px]" title={`CAR: ${layer.car_number}`}>
+                      {layer.car_number.slice(0, 8)}…
+                    </span>
+                  )}
                   {areaHa && <span className="text-xs opacity-70">({areaHa} ha)</span>}
                   <button
                     onClick={(e) => { e.stopPropagation(); removeKmlLayer(layer.id); }}

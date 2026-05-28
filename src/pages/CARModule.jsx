@@ -351,7 +351,14 @@ export default function CARModule() {
 
                 {/* MAPA */}
                 <TabsContent value="map">
-                  <CARMapLayers carRecord={carRecord} onUpdate={(data) => updateMapLayers.mutate(data)} />
+                  <CARMapLayers
+                    carRecord={carRecord}
+                    onUpdate={(data) => updateMapLayers.mutate(data)}
+                    property={selectedProperty}
+                    onPropertyUpdate={(updatedKmlLayers) => {
+                      queryClient.invalidateQueries(['properties', effectiveEmail, userType]);
+                    }}
+                  />
                 </TabsContent>
               </Tabs>
               </CardContent>

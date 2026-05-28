@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Upload, Download, Layers, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Upload, Download, Layers, Sparkles, CheckCircle2, Link2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 
@@ -18,19 +17,101 @@ const LAYERS = [
   { key: 'outro_uso_restrito_url', label: 'Outro Uso Restrito', color: 'purple' },
 ];
 
-export default function CARMapLayers({ carRecord, onUpdate }) {
+const KML_COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#ef4444', '#8b5cf6', '#0f766e', '#be123c', '#1d4ed8', '#b45309'];
+
+// KML inline parser
+function parseKmlToGeoJson(doc) {
+  const features = [];
+  doc.querySelectorAll('Placemark').forEach(pm => {
+    const name = pm.querySelector('name')?.textContent || '';
+    const parseCoords = (str) => str.trim().split(/\s+/).map(c => {
+      const parts = c.split(',').map(Number);
+      return [parts[0], parts[1]];
+    }).filter(c => !isNaN(c[0]) && !isNaN(c[1]));
+
+    let geometry = null;
+    const polygon = pm.querySelector('Polygon');
+    const lineString = pm.querySelector('LineString');
+    const point = pm.querySelector('Point');
+
+    if (polygon) {
+      const outer = polygon.querySelector('outerBoundaryIs coordinates');
+      if (outer) geometry = { type: 'Polygon', coordinates: [parseCoords(outer.textContent)] };
+    } else if (lineString) {
+      const coords = lineString.querySelector('coordinates');
+      if (coords) geometry = { type: 'LineString', coordinates: parseCoords(coords.textContent) };
+    } else if (point) {
+      const coords = point.querySelector('coordinates');
+      if (coords) {
+        const c = parseCoords(coords.textContent)[0];
+        if (c) geometry = { type: 'Point', coordinates: c };
+      }
+    }
+    if (geometry) features.push({ type: 'Feature', geometry, properties: { name } });
+  });
+  return { type: 'FeatureCollection', features };
+}
+
+export default function CARMapLayers({ carRecord, onUpdate, property, onPropertyUpdate }) {
   const [uploading, setUploading] = useState({});
   const [analyzingAI, setAnalyzingAI] = useState(false);
   const layers = carRecord?.map_layers || {};
 
+  // Handle KML upload: convert to GeoJSON and save to Property.kml_layers too
   const handleUpload = async (e, layerKey, triggerAI) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(p => ({ ...p, [layerKey]: true }));
+
     try {
+      const layerConfig = LAYERS.find(l => l.key === layerKey);
+      const isKml = file.name.endsWith('.kml') || file.name.endsWith('.kmz');
+
+      // Upload raw file
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       const newLayers = { ...layers, [layerKey]: file_url };
 
+      // If KML, also parse and save to Property.kml_layers for the interactive map
+      if (isKml && property) {
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+          try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(ev.target.result, 'text/xml');
+            const geojson = parseKmlToGeoJson(doc);
+
+            if (geojson.features?.length > 0) {
+              const existingKmlLayers = property.kml_layers || [];
+              const colorIndex = existingKmlLayers.length % KML_COLORS.length;
+
+              // Build a descriptive name: "LayerType - CAR: [number]"
+              const carRef = carRecord.car_number ? ` [CAR: ${carRecord.car_number}]` : '';
+              const layerName = `${layerConfig?.label || file.name.replace('.kml', '')}${carRef}`;
+
+              const newKmlLayer = {
+                id: String(Date.now() + Math.random()),
+                name: layerName,
+                geojson,
+                color: KML_COLORS[colorIndex],
+                visible: true,
+                car_entity_id: carRecord.id,
+                car_number: carRecord.car_number || null,
+                layer_type: layerKey,
+              };
+
+              const updatedKmlLayers = [...existingKmlLayers, newKmlLayer];
+              await base44.entities.Property.update(property.id, { kml_layers: updatedKmlLayers });
+              if (onPropertyUpdate) onPropertyUpdate(updatedKmlLayers);
+              toast.success('Camada KML vinculada ao Mapa Interativo!');
+            }
+          } catch (err) {
+            console.warn('Erro ao parsear KML para mapa:', err);
+          }
+        };
+        reader.readAsText(file);
+      }
+
+      // AI analysis for car polygon
       if (triggerAI && layerKey === 'car_polygon_url') {
         setAnalyzingAI(true);
         try {
@@ -61,21 +142,48 @@ export default function CARMapLayers({ carRecord, onUpdate }) {
 
   const aiAnalysis = layers.ai_analysis ? (() => { try { return JSON.parse(layers.ai_analysis); } catch { return null; } })() : null;
 
+  // Count how many layers are linked to map
+  const linkedToMap = LAYERS.filter(l => {
+    const url = layers[l.key];
+    return url && (url.endsWith('.kml') || url.endsWith('.kmz'));
+  }).length;
+
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Layers className="w-4 h-4 text-emerald-600" />
-          Mapa da Propriedade — Camadas
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Layers className="w-4 h-4 text-emerald-600" />
+            Mapa da Propriedade — Camadas
+          </CardTitle>
+          {linkedToMap > 0 && (
+            <div className="flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1">
+              <Link2 className="w-3 h-3" />
+              {linkedToMap} camada(s) KML no Mapa Interativo
+            </div>
+          )}
+        </div>
+        {carRecord.car_number && (
+          <p className="text-xs text-gray-500 mt-1">
+            Camadas do <strong>CAR: {carRecord.car_number}</strong> — KMLs serão vinculados automaticamente ao Mapa Interativo
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-3">
         {LAYERS.map(({ key, label, color, aiAnalysis: hasAI }) => {
           const fileUrl = layers[key];
+          const isKmlFile = fileUrl && (fileUrl.endsWith('.kml') || fileUrl.endsWith('.kmz'));
           return (
             <div key={key} className={`p-3 rounded-lg border bg-${color}-50 border-${color}-200 flex items-center justify-between gap-3`}>
               <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium text-${color}-800`}>{label}</p>
+                <div className="flex items-center gap-2">
+                  <p className={`text-sm font-medium text-${color}-800`}>{label}</p>
+                  {isKmlFile && (
+                    <span className="text-[10px] bg-emerald-100 text-emerald-700 border border-emerald-200 rounded px-1.5 py-0.5 font-medium flex items-center gap-0.5">
+                      <Link2 className="w-2.5 h-2.5" /> no mapa
+                    </span>
+                  )}
+                </div>
                 {fileUrl && (
                   <a href={fileUrl} target="_blank" rel="noopener noreferrer" className={`text-xs text-${color}-600 hover:underline flex items-center gap-1 mt-0.5`}>
                     <Download className="w-3 h-3" /> Ver arquivo

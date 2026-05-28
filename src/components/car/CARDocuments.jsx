@@ -127,9 +127,10 @@ export default function CARDocuments({ carRecord, onUpdate, canEdit }) {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <Badge className={`text-xs ${typeColors[doc.type] || 'bg-gray-100 text-gray-600'}`}>{doc.type}</Badge>
-                  <R2FileLink filePath={doc.url} label="Baixar" asLink={true} />
+                  <R2FileLink filePath={doc.url} label="Visualizar" mode="view" asLink={true} />
+                  <R2FileLink filePath={doc.url} label="Baixar" mode="download" asLink={true} />
                   {canEdit && (
-                    <button onClick={() => handleDelete(idx)} className="p-1 hover:bg-red-50 rounded text-red-400 hover:text-red-600 transition-colors">
+                    <button onClick={(e) => { e.stopPropagation(); handleDelete(idx); }} className="p-1 hover:bg-red-50 rounded text-red-400 hover:text-red-600 transition-colors">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   )}

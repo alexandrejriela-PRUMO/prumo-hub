@@ -24,14 +24,18 @@ export default function SupabaseFileLink({ filePath, label = 'Baixar Arquivo', e
     // URL absoluta legada — usa direto
     if (filePath.startsWith('http://') || filePath.startsWith('https://')) return filePath;
 
-    // Validar e migrar para R2 se necessário
+    // Paths que já estão no R2 (uploads recentes) — pular migração
+    const R2_FOLDERS = ['car/', 'documents/', 'licenses/', 'uploads/', 'mappings/', 'prad/', 'contracts/', 'budgets/', 'georef/', 'climate/', 'processes/', 'alerts/'];
+    const isAlreadyR2 = R2_FOLDERS.some(f => filePath.startsWith(f));
+
     let validatedPath = filePath;
-    try {
-      const validateRes = await base44.functions.invoke('validateAndMigrateStorageToR2', { filePath });
-      validatedPath = validateRes?.data?.filePath || filePath;
-      console.log(`[FileLink] Path validado: ${filePath} → ${validatedPath}`);
-    } catch (err) {
-      console.warn('[FileLink] Erro ao validar/migrar:', err.message, '— continuando com path original');
+    if (!isAlreadyR2) {
+      try {
+        const validateRes = await base44.functions.invoke('validateAndMigrateStorageToR2', { filePath });
+        validatedPath = validateRes?.data?.filePath || filePath;
+      } catch (err) {
+        console.warn('[FileLink] Erro ao validar/migrar:', err.message, '— continuando com path original');
+      }
     }
 
     const res = await base44.functions.invoke('getFileSignedUrl', { filePath: validatedPath, expiresIn, storage });

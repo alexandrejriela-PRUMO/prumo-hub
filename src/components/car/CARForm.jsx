@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { FileText, Leaf, MapPin, Save, X } from 'lucide-react';
+import { FileText, Leaf, MapPin, Save, X, Sparkles } from 'lucide-react';
 
 const LIABILITIES = [
   'Déficit de Reserva Legal', 'Déficit de APP', 'Área degradada',
@@ -23,7 +23,7 @@ const defaultForm = {
   recovery_deadline: '', recovery_area_hectares: '', recovery_notes: '',
 };
 
-export default function CARForm({ initial, onSubmit, onCancel, isLoading }) {
+export default function CARForm({ initial, onSubmit, onCancel, isLoading, aiAnalysis }) {
   const [form, setForm] = useState({ ...defaultForm, ...initial });
 
   useEffect(() => { if (initial) setForm({ ...defaultForm, ...initial }); }, [initial]);
@@ -54,6 +54,16 @@ export default function CARForm({ initial, onSubmit, onCancel, isLoading }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* AI Analysis banner */}
+      {aiAnalysis && (
+        <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="w-4 h-4 text-purple-600" />
+            <p className="text-xs font-semibold text-purple-800">Análise Técnica Ambiental (IA)</p>
+          </div>
+          <p className="text-xs text-purple-900 leading-relaxed">{aiAnalysis}</p>
+        </div>
+      )}
       {/* CAR */}
       <Card>
         <CardHeader className="pb-2">

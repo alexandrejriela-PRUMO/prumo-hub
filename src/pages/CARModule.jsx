@@ -9,8 +9,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   FileText, Plus, Edit, Leaf, MapPin, Clock, Building2,
-  AlertTriangle, CheckCircle2, ChevronLeft
+  AlertTriangle, CheckCircle2, ChevronLeft, Sparkles
 } from 'lucide-react';
+import CARSmartUpload from '@/components/car/CARSmartUpload';
 import { toast } from 'sonner';
 import { format, parseISO, isValid } from 'date-fns';
 import ConsultorPropertySelector from '@/components/consultor/ConsultorPropertySelector';
@@ -78,6 +79,8 @@ export default function CARModule() {
   });
 
   const [editingCarId, setEditingCarId] = useState(null);
+  const [showSmartUpload, setShowSmartUpload] = useState(false);
+  const [prefillData, setPrefillData] = useState(null);
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
@@ -369,23 +372,92 @@ export default function CARModule() {
 
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={(open) => {
-        if (!open && !editingCarId) {
-          const confirmed = window.confirm('Você tem alterações não salvas. Deseja fechar sem salvar?');
-          if (!confirmed) return;
-        }
         setEditOpen(open);
-        if (!open) setEditingCarId(null);
+        if (!open) { setEditingCarId(null); setShowSmartUpload(false); setPrefillData(null); }
       }}>
         <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingCarId ? 'Editar CAR' : 'Adicionar Novo CAR'}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              {editingCarId ? 'Editar CAR' : showSmartUpload ? <><Sparkles className="w-4 h-4 text-emerald-600" /> Preencher CAR com IA</> : 'Adicionar Novo CAR'}
+            </DialogTitle>
           </DialogHeader>
-          <CARForm
-            initial={editingCarId ? carRecords.find(c => c.id === editingCarId) || {} : {}}
-            onSubmit={(data) => saveMutation.mutate(data)}
-            onCancel={() => { setEditOpen(false); setEditingCarId(null); }}
-            isLoading={saveMutation.isPending}
-          />
+
+          {/* Novo CAR: mostrar smart upload ou formulário */}
+          {!editingCarId && showSmartUpload ? (
+            <CARSmartUpload
+              onDataExtracted={(data) => {
+                setPrefillData(data);
+                setShowSmartUpload(false);
+              }}
+              onClose={() => setShowSmartUpload(false)}
+            />
+          ) : (
+            <>
+              {/* Botão de IA apenas no modo criação */}
+              {!editingCarId && !prefillData && (
+                <div className="mb-2 flex justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 border-purple-300 text-purple-700 hover:bg-purple-50"
+                    onClick={() => setShowSmartUpload(true)}
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Preencher com PDF do CAR
+                  </Button>
+                </div>
+              )}
+              {prefillData && (
+                <div className="mb-3 flex items-center justify-between p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                  <div className="flex items-center gap-2 text-sm text-emerald-800">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>Dados extraídos pela IA — revise e salve</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="text-xs text-gray-400 hover:text-gray-600 underline"
+                    onClick={() => { setPrefillData(null); setShowSmartUpload(true); }}
+                  >
+                    Refazer upload
+                  </button>
+                </div>
+              )}
+              <CARForm
+                initial={editingCarId ? carRecords.find(c => c.id === editingCarId) || {} : (prefillData || {})}
+                onSubmit={async (data) => {
+                  // Se veio de prefillData, atualiza Property com dados extras extraídos pela IA
+                  if (prefillData && selectedProperty) {
+                    const updates = {};
+                    if (prefillData._coordinates && !selectedProperty.coordinates) updates.coordinates = prefillData._coordinates;
+                    if (prefillData._municipality && !selectedProperty.city) updates.city = prefillData._municipality;
+                    if (prefillData._state && !selectedProperty.state) updates.state = prefillData._state;
+                    if (prefillData._app_hectares && !selectedProperty.app_hectares) updates.app_hectares = prefillData._app_hectares;
+                    if (prefillData._legal_reserve_hectares && !selectedProperty.legal_reserve_hectares) updates.legal_reserve_hectares = prefillData._legal_reserve_hectares;
+                    if (prefillData._registration_numbers && !selectedProperty.registration_numbers) updates.registration_numbers = prefillData._registration_numbers;
+                    if (Object.keys(updates).length > 0) {
+                      await base44.entities.Property.update(selectedProperty.id, updates);
+                      queryClient.invalidateQueries(['properties', effectiveEmail, userType]);
+                    }
+                    // Add PDF as document in CAR
+                    if (prefillData._file_url) {
+                      const docType = prefillData._doc_type === 'recibo' ? 'Recibo de Cadastro' : 'CAR PDF';
+                      data.documents = [{
+                        name: prefillData._doc_type === 'recibo' ? 'Recibo de Inscrição CAR' : 'Demonstrativo CAR',
+                        url: prefillData._file_url,
+                        type: docType,
+                        upload_date: new Date().toISOString(),
+                      }];
+                    }
+                  }
+                  saveMutation.mutate(data);
+                }}
+                onCancel={() => { setEditOpen(false); setEditingCarId(null); setPrefillData(null); setShowSmartUpload(false); }}
+                isLoading={saveMutation.isPending}
+                aiAnalysis={prefillData?._ai_analysis}
+              />
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>

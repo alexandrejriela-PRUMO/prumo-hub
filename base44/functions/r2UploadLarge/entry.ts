@@ -215,6 +215,37 @@ Deno.serve(async (req) => {
       'application/geo+json','video/mp4','audio/mpeg','audio/ogg','audio/wav',
     ]);
 
+    // OWASP A01 - Valida filePath se fornecido (path traversal) — usado em getPartUrl e complete
+    let filePath;
+    if (body.filePath) {
+      const fp = body.filePath;
+      if (fp.includes('..') || fp.includes('//') || fp.startsWith('/') || fp.length > 512) {
+        return Response.json({ error: 'filePath inválido' }, { status: 400 });
+      }
+      filePath = fp;
+    }
+
+    // ── Ação: URL pré-assinada para uma part (frontend faz PUT direto) ───────────
+    if (action === 'getPartUrl') {
+      const { uploadId, partNumber } = body;
+      if (!uploadId || partNumber == null || !filePath) {
+        return Response.json({ error: 'uploadId, partNumber e filePath são obrigatórios' }, { status: 400 });
+      }
+      const url = await getPresignedPartUrl(filePath, uploadId, partNumber);
+      return Response.json({ url, partNumber });
+    }
+
+    // ── Ação: completar multipart ──────────────────────────────────────────────
+    if (action === 'complete') {
+      const { uploadId, parts } = body;
+      if (!uploadId || !parts || !filePath) {
+        return Response.json({ error: 'uploadId, parts e filePath são obrigatórios' }, { status: 400 });
+      }
+      await completeMultipartUpload(filePath, uploadId, parts);
+      return Response.json({ filePath, fileName });
+    }
+
+    // Para initiate: validar MIME e extensão
     const mimeType = contentType || 'application/octet-stream';
     if (!ALLOWED_MIME_TYPES.has(mimeType)) {
       return Response.json({ error: `Tipo de arquivo não permitido: ${mimeType}` }, { status: 415 });
@@ -235,15 +266,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: `Extensão de arquivo não permitida: .${ext}` }, { status: 415 });
     }
 
-    // OWASP A01 - Valida filePath se fornecido (path traversal)
-    let filePath;
-    if (body.filePath) {
-      const fp = body.filePath;
-      if (fp.includes('..') || fp.includes('//') || fp.startsWith('/') || fp.length > 512) {
-        return Response.json({ error: 'filePath inválido' }, { status: 400 });
-      }
-      filePath = fp;
-    } else {
+    if (!filePath) {
       filePath = `${safeFolder}/${user.email}/${Date.now()}_${safeName}`;
     }
 
@@ -251,26 +274,6 @@ Deno.serve(async (req) => {
     if (action === 'initiate') {
       const uploadId = await initiateMultipartUpload(filePath, mimeType);
       return Response.json({ uploadId, filePath });
-    }
-
-    // ── Ação: URL pré-assinada para uma part (frontend faz PUT direto) ───────────
-    if (action === 'getPartUrl') {
-      const { uploadId, partNumber } = body;
-      if (!uploadId || partNumber == null) {
-        return Response.json({ error: 'uploadId e partNumber são obrigatórios' }, { status: 400 });
-      }
-      const url = await getPresignedPartUrl(filePath, uploadId, partNumber);
-      return Response.json({ url, partNumber });
-    }
-
-    // ── Ação: completar multipart ──────────────────────────────────────────────
-    if (action === 'complete') {
-      const { uploadId, parts } = body;
-      if (!uploadId || !parts) {
-        return Response.json({ error: 'uploadId e parts são obrigatórios' }, { status: 400 });
-      }
-      await completeMultipartUpload(filePath, uploadId, parts);
-      return Response.json({ filePath, fileName });
     }
 
     return Response.json({ error: 'action inválida. Use: initiate, getPartUrl, complete' }, { status: 400 });

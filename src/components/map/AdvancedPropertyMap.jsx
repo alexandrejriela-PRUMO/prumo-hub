@@ -108,6 +108,7 @@ function MapContent({
   parseGeoJson, LAYER_STYLES, isFullscreen, mapRef
 }) {
   const map = useMap();
+  const hasSicar = kmlLayers?.some(l => l.source === 'SICAR');
 
   useEffect(() => {
     if (map) mapRef.current = map;
@@ -129,16 +130,16 @@ function MapContent({
         />
       )}
 
-      {activeLayers.car && carGeoJson && (
+      {activeLayers.car && !hasSicar && carGeoJson && (
         <GeoJSON data={carGeoJson} style={LAYER_STYLES.car} />
       )}
 
-      {activeLayers.app && carLayers?.app_layer_url && (() => {
+      {activeLayers.app && !hasSicar && carLayers?.app_layer_url && (() => {
         const gj = parseGeoJson(carLayers.app_layer_url);
         return gj ? <GeoJSON data={gj} style={LAYER_STYLES.app} /> : null;
       })()}
 
-      {activeLayers.legalReserve && carLayers?.legal_reserve_url && (() => {
+      {activeLayers.legalReserve && !hasSicar && carLayers?.legal_reserve_url && (() => {
         const gj = parseGeoJson(carLayers.legal_reserve_url);
         return gj ? <GeoJSON data={gj} style={LAYER_STYLES.legalReserve} /> : null;
       })()}

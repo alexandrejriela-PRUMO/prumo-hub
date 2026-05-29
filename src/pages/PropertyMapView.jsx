@@ -378,6 +378,54 @@ export default function PropertyMapView() {
       }
     };
 
+  const calcKmlArea = (geojson) => {
+    if (!geojson?.features) return null;
+    let totalArea = 0;
+    geojson.features.forEach(f => {
+      if (f.geometry?.type === 'Polygon' && f.geometry.coordinates[0]) {
+        const coords = f.geometry.coordinates[0];
+        const area = Math.abs(coords.reduce((sum, [lng, lat], i) => {
+          const next = coords[(i + 1) % coords.length];
+          return sum + (lng * next[1] - lat * next[0]);
+        }, 0) / 2);
+        totalArea += area * 111320 * 111320;
+      }
+    });
+    return totalArea > 0 ? (totalArea / 10000).toFixed(2) : null;
+  };
+
+  const renderKmlChip = (layer) => {
+    const areaHa = calcKmlArea(layer.geojson);
+    return (
+      <div
+        key={layer.id}
+        className="flex items-center gap-1 px-2 py-1 rounded-lg border text-xs font-medium cursor-pointer transition-all"
+        style={{
+          backgroundColor: layer.visible ? layer.color + '22' : '#f9fafb',
+          borderColor: layer.visible ? layer.color : '#e5e7eb',
+          color: layer.visible ? layer.color : '#6b7280',
+        }}
+        onClick={() => toggleKmlLayer(layer.id)}
+        title={areaHa ? `${areaHa} ha` : undefined}
+      >
+        <FileText className="w-3 h-3" />
+        <span className="max-w-[100px] truncate" title={layer.name}>{layer.name}</span>
+        {layer.car_number && (
+          <span className="text-[9px] opacity-60 font-normal border-l border-current pl-1 ml-0.5 truncate max-w-[60px]" title={`CAR: ${layer.car_number}`}>
+            {layer.car_number.slice(0, 8)}…
+          </span>
+        )}
+        {areaHa && <span className="text-xs opacity-70">({areaHa} ha)</span>}
+        <button
+          onClick={(e) => { e.stopPropagation(); removeKmlLayer(layer.id); }}
+          className="ml-0.5 hover:opacity-70"
+        >
+          <X className="w-3 h-3" />
+        </button>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4">
       <Link
@@ -472,57 +520,28 @@ export default function PropertyMapView() {
               <Upload className="w-3 h-3" /> Importar KML
             </Button>
 
-            {/* Uploaded KML layer chips */}
-            {kmlLayers.map(layer => {
-              // Calcula área do KML
-              const calcArea = (geojson) => {
-                if (!geojson?.features) return null;
-                let totalArea = 0;
-                geojson.features.forEach(f => {
-                  if (f.geometry?.type === 'Polygon' && f.geometry.coordinates[0]) {
-                    const coords = f.geometry.coordinates[0];
-                    const area = Math.abs(
-                      coords.reduce((sum, [lng, lat], i) => {
-                        const next = coords[(i + 1) % coords.length];
-                        return sum + (lng * next[1] - lat * next[0]);
-                      }, 0) / 2
-                    );
-                    totalArea += area * 111320 * 111320;
-                  }
-                });
-                return totalArea > 0 ? (totalArea / 10000).toFixed(2) : null;
-              };
-              const areaHa = calcArea(layer.geojson);
-              
-              return (
-                <div
-                  key={layer.id}
-                  className="flex items-center gap-1 px-2 py-1 rounded-lg border text-xs font-medium cursor-pointer transition-all"
-                  style={{
-                    backgroundColor: layer.visible ? layer.color + '22' : '#f9fafb',
-                    borderColor: layer.visible ? layer.color : '#e5e7eb',
-                    color: layer.visible ? layer.color : '#6b7280',
-                  }}
-                  onClick={() => toggleKmlLayer(layer.id)}
-                  title={areaHa ? `${areaHa} ha` : undefined}
-                >
-                  <FileText className="w-3 h-3" />
-                  <span className="max-w-[100px] truncate" title={layer.name}>{layer.name}</span>
-                  {layer.car_number && (
-                    <span className="text-[9px] opacity-60 font-normal border-l border-current pl-1 ml-0.5 truncate max-w-[60px]" title={`CAR: ${layer.car_number}`}>
-                      {layer.car_number.slice(0, 8)}…
-                    </span>
-                  )}
-                  {areaHa && <span className="text-xs opacity-70">({areaHa} ha)</span>}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); removeKmlLayer(layer.id); }}
-                    className="ml-0.5 hover:opacity-70"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              );
-            })}
+            {/* Non-SICAR KML chips */}
+            {kmlLayers.filter(l => l.source !== 'SICAR').map(layer => renderKmlChip(layer))}
+
+            {/* SICAR chips grouped by car_number */}
+            {(() => {
+              const sicarLayers = kmlLayers.filter(l => l.source === 'SICAR');
+              if (!sicarLayers.length) return null;
+              const groups = sicarLayers.reduce((acc, l) => {
+                const key = l.car_number || 'SICAR';
+                if (!acc[key]) acc[key] = [];
+                acc[key].push(l);
+                return acc;
+              }, {});
+              return Object.entries(groups).map(([carNum, layers]) => (
+                <React.Fragment key={carNum}>
+                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 uppercase tracking-wide flex-shrink-0">
+                    SICAR{carNum !== 'SICAR' ? ` · …${carNum.slice(-8)}` : ''}
+                  </span>
+                  {layers.map(layer => renderKmlChip(layer))}
+                </React.Fragment>
+              ));
+            })()}
 
             {/* Export buttons */}
             {selectedProperty && (

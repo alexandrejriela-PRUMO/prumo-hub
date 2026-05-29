@@ -275,13 +275,25 @@ export default function PropertyMapView() {
       deduped.length !== saved.length ||
       normalized.some((l, i) => l.source !== deduped[i]?.source || l.car_number !== deduped[i]?.car_number);
 
-    setKmlLayers(normalized);
-    setDrawnGeometry(null);
-
     if (needsPersist) {
       base44.entities.Property.update(selectedProperty.id, { kml_layers: normalized }).catch(() => {});
     }
-  }, [selectedPropertyId]);
+
+    // Remove camadas SICAR cujo car_number não tem CAR cadastrado
+    const carNumbersAtivos = new Set(carRecords.map(c => c.car_number).filter(Boolean));
+    const semOrfas = normalized.filter(l => {
+      if (l.source !== 'SICAR') return true;
+      if (!l.car_number) return false;
+      return carNumbersAtivos.has(l.car_number);
+    });
+
+    if (semOrfas.length !== normalized.length) {
+      base44.entities.Property.update(selectedProperty.id, { kml_layers: semOrfas }).catch(() => {});
+    }
+
+    setKmlLayers(semOrfas);
+    setDrawnGeometry(null);
+  }, [selectedPropertyId, carRecords]);
 
   const { data: carData } = useQuery({
     queryKey: ['carManagement', selectedPropertyId],

@@ -76,7 +76,7 @@ Extraia e retorne EXATAMENTE os seguintes dados em JSON:
 - car_status: Um dos valores: "Validado", "Em análise pelo órgão ambiental", "Pendente de análise", "Com inconsistências", "Cancelado", "Necessita retificação"
 - car_notes: Observações relevantes sobre inconsistências ou informações adicionais mencionadas no documento
 - environmental_liabilities: Array com passivos identificados. Possíveis valores: ["Déficit de Reserva Legal", "Déficit de APP", "Área degradada", "Uso irregular em APP", "Compensação de Reserva Legal", "Servidão ambiental"]
-- ai_analysis: Análise técnica ambiental em português com: situação da propriedade, passivos identificados, recomendações práticas para regularização. Máximo 300 palavras.
+- ai_analysis: Análise técnica em português (máx 300 palavras) considerando: 1. Situação cadastral e status do CAR; 2. Passivo/Excedente de RL: diferença entre RL exigida por lei (20% da área) e RL declarada — valor negativo indica que falta DECLARAR mais área de RL; 3. RL a Recompor: área declarada como RL mas SEM vegetação nativa efetiva conforme SICAR — indica necessidade de recomposição/plantio dentro da RL já declarada; 4. APP a Recompor: área de APP sem cobertura vegetal — necessidade de restauração das margens e encostas; 5. Veg. Nativa Remanescente: total de mata nativa existente no imóvel (pode ser usada para justificar RL por compensação). NÃO confundir Passivo de RL com RL a Recompor — são passivos de naturezas diferentes.
 
 ATENÇÃO: O Recibo de Inscrição NÃO contém data de retificação, regularidade ambiental, passivo/excedente de RL, RL a recompor, APP a recompor. Para estes campos, retorne null.
 Para coordenadas: converta graus/minutos/segundos para decimal (Sul = negativo, Oeste = negativo).
@@ -95,11 +95,13 @@ Extraia e retorne EXATAMENTE os seguintes dados em JSON:
 - app_hectares: APP total em hectares como número (ex: 2.97)
 - legal_reserve_hectares: Área de Reserva Legal Proposta/Declarada em hectares (área declarada pelo proprietário como RL)
 - consolidated_area_hectares: Área Rural Consolidada em hectares (ex: 58.07)
-- native_vegetation_hectares: Remanescente de Vegetação Nativa em hectares — área com cobertura de mata nativa existente. Extrair de 'Área de Remanescente de Vegetação Nativa' na seção Cobertura do Solo.
-- legal_reserve_to_recover_hectares: Área de Reserva Legal a RECOMPOR conforme Regularidade Ambiental do Demonstrativo — é a área declarada como RL mas SEM vegetação nativa efetiva identificada pelo SICAR. NÃO confundir com déficit de RL (diferença entre RL exigida e declarada). Extrair apenas do campo 'Área de Reserva Legal a recompor' da seção Regularidade Ambiental do Demonstrativo.
-- app_to_recover_hectares: Área de APP a RECOMPOR conforme Regularidade Ambiental — área de APP sem cobertura vegetal. Extrair de 'Áreas de Preservação Permanente a recompor' do Demonstrativo.
-- passive_rl_balance_hectares: Passivo ou Excedente de Reserva Legal conforme cálculo do SICAR. Valor negativo = déficit. Extrair de 'Passivo / Excedente de Reserva Legal' da Regularidade Ambiental do Demonstrativo.
-- use_restriction_to_recover_hectares: Área de Uso Restrito a Recompor em hectares. Extrair de 'Áreas de Uso Restrito a recompor' da seção Regularidade Ambiental do Demonstrativo.
+INSTRUÇÕES CRÍTICAS PARA EXTRAÇÃO DA REGULARIDADE AMBIENTAL:
+- passive_rl_balance_hectares: Extrair EXCLUSIVAMENTE do campo "Passivo / Excedente de Reserva Legal" da tabela de Regularidade Ambiental. Valor NEGATIVO = déficit (falta declarar mais RL). Valor POSITIVO = excedente. Exemplo: "-16,05" → extrair como -16.05. NÃO confundir com "RL a Recompor" — são campos DIFERENTES na mesma tabela.
+- legal_reserve_to_recover_hectares: Extrair EXCLUSIVAMENTE do campo "Área de Reserva Legal a recompor" da tabela de Regularidade Ambiental. Significa: área que FOI declarada como RL, mas que o SICAR identificou SEM vegetação nativa efetiva. Pode ser 0,00 mesmo quando há passivo — significa que toda a RL declarada tem vegetação, mas a área declarada é insuficiente. NÃO usar o valor do Passivo/Excedente aqui.
+- app_to_recover_hectares: Extrair EXCLUSIVAMENTE do campo "Áreas de Preservação Permanente a recompor" da tabela de Regularidade Ambiental. Significa: área de APP que o SICAR identificou SEM cobertura vegetal.
+- use_restriction_to_recover_hectares: Extrair EXCLUSIVAMENTE do campo "Área de Uso Restrito a recompor" da tabela de Regularidade Ambiental.
+- native_vegetation_hectares: Extrair de "Área de Remanescente de Vegetação Nativa" na seção Cobertura do Solo. Este valor é INDEPENDENTE da RL — é toda a vegetação nativa do imóvel, podendo ser maior ou menor que a RL declarada.
+ATENÇÃO: Estes 5 campos têm linhas SEPARADAS na tabela do Demonstrativo. Leia cada linha individualmente. NÃO some nem misture valores entre linhas.
 - car_situation: Situação do Cadastro: "Ativo", "Cancelado" ou "Pendente de análise". Extrair do campo "Situação do Cadastro" no Demonstrativo.
 - municipality: Município (ex: "Santa Bárbara do Sul")
 - state: Unidade da Federação (ex: "RS")
@@ -107,7 +109,7 @@ Extraia e retorne EXATAMENTE os seguintes dados em JSON:
 - car_status: Baseado na "Condição Externa" e "Situação do Cadastro". Mapeie para: "Validado", "Em análise pelo órgão ambiental", "Pendente de análise", "Com inconsistências", "Cancelado", "Necessita retificação"
 - environmental_liabilities: Array com passivos identificados com base nos dados de regularidade ambiental. Possíveis: ["Déficit de Reserva Legal", "Déficit de APP", "Área degradada", "Uso irregular em APP", "Compensação de Reserva Legal"]
 - car_notes: Resumo das informações de regularidade ambiental (passivos, áreas a recompor)
-- ai_analysis: Análise técnica ambiental completa em português: situação cadastral, passivos ambientais encontrados, áreas a recompor, urgência de ações regulatórias. Máximo 300 palavras.
+- ai_analysis: Análise técnica em português (máx 300 palavras) considerando: 1. Situação cadastral e status do CAR; 2. Passivo/Excedente de RL: diferença entre RL exigida por lei (20% da área) e RL declarada — valor negativo indica que falta DECLARAR mais área de RL; 3. RL a Recompor: área declarada como RL mas SEM vegetação nativa efetiva conforme SICAR — indica necessidade de recomposição/plantio dentro da RL já declarada; 4. APP a Recompor: área de APP sem cobertura vegetal — necessidade de restauração das margens e encostas; 5. Veg. Nativa Remanescente: total de mata nativa existente no imóvel (pode ser usada para justificar RL por compensação). NÃO confundir Passivo de RL com RL a Recompor — são passivos de naturezas diferentes.
 
 ATENÇÃO: O Demonstrativo NÃO contém CPF/CNPJ do proprietário nem matrículas detalhadas. Para estes campos, retorne null.
 Para coordenadas: converta graus/minutos/segundos para decimal.
@@ -132,7 +134,7 @@ DO RECIBO DE INSCRIÇÃO (quando presente):
 - app_hectares: APP em hectares
 - legal_reserve_hectares: Reserva Legal declarada em hectares
 - consolidated_area_hectares: Área Consolidada em hectares
-- native_vegetation_hectares: Remanescente de Vegetação Nativa em hectares (seção Cobertura do Solo)
+- native_vegetation_hectares: Extrair de "Área de Remanescente de Vegetação Nativa" na seção Cobertura do Solo. Este valor é INDEPENDENTE da RL — é toda a vegetação nativa do imóvel.
 - municipality: Município
 - state: UF/Estado
 - owner_name: Nome do Proprietário/Possuidor
@@ -145,16 +147,19 @@ DO DEMONSTRATIVO DE SITUAÇÃO (quando presente):
 - last_rectification_date: Data da Última Retificação no formato YYYY-MM-DD
 - car_last_update: Data da Última Retificação no formato YYYY-MM-DD (mesmo valor)
 - car_situation: Situação do Cadastro ("Ativo", "Cancelado", "Pendente de análise")
-- passive_rl_balance_hectares: Passivo/Excedente de RL — NEGATIVO = déficit (campo 'Passivo / Excedente de Reserva Legal')
-- legal_reserve_to_recover_hectares: RL a Recompor — área declarada como RL SEM vegetação efetiva (NÃO é o déficit)
-- app_to_recover_hectares: APP a Recompor — APP sem cobertura vegetal
-- use_restriction_to_recover_hectares: Uso Restrito a Recompor em hectares
+
+INSTRUÇÕES CRÍTICAS PARA EXTRAÇÃO DA REGULARIDADE AMBIENTAL:
+- passive_rl_balance_hectares: Extrair EXCLUSIVAMENTE do campo "Passivo / Excedente de Reserva Legal" da tabela de Regularidade Ambiental. Valor NEGATIVO = déficit (falta declarar mais RL). Valor POSITIVO = excedente. Exemplo: "-16,05" → extrair como -16.05. NÃO confundir com "RL a Recompor" — são campos DIFERENTES na mesma tabela.
+- legal_reserve_to_recover_hectares: Extrair EXCLUSIVAMENTE do campo "Área de Reserva Legal a recompor" da tabela de Regularidade Ambiental. Significa: área que FOI declarada como RL, mas que o SICAR identificou SEM vegetação nativa efetiva. Pode ser 0,00 mesmo quando há passivo — significa que toda a RL declarada tem vegetação, mas a área declarada é insuficiente. NÃO usar o valor do Passivo/Excedente aqui.
+- app_to_recover_hectares: Extrair EXCLUSIVAMENTE do campo "Áreas de Preservação Permanente a recompor" da tabela de Regularidade Ambiental. Significa: área de APP que o SICAR identificou SEM cobertura vegetal.
+- use_restriction_to_recover_hectares: Extrair EXCLUSIVAMENTE do campo "Área de Uso Restrito a recompor" da tabela de Regularidade Ambiental.
+ATENÇÃO: Estes 4 campos têm linhas SEPARADAS na tabela do Demonstrativo. Leia cada linha individualmente. NÃO some nem misture valores entre linhas.
 
 CAMPOS COMUNS (preencher com base nos documentos disponíveis):
 - car_status: "Validado", "Em análise pelo órgão ambiental", "Pendente de análise", "Com inconsistências", "Cancelado", "Necessita retificação"
 - environmental_liabilities: Array — ["Déficit de Reserva Legal", "Déficit de APP", "Área degradada", "Uso irregular em APP", "Compensação de Reserva Legal", "Servidão ambiental"]
 - car_notes: Resumo das observações e regularidade ambiental
-- ai_analysis: Análise técnica completa em português: situação cadastral, passivos encontrados, áreas a recompor, recomendações. Máximo 400 palavras.
+- ai_analysis: Análise técnica em português (máx 400 palavras) considerando: 1. Situação cadastral e status do CAR; 2. Passivo/Excedente de RL: diferença entre RL exigida por lei (20% da área) e RL declarada — valor negativo indica que falta DECLARAR mais área de RL; 3. RL a Recompor: área declarada como RL mas SEM vegetação nativa efetiva conforme SICAR — indica necessidade de recomposição/plantio dentro da RL já declarada; 4. APP a Recompor: área de APP sem cobertura vegetal — necessidade de restauração das margens e encostas; 5. Veg. Nativa Remanescente: total de mata nativa existente no imóvel (pode ser usada para justificar RL por compensação). NÃO confundir Passivo de RL com RL a Recompor — são passivos de naturezas diferentes.
 
 Para coordenadas: converta graus/minutos/segundos para decimal (Sul/Oeste = negativo).
 Para datas: formato YYYY-MM-DD.

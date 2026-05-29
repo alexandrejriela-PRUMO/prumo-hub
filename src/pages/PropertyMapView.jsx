@@ -232,22 +232,40 @@ export default function PropertyMapView() {
       return true;
     });
     const SICAR_LAYER_TYPES = ['car_polygon','app','legal_reserve','consolidated_area','remanescente','pousio','hidrografia','servidoes','outro_uso_restrito'];
+
     const normalized = deduped.map(l => {
-      if (l.source === 'SICAR') return l;
-      if (
+      const isSicar =
+        l.source === 'SICAR' ||
         (l.id && l.id.startsWith('sicar-')) ||
-        (l.layer_type && SICAR_LAYER_TYPES.includes(l.layer_type))
-      ) {
-        return { ...l, source: 'SICAR' };
+        (l.layer_type && SICAR_LAYER_TYPES.includes(l.layer_type));
+
+      if (!isSicar) return l;
+
+      // Recupera car_number do id se estiver faltando
+      // Padrão: sicar-{car_number}-{layer_type}
+      let carNumber = l.car_number;
+      if (!carNumber && l.id && l.id.startsWith('sicar-')) {
+        const withoutPrefix = l.id.slice(6); // remove 'sicar-'
+        const layerSuffix = SICAR_LAYER_TYPES.find(lt => withoutPrefix.endsWith('-' + lt));
+        if (layerSuffix) {
+          carNumber = withoutPrefix.slice(0, -(layerSuffix.length + 1)); // remove '-{layer_type}'
+        }
       }
-      return l;
+
+      return {
+        ...l,
+        source: 'SICAR',
+        ...(carNumber ? { car_number: carNumber } : {}),
+      };
     });
+
+    const needsPersist =
+      deduped.length !== saved.length ||
+      normalized.some((l, i) => l.source !== deduped[i]?.source || l.car_number !== deduped[i]?.car_number);
 
     setKmlLayers(normalized);
     setDrawnGeometry(null);
 
-    // Persiste se havia duplicatas ou camadas SICAR sem source
-    const needsPersist = deduped.length !== saved.length || normalized.some((l, i) => l.source !== deduped[i].source);
     if (needsPersist) {
       base44.entities.Property.update(selectedProperty.id, { kml_layers: normalized }).catch(() => {});
     }

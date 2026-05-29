@@ -33,7 +33,7 @@ const parseCoordinates = (coordString) => {
   }
 };
 
-export default function PropertyCard({ property, isConsultor }) {
+export default function PropertyCard({ property, isConsultor, carManagements = [] }) {
   const isUrban = property?.property_type === 'urbano';
 
   if (!property) {
@@ -52,15 +52,24 @@ export default function PropertyCard({ property, isConsultor }) {
 
   const coordinates = parseCoordinates(property.coordinates);
 
+  // Somatória do CARManagement tem prioridade sobre campos da Property
+  const somaTotal = carManagements.reduce((s, c) => s + (parseFloat(c.car_area_hectares) || 0), 0);
+  const somaApp = carManagements.reduce((s, c) => s + (parseFloat(c.app_hectares) || 0), 0);
+  const somaRL = carManagements.reduce((s, c) => s + (parseFloat(c.legal_reserve_hectares) || 0), 0);
+
+  const exibeTotal = somaTotal > 0 ? `${somaTotal.toFixed(2)} ha` : (property.total_hectares ? `${property.total_hectares} ha` : '—');
+  const exibeApp = somaApp > 0 ? `${somaApp.toFixed(2)} ha` : (property.app_hectares ? `${property.app_hectares} ha` : '—');
+  const exibeRL = somaRL > 0 ? `${somaRL.toFixed(2)} ha` : (property.legal_reserve_hectares ? `${property.legal_reserve_hectares} ha` : '—');
+
   const stats = isUrban
     ? [
         { label: 'Área Total', value: property.total_area_m2 ? `${property.total_area_m2} m²` : '—', icon: Ruler, color: 'from-blue-400 to-blue-600' },
         { label: 'Área Construída', value: property.built_area_m2 ? `${property.built_area_m2} m²` : '—', icon: Building2, color: 'from-indigo-400 to-indigo-600' },
       ]
     : [
-        { label: 'Área Total', value: property.total_hectares ? `${property.total_hectares} ha` : '—', icon: Trees, color: 'from-emerald-400 to-emerald-600' },
-        { label: 'APP', value: property.app_hectares ? `${property.app_hectares} ha` : '—', icon: Leaf, color: 'from-teal-400 to-teal-600' },
-        { label: 'Reserva Legal', value: property.legal_reserve_hectares ? `${property.legal_reserve_hectares} ha` : '—', icon: Trees, color: 'from-green-400 to-green-600' },
+        { label: 'Área Total', value: exibeTotal, icon: Trees, color: 'from-emerald-400 to-emerald-600' },
+        { label: 'APP', value: exibeApp, icon: Leaf, color: 'from-teal-400 to-teal-600' },
+        { label: 'Reserva Legal', value: exibeRL, icon: Trees, color: 'from-green-400 to-green-600' },
       ];
 
   return (
@@ -161,7 +170,7 @@ export default function PropertyCard({ property, isConsultor }) {
                       <strong>{property.property_name}</strong><br />
                       {isUrban
                         ? (property.total_area_m2 ? `${property.total_area_m2} m²` : '')
-                        : (property.total_hectares ? `${property.total_hectares} ha` : '')
+                        : (somaTotal > 0 ? `${somaTotal.toFixed(2)} ha` : (property.total_hectares ? `${property.total_hectares} ha` : ''))
                       }<br />
                       {property.city}, {property.state}
                     </div>

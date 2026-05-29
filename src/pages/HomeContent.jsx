@@ -292,7 +292,7 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
       {/* Property Card */}
       {isLoading ?
        <Skeleton className="h-64 rounded-2xl" /> :
-       <PropertyCard property={selectedProperty} />
+       <PropertyCard property={selectedProperty} carManagements={carManagements} />
       }
 
       {/* Quick Actions */}

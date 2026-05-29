@@ -69,6 +69,18 @@ const LAYER_STYLES = {
 // Random colors for user-uploaded KML layers
 const KML_COLORS = ['#e11d48', '#0284c7', '#7c3aed', '#b45309', '#0f766e', '#be123c', '#1d4ed8'];
 
+const LAYER_LABELS_EXPORT = {
+  car_polygon: 'Perimetro',
+  app: 'APP',
+  legal_reserve: 'Reserva_Legal',
+  consolidated_area: 'Area_Consolidada',
+  remanescente: 'Veg_Nativa',
+  pousio: 'Pousio',
+  hidrografia: 'Hidrografia',
+  servidoes: 'Servidoes',
+  outro_uso_restrito: 'Uso_Restrito',
+};
+
 function FitBoundsLayer({ geoJsonList }) {
   const map = useMap();
   useEffect(() => {
@@ -349,7 +361,7 @@ export default function PropertyMapView() {
     e.target.value = '';
   };
 
-  // Export a specific builtin layer as KML
+  // Export a specific builtin layer as KML (kept for future use)
   const exportBuiltinKml = (key, label) => {
     let gj = null;
     if (key === 'car') gj = parseGeoJson(selectedProperty?.boundaries);
@@ -360,6 +372,25 @@ export default function PropertyMapView() {
     if (!gj) return alert('Nenhum dado disponível para exportar esta camada.');
     const kmlStr = geojsonToKml(gj, label);
     downloadKml(kmlStr, `${selectedProperty?.property_name || 'propriedade'}_${label}.kml`);
+  };
+
+  const exportSicarLayer = (carNumber, layerType, label) => {
+    const layer = kmlLayers.find(l => l.car_number === carNumber && l.layer_type === layerType);
+    if (!layer?.geojson) return alert('Camada não disponível para este CAR.');
+    const kmlStr = geojsonToKml(layer.geojson, label);
+    const carShort = carNumber.slice(-8);
+    downloadKml(kmlStr, `${selectedProperty?.property_name || 'propriedade'}_CAR${carShort}_${label}.kml`);
+  };
+
+  const exportAllSicarLayers = (carNumber) => {
+    const layers = kmlLayers.filter(l => l.car_number === carNumber && l.geojson);
+    if (!layers.length) return alert('Nenhuma camada disponível para este CAR.');
+    layers.forEach(l => {
+      const label = LAYER_LABELS_EXPORT[l.layer_type] || l.name;
+      const kmlStr = geojsonToKml(l.geojson, label);
+      const carShort = carNumber.slice(-8);
+      downloadKml(kmlStr, `${selectedProperty?.property_name || 'propriedade'}_CAR${carShort}_${label}.kml`);
+    });
   };
 
   const carGeoJson = parseGeoJson(selectedProperty?.boundaries);
@@ -562,29 +593,13 @@ export default function PropertyMapView() {
             ))}
           </div>
 
-          {/* Linha 2: Importar + Exportar */}
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className="flex items-center gap-2">
-              <input ref={fileInputRef} type="file" accept=".kml" multiple className="hidden" onChange={handleKmlUpload} />
-              <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5 border-dashed" onClick={() => fileInputRef.current?.click()}>
-                <Upload className="w-3 h-3" /> Importar KML
-              </Button>
-              {kmlLayers.filter(l => l.source !== 'SICAR').map(layer => renderKmlChip(layer))}
-            </div>
-            {selectedProperty && (
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-gray-500">Exportar:</span>
-                {builtinLayerButtons.map(({ key, label }) => (
-                  <button
-                    key={key}
-                    onClick={() => exportBuiltinKml(key, label)}
-                    className="flex items-center gap-1 px-2 py-1 rounded-lg border border-gray-200 text-xs text-gray-600 hover:border-emerald-400 hover:text-emerald-700 transition-all"
-                  >
-                    <Download className="w-3 h-3" />{label}
-                  </button>
-                ))}
-              </div>
-            )}
+          {/* Linha 2: Importar KML */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <input ref={fileInputRef} type="file" accept=".kml" multiple className="hidden" onChange={handleKmlUpload} />
+            <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5 border-dashed" onClick={() => fileInputRef.current?.click()}>
+              <Upload className="w-3 h-3" /> Importar KML
+            </Button>
+            {kmlLayers.filter(l => l.source !== 'SICAR').map(layer => renderKmlChip(layer))}
           </div>
 
           {/* Blocos SICAR por CAR */}
@@ -672,6 +687,29 @@ export default function PropertyMapView() {
                         </div>
                       );
                     })}
+                  </div>
+                  <div className="flex items-center gap-1.5 pt-1.5 border-t border-amber-100 flex-wrap">
+                    <span className="text-[10px] text-amber-600 font-semibold">Exportar:</span>
+                    {layers.map(layer => {
+                      const exportLabel = LAYER_LABELS_EXPORT[layer.layer_type] || layer.name;
+                      const friendlyName = LAYER_LABELS[layer.layer_type] || layer.name;
+                      return (
+                        <button
+                          key={layer.id}
+                          onClick={() => exportSicarLayer(carNum, layer.layer_type, exportLabel)}
+                          className="flex items-center gap-1 px-2 py-0.5 rounded border border-amber-200 text-[10px] text-amber-700 hover:bg-amber-100 hover:border-amber-400 transition-all"
+                          title={`Exportar ${friendlyName} como KML`}
+                        >
+                          <Download className="w-2.5 h-2.5" />{friendlyName}
+                        </button>
+                      );
+                    })}
+                    <button
+                      onClick={() => exportAllSicarLayers(carNum)}
+                      className="flex items-center gap-1 px-2 py-0.5 rounded border border-amber-400 bg-amber-50 text-[10px] text-amber-800 font-semibold hover:bg-amber-100 transition-all ml-auto"
+                    >
+                      <Download className="w-2.5 h-2.5" /> Exportar tudo
+                    </button>
                   </div>
                 </div>
               );

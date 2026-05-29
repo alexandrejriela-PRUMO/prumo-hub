@@ -21,6 +21,7 @@ import CARAlerts from '@/components/car/CARAlerts';
 import CARForm from '@/components/car/CARForm';
 import CARMapLayers from '@/components/car/CARMapLayers';
 import CARDocuments from '@/components/car/CARDocuments';
+import CARSelector from '@/components/car/CARSelector';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 function fmtDate(d) {
@@ -161,6 +162,7 @@ export default function CARModule() {
   const [editingCarId, setEditingCarId] = useState(null);
   const [showSmartUpload, setShowSmartUpload] = useState(false);
   const [prefillData, setPrefillData] = useState(null);
+  const [selectedCarId, setSelectedCarId] = useState(null);
 
 
   const saveMutation = useMutation({
@@ -357,17 +359,33 @@ export default function CARModule() {
         </Card>
       )}
 
-      {carRecords.length > 0 && (
-        <div className="space-y-6">
-          {(() => {
-            const somaTotal = carRecords.reduce((s, c) => s + (parseFloat(c.car_area_hectares) || 0), 0);
-            const somaApp = carRecords.reduce((s, c) => s + (parseFloat(c.app_hectares) || 0), 0);
-            const somaRL = carRecords.reduce((s, c) => s + (parseFloat(c.legal_reserve_hectares) || 0), 0);
-            const somaRLRecompor = carRecords.reduce((s, c) => s + (parseFloat(c.legal_reserve_to_recover_hectares) || 0), 0);
-            const somaAppRecompor = carRecords.reduce((s, c) => s + (parseFloat(c.app_to_recover_hectares) || 0), 0);
-            const temPassivos = somaRLRecompor > 0 || somaAppRecompor > 0;
-            return carRecords.length > 1 ? (
-              <Card className="border-2 border-emerald-200 bg-emerald-50/50 mb-2">
+      {carRecords.length > 0 && (() => {
+        const activeCarId = selectedCarId && carRecords.find(c => c.id === selectedCarId) ? selectedCarId : carRecords[0].id;
+        const carRecord = carRecords.find(c => c.id === activeCarId);
+        const idx = carRecords.findIndex(c => c.id === activeCarId);
+
+        const somaTotal = carRecords.reduce((s, c) => s + (parseFloat(c.car_area_hectares) || 0), 0);
+        const somaApp = carRecords.reduce((s, c) => s + (parseFloat(c.app_hectares) || 0), 0);
+        const somaRL = carRecords.reduce((s, c) => s + (parseFloat(c.legal_reserve_hectares) || 0), 0);
+        const somaRLRecompor = carRecords.reduce((s, c) => s + (parseFloat(c.legal_reserve_to_recover_hectares) || 0), 0);
+        const somaAppRecompor = carRecords.reduce((s, c) => s + (parseFloat(c.app_to_recover_hectares) || 0), 0);
+        const temPassivos = somaRLRecompor > 0 || somaAppRecompor > 0;
+
+        return (
+          <div className="space-y-4">
+            {/* Seletor de CAR */}
+            <CARSelector
+              carRecords={carRecords}
+              selectedCarId={activeCarId}
+              onSelectCar={setSelectedCarId}
+              onEdit={(id) => { setEditingCarId(id); setEditOpen(true); }}
+              onDelete={(id) => setDeleteConfirmId(id)}
+              canEdit={canEdit}
+            />
+
+            {/* Somatório (apenas quando múltiplos CARs) */}
+            {carRecords.length > 1 && (
+              <Card className="border-2 border-emerald-200 bg-emerald-50/50">
                 <CardContent className="pt-4 pb-4">
                   <div className="flex items-center gap-2 mb-3">
                     <Layers className="w-4 h-4 text-emerald-600" />
@@ -397,17 +415,17 @@ export default function CARModule() {
                   </div>
                 </CardContent>
               </Card>
-            ) : null;
-          })()}
-          {carRecords.map((carRecord, idx) => (
-            <Card key={carRecord.id} className="border-2 border-emerald-200 overflow-hidden">
+            )}
+
+            {/* Detalhe do CAR selecionado */}
+            <Card className="border-2 border-emerald-200 overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-emerald-50 to-transparent pb-3 border-b border-emerald-100">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
                     <h2 className="text-lg font-bold text-emerald-900">
                       {selectedProperty?.property_name || 'Propriedade'} {carRecords.length > 1 && `• CAR ${idx + 1}`}
                     </h2>
-                    {carRecord.car_number && <p className="text-sm text-emerald-600 mt-1">CAR: {carRecord.car_number}</p>}
+                    {carRecord.car_number && <p className="text-sm text-emerald-600 mt-1 font-mono text-xs">{carRecord.car_number}</p>}
                   </div>
                   <div className="flex items-center gap-2 flex-wrap justify-end">
                     {carRecord.native_vegetation_hectares ? (
@@ -424,19 +442,6 @@ export default function CARModule() {
                       </button>
                     )}
                     <CARStatusBadge status={carRecord.car_status} large />
-                    {canEdit && <Button variant="outline" size="sm" onClick={() => { setEditingCarId(carRecord.id); setEditOpen(true); }}>
-                      <Edit className="w-4 h-4" />
-                    </Button>}
-                    {canEdit && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-red-500 border-red-200 hover:bg-red-50 hover:border-red-400"
-                        onClick={() => setDeleteConfirmId(carRecord.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
                   </div>
                 </div>
               </CardHeader>
@@ -450,10 +455,8 @@ export default function CARModule() {
 
                 {/* OVERVIEW */}
                 <TabsContent value="overview" className="space-y-4">
-                  {/* Alertas */}
-                   <CARAlerts carRecord={carRecord} />
+                  <CARAlerts carRecord={carRecord} />
 
-                   {/* Status Info */}
                   <Card className="border border-gray-100">
                     <CardContent className="pt-4 grid sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                       <div>
@@ -492,7 +495,6 @@ export default function CARModule() {
                     </CardContent>
                   </Card>
 
-                  {/* Diagnóstico IA */}
                   {carRecord.ai_analysis && (
                     <div className="rounded-xl overflow-hidden border border-purple-200">
                       <div className="flex items-center gap-2 px-4 py-3 bg-purple-600">
@@ -535,14 +537,12 @@ export default function CARModule() {
                     </div>
                   )}
 
-                  {/* Documentos */}
                   <CARDocuments
                     carRecord={carRecord}
                     onUpdate={(data) => updateMapLayers.mutate(data)}
                     canEdit={canEdit}
                   />
 
-                  {/* Summary badges */}
                   <div className="grid sm:grid-cols-2 gap-4">
                     <Card>
                       <CardContent className="p-4 flex items-center gap-3">
@@ -571,7 +571,6 @@ export default function CARModule() {
 
                 {/* PRA / RECUPERAÇÃO */}
                 <TabsContent value="pra" className="space-y-4">
-                  {/* PRA */}
                   <Card>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-base flex items-center gap-2">
@@ -588,7 +587,6 @@ export default function CARModule() {
                         {carRecord.pra_environmental_agency && <div><p className="text-gray-500">Órgão Responsável</p><p className="font-semibold">{carRecord.pra_environmental_agency}</p></div>}
                         {carRecord.pra_notes && <div className="sm:col-span-2"><p className="text-gray-500">Observações</p><p className="text-gray-700">{carRecord.pra_notes}</p></div>}
                       </div>
-
                       {carRecord.environmental_liabilities?.length > 0 && (
                         <div>
                           <p className="text-sm font-semibold text-gray-700 mb-2">Passivos Ambientais</p>
@@ -602,7 +600,6 @@ export default function CARModule() {
                     </CardContent>
                   </Card>
 
-                  {/* Projeto de Recuperação */}
                   <Card>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-base flex items-center gap-2">
@@ -632,7 +629,7 @@ export default function CARModule() {
                     carRecord={carRecord}
                     onUpdate={(data) => updateMapLayers.mutate(data)}
                     property={selectedProperty}
-                    onPropertyUpdate={(updatedKmlLayers) => {
+                    onPropertyUpdate={() => {
                       queryClient.invalidateQueries(['properties', effectiveEmail, userType]);
                     }}
                   />
@@ -640,9 +637,9 @@ export default function CARModule() {
               </Tabs>
               </CardContent>
             </Card>
-          ))}
-        </div>
-      )}
+          </div>
+        );
+      })()}
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteConfirmId} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null); }}>

@@ -764,9 +764,9 @@ export default function PropertyMapView() {
         const somaCarApp = carRecords.reduce((s, c) => s + (parseFloat(c.app_hectares) || 0), 0);
         const somaCarTotal = carRecords.reduce((s, c) => s + (parseFloat(c.car_area_hectares) || 0), 0);
 
-        const exibeRL = somaCarRL > 0 ? somaCarRL.toFixed(2) : (selectedProperty?.legal_reserve_hectares ?? '—');
-        const exibeApp = somaCarApp > 0 ? somaCarApp.toFixed(2) : (selectedProperty?.app_hectares ?? '—');
-        const exibeTotal = somaCarTotal > 0 ? somaCarTotal.toFixed(2) : (selectedProperty?.total_hectares ?? '—');
+        const exibeRL = somaCarRL > 0 ? somaCarRL.toFixed(2) : (carRecords.length > 0 ? (selectedProperty?.legal_reserve_hectares ?? '—') : '—');
+        const exibeApp = somaCarApp > 0 ? somaCarApp.toFixed(2) : (carRecords.length > 0 ? (selectedProperty?.app_hectares ?? '—') : '—');
+        const exibeTotal = somaCarTotal > 0 ? somaCarTotal.toFixed(2) : (carRecords.length > 0 ? (selectedProperty?.total_hectares ?? '—') : '—');
 
         const labelRL = somaCarRL > 0 && carRecords.length > 1 ? 'Reserva Legal (soma CARs)' : 'Reserva Legal';
         const labelApp = somaCarApp > 0 && carRecords.length > 1 ? 'APP (soma CARs)' : 'APP';

@@ -659,6 +659,7 @@ export default function PropertyMapView() {
       {/* Advanced Map */}
        {selectedProperty ? (
          <AdvancedPropertyMap
+           key={selectedPropertyId}
            property={selectedProperty}
            onSave={handleSaveArea}
            LAYER_STYLES={LAYER_STYLES}

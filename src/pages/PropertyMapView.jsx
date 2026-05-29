@@ -477,8 +477,9 @@ export default function PropertyMapView() {
               <Upload className="w-3 h-3" /> Importar KML
             </Button>
 
-            {/* Uploaded KML layer chips — agrupados por CAR */}
-            {(() => {
+            {/* Uploaded KML layer chips */}
+            {kmlLayers.map(layer => {
+              // Calcula área do KML
               const calcArea = (geojson) => {
                 if (!geojson?.features) return null;
                 let totalArea = 0;
@@ -496,65 +497,37 @@ export default function PropertyMapView() {
                 });
                 return totalArea > 0 ? (totalArea / 10000).toFixed(2) : null;
               };
-
-              const renderChip = (layer) => {
-                const areaHa = calcArea(layer.geojson);
-                return (
-                  <div
-                    key={layer.id}
-                    className="flex items-center gap-1 px-2 py-1 rounded-lg border text-xs font-medium cursor-pointer transition-all"
-                    style={{
-                      backgroundColor: layer.visible ? layer.color + '22' : '#f9fafb',
-                      borderColor: layer.visible ? layer.color : '#e5e7eb',
-                      color: layer.visible ? layer.color : '#6b7280',
-                    }}
-                    onClick={() => toggleKmlLayer(layer.id)}
-                    title={areaHa ? `${areaHa} ha` : undefined}
-                  >
-                    <FileText className="w-3 h-3" />
-                    <span className="max-w-[100px] truncate" title={layer.name}>{layer.name}</span>
-                    {areaHa && <span className="text-xs opacity-70">({areaHa} ha)</span>}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); removeKmlLayer(layer.id); }}
-                      className="ml-0.5 hover:opacity-70"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                );
-              };
-
-              // Separar camadas com CAR das sem CAR
-              const withCar = kmlLayers.filter(l => l.car_number);
-              const withoutCar = kmlLayers.filter(l => !l.car_number);
-
-              // Agrupar por car_number
-              const grouped = withCar.reduce((acc, l) => {
-                if (!acc[l.car_number]) acc[l.car_number] = [];
-                acc[l.car_number].push(l);
-                return acc;
-              }, {});
-
+              const areaHa = calcArea(layer.geojson);
+              
               return (
-                <>
-                  {/* Camadas sem CAR (importadas manualmente) */}
-                  {withoutCar.map(renderChip)}
-
-                  {/* Grupos por CAR */}
-                  {Object.entries(grouped).map(([carNum, layers]) => (
-                    <div key={carNum} className="flex items-center gap-1 flex-wrap">
-                      <span
-                        className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 uppercase tracking-wide whitespace-nowrap"
-                        title={`CAR: ${carNum}`}
-                      >
-                        CAR {carNum.slice(-8)}…
-                      </span>
-                      {layers.map(renderChip)}
-                    </div>
-                  ))}
-                </>
+                <div
+                  key={layer.id}
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg border text-xs font-medium cursor-pointer transition-all"
+                  style={{
+                    backgroundColor: layer.visible ? layer.color + '22' : '#f9fafb',
+                    borderColor: layer.visible ? layer.color : '#e5e7eb',
+                    color: layer.visible ? layer.color : '#6b7280',
+                  }}
+                  onClick={() => toggleKmlLayer(layer.id)}
+                  title={areaHa ? `${areaHa} ha` : undefined}
+                >
+                  <FileText className="w-3 h-3" />
+                  <span className="max-w-[100px] truncate" title={layer.name}>{layer.name}</span>
+                  {layer.car_number && (
+                    <span className="text-[9px] opacity-60 font-normal border-l border-current pl-1 ml-0.5 truncate max-w-[60px]" title={`CAR: ${layer.car_number}`}>
+                      {layer.car_number.slice(0, 8)}…
+                    </span>
+                  )}
+                  {areaHa && <span className="text-xs opacity-70">({areaHa} ha)</span>}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); removeKmlLayer(layer.id); }}
+                    className="ml-0.5 hover:opacity-70"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
               );
-            })()}
+            })}
 
             {/* Export buttons */}
             {selectedProperty && (

@@ -129,38 +129,41 @@ function MapContent({
         />
       )}
 
-      {/* Built-in layers: suppressed entirely if ANY SICAR-imported kmlLayer exists (car_entity_id present),
-          because those kmlLayers already contain the same data with their own visibility toggles */}
-      {(() => {
-        const hasSicarLayers = (kmlLayers || []).some(l => l.car_entity_id || l.layer_type);
-        if (hasSicarLayers) return null;
+      {activeLayers.car && carGeoJson && (
+        <GeoJSON data={carGeoJson} style={LAYER_STYLES.car} />
+      )}
 
-        return (
-          <>
-            {activeLayers.car && carGeoJson && (
-              <GeoJSON data={carGeoJson} style={LAYER_STYLES.car} />
-            )}
-            {activeLayers.app && carLayers?.app_layer_url && (() => {
-              const gj = parseGeoJson(carLayers.app_layer_url);
-              return gj ? <GeoJSON data={gj} style={LAYER_STYLES.app} /> : null;
-            })()}
-            {activeLayers.legalReserve && carLayers?.legal_reserve_url && (() => {
-              const gj = parseGeoJson(carLayers.legal_reserve_url);
-              return gj ? <GeoJSON data={gj} style={LAYER_STYLES.legalReserve} /> : null;
-            })()}
-            {activeLayers.recovery && carLayers?.recovery_area_url && (() => {
-              const gj = parseGeoJson(carLayers.recovery_area_url);
-              return gj ? <GeoJSON data={gj} style={LAYER_STYLES.recovery} /> : null;
-            })()}
-            {activeLayers.consolidated && carLayers?.consolidated_area_url && (() => {
-              const gj = parseGeoJson(carLayers.consolidated_area_url);
-              return gj ? <GeoJSON data={gj} style={LAYER_STYLES.consolidated} /> : null;
-            })()}
-          </>
-        );
+      {activeLayers.app && carLayers?.app_layer_url && (() => {
+        const gj = parseGeoJson(carLayers.app_layer_url);
+        return gj ? <GeoJSON data={gj} style={LAYER_STYLES.app} /> : null;
       })()}
 
-      {/* propertyAreas are already included in kmlLayers with visibility toggle — no duplicate render here */}
+      {activeLayers.legalReserve && carLayers?.legal_reserve_url && (() => {
+        const gj = parseGeoJson(carLayers.legal_reserve_url);
+        return gj ? <GeoJSON data={gj} style={LAYER_STYLES.legalReserve} /> : null;
+      })()}
+
+      {propertyAreas?.map(area => {
+        const geojson = {
+          type: 'Feature',
+          geometry: { type: 'Polygon', coordinates: [area.coordinates] },
+          properties: { name: area.name, type: area.type }
+        };
+        return (
+          <GeoJSON
+            key={area.id}
+            data={geojson}
+            style={{ color: area.color, weight: 2.5, fillOpacity: 0.2, fillColor: area.color }}
+            onEachFeature={(feature, layer) => {
+              layer.on('click', () => {
+                if (!map) return;
+                const bounds = L.latLngBounds(area.coordinates.map(([lng, lat]) => [lat, lng]));
+                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+              });
+            }}
+          />
+        );
+      })}
 
       {kmlLayers?.filter(l => l.visible).map(layer => (
         <GeoJSON

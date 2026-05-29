@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { X, Plus, Users2, UserPlus } from 'lucide-react';
+import { X, Plus, Users2, UserPlus, Info } from 'lucide-react';
 
 const DIRECTIONS = ['Norte', 'Sul', 'Leste', 'Oeste', 'Nordeste', 'Noroeste', 'Sudeste', 'Sudoeste'];
 
@@ -397,6 +397,12 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
         {/* Campos RURAL */}
         {!isUrban && (
           <>
+            <div className="col-span-2 flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+              <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-blue-700">
+                <span className="font-semibold">Estes campos são opcionais aqui.</span> Ao cadastrar os CARs na <span className="font-semibold">Gestão do CAR</span>, os valores de Área Total, APP e Reserva Legal são calculados automaticamente a partir dos documentos oficiais e exibidos no Mapa Interativo.
+              </p>
+            </div>
             <div className="space-y-2">
               <Label>Total de Hectares</Label>
               <Input type="number" step="0.01" value={formData.total_hectares}
@@ -700,6 +706,12 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
             <div className="space-y-2 md:col-span-2">
               <Label>Número(s) do CAR</Label>
               {carNumbers.length > 0 && (
+                <p className="text-xs text-amber-600 flex items-center gap-1">
+                  <Info className="w-3 h-3 flex-shrink-0" />
+                  Os números do CAR são gerenciados automaticamente pela <span className="font-semibold ml-0.5">Gestão do CAR</span>. Alterações aqui podem causar inconsistências.
+                </p>
+              )}
+              {carNumbers.length > 0 && (
                 <div className="space-y-1.5 mb-2">
                   {carNumbers.map((car, idx) => (
                     <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-sm">
@@ -725,6 +737,9 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
                   Adicionar
                 </Button>
               </div>
+              {carNumbers.length === 0 && (
+                <p className="text-xs text-gray-400 mt-1">Recomendamos cadastrar os CARs pela Gestão do CAR para sincronização automática com o Mapa Interativo.</p>
+              )}
             </div>
           )}
           {isUrban && (

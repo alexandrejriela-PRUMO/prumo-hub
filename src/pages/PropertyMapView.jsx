@@ -805,7 +805,11 @@ export default function PropertyMapView() {
           coordinates={selectedProperty.coordinates}
           propertyName={selectedProperty.property_name}
           kmlLayers={kmlLayers}
-          carData={{ car_polygon: carGeoJson, app: null, legal_reserve: null }}
+          carData={{
+            car_polygon: carGeoJson,
+            app: kmlLayers.find(l => l.layer_type === 'app' && l.visible)?.geojson || null,
+            legal_reserve: kmlLayers.find(l => l.layer_type === 'legal_reserve' && l.visible)?.geojson || null,
+          }}
         />
       )}
 

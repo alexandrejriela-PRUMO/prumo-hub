@@ -636,28 +636,40 @@ export default function CARModule() {
                           <Badge key={l} className="bg-orange-100 text-orange-800 border border-orange-200 text-xs">{l}</Badge>
                         ))}
                       </div>
-                      {(carRecord.legal_reserve_to_recover_hectares > 0 || carRecord.app_to_recover_hectares > 0 || carRecord.use_restriction_to_recover_hectares > 0) && (
-                        <div className="grid grid-cols-2 gap-2 pt-1">
-                          {carRecord.legal_reserve_to_recover_hectares > 0 && (
-                            <div className="bg-white rounded-lg p-2 border border-orange-100 text-center">
-                              <p className="text-[10px] text-gray-500">RL a Recompor</p>
-                              <p className="text-sm font-bold text-orange-600">{carRecord.legal_reserve_to_recover_hectares} ha</p>
-                            </div>
-                          )}
-                          {carRecord.app_to_recover_hectares > 0 && (
-                            <div className="bg-white rounded-lg p-2 border border-orange-100 text-center">
-                              <p className="text-[10px] text-gray-500">APP a Recompor</p>
-                              <p className="text-sm font-bold text-orange-600">{carRecord.app_to_recover_hectares} ha</p>
-                            </div>
-                          )}
-                          {carRecord.use_restriction_to_recover_hectares > 0 && (
-                            <div className="bg-white rounded-lg p-2 border border-orange-100 text-center">
-                              <p className="text-[10px] text-gray-500">Uso Restrito a Recompor</p>
-                              <p className="text-sm font-bold text-orange-600">{carRecord.use_restriction_to_recover_hectares} ha</p>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                      {(() => {
+                        const passiveVal = parseFloat(carRecord.passive_rl_balance_hectares);
+                        const hasPassiveRL = !isNaN(passiveVal) && passiveVal < 0;
+                        const hasRecover = carRecord.legal_reserve_to_recover_hectares > 0 || carRecord.app_to_recover_hectares > 0 || carRecord.use_restriction_to_recover_hectares > 0;
+                        if (!hasRecover && !hasPassiveRL) return null;
+                        return (
+                          <div className="grid grid-cols-2 gap-2 pt-1">
+                            {hasPassiveRL && (
+                              <div className="bg-white rounded-lg p-2 border border-red-200 text-center">
+                                <p className="text-[10px] text-gray-500">Passivo RL (déficit)</p>
+                                <p className="text-sm font-bold text-red-600">{passiveVal.toFixed(2)} ha</p>
+                              </div>
+                            )}
+                            {carRecord.legal_reserve_to_recover_hectares > 0 && (
+                              <div className="bg-white rounded-lg p-2 border border-orange-100 text-center">
+                                <p className="text-[10px] text-gray-500">RL a Recompor</p>
+                                <p className="text-sm font-bold text-orange-600">{carRecord.legal_reserve_to_recover_hectares} ha</p>
+                              </div>
+                            )}
+                            {carRecord.app_to_recover_hectares > 0 && (
+                              <div className="bg-white rounded-lg p-2 border border-orange-100 text-center">
+                                <p className="text-[10px] text-gray-500">APP a Recompor</p>
+                                <p className="text-sm font-bold text-orange-600">{carRecord.app_to_recover_hectares} ha</p>
+                              </div>
+                            )}
+                            {carRecord.use_restriction_to_recover_hectares > 0 && (
+                              <div className="bg-white rounded-lg p-2 border border-orange-100 text-center">
+                                <p className="text-[10px] text-gray-500">Uso Restrito a Recompor</p>
+                                <p className="text-sm font-bold text-orange-600">{carRecord.use_restriction_to_recover_hectares} ha</p>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
 

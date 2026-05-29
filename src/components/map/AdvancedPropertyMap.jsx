@@ -143,27 +143,7 @@ function MapContent({
         return gj ? <GeoJSON data={gj} style={LAYER_STYLES.legalReserve} /> : null;
       })()}
 
-      {propertyAreas?.map(area => {
-        const geojson = {
-          type: 'Feature',
-          geometry: { type: 'Polygon', coordinates: [area.coordinates] },
-          properties: { name: area.name, type: area.type }
-        };
-        return (
-          <GeoJSON
-            key={area.id}
-            data={geojson}
-            style={{ color: area.color, weight: 2.5, fillOpacity: 0.2, fillColor: area.color }}
-            onEachFeature={(feature, layer) => {
-              layer.on('click', () => {
-                if (!map) return;
-                const bounds = L.latLngBounds(area.coordinates.map(([lng, lat]) => [lat, lng]));
-                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
-              });
-            }}
-          />
-        );
-      })}
+      {/* propertyAreas are already included in kmlLayers with visibility toggle — no duplicate render here */}
 
       {kmlLayers?.filter(l => l.visible).map(layer => (
         <GeoJSON

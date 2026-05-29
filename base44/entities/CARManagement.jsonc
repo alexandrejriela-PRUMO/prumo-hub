@@ -45,6 +45,50 @@
       "type": "number",
       "description": "\u00c1rea total declarada no CAR (ha)"
     },
+    "app_hectares": {
+      "type": "number",
+      "description": "\u00c1rea de APP (ha)"
+    },
+    "legal_reserve_hectares": {
+      "type": "number",
+      "description": "\u00c1rea de Reserva Legal (ha)"
+    },
+    "consolidated_area_hectares": {
+      "type": "number",
+      "description": "\u00c1rea Consolidada (ha)"
+    },
+    "legal_reserve_to_recover_hectares": {
+      "type": "number",
+      "description": "Reserva Legal a recompor (ha)"
+    },
+    "app_to_recover_hectares": {
+      "type": "number",
+      "description": "APP a recompor (ha)"
+    },
+    "owner_name": {
+      "type": "string",
+      "description": "Nome do propriet\u00e1rio extra\u00eddo do CAR"
+    },
+    "municipality": {
+      "type": "string",
+      "description": "Munic\u00edpio do im\u00f3vel"
+    },
+    "state": {
+      "type": "string",
+      "description": "Estado (UF) do im\u00f3vel"
+    },
+    "registration_numbers": {
+      "type": "string",
+      "description": "Matr\u00edculas do im\u00f3vel"
+    },
+    "coordinates": {
+      "type": "string",
+      "description": "Coordenadas GPS do im\u00f3vel"
+    },
+    "ai_analysis": {
+      "type": "string",
+      "description": "An\u00e1lise t\u00e9cnica ambiental gerada pela IA via Smart Upload"
+    },
     "car_inconsistencies": {
       "type": "string",
       "description": "Descri\u00e7\u00e3o das inconsist\u00eancias apontadas"
@@ -187,9 +231,6 @@
           "type": "string"
         },
         "recovery_area_url": {
-          "type": "string"
-        },
-        "ai_analysis": {
           "type": "string"
         }
       },

@@ -25,7 +25,6 @@ const defaultForm = {
   app_hectares: '',
   legal_reserve_hectares: '',
   consolidated_area_hectares: '',
-  native_vegetation_hectares: '',
   legal_reserve_to_recover_hectares: '',
   app_to_recover_hectares: '',
   owner_name: '',
@@ -77,7 +76,6 @@ export default function CARForm({ initial, onSubmit, onCancel, isLoading, aiAnal
       native_vegetation_hectares: form.native_vegetation_hectares !== '' ? parseFloat(form.native_vegetation_hectares) : null,
       legal_reserve_to_recover_hectares: form.legal_reserve_to_recover_hectares !== '' ? parseFloat(form.legal_reserve_to_recover_hectares) : null,
       app_to_recover_hectares: form.app_to_recover_hectares !== '' ? parseFloat(form.app_to_recover_hectares) : null,
-      native_vegetation_hectares: form.native_vegetation_hectares !== '' ? parseFloat(form.native_vegetation_hectares) : null,
       passive_rl_balance_hectares: form.passive_rl_balance_hectares !== '' ? parseFloat(form.passive_rl_balance_hectares) : null,
       use_restriction_to_recover_hectares: form.use_restriction_to_recover_hectares !== '' ? parseFloat(form.use_restriction_to_recover_hectares) : null,
     };

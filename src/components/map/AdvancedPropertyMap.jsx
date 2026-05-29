@@ -6,6 +6,7 @@ import MapDrawingToolbar from './MapDrawingToolbar';
 import CoordinateInputPanel from './CoordinateInputPanel';
 import MapMeasurementTools from './MapMeasurementTools';
 import SaveAreaModal from './SaveAreaModal';
+import MapLayersPanel from './MapLayersPanel';
 import { toast } from 'sonner';
 
 const AREA_TYPES = {
@@ -191,7 +192,11 @@ export default function AdvancedPropertyMap({
   onLayerToggle,
   parseGeoJson,
   onKmlImport,
-  allGeoJsonLayers = []
+  allGeoJsonLayers = [],
+  // Layer panel props
+  onToggleKmlLayer,
+  onRemoveKmlLayer,
+  layerFileInputRef,
 }) {
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawnGeometry, setDrawnGeometry] = useState(null);
@@ -402,9 +407,23 @@ export default function AdvancedPropertyMap({
         measurements={measurements}
       />
 
-      {/* Tools row */}
+      {/* Floating Layers Panel */}
+      {!isDrawing && onToggleKmlLayer && (
+        <MapLayersPanel
+          activeLayers={activeLayers}
+          onToggleLayer={onLayerToggle}
+          kmlLayers={kmlLayers}
+          onToggleKmlLayer={onToggleKmlLayer}
+          onRemoveKmlLayer={onRemoveKmlLayer}
+          onKmlUpload={onKmlImport}
+          propertyName={property?.property_name || ''}
+          fileInputRef={layerFileInputRef}
+        />
+      )}
+
+      {/* Tools row (coordinate input + save) */}
       {!isDrawing && (
-        <div className="absolute top-4 right-4 z-[500] flex gap-2 bg-white/95 backdrop-blur rounded-xl shadow-lg p-3 border border-gray-200">
+        <div className="absolute top-3 left-3 z-[500] flex gap-2 bg-white/95 backdrop-blur rounded-xl shadow-lg p-2 border border-gray-200">
           <CoordinateInputPanel onAddPolygon={handleAddPolygon} />
           {drawnGeometry && <MapMeasurementTools geometry={drawnGeometry} />}
           {drawnGeometry && (

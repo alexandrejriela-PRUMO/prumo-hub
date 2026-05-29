@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MapPin, Layers, Info, TreePine, Droplets, Upload, Download, X, FileText, Satellite, ChevronLeft } from 'lucide-react';
+import { MapPin, Info, TreePine, Droplets, ChevronLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import NDVIPanel from '@/components/map/NDVIPanel';
@@ -421,14 +421,6 @@ export default function PropertyMapView() {
     return list;
   }, [carGeoJson, carLayers, kmlLayers]);
 
-  const builtinLayerButtons = [
-    { key: 'car', label: 'CAR', icon: '📋' },
-    { key: 'app', label: 'APP', icon: '💧' },
-    { key: 'legalReserve', label: 'Reserva Legal', icon: '🌳' },
-    { key: 'recovery', label: 'Recuperação', icon: '🔴' },
-    { key: 'consolidated', label: 'Consolidada', icon: '🟣' },
-  ];
-
   const handleSaveArea = async (area) => {
       if (!selectedProperty || savingRef.current) return;
       savingRef.current = true;
@@ -474,38 +466,6 @@ export default function PropertyMapView() {
       }
     });
     return totalArea > 0 ? (totalArea / 10000).toFixed(2) : null;
-  };
-
-  const renderKmlChip = (layer) => {
-    const areaHa = calcKmlArea(layer.geojson);
-    return (
-      <div
-        key={layer.id}
-        className="flex items-center gap-1 px-2 py-1 rounded-lg border text-xs font-medium cursor-pointer transition-all"
-        style={{
-          backgroundColor: layer.visible ? layer.color + '22' : '#f9fafb',
-          borderColor: layer.visible ? layer.color : '#e5e7eb',
-          color: layer.visible ? layer.color : '#6b7280',
-        }}
-        onClick={() => toggleKmlLayer(layer.id)}
-        title={areaHa ? `${areaHa} ha` : undefined}
-      >
-        <FileText className="w-3 h-3" />
-        <span className="max-w-[100px] truncate" title={layer.name}>{layer.name}</span>
-        {layer.car_number && (
-          <span className="text-[9px] opacity-60 font-normal border-l border-current pl-1 ml-0.5 truncate max-w-[60px]" title={`CAR: ${layer.car_number}`}>
-            {layer.car_number.slice(0, 8)}…
-          </span>
-        )}
-        {areaHa && <span className="text-xs opacity-70">({areaHa} ha)</span>}
-        <button
-          onClick={(e) => { e.stopPropagation(); removeKmlLayer(layer.id); }}
-          className="ml-0.5 hover:opacity-70"
-        >
-          <X className="w-3 h-3" />
-        </button>
-      </div>
-    );
   };
 
   return (
@@ -568,169 +528,6 @@ export default function PropertyMapView() {
         </div>
       )}
 
-      {/* Layer Controls */}
-      <Card className="border-gray-200">
-        <CardContent className="p-3 space-y-3">
-          {/* Satellite toggle + builtin layers */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5 mr-1">
-              <Layers className="w-4 h-4 text-gray-500" />
-              <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Base:</span>
-            </div>
-            <button
-              onClick={() => toggleLayer('satellite')}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border",
-                activeLayers.satellite
-                  ? "bg-blue-600 text-white border-blue-500 shadow-sm"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-700"
-              )}
-            >
-              🛰️ Satélite Google
-            </button>
-            <div className="h-4 w-px bg-gray-200 mx-1" />
-            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Camadas:</span>
-            {builtinLayerButtons.map(({ key, label, icon }) => (
-              <button
-                key={key}
-                onClick={() => toggleLayer(key)}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border",
-                  activeLayers[key]
-                    ? "bg-emerald-700 text-white border-emerald-600 shadow-sm"
-                    : "bg-white text-gray-600 border-gray-200 hover:border-emerald-400 hover:text-emerald-700"
-                )}
-              >
-                <span>{icon}</span>{label}
-              </button>
-            ))}
-          </div>
-
-          {/* Linha 2: Importar KML */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <input ref={fileInputRef} type="file" accept=".kml" multiple className="hidden" onChange={handleKmlUpload} />
-            <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5 border-dashed" onClick={() => fileInputRef.current?.click()}>
-              <Upload className="w-3 h-3" /> Importar KML
-            </Button>
-            {kmlLayers.filter(l => l.source !== 'SICAR').map(layer => renderKmlChip(layer))}
-          </div>
-
-          {/* Blocos SICAR por CAR */}
-          {(() => {
-            const LAYER_LABELS = {
-              car_polygon: 'Perímetro',
-              app: 'APP',
-              legal_reserve: 'Reserva Legal',
-              consolidated_area: 'Á. Consolidada',
-              remanescente: 'Veg. Nativa',
-              pousio: 'Pousio',
-              hidrografia: 'Hidrografia',
-              servidoes: 'Servidões',
-              outro_uso_restrito: 'Uso Restrito',
-            };
-
-            const sicarLayers = kmlLayers.filter(l => l.source === 'SICAR');
-            if (!sicarLayers.length) return null;
-
-            const groups = sicarLayers.reduce((acc, l) => {
-              const key = l.car_number || 'SICAR';
-              if (!acc[key]) acc[key] = [];
-              acc[key].push(l);
-              return acc;
-            }, {});
-
-            return Object.entries(groups).map(([carNum, layers]) => {
-              const allVisible = layers.every(l => l.visible);
-              const perimetro = layers.find(l => l.layer_type === 'car_polygon');
-              const areaHa = perimetro ? calcKmlArea(perimetro.geojson) : null;
-
-              return (
-                <div key={carNum} className="border border-amber-200 rounded-xl bg-amber-50/40 p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-amber-800">
-                        📋 CAR: …{carNum !== 'SICAR' ? carNum.slice(-20) : 'SICAR'}
-                      </span>
-                      {areaHa && (
-                        <span className="text-[10px] text-amber-600 bg-amber-100 border border-amber-200 rounded px-1.5 py-0.5">
-                          {areaHa} ha
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => {
-                        const updated = kmlLayers.map(l =>
-                          l.car_number === carNum ? { ...l, visible: !allVisible } : l
-                        );
-                        setKmlLayers(updated);
-                        saveKmlLayers(updated);
-                      }}
-                      className={`text-[10px] px-2 py-0.5 rounded border transition-all ${
-                        allVisible
-                          ? 'bg-amber-600 text-white border-amber-500 hover:bg-amber-700'
-                          : 'bg-white text-amber-700 border-amber-300 hover:bg-amber-50'
-                      }`}
-                    >
-                      {allVisible ? 'Ocultar tudo' : 'Mostrar tudo'}
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {layers.map(layer => {
-                      const areaHa = calcKmlArea(layer.geojson);
-                      const friendlyName = LAYER_LABELS[layer.layer_type] || layer.name;
-                      return (
-                        <div
-                          key={layer.id}
-                          className="flex items-center gap-1 px-2 py-1 rounded-lg border text-xs font-medium cursor-pointer transition-all"
-                          style={{
-                            backgroundColor: layer.visible ? layer.color + '22' : '#f9fafb',
-                            borderColor: layer.visible ? layer.color : '#e5e7eb',
-                            color: layer.visible ? layer.color : '#6b7280',
-                          }}
-                          onClick={() => toggleKmlLayer(layer.id)}
-                        >
-                          <span>{friendlyName}</span>
-                          {areaHa && <span className="opacity-70">({areaHa} ha)</span>}
-                          <button
-                            onClick={(e) => { e.stopPropagation(); removeKmlLayer(layer.id); }}
-                            className="ml-0.5 hover:opacity-70"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="flex items-center gap-1.5 pt-1.5 border-t border-amber-100 flex-wrap">
-                    <span className="text-[10px] text-amber-600 font-semibold">Exportar:</span>
-                    {layers.map(layer => {
-                      const exportLabel = LAYER_LABELS_EXPORT[layer.layer_type] || layer.name;
-                      const friendlyName = LAYER_LABELS[layer.layer_type] || layer.name;
-                      return (
-                        <button
-                          key={layer.id}
-                          onClick={() => exportSicarLayer(carNum, layer.layer_type, exportLabel)}
-                          className="flex items-center gap-1 px-2 py-0.5 rounded border border-amber-200 text-[10px] text-amber-700 hover:bg-amber-100 hover:border-amber-400 transition-all"
-                          title={`Exportar ${friendlyName} como KML`}
-                        >
-                          <Download className="w-2.5 h-2.5" />{friendlyName}
-                        </button>
-                      );
-                    })}
-                    <button
-                      onClick={() => exportAllSicarLayers(carNum)}
-                      className="flex items-center gap-1 px-2 py-0.5 rounded border border-amber-400 bg-amber-50 text-[10px] text-amber-800 font-semibold hover:bg-amber-100 transition-all ml-auto"
-                    >
-                      <Download className="w-2.5 h-2.5" /> Exportar tudo
-                    </button>
-                  </div>
-                </div>
-              );
-            });
-          })()}
-        </CardContent>
-      </Card>
-
       {/* Advanced Map */}
        {selectedProperty ? (
          <AdvancedPropertyMap
@@ -747,6 +544,9 @@ export default function PropertyMapView() {
            parseGeoJson={parseGeoJson}
            onKmlImport={handleKmlUpload}
            allGeoJsonLayers={allGeoJsonLayers}
+           onToggleKmlLayer={toggleKmlLayer}
+           onRemoveKmlLayer={removeKmlLayer}
+           layerFileInputRef={fileInputRef}
          />
       ) : (
         <Card>

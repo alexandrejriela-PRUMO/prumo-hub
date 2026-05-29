@@ -47,9 +47,24 @@ export default function MapBiomasAlerts({ selectedProperty, selectedPropertyId }
     }
   };
 
+  const { data: carRecords = [] } = useQuery({
+    queryKey: ['carManagement-alerts', selectedPropertyId],
+    queryFn: () => base44.entities.CARManagement.filter({ property_id: selectedPropertyId }),
+    enabled: !!selectedPropertyId,
+  });
+
+  // Fonte primária: CARManagement
+  const carsFromManagement = carRecords
+    .map(c => c.car_number?.trim())
+    .filter(Boolean);
+
+  // Fallback: campos legados da Property
   const carNumbers = selectedProperty?.car_numbers?.filter(c => c?.trim()) || [];
   const legacyCar = selectedProperty?.car_number?.trim();
-  const allCars = [...carNumbers, ...(legacyCar ? [legacyCar] : [])];
+  const legacyCars = [...carNumbers, ...(legacyCar && !carNumbers.includes(legacyCar) ? [legacyCar] : [])];
+
+  // Usa CARManagement se tiver dados, senão fallback
+  const allCars = carsFromManagement.length > 0 ? carsFromManagement : legacyCars;
 
   if (allCars.length === 0) {
     return (
@@ -60,7 +75,7 @@ export default function MapBiomasAlerts({ selectedProperty, selectedPropertyId }
             <div>
               <h3 className="font-semibold text-amber-900">CAR Não Cadastrado</h3>
               <p className="text-sm text-amber-800 mt-1">
-                Para sincronizar alertas do MapBiomas, é necessário cadastrar o número do CAR desta propriedade.
+                Para sincronizar alertas do MapBiomas, cadastre o número do CAR na Gestão do CAR desta propriedade.
               </p>
             </div>
           </div>

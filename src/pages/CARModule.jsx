@@ -267,6 +267,16 @@ export default function CARModule() {
     },
   });
 
+  const cleanedPrefillData = prefillData ? (() => {
+    const cleaned = Object.fromEntries(
+      Object.entries(prefillData).filter(([key]) => !key.startsWith('_'))
+    );
+    if (!cleaned.ai_analysis && prefillData._ai_analysis) {
+      cleaned.ai_analysis = prefillData._ai_analysis;
+    }
+    return cleaned;
+  })() : null;
+
   if (!effectiveEmail) return <div className="flex items-center justify-center h-64"><Skeleton className="w-48 h-8" /></div>;
 
   return (
@@ -698,7 +708,7 @@ export default function CARModule() {
                 </div>
               )}
               <CARForm
-                initial={editingCarId ? carRecords.find(c => c.id === editingCarId) || {} : (prefillData || {})}
+                initial={editingCarId ? carRecords.find(c => c.id === editingCarId) || {} : (cleanedPrefillData || {})}
                 onSubmit={async (data) => {
                   // Se veio de prefillData, atualiza Property com dados extras extraídos pela IA
                   if (prefillData && selectedProperty) {
@@ -728,7 +738,7 @@ export default function CARModule() {
                 }}
                 onCancel={() => { setEditOpen(false); setEditingCarId(null); setPrefillData(null); setShowSmartUpload(false); }}
                 isLoading={saveMutation.isPending}
-                aiAnalysis={prefillData?._ai_analysis}
+                aiAnalysis={cleanedPrefillData?.ai_analysis}
               />
             </>
           )}

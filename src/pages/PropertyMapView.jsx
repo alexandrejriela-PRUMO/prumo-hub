@@ -235,6 +235,7 @@ export default function PropertyMapView() {
   // Carregar KML layers ao trocar propriedade — deduplica por id
   useEffect(() => {
     if (!selectedProperty) return;
+    if (!carRecordsLoaded) return; // aguarda query terminar antes de limpar
     const saved = selectedProperty.kml_layers || [];
     // Deduplica por id mantendo apenas a primeira ocorrência
     const seen = new Set();
@@ -293,7 +294,7 @@ export default function PropertyMapView() {
 
     setKmlLayers(semOrfas);
     setDrawnGeometry(null);
-  }, [selectedPropertyId, carRecords]);
+  }, [selectedPropertyId, carRecords, carRecordsLoaded]);
 
   const { data: carData } = useQuery({
     queryKey: ['carManagement', selectedPropertyId],
@@ -302,7 +303,7 @@ export default function PropertyMapView() {
     select: data => data[0],
   });
 
-  const { data: carRecords = [] } = useQuery({
+  const { data: carRecords = [], isSuccess: carRecordsLoaded } = useQuery({
     queryKey: ['carRecordsMap', selectedPropertyId],
     queryFn: () => base44.entities.CARManagement.filter({ property_id: selectedPropertyId }),
     enabled: !!selectedPropertyId,

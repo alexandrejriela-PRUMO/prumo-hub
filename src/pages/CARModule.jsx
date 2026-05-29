@@ -225,9 +225,24 @@ export default function CARModule() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (carId) => base44.entities.CARManagement.delete(carId),
+    mutationFn: async (carId) => {
+      const carRecord = carRecords.find(c => c.id === carId);
+
+      await base44.entities.CARManagement.delete(carId);
+
+      if (carRecord?.car_number && selectedProperty) {
+        const kmlAtual = selectedProperty.kml_layers || [];
+        const kmlLimpo = kmlAtual.filter(l => l.car_number !== carRecord.car_number);
+        await base44.entities.Property.update(selectedProperty.id, { kml_layers: kmlLimpo });
+
+        const carsAtuais = selectedProperty.car_numbers || [];
+        const carsFiltrados = carsAtuais.filter(n => n !== carRecord.car_number);
+        await base44.entities.Property.update(selectedProperty.id, { car_numbers: carsFiltrados });
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['car', effectivePropertyId]);
+      queryClient.invalidateQueries(['properties', effectiveEmail, userType]);
       setDeleteConfirmId(null);
     },
   });
@@ -588,12 +603,12 @@ export default function CARModule() {
               Excluir CAR
             </DialogTitle>
           </DialogHeader>
-          <div className="py-2">
-            <p className="text-sm text-gray-700">Tem certeza que deseja excluir este CAR? Esta ação não pode ser desfeita.</p>
+          <div className="py-2 space-y-2">
+            <p className="text-sm text-gray-700">Tem certeza? Esta ação irá excluir o CAR e remover todas as camadas do Mapa Interativo.</p>
             {(() => {
               const car = carRecords.find(c => c.id === deleteConfirmId);
               return car?.car_number ? (
-                <p className="text-xs text-gray-500 mt-2 font-mono bg-gray-50 p-2 rounded border">{car.car_number}</p>
+                <p className="text-xs text-gray-500 font-mono bg-gray-50 p-2 rounded border break-all">{car.car_number}</p>
               ) : null;
             })()}
           </div>

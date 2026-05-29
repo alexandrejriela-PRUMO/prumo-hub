@@ -261,7 +261,7 @@ export default function CARModule() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['carManagement', selectedPropertyId || effectivePropertyId]);
+      queryClient.invalidateQueries(['car', effectivePropertyId]);
       queryClient.invalidateQueries(['properties', effectiveEmail, userType]);
       setDeleteConfirmId(null);
     },

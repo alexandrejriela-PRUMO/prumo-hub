@@ -115,6 +115,22 @@ export default function CARModule() {
   const [showSmartUpload, setShowSmartUpload] = useState(false);
   const [prefillData, setPrefillData] = useState(null);
 
+  const deleteMutation = useMutation({
+    mutationFn: async (carRecord) => {
+      await base44.entities.CARManagement.delete(carRecord.id);
+      // Remove car_number from Property.car_numbers
+      if (carRecord.car_number && selectedProperty) {
+        const updated = (selectedProperty.car_numbers || []).filter(n => n !== carRecord.car_number);
+        await base44.entities.Property.update(selectedProperty.id, { car_numbers: updated });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['car', effectivePropertyId]);
+      queryClient.invalidateQueries(['properties', effectiveEmail, userType]);
+      toast.success('CAR excluído com sucesso.');
+    },
+  });
+
   const saveMutation = useMutation({
     mutationFn: async (data) => {
       const carData = editingCarId
@@ -254,9 +270,26 @@ export default function CARModule() {
                   </div>
                   <div className="flex items-center gap-2">
                     <CARStatusBadge status={carRecord.car_status} large />
-                    {canEdit && <Button variant="outline" size="sm" onClick={() => { setEditingCarId(carRecord.id); setEditOpen(true); }}>
-                      <Edit className="w-4 h-4" />
-                    </Button>}
+                    {canEdit && (
+                      <>
+                        <Button variant="outline" size="sm" onClick={() => { setEditingCarId(carRecord.id); setEditOpen(true); }}>
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-red-200 text-red-600 hover:bg-red-50"
+                          onClick={() => {
+                            if (window.confirm(`Excluir o CAR "${carRecord.car_number || 'sem número'}"? Esta ação não pode ser desfeita.`)) {
+                              deleteMutation.mutate(carRecord);
+                            }
+                          }}
+                          disabled={deleteMutation.isPending}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               </CardHeader>

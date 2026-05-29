@@ -15,6 +15,9 @@ import MapLayersPanel from '@/components/map/MapLayersPanel';
 import { useEffectiveUser } from '@/hooks/useEffectiveUser';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
 // KML to GeoJSON inline parser (no external dependency)
 function kml(doc) {
   const features = [];
@@ -49,8 +52,6 @@ function kml(doc) {
   });
   return { type: 'FeatureCollection', features };
 }
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({

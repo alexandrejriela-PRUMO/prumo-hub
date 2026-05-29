@@ -357,6 +357,36 @@ export default function CARModule() {
                   {/* Alertas */}
                   <CARAlerts carRecord={carRecord} />
 
+                  {/* Tarja de cadastro incompleto */}
+                  {(() => {
+                    const camposFaltantes = [
+                      !carRecord.car_area_hectares && 'Área Total',
+                      !carRecord.app_hectares && 'APP (ha)',
+                      !carRecord.legal_reserve_hectares && 'Reserva Legal (ha)',
+                      !carRecord.car_registration_date && 'Data de Cadastro',
+                      (!carRecord.environmental_liabilities || carRecord.environmental_liabilities.length === 0) && 'Passivos Ambientais',
+                      !carRecord.ai_analysis && 'Diagnóstico IA',
+                    ].filter(Boolean);
+                    return camposFaltantes.length > 0 ? (
+                      <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs font-semibold text-amber-800 mb-1.5">Cadastro incompleto</p>
+                          <div className="flex flex-wrap gap-1 mb-1.5">
+                            {camposFaltantes.map(campo => (
+                              <span key={campo} className="text-[10px] bg-amber-100 border border-amber-300 text-amber-700 rounded px-1.5 py-0.5">
+                                {campo}
+                              </span>
+                            ))}
+                          </div>
+                          <p className="text-[10px] text-amber-600">
+                            Use "Preencher com PDF do CAR" para completar automaticamente →
+                          </p>
+                        </div>
+                      </div>
+                    ) : null;
+                  })()}
+
                   {/* Status Info */}
                   <Card className="border border-gray-100">
                     <CardContent className="pt-4 grid sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm">

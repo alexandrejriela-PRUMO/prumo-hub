@@ -278,6 +278,12 @@ export default function PropertyMapView() {
     select: data => data[0],
   });
 
+  const { data: carRecords = [] } = useQuery({
+    queryKey: ['carRecordsMap', selectedPropertyId],
+    queryFn: () => base44.entities.CARManagement.filter({ property_id: selectedPropertyId }),
+    enabled: !!selectedPropertyId,
+  });
+
   const saveKmlLayers = async (layers) => {
     if (!selectedPropertyId || savingRef.current) return;
     savingRef.current = true;
@@ -702,41 +708,57 @@ export default function PropertyMapView() {
       )}
 
       {/* Info Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Card className="border-amber-100 bg-amber-50/50">
-          <CardContent className="p-4 flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
-              <TreePine className="w-4 h-4 text-amber-700" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-amber-800 uppercase tracking-wide">Reserva Legal</p>
-              <p className="text-lg font-bold text-amber-900">{selectedProperty?.legal_reserve_hectares ?? '—'} <span className="text-sm font-normal">ha</span></p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-blue-100 bg-blue-50/50">
-          <CardContent className="p-4 flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-              <Droplets className="w-4 h-4 text-blue-700" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-blue-800 uppercase tracking-wide">APP</p>
-              <p className="text-lg font-bold text-blue-900">{selectedProperty?.app_hectares ?? '—'} <span className="text-sm font-normal">ha</span></p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-emerald-100 bg-emerald-50/50">
-          <CardContent className="p-4 flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
-              <MapPin className="w-4 h-4 text-emerald-700" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-emerald-800 uppercase tracking-wide">Área Total</p>
-              <p className="text-lg font-bold text-emerald-900">{selectedProperty?.total_hectares ?? '—'} <span className="text-sm font-normal">ha</span></p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {(() => {
+        const somaCarRL = carRecords.reduce((s, c) => s + (parseFloat(c.legal_reserve_hectares) || 0), 0);
+        const somaCarApp = carRecords.reduce((s, c) => s + (parseFloat(c.app_hectares) || 0), 0);
+        const somaCarTotal = carRecords.reduce((s, c) => s + (parseFloat(c.car_area_hectares) || 0), 0);
+
+        const exibeRL = somaCarRL > 0 ? somaCarRL.toFixed(2) : (selectedProperty?.legal_reserve_hectares ?? '—');
+        const exibeApp = somaCarApp > 0 ? somaCarApp.toFixed(2) : (selectedProperty?.app_hectares ?? '—');
+        const exibeTotal = somaCarTotal > 0 ? somaCarTotal.toFixed(2) : (selectedProperty?.total_hectares ?? '—');
+
+        const labelRL = somaCarRL > 0 && carRecords.length > 1 ? 'Reserva Legal (soma CARs)' : 'Reserva Legal';
+        const labelApp = somaCarApp > 0 && carRecords.length > 1 ? 'APP (soma CARs)' : 'APP';
+        const labelTotal = somaCarTotal > 0 && carRecords.length > 1 ? 'Área Total (soma CARs)' : 'Área Total';
+
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Card className="border-amber-100 bg-amber-50/50">
+              <CardContent className="p-4 flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                  <TreePine className="w-4 h-4 text-amber-700" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-amber-800 uppercase tracking-wide">{labelRL}</p>
+                  <p className="text-lg font-bold text-amber-900">{exibeRL} <span className="text-sm font-normal">ha</span></p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-blue-100 bg-blue-50/50">
+              <CardContent className="p-4 flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                  <Droplets className="w-4 h-4 text-blue-700" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-blue-800 uppercase tracking-wide">{labelApp}</p>
+                  <p className="text-lg font-bold text-blue-900">{exibeApp} <span className="text-sm font-normal">ha</span></p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-emerald-100 bg-emerald-50/50">
+              <CardContent className="p-4 flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                  <MapPin className="w-4 h-4 text-emerald-700" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-emerald-800 uppercase tracking-wide">{labelTotal}</p>
+                  <p className="text-lg font-bold text-emerald-900">{exibeTotal} <span className="text-sm font-normal">ha</span></p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      })()}
 
       {/* NDVI GEE Panel */}
       {selectedProperty && (

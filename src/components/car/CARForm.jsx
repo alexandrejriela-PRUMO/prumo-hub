@@ -142,22 +142,20 @@ export default function CARForm({ initial, onSubmit, onCancel, isLoading, aiAnal
             </>}
           </div>
 
-          {showPRA && (
-            <div>
-              <Label className="text-xs font-semibold text-gray-700">Tipos de Passivo Ambiental</Label>
-              <div className="grid sm:grid-cols-2 gap-2 mt-2">
-                {LIABILITIES.map(lib => (
-                  <label key={lib} className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
-                    <Checkbox
-                      checked={form.environmental_liabilities.includes(lib)}
-                      onCheckedChange={() => toggleLiability(lib)}
-                    />
-                    <span className="text-sm text-gray-700">{lib}</span>
-                  </label>
-                ))}
-              </div>
+          <div>
+            <Label className="text-xs font-semibold text-gray-700">Tipos de Passivo Ambiental</Label>
+            <div className="grid sm:grid-cols-2 gap-2 mt-2">
+              {LIABILITIES.map(lib => (
+                <label key={lib} className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <Checkbox
+                    checked={form.environmental_liabilities.includes(lib)}
+                    onCheckedChange={() => toggleLiability(lib)}
+                  />
+                  <span className="text-sm text-gray-700">{lib}</span>
+                </label>
+              ))}
             </div>
-          )}
+          </div>
         </CardContent>
       </Card>
 

@@ -740,6 +740,7 @@ export default function CARModule() {
                 </div>
               )}
               <CARForm
+                key={editingCarId || (prefillData ? 'prefill' : 'new')}
                 initial={editingCarId ? carRecords.find(c => c.id === editingCarId) || {} : (cleanedPrefillData || {})}
                 onSubmit={async (data) => {
                   // Se veio de prefillData, atualiza Property com dados extras extraídos pela IA

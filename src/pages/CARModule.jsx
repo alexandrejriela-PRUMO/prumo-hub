@@ -57,11 +57,36 @@ const SICAR_LAYER_KEYS = {
   uso_restrito: 'outro_uso_restrito_url',
 };
 
+const SICAR_LAYER_COLORS = {
+  car_polygon: '#f59e0b',
+  app: '#3b82f6',
+  legal_reserve: '#10b981',
+  consolidated_area: '#8b5cf6',
+  remanescente: '#0f766e',
+  pousio: '#f59e0b',
+  hidrografia: '#0284c7',
+  servidao: '#be123c',
+  uso_restrito: '#7c3aed',
+};
+
+const SICAR_LAYER_NAMES = {
+  car_polygon: 'Polígono do CAR',
+  app: 'APP',
+  legal_reserve: 'Reserva Legal',
+  consolidated_area: 'Área Consolidada',
+  remanescente: 'Vegetação Nativa',
+  pousio: 'Pousio',
+  hidrografia: 'Hidrografia',
+  servidao: 'Servidão Administrativa',
+  uso_restrito: 'Uso Restrito',
+};
+
 async function fetchSICARLayers(carNumber) {
   const res = await fetch(`${R2_BASE}/${carNumber}.geojson`);
   if (!res.ok) return null;
   const geojson = await res.json();
   if (!geojson.features?.length) return null;
+
   const byLayer = {};
   geojson.features.forEach(f => {
     const layer = f.properties?._layer;
@@ -69,12 +94,27 @@ async function fetchSICARLayers(carNumber) {
     if (!byLayer[layer]) byLayer[layer] = { type: 'FeatureCollection', features: [] };
     byLayer[layer].features.push(f);
   });
+
   const mapLayers = {};
+  const kmlItems = [];
+
   Object.entries(byLayer).forEach(([layer, fc]) => {
-    const key = SICAR_LAYER_KEYS[layer];
-    if (key) mapLayers[key] = JSON.stringify(fc);
+    const mapKey = SICAR_LAYER_KEYS[layer];
+    if (mapKey) mapLayers[mapKey] = JSON.stringify(fc);
+
+    kmlItems.push({
+      id: `sicar-${carNumber}-${layer}`,
+      name: SICAR_LAYER_NAMES[layer] || layer,
+      geojson: fc,
+      color: SICAR_LAYER_COLORS[layer] || '#6b7280',
+      visible: true,
+      car_number: carNumber,
+      layer_type: layer,
+      source: 'SICAR',
+    });
   });
-  return Object.keys(mapLayers).length > 0 ? mapLayers : null;
+
+  return Object.keys(mapLayers).length > 0 ? { mapLayers, kmlItems } : null;
 }
 
 export default function CARModule() {
@@ -152,9 +192,18 @@ export default function CARModule() {
 
       let sicarLoaded = false;
       if (data.car_number) {
-        const sicarLayers = await fetchSICARLayers(data.car_number).catch(() => null);
-        if (sicarLayers) {
-          await base44.entities.CARManagement.update(carData.id, { map_layers: sicarLayers });
+        const sicar = await fetchSICARLayers(data.car_number).catch(() => null);
+        if (sicar) {
+          await base44.entities.CARManagement.update(carData.id, { map_layers: sicar.mapLayers });
+
+          const prop = await base44.entities.Property.get(effectivePropertyId);
+          const existingKml = (prop.kml_layers || []).filter(
+            l => l.car_number !== data.car_number || l.source !== 'SICAR'
+          );
+          await base44.entities.Property.update(effectivePropertyId, {
+            kml_layers: [...existingKml, ...sicar.kmlItems],
+          });
+
           sicarLoaded = true;
         }
       }

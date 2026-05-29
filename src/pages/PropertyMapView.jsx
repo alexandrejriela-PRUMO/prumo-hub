@@ -188,7 +188,6 @@ export default function PropertyMapView() {
       consolidated: false,
     });
     const [kmlLayers, setKmlLayers] = useState([]);
-    const [propertyAreas, setPropertyAreas] = useState([]);
     const [drawnGeometry, setDrawnGeometry] = useState(null);
     const fileInputRef = useRef(null);
     const savingRef = useRef(false);
@@ -221,14 +220,23 @@ export default function PropertyMapView() {
 
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
 
-  // Carregar areas e KML layers ao trocar propriedade
+  // Carregar KML layers ao trocar propriedade — deduplica por id
   useEffect(() => {
     if (!selectedProperty) return;
-    const areas = selectedProperty.areas || [];
     const saved = selectedProperty.kml_layers || [];
-    setPropertyAreas(areas);
-    setKmlLayers(saved);
+    // Deduplica por id mantendo apenas a primeira ocorrência
+    const seen = new Set();
+    const deduped = saved.filter(l => {
+      if (!l.id || seen.has(l.id)) return false;
+      seen.add(l.id);
+      return true;
+    });
+    setKmlLayers(deduped);
     setDrawnGeometry(null);
+    // Se havia duplicatas, persiste a versão limpa
+    if (deduped.length !== saved.length) {
+      base44.entities.Property.update(selectedProperty.id, { kml_layers: deduped }).catch(() => {});
+    }
   }, [selectedPropertyId]);
 
   const { data: carData } = useQuery({
@@ -343,17 +351,12 @@ export default function PropertyMapView() {
       if (!selectedProperty || savingRef.current) return;
       savingRef.current = true;
       try {
-        // Converter area para GeoJSON para KML
         const geoJson = {
           type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [area.coordinates]
-          },
+          geometry: { type: 'Polygon', coordinates: [area.coordinates] },
           properties: { name: area.name, type: area.type }
         };
 
-        // Criar KML layer com coordenadas
         const kmlLayer = {
           id: area.id,
           name: `${area.name} (${area.type})`,
@@ -362,19 +365,11 @@ export default function PropertyMapView() {
           visible: true
         };
 
-        const updatedAreas = [...propertyAreas, area];
         const updatedKmlLayers = [...kmlLayers, kmlLayer];
-        
-        setPropertyAreas(updatedAreas);
         setKmlLayers(updatedKmlLayers);
         
-        // Persiste ambas as coleções no banco
-        await base44.entities.Property.update(selectedProperty.id, { 
-          areas: updatedAreas,
-          kml_layers: updatedKmlLayers
-        });
-        
-        toast.success(`Área "${area.name}" salva como KML na propriedade!`);
+        await base44.entities.Property.update(selectedProperty.id, { kml_layers: updatedKmlLayers });
+        toast.success(`Área "${area.name}" salva!`);
       } catch (err) {
         toast.error('Erro ao salvar área');
         console.error(err);
@@ -558,7 +553,7 @@ export default function PropertyMapView() {
            carGeoJson={carGeoJson}
            carLayers={carLayers}
            kmlLayers={kmlLayers}
-           propertyAreas={propertyAreas}
+           propertyAreas={[]}
            activeLayers={activeLayers}
            onLayerToggle={toggleLayer}
            parseGeoJson={parseGeoJson}
@@ -620,7 +615,6 @@ export default function PropertyMapView() {
           propertyName={selectedProperty.property_name}
           kmlLayers={kmlLayers}
           carData={{ car_polygon: carGeoJson, app: null, legal_reserve: null }}
-          propertyAreas={propertyAreas}
         />
       )}
 

@@ -40,7 +40,9 @@ export default function CARForm({ initial, onSubmit, onCancel, isLoading, aiAnal
   useEffect(() => { if (initial) setForm({ ...defaultForm, ...initial }); }, [initial]);
 
   useEffect(() => {
-    if (aiAnalysis) set('ai_analysis', aiAnalysis);
+    if (aiAnalysis && aiAnalysis !== form.ai_analysis) {
+      set('ai_analysis', aiAnalysis);
+    }
   }, [aiAnalysis]);
 
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }));

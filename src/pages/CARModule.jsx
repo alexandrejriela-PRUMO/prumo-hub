@@ -423,7 +423,6 @@ export default function CARModule() {
                       !carRecord.app_hectares && 'APP (ha)',
                       !carRecord.legal_reserve_hectares && 'Reserva Legal (ha)',
                       !carRecord.car_registration_date && 'Data de Cadastro',
-                      (!carRecord.environmental_liabilities || carRecord.environmental_liabilities.length === 0) && 'Passivos Ambientais',
                       !carRecord.ai_analysis && 'Diagnóstico IA',
                     ].filter(Boolean);
                     return camposFaltantes.length > 0 ? (

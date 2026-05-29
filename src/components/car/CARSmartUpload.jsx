@@ -159,6 +159,7 @@ export default function CARSmartUpload({ onDataExtracted, onClose }) {
       car_last_update: result.car_last_update || '',
       car_area_hectares: result.car_area_hectares || '',
       car_notes: result.car_notes || '',
+      ai_analysis: result.ai_analysis || '',
       environmental_liabilities: result.environmental_liabilities || [],
       // Fields saved directly to CARManagement
       app_hectares: result.app_hectares || '',

@@ -396,7 +396,20 @@ export default function CARModule() {
                     </h2>
                     {carRecord.car_number && <p className="text-sm text-emerald-600 mt-1">CAR: {carRecord.car_number}</p>}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap justify-end">
+                    {carRecord.native_vegetation_hectares ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-teal-50 border border-teal-200 text-teal-700 text-xs font-semibold">
+                        🌿 {carRecord.native_vegetation_hectares} ha veg. nativa
+                      </span>
+                    ) : canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => { setEditingCarId(carRecord.id); setEditOpen(true); }}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-[11px] hover:bg-amber-100 transition-colors"
+                      >
+                        🌿 Informar Veg. Nativa
+                      </button>
+                    )}
                     <CARStatusBadge status={carRecord.car_status} large />
                     {canEdit && <Button variant="outline" size="sm" onClick={() => { setEditingCarId(carRecord.id); setEditOpen(true); }}>
                       <Edit className="w-4 h-4" />

@@ -265,59 +265,60 @@ export default function AdvancedPropertyMap({
     toast.success(`Área "${area.name}" salva como ${AREA_TYPES[area.type]?.label || area.type}!`);
   };
 
-  // Zoom automático para última área salva ou para todas as áreas ao carregar
+  // Zoom automático APENAS na montagem inicial — nunca ao trocar camadas
+  const initialFitDoneRef = useRef(false);
   useEffect(() => {
-    if (!mapRef.current) return;
-    const map = mapRef.current;
-    
-    // Se tem área recém-salva, foca nela
-    if (lastSavedAreaId) {
-      const area = propertyAreas.find(a => a.id === lastSavedAreaId);
-      if (area?.coordinates) {
-        const bounds = L.latLngBounds(
-          area.coordinates.map(([lng, lat]) => [lat, lng])
-        );
-        setTimeout(() => {
-          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
-        }, 100);
-        return;
-      }
-    }
+    if (initialFitDoneRef.current) return;
 
-    // Senão, tenta usar todas as camadas (CAR + KML + áreas)
-    if (allGeoJsonLayers && allGeoJsonLayers.length > 0) {
-      try {
-        const combined = L.featureGroup();
-        allGeoJsonLayers.forEach(gj => {
-          if (gj) {
-            try {
-              const layer = L.geoJSON(gj);
-              const b = layer.getBounds();
-              if (b.isValid()) combined.addLayer(layer);
-            } catch {}
-          }
-        });
-        const bounds = combined.getBounds();
-        if (bounds.isValid()) {
-          setTimeout(() => {
+    const doFit = () => {
+      if (!mapRef.current) return;
+      const map = mapRef.current;
+
+      if (allGeoJsonLayers && allGeoJsonLayers.length > 0) {
+        try {
+          const combined = L.featureGroup();
+          allGeoJsonLayers.forEach(gj => {
+            if (gj) {
+              try {
+                const layer = L.geoJSON(gj);
+                const b = layer.getBounds();
+                if (b.isValid()) combined.addLayer(layer);
+              } catch {}
+            }
+          });
+          const bounds = combined.getBounds();
+          if (bounds.isValid()) {
             map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
-          }, 100);
-          return;
-        }
-      } catch {}
-    }
-
-    // Se não funcionar, centraliza na propriedade
-    if (property?.coordinates) {
-      const coordStr = String(property.coordinates).trim();
-      const [lat, lng] = coordStr.split(/[,;]/).map(c => Number(c.trim()));
-      if (!isNaN(lat) && !isNaN(lng)) {
-        setTimeout(() => {
-          map.setView([lat, lng], 13);
-        }, 100);
+            initialFitDoneRef.current = true;
+            return;
+          }
+        } catch {}
       }
+
+      if (property?.coordinates) {
+        const coordStr = String(property.coordinates).trim();
+        const [lat, lng] = coordStr.split(/[,;]/).map(c => Number(c.trim()));
+        if (!isNaN(lat) && !isNaN(lng)) {
+          map.setView([lat, lng], 13);
+          initialFitDoneRef.current = true;
+        }
+      }
+    };
+
+    setTimeout(doFit, 200);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Zoom para área recém-salva (único caso em que recentramos intencionalmente)
+  useEffect(() => {
+    if (!lastSavedAreaId || !mapRef.current) return;
+    const area = propertyAreas.find(a => a.id === lastSavedAreaId);
+    if (area?.coordinates) {
+      const bounds = L.latLngBounds(area.coordinates.map(([lng, lat]) => [lat, lng]));
+      setTimeout(() => {
+        mapRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+      }, 100);
     }
-  }, [allGeoJsonLayers, property?.coordinates]);
+  }, [lastSavedAreaId]);
 
   // Calcula área de um polígono (GeoJSON)
   const calculateArea = (geojson) => {

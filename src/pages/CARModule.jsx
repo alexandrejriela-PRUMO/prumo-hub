@@ -203,11 +203,17 @@ export default function CARModule() {
         }
       }
 
+      console.log('[PRUMO DEBUG] Dados sendo salvos:', JSON.stringify({
+        passive_rl_balance_hectares: data.passive_rl_balance_hectares,
+        legal_reserve_to_recover_hectares: data.legal_reserve_to_recover_hectares,
+        app_to_recover_hectares: data.app_to_recover_hectares,
+      }));
       return { sicarLoaded };
     },
     onSuccess: ({ sicarLoaded }) => {
       queryClient.invalidateQueries(['car', effectivePropertyId]);
       queryClient.invalidateQueries(['properties', effectiveEmail, userType]);
+      console.log('[PRUMO DEBUG] CAR salvo, buscando registro atualizado...');
       setEditOpen(false);
       setEditingCarId(null);
       toast.success(
@@ -513,16 +519,21 @@ export default function CARModule() {
                         <p className="font-semibold">{carRecord.car_area_hectares ? `${carRecord.car_area_hectares} ha` : '—'}</p>
                       </div>
                       <div><p className="text-gray-500">APP</p><p className={`font-semibold ${carRecord.app_hectares ? 'text-blue-600' : 'text-gray-300'}`}>{carRecord.app_hectares ? `${carRecord.app_hectares} ha` : '—'}</p></div>
+                      <div><p className="text-gray-500">Reserva Legal</p><p className={`font-semibold ${carRecord.legal_reserve_hectares ? 'text-green-600' : 'text-gray-300'}`}>{carRecord.legal_reserve_hectares ? `${carRecord.legal_reserve_hectares} ha` : '—'}</p></div>
                       <div>
-                        <p className="text-gray-500">Reserva Legal</p>
-                        <p className={`font-semibold ${carRecord.legal_reserve_hectares ? 'text-green-600' : 'text-gray-300'}`}>{carRecord.legal_reserve_hectares ? `${carRecord.legal_reserve_hectares} ha` : '—'}</p>
+                        <p className="text-gray-500">Passivo/Excedente RL</p>
                         {(() => {
                           const passiveVal = parseFloat(carRecord.passive_rl_balance_hectares);
-                          if (isNaN(passiveVal)) return null;
+                          if (isNaN(passiveVal) || carRecord.passive_rl_balance_hectares === null || carRecord.passive_rl_balance_hectares === undefined) {
+                            return <p className="text-gray-300">—</p>;
+                          }
+                          const abs = Math.abs(passiveVal).toFixed(2);
                           return (
-                            <p className={`text-xs font-semibold mt-0.5 ${passiveVal < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                              {passiveVal < 0 ? '⚠ Passivo: ' : '✓ Excedente: '}
-                              {passiveVal.toFixed(2)} ha
+                            <p className={`font-semibold ${passiveVal < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                              {abs} ha
+                              <span className="text-[10px] font-normal ml-1 opacity-70">
+                                {passiveVal < 0 ? '(déficit)' : '(excedente)'}
+                              </span>
                             </p>
                           );
                         })()}
@@ -534,26 +545,6 @@ export default function CARModule() {
                       {carRecord.owner_name && <div><p className="text-gray-500">Proprietário</p><p className="font-semibold">{carRecord.owner_name}</p></div>}
                       {carRecord.registration_numbers && <div><p className="text-gray-500">Matrículas</p><p className="font-semibold">{carRecord.registration_numbers}</p></div>}
                       {carRecord.municipality && <div><p className="text-gray-500">Município/UF</p><p className="font-semibold">{carRecord.municipality}/{carRecord.state}</p></div>}
-                      {carRecord.native_vegetation_hectares > 0 && (
-                        <div><p className="text-gray-500">Veg. Nativa Remanescente</p>
-                        <p className="font-semibold text-teal-600">{carRecord.native_vegetation_hectares} ha</p></div>
-                      )}
-                      {(() => {
-                        const passiveVal = parseFloat(carRecord.passive_rl_balance_hectares);
-                        if (isNaN(passiveVal)) return null;
-                        return (
-                          <div>
-                            <p className="text-gray-500">Passivo/Excedente RL</p>
-                            <p className={`font-semibold ${passiveVal < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                              {passiveVal < 0 ? '⚠ ' : '✓ '}
-                              {passiveVal.toFixed(2)} ha
-                              <span className="text-[10px] font-normal ml-1 opacity-70">
-                                {passiveVal < 0 ? '(déficit)' : '(excedente)'}
-                              </span>
-                            </p>
-                          </div>
-                        );
-                      })()}
                       {carRecord.owner_cpf_cnpj && (
                         <div><p className="text-gray-500">CPF/CNPJ</p>
                         <p className="font-semibold font-mono text-sm">{carRecord.owner_cpf_cnpj}</p></div>

@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   FileText, Plus, Edit, Leaf, MapPin, Clock, Building2,
-  AlertTriangle, CheckCircle2, ChevronLeft, Sparkles, Layers, Trash2
+  AlertTriangle, CheckCircle2, ChevronLeft, Sparkles, Layers, Trash2, ChevronDown
 } from 'lucide-react';
 import CARSmartUpload from '@/components/car/CARSmartUpload';
 import { toast } from 'sonner';
@@ -155,6 +155,7 @@ export default function CARModule() {
   const [editingCarId, setEditingCarId] = useState(null);
   const [showSmartUpload, setShowSmartUpload] = useState(false);
   const [prefillData, setPrefillData] = useState(null);
+  const [expandedDiag, setExpandedDiag] = useState({});
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
@@ -495,22 +496,53 @@ export default function CARModule() {
 
                   {/* Diagnóstico IA */}
                   {carRecord.ai_analysis && (
-                    <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Sparkles className="w-4 h-4 text-purple-600" />
-                        <p className="text-xs font-semibold text-purple-800">Diagnóstico Ambiental (IA)</p>
-                        <span className="text-[10px] text-purple-400 ml-auto">Gerado automaticamente via Smart Upload</span>
-                      </div>
-                      <p className="text-xs text-purple-900 leading-relaxed">{carRecord.ai_analysis}</p>
+                    <div className="border border-purple-200 rounded-xl overflow-hidden">
+                      <button
+                        onClick={() => setExpandedDiag(p => ({ ...p, [carRecord.id]: !p[carRecord.id] }))}
+                        className="w-full flex items-center justify-between p-3 bg-purple-50 hover:bg-purple-100 transition-all"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-purple-600" />
+                          <span className="text-xs font-semibold text-purple-800">Diagnóstico Ambiental (IA)</span>
+                          <span className="text-[10px] text-purple-400">Gerado via Smart Upload</span>
+                        </div>
+                        <ChevronDown className={`w-4 h-4 text-purple-500 transition-transform ${expandedDiag[carRecord.id] ? 'rotate-180' : ''}`} />
+                      </button>
+                      {expandedDiag[carRecord.id] && (
+                        <div className="p-4 bg-white border-t border-purple-100">
+                          <p className="text-xs text-purple-900 leading-relaxed">{carRecord.ai_analysis}</p>
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  {carRecord.environmental_liabilities?.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      <span className="text-xs font-semibold text-orange-700">Passivos:</span>
-                      {carRecord.environmental_liabilities.map(l => (
-                        <Badge key={l} className="bg-orange-100 text-orange-800 border border-orange-200 text-xs">{l}</Badge>
-                      ))}
+                  {(carRecord.environmental_liabilities?.length > 0 || carRecord.legal_reserve_to_recover_hectares > 0 || carRecord.app_to_recover_hectares > 0) && (
+                    <div className="p-3 bg-orange-50 border border-orange-200 rounded-xl space-y-2">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-orange-600" />
+                        <span className="text-xs font-semibold text-orange-800">Passivos Ambientais</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {carRecord.environmental_liabilities?.map(l => (
+                          <Badge key={l} className="bg-orange-100 text-orange-800 border border-orange-200 text-xs">{l}</Badge>
+                        ))}
+                      </div>
+                      {(carRecord.legal_reserve_to_recover_hectares > 0 || carRecord.app_to_recover_hectares > 0) && (
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          {carRecord.legal_reserve_to_recover_hectares > 0 && (
+                            <div className="bg-white rounded-lg p-2 border border-orange-100 text-center">
+                              <p className="text-[10px] text-gray-500">RL a Recompor</p>
+                              <p className="text-sm font-bold text-orange-600">{carRecord.legal_reserve_to_recover_hectares} ha</p>
+                            </div>
+                          )}
+                          {carRecord.app_to_recover_hectares > 0 && (
+                            <div className="bg-white rounded-lg p-2 border border-orange-100 text-center">
+                              <p className="text-[10px] text-gray-500">APP a Recompor</p>
+                              <p className="text-sm font-bold text-orange-600">{carRecord.app_to_recover_hectares} ha</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
 

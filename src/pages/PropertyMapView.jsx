@@ -232,6 +232,19 @@ export default function PropertyMapView() {
 
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
 
+  const { data: carData } = useQuery({
+    queryKey: ['carManagement', selectedPropertyId],
+    queryFn: () => base44.entities.CARManagement.filter({ property_id: selectedPropertyId }),
+    enabled: !!selectedPropertyId,
+    select: data => data[0],
+  });
+
+  const { data: carRecords = [], isSuccess: carRecordsLoaded } = useQuery({
+    queryKey: ['carRecordsMap', selectedPropertyId],
+    queryFn: () => base44.entities.CARManagement.filter({ property_id: selectedPropertyId }),
+    enabled: !!selectedPropertyId,
+  });
+
   // Carregar KML layers ao trocar propriedade — deduplica por id
   useEffect(() => {
     if (!selectedProperty) return;
@@ -295,19 +308,6 @@ export default function PropertyMapView() {
     setKmlLayers(semOrfas);
     setDrawnGeometry(null);
   }, [selectedPropertyId, carRecords, carRecordsLoaded]);
-
-  const { data: carData } = useQuery({
-    queryKey: ['carManagement', selectedPropertyId],
-    queryFn: () => base44.entities.CARManagement.filter({ property_id: selectedPropertyId }),
-    enabled: !!selectedPropertyId,
-    select: data => data[0],
-  });
-
-  const { data: carRecords = [], isSuccess: carRecordsLoaded } = useQuery({
-    queryKey: ['carRecordsMap', selectedPropertyId],
-    queryFn: () => base44.entities.CARManagement.filter({ property_id: selectedPropertyId }),
-    enabled: !!selectedPropertyId,
-  });
 
   const saveKmlLayers = async (layers) => {
     if (!selectedPropertyId || savingRef.current) return;

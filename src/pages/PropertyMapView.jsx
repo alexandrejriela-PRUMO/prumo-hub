@@ -231,11 +231,25 @@ export default function PropertyMapView() {
       seen.add(l.id);
       return true;
     });
-    setKmlLayers(deduped);
+    const SICAR_LAYER_TYPES = ['car_polygon','app','legal_reserve','consolidated_area','remanescente','pousio','hidrografia','servidoes','outro_uso_restrito'];
+    const normalized = deduped.map(l => {
+      if (l.source === 'SICAR') return l;
+      if (
+        (l.id && l.id.startsWith('sicar-')) ||
+        (l.layer_type && SICAR_LAYER_TYPES.includes(l.layer_type))
+      ) {
+        return { ...l, source: 'SICAR' };
+      }
+      return l;
+    });
+
+    setKmlLayers(normalized);
     setDrawnGeometry(null);
-    // Se havia duplicatas, persiste a versão limpa
-    if (deduped.length !== saved.length) {
-      base44.entities.Property.update(selectedProperty.id, { kml_layers: deduped }).catch(() => {});
+
+    // Persiste se havia duplicatas ou camadas SICAR sem source
+    const needsPersist = deduped.length !== saved.length || normalized.some((l, i) => l.source !== deduped[i].source);
+    if (needsPersist) {
+      base44.entities.Property.update(selectedProperty.id, { kml_layers: normalized }).catch(() => {});
     }
   }, [selectedPropertyId]);
 
@@ -467,8 +481,20 @@ export default function PropertyMapView() {
           <span className="font-semibold text-emerald-800">{selectedProperty.property_name}</span>
           {selectedProperty.city && <Badge variant="outline" className="text-emerald-700 border-emerald-300">{selectedProperty.city}/{selectedProperty.state}</Badge>}
           {selectedProperty.total_hectares && <Badge variant="outline" className="text-blue-700 border-blue-200">{selectedProperty.total_hectares} ha</Badge>}
-          {(selectedProperty.car_numbers?.length > 0 ? selectedProperty.car_numbers : selectedProperty.car_number ? [selectedProperty.car_number] : []).map((car, i) => (
-            <Badge key={i} variant="outline" className="text-amber-700 border-amber-200">CAR: {car}</Badge>
+          {(selectedProperty.car_numbers?.length > 0
+            ? selectedProperty.car_numbers
+            : selectedProperty.car_number
+            ? [selectedProperty.car_number]
+            : []
+          ).map((car, i) => (
+            <Badge
+              key={i}
+              variant="outline"
+              className="text-amber-700 border-amber-200 font-mono text-[10px] max-w-[160px] truncate"
+              title={car}
+            >
+              CAR {i + 1}: …{car.slice(-12)}
+            </Badge>
           ))}
           {carData && <Badge className={cn("text-white text-xs", carData.car_status === 'Validado' ? 'bg-emerald-600' : 'bg-amber-500')}>{carData.car_status}</Badge>}
         </div>

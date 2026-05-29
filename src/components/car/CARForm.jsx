@@ -25,6 +25,7 @@ const defaultForm = {
   app_hectares: '',
   legal_reserve_hectares: '',
   consolidated_area_hectares: '',
+  native_vegetation_hectares: '',
   legal_reserve_to_recover_hectares: '',
   app_to_recover_hectares: '',
   owner_name: '',
@@ -65,6 +66,7 @@ export default function CARForm({ initial, onSubmit, onCancel, isLoading, aiAnal
       app_hectares: form.app_hectares !== '' ? parseFloat(form.app_hectares) : null,
       legal_reserve_hectares: form.legal_reserve_hectares !== '' ? parseFloat(form.legal_reserve_hectares) : null,
       consolidated_area_hectares: form.consolidated_area_hectares !== '' ? parseFloat(form.consolidated_area_hectares) : null,
+      native_vegetation_hectares: form.native_vegetation_hectares !== '' ? parseFloat(form.native_vegetation_hectares) : null,
       legal_reserve_to_recover_hectares: form.legal_reserve_to_recover_hectares !== '' ? parseFloat(form.legal_reserve_to_recover_hectares) : null,
       app_to_recover_hectares: form.app_to_recover_hectares !== '' ? parseFloat(form.app_to_recover_hectares) : null,
     };
@@ -107,6 +109,7 @@ export default function CARForm({ initial, onSubmit, onCancel, isLoading, aiAnal
           <div><Label className="text-xs">APP (ha)</Label><Input type="number" step="0.01" value={form.app_hectares} onChange={e => set('app_hectares', e.target.value)} /></div>
           <div><Label className="text-xs">Reserva Legal (ha)</Label><Input type="number" step="0.01" value={form.legal_reserve_hectares} onChange={e => set('legal_reserve_hectares', e.target.value)} /></div>
           <div><Label className="text-xs">Área Consolidada (ha)</Label><Input type="number" step="0.01" value={form.consolidated_area_hectares} onChange={e => set('consolidated_area_hectares', e.target.value)} /></div>
+          <div><Label className="text-xs">Veg. Nativa Remanescente (ha)</Label><Input type="number" step="0.01" value={form.native_vegetation_hectares} onChange={e => set('native_vegetation_hectares', e.target.value)} /></div>
           <div><Label className="text-xs">RL a Recompor (ha)</Label><Input type="number" step="0.01" value={form.legal_reserve_to_recover_hectares} onChange={e => set('legal_reserve_to_recover_hectares', e.target.value)} /></div>
           <div><Label className="text-xs">APP a Recompor (ha)</Label><Input type="number" step="0.01" value={form.app_to_recover_hectares} onChange={e => set('app_to_recover_hectares', e.target.value)} /></div>
           <div><Label className="text-xs">Proprietário</Label><Input value={form.owner_name} onChange={e => set('owner_name', e.target.value)} /></div>

@@ -57,6 +57,10 @@
       "type": "number",
       "description": "\u00c1rea Consolidada (ha)"
     },
+    "native_vegetation_hectares": {
+      "type": "number",
+      "description": "Remanescente de Vegeta\u00e7\u00e3o Nativa (ha)"
+    },
     "legal_reserve_to_recover_hectares": {
       "type": "number",
       "description": "Reserva Legal a recompor (ha)"
@@ -127,7 +131,7 @@
           }
         }
       },
-      "description": "Documentos do CAR (PDF, shapefiles, recibos, etc.)",
+      "description": "Documentos do CAR",
       "default": []
     },
     "pra_status": {

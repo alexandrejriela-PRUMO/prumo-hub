@@ -474,6 +474,7 @@ export default function CARModule() {
                       {carRecord.app_hectares && <div><p className="text-gray-500">APP</p><p className="font-semibold text-blue-600">{carRecord.app_hectares} ha</p></div>}
                       {carRecord.legal_reserve_hectares && <div><p className="text-gray-500">Reserva Legal</p><p className="font-semibold text-green-600">{carRecord.legal_reserve_hectares} ha</p></div>}
                       {carRecord.consolidated_area_hectares && <div><p className="text-gray-500">Área Consolidada</p><p className="font-semibold text-purple-600">{carRecord.consolidated_area_hectares} ha</p></div>}
+                      {carRecord.native_vegetation_hectares && <div><p className="text-gray-500">Veg. Nativa Remanescente</p><p className="font-semibold text-teal-600">{carRecord.native_vegetation_hectares} ha</p></div>}
                       {carRecord.legal_reserve_to_recover_hectares && <div><p className="text-gray-500">RL a Recompor</p><p className="font-semibold text-orange-600">{carRecord.legal_reserve_to_recover_hectares} ha</p></div>}
                       {carRecord.app_to_recover_hectares && <div><p className="text-gray-500">APP a Recompor</p><p className="font-semibold text-orange-600">{carRecord.app_to_recover_hectares} ha</p></div>}
                       {carRecord.owner_name && <div><p className="text-gray-500">Proprietário</p><p className="font-semibold">{carRecord.owner_name}</p></div>}

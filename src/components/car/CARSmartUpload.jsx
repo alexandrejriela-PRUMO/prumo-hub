@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { base44 } from '@/api/base44Client';
 import {
   Upload, Sparkles, FileText, CheckCircle2, AlertTriangle,
-  FileSearch, ChevronRight, X, Loader2
+  FileSearch, ChevronRight, X, Loader2, Info
 } from 'lucide-react';
 
 const DOC_TYPES = [
@@ -47,18 +47,22 @@ Extraia e retorne EXATAMENTE os seguintes dados em JSON:
 - car_registration_date: Data de Cadastro no formato YYYY-MM-DD (ex: "2016-05-05")
 - car_area_hectares: Área Total do Imóvel em hectares como número (ex: 58.09)
 - app_hectares: Área de Preservação Permanente (APP) em hectares como número
-- legal_reserve_hectares: Área de Reserva Legal em hectares como número
+- legal_reserve_hectares: Área de Reserva Legal em hectares como número (área declarada pelo proprietário como RL)
 - consolidated_area_hectares: Área Consolidada em hectares como número
+- native_vegetation_hectares: Remanescente de Vegetação Nativa em hectares — área com cobertura de mata nativa existente no imóvel. Extrair de 'Área de Remanescente de Vegetação Nativa' na seção Cobertura do Solo.
 - municipality: Município (ex: "Santa Bárbara do Sul")
 - state: UF/Estado (ex: "RS")
 - owner_name: Nome do Proprietário/Possuidor (ex: "CELSO ALZÍRIO ROOS")
+- owner_cpf_cnpj: CPF ou CNPJ do proprietário/possuidor, com ou sem formatação
 - registration_numbers: Números das matrículas separados por vírgula (ex: "28.356, 29.524")
+- registration_details: Matrículas detalhadas em texto — inclua número, data, livro, folha e município do cartório para cada matrícula, uma por linha
 - coordinates: Coordenadas do centróide no formato "LAT,LNG" em decimais negativos para Sul/Oeste (ex: "-28.3404,-53.3673")
 - car_status: Um dos valores: "Validado", "Em análise pelo órgão ambiental", "Pendente de análise", "Com inconsistências", "Cancelado", "Necessita retificação"
 - car_notes: Observações relevantes sobre inconsistências ou informações adicionais mencionadas no documento
 - environmental_liabilities: Array com passivos identificados. Possíveis valores: ["Déficit de Reserva Legal", "Déficit de APP", "Área degradada", "Uso irregular em APP", "Compensação de Reserva Legal", "Servidão ambiental"]
 - ai_analysis: Análise técnica ambiental em português com: situação da propriedade, passivos identificados, recomendações práticas para regularização. Máximo 300 palavras.
 
+ATENÇÃO: O Recibo de Inscrição NÃO contém data de retificação, regularidade ambiental, passivo/excedente de RL, RL a recompor, APP a recompor. Para estes campos, retorne null.
 Para coordenadas: converta graus/minutos/segundos para decimal (Sul = negativo, Oeste = negativo).
 Para datas: formato YYYY-MM-DD.
 Para campos não encontrados: use null.`;
@@ -70,13 +74,17 @@ Extraia e retorne EXATAMENTE os seguintes dados em JSON:
 - car_number: Registro de Inscrição no CAR (ex: "RS-4316709-8F22BA142BB54430911EE678C1FF24C9")
 - car_registration_date: Data da Inscrição no formato YYYY-MM-DD (ex: "2016-06-06")
 - car_last_update: Data da Última Retificação no formato YYYY-MM-DD (ex: "2019-04-11")
+- last_rectification_date: Data da Última Retificação no formato YYYY-MM-DD. Disponível APENAS no Demonstrativo, não no Recibo. Extrair do campo "Data da Última Retificação".
 - car_area_hectares: Área do Imóvel Rural em hectares como número (ex: 58.09)
 - app_hectares: APP total em hectares como número (ex: 2.97)
-- legal_reserve_hectares: Área de Reserva Legal Proposta/Declarada em hectares (ex: 2.20)
+- legal_reserve_hectares: Área de Reserva Legal Proposta/Declarada em hectares (área declarada pelo proprietário como RL)
 - consolidated_area_hectares: Área Rural Consolidada em hectares (ex: 58.07)
-- native_vegetation_hectares: Área de Remanescente de Vegetação Nativa em hectares
-- legal_reserve_to_recover_hectares: Área de Reserva Legal a recompor em hectares
-- app_to_recover_hectares: Áreas de Preservação Permanente a recompor em hectares
+- native_vegetation_hectares: Remanescente de Vegetação Nativa em hectares — área com cobertura de mata nativa existente. Extrair de 'Área de Remanescente de Vegetação Nativa' na seção Cobertura do Solo.
+- legal_reserve_to_recover_hectares: Área de Reserva Legal a RECOMPOR conforme Regularidade Ambiental do Demonstrativo — é a área declarada como RL mas SEM vegetação nativa efetiva identificada pelo SICAR. NÃO confundir com déficit de RL (diferença entre RL exigida e declarada). Extrair apenas do campo 'Área de Reserva Legal a recompor' da seção Regularidade Ambiental do Demonstrativo.
+- app_to_recover_hectares: Área de APP a RECOMPOR conforme Regularidade Ambiental — área de APP sem cobertura vegetal. Extrair de 'Áreas de Preservação Permanente a recompor' do Demonstrativo.
+- passive_rl_balance_hectares: Passivo ou Excedente de Reserva Legal conforme cálculo do SICAR. Valor negativo = déficit. Extrair de 'Passivo / Excedente de Reserva Legal' da Regularidade Ambiental do Demonstrativo.
+- use_restriction_to_recover_hectares: Área de Uso Restrito a Recompor em hectares. Extrair de 'Áreas de Uso Restrito a recompor' da seção Regularidade Ambiental do Demonstrativo.
+- car_situation: Situação do Cadastro: "Ativo", "Cancelado" ou "Pendente de análise". Extrair do campo "Situação do Cadastro" no Demonstrativo.
 - municipality: Município (ex: "Santa Bárbara do Sul")
 - state: Unidade da Federação (ex: "RS")
 - coordinates: Coordenadas no formato "LAT,LNG" em decimais negativos para Sul/Oeste
@@ -85,6 +93,7 @@ Extraia e retorne EXATAMENTE os seguintes dados em JSON:
 - car_notes: Resumo das informações de regularidade ambiental (passivos, áreas a recompor)
 - ai_analysis: Análise técnica ambiental completa em português: situação cadastral, passivos ambientais encontrados, áreas a recompor, urgência de ações regulatórias. Máximo 300 palavras.
 
+ATENÇÃO: O Demonstrativo NÃO contém CPF/CNPJ do proprietário nem matrículas detalhadas. Para estes campos, retorne null.
 Para coordenadas: converta graus/minutos/segundos para decimal.
 Para campos não encontrados: use null.`;
 }
@@ -133,12 +142,24 @@ export default function CARSmartUpload({ onDataExtracted, onClose }) {
             environmental_liabilities: { type: 'array', items: { type: 'string' } },
             car_notes: { type: 'string' },
             ai_analysis: { type: 'string' },
+            passive_rl_balance_hectares: { type: 'number' },
+            use_restriction_to_recover_hectares: { type: 'number' },
+            car_situation: { type: 'string' },
+            owner_cpf_cnpj: { type: 'string' },
+            last_rectification_date: { type: 'string' },
+            registration_details: { type: 'string' },
           }
         },
         model: 'gemini_3_flash',
       });
 
-      setResult({ ...extracted, _file_url: file_url, _doc_type: selectedType });
+      setResult({
+        ...extracted,
+        _file_url: file_url,
+        _doc_type: selectedType,
+        _missing_demonstrativo: selectedType === 'recibo',
+        _missing_recibo: selectedType === 'demonstrativo',
+      });
       setStep('done');
     } catch (err) {
       setError('Erro ao processar o PDF. Tente novamente.');
@@ -173,6 +194,13 @@ export default function CARSmartUpload({ onDataExtracted, onClose }) {
       state: result.state || '',
       registration_numbers: result.registration_numbers || '',
       coordinates: result.coordinates || '',
+      native_vegetation_hectares: result.native_vegetation_hectares ?? '',
+      passive_rl_balance_hectares: result.passive_rl_balance_hectares ?? '',
+      use_restriction_to_recover_hectares: result.use_restriction_to_recover_hectares ?? '',
+      car_situation: result.car_situation || '',
+      owner_cpf_cnpj: result.owner_cpf_cnpj || '',
+      last_rectification_date: result.last_rectification_date || '',
+      registration_details: result.registration_details || '',
       // Extra data passed for property update
       _app_hectares: result.app_hectares,
       _legal_reserve_hectares: result.legal_reserve_hectares,
@@ -187,6 +215,8 @@ export default function CARSmartUpload({ onDataExtracted, onClose }) {
       _consolidated_area: result.consolidated_area_hectares,
       _legal_reserve_to_recover: result.legal_reserve_to_recover_hectares,
       _app_to_recover: result.app_to_recover_hectares,
+      _missing_demonstrativo: result._missing_demonstrativo,
+      _missing_recibo: result._missing_recibo,
     };
 
     // If there are liabilities detected from demonstrativo passivos
@@ -311,18 +341,22 @@ export default function CARSmartUpload({ onDataExtracted, onClose }) {
               {[
                 { label: 'Número do CAR', value: result.car_number },
                 { label: 'Status', value: result.car_status },
+                { label: 'Situação', value: result.car_situation },
                 { label: 'Data de Cadastro', value: result.car_registration_date },
-                { label: 'Última Retificação', value: result.car_last_update },
+                { label: 'Última Retificação', value: result.last_rectification_date || result.car_last_update },
                 { label: 'Área Total', value: result.car_area_hectares ? `${result.car_area_hectares} ha` : null },
                 { label: 'APP', value: result.app_hectares ? `${result.app_hectares} ha` : null },
                 { label: 'Reserva Legal', value: result.legal_reserve_hectares ? `${result.legal_reserve_hectares} ha` : null },
                 { label: 'Área Consolidada', value: result.consolidated_area_hectares ? `${result.consolidated_area_hectares} ha` : null },
-                { label: 'Veg. Nativa (Remanescente)', value: result.native_vegetation_hectares ? `${result.native_vegetation_hectares} ha` : null },
-                { label: 'Município/UF', value: result.municipality && result.state ? `${result.municipality}/${result.state}` : result.municipality },
-                { label: 'Proprietário', value: result.owner_name },
-                { label: 'Matrículas', value: result.registration_numbers },
+                { label: 'Veg. Nativa Remanescente', value: result.native_vegetation_hectares ? `${result.native_vegetation_hectares} ha` : null },
+                { label: 'Passivo/Excedente RL', value: result.passive_rl_balance_hectares != null && result.passive_rl_balance_hectares !== '' ? `${result.passive_rl_balance_hectares} ha` : null },
                 { label: 'RL a recompor', value: result.legal_reserve_to_recover_hectares ? `${result.legal_reserve_to_recover_hectares} ha` : null },
                 { label: 'APP a recompor', value: result.app_to_recover_hectares ? `${result.app_to_recover_hectares} ha` : null },
+                { label: 'Uso Restrito a Recompor', value: result.use_restriction_to_recover_hectares ? `${result.use_restriction_to_recover_hectares} ha` : null },
+                { label: 'Município/UF', value: result.municipality && result.state ? `${result.municipality}/${result.state}` : result.municipality },
+                { label: 'Proprietário', value: result.owner_name },
+                { label: 'CPF/CNPJ', value: result.owner_cpf_cnpj },
+                { label: 'Matrículas', value: result.registration_numbers },
               ].filter(f => f.value).map(({ label, value }) => (
                 <div key={label} className="flex items-center justify-between px-4 py-2 text-sm">
                   <span className="text-gray-500 text-xs">{label}</span>
@@ -331,6 +365,31 @@ export default function CARSmartUpload({ onDataExtracted, onClose }) {
               ))}
             </div>
           </div>
+
+          {result._missing_demonstrativo && (
+            <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl mt-3">
+              <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-xs font-semibold text-amber-800">Dados de Regularidade Ambiental indisponíveis</p>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  Você enviou o Recibo de Inscrição. Para obter RL a Recompor, APP a Recompor e Passivo Ambiental calculado pelo SICAR,
+                  adicione também o <strong>Demonstrativo de Situação</strong> (disponível em car.gov.br com o número do CAR).
+                </p>
+              </div>
+            </div>
+          )}
+          {result._missing_recibo && (
+            <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl mt-3">
+              <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-xs font-semibold text-blue-800">Dados do proprietário e matrículas indisponíveis</p>
+                <p className="text-xs text-blue-700 mt-0.5">
+                  Você enviou o Demonstrativo. Para obter CPF/CNPJ do proprietário e matrículas detalhadas,
+                  adicione também o <strong>Recibo de Inscrição</strong>.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Environmental liabilities */}
           {result.environmental_liabilities?.length > 0 && (

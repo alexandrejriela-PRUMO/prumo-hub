@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   FileText, Plus, Edit, Leaf, MapPin, Clock, Building2,
-  AlertTriangle, CheckCircle2, ChevronLeft, Sparkles, Layers, Trash2
+  AlertTriangle, CheckCircle2, ChevronLeft, Sparkles, Layers, Trash2, Pencil
 } from 'lucide-react';
 import CARSmartUpload from '@/components/car/CARSmartUpload';
 import { toast } from 'sonner';
@@ -163,7 +163,8 @@ export default function CARModule() {
   const [showSmartUpload, setShowSmartUpload] = useState(false);
   const [prefillData, setPrefillData] = useState(null);
   const [selectedCarId, setSelectedCarId] = useState(null);
-
+  const [editingTitle, setEditingTitle] = useState(null);
+  const [titleValue, setTitleValue] = useState('');
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
@@ -230,6 +231,11 @@ export default function CARModule() {
             car_status: 'Pendente de análise',
           });
     },
+    onSuccess: () => queryClient.invalidateQueries(['car', effectivePropertyId]),
+  });
+
+  const updateCarField = useMutation({
+    mutationFn: ({ id, ...data }) => base44.entities.CARManagement.update(id, data),
     onSuccess: () => queryClient.invalidateQueries(['car', effectivePropertyId]),
   });
 
@@ -369,7 +375,8 @@ export default function CARModule() {
         const somaRL = carRecords.reduce((s, c) => s + (parseFloat(c.legal_reserve_hectares) || 0), 0);
         const somaRLRecompor = carRecords.reduce((s, c) => s + (parseFloat(c.legal_reserve_to_recover_hectares) || 0), 0);
         const somaAppRecompor = carRecords.reduce((s, c) => s + (parseFloat(c.app_to_recover_hectares) || 0), 0);
-        const temPassivos = somaRLRecompor > 0 || somaAppRecompor > 0;
+        const somaPassivoRL = carRecords.reduce((s, c) => s + (parseFloat(c.passive_rl_balance_hectares) || 0), 0);
+        const temPassivos = somaRLRecompor > 0 || somaAppRecompor > 0 || somaPassivoRL < 0;
 
         return (
           <div className="space-y-4">
@@ -412,6 +419,13 @@ export default function CARModule() {
                     </div>
                     {somaRLRecompor > 0 && <div className="bg-white rounded-lg p-3 border border-orange-100"><p className="text-xs text-gray-500 mb-1">RL a Recompor</p><p className="text-xl font-bold text-orange-600">{somaRLRecompor.toFixed(2)}</p><p className="text-[10px] text-gray-400">hectares</p></div>}
                     {somaAppRecompor > 0 && <div className="bg-white rounded-lg p-3 border border-orange-100"><p className="text-xs text-gray-500 mb-1">APP a Recompor</p><p className="text-xl font-bold text-orange-600">{somaAppRecompor.toFixed(2)}</p><p className="text-[10px] text-gray-400">hectares</p></div>}
+                    {somaPassivoRL < 0 && (
+                      <div className="bg-white rounded-lg p-3 border border-red-100">
+                        <p className="text-xs text-gray-500 mb-1">Passivo Total RL</p>
+                        <p className="text-xl font-bold text-red-600">{somaPassivoRL.toFixed(2)}</p>
+                        <p className="text-[10px] text-gray-400">hectares</p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -422,8 +436,32 @@ export default function CARModule() {
               <CardHeader className="bg-gradient-to-r from-emerald-50 to-transparent pb-3 border-b border-emerald-100">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
-                    <h2 className="text-lg font-bold text-emerald-900">
-                      {selectedProperty?.property_name || 'Propriedade'} {carRecords.length > 1 && `• CAR ${idx + 1}`}
+                    <h2 className="text-lg font-bold text-emerald-900 flex items-center gap-1 flex-wrap">
+                      {selectedProperty?.property_name || 'Propriedade'}
+                      {carRecords.length > 1 && (
+                        <>
+                          {' • '}
+                          {editingTitle === carRecord.id ? (
+                            <input
+                              autoFocus
+                              className="text-base font-bold text-emerald-900 bg-transparent border-b border-emerald-400 outline-none w-36"
+                              value={titleValue}
+                              onChange={e => setTitleValue(e.target.value)}
+                              onBlur={() => { updateCarField.mutate({ id: carRecord.id, car_custom_title: titleValue }); setEditingTitle(null); }}
+                              onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); if (e.key === 'Escape') setEditingTitle(null); }}
+                            />
+                          ) : (
+                            <>
+                              <span>{carRecord.car_custom_title || `CAR ${idx + 1}`}</span>
+                              {canEdit && (
+                                <button onClick={() => { setEditingTitle(carRecord.id); setTitleValue(carRecord.car_custom_title || ''); }} className="ml-1 opacity-40 hover:opacity-100">
+                                  <Pencil className="w-3 h-3" />
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </>
+                      )}
                     </h2>
                     {carRecord.car_number && <p className="text-sm text-emerald-600 mt-1 font-mono text-xs">{carRecord.car_number}</p>}
                   </div>
@@ -457,6 +495,36 @@ export default function CARModule() {
                 <TabsContent value="overview" className="space-y-4">
                   <CARAlerts carRecord={carRecord} />
 
+                  {/* Tarja de cadastro incompleto */}
+                  {(() => {
+                    const camposFaltantes = [
+                      !carRecord.car_area_hectares && 'Área Total',
+                      !carRecord.app_hectares && 'APP (ha)',
+                      !carRecord.legal_reserve_hectares && 'Reserva Legal (ha)',
+                      !carRecord.car_registration_date && 'Data de Cadastro',
+                      !carRecord.ai_analysis && 'Diagnóstico IA',
+                      !carRecord.last_rectification_date && !carRecord.passive_rl_balance_hectares && 'Demonstrativo (RL/APP a Recompor)',
+                    ].filter(Boolean);
+                    return camposFaltantes.length > 0 ? (
+                      <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs font-semibold text-amber-800 mb-1.5">Cadastro incompleto</p>
+                          <div className="flex flex-wrap gap-1 mb-1.5">
+                            {camposFaltantes.map(campo => (
+                              <span key={campo} className="text-[10px] bg-amber-100 border border-amber-300 text-amber-700 rounded px-1.5 py-0.5">
+                                {campo}
+                              </span>
+                            ))}
+                          </div>
+                          <p className="text-[10px] text-amber-600">
+                            Use "Preencher com PDF do CAR" para completar automaticamente →
+                          </p>
+                        </div>
+                      </div>
+                    ) : null;
+                  })()}
+
                   <Card className="border border-gray-100">
                     <CardContent className="pt-4 grid sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                       <div>
@@ -480,6 +548,33 @@ export default function CARModule() {
                       {carRecord.owner_name && <div><p className="text-gray-500">Proprietário</p><p className="font-semibold">{carRecord.owner_name}</p></div>}
                       {carRecord.registration_numbers && <div><p className="text-gray-500">Matrículas</p><p className="font-semibold">{carRecord.registration_numbers}</p></div>}
                       {carRecord.municipality && <div><p className="text-gray-500">Município/UF</p><p className="font-semibold">{carRecord.municipality}/{carRecord.state}</p></div>}
+                      {carRecord.native_vegetation_hectares > 0 && (
+                        <div><p className="text-gray-500">Veg. Nativa Remanescente</p>
+                        <p className="font-semibold text-teal-600">{carRecord.native_vegetation_hectares} ha</p></div>
+                      )}
+                      {carRecord.passive_rl_balance_hectares != null && carRecord.passive_rl_balance_hectares !== '' && (
+                        <div>
+                          <p className="text-gray-500">Passivo/Excedente RL</p>
+                          <p className={`font-semibold ${carRecord.passive_rl_balance_hectares < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                            {carRecord.passive_rl_balance_hectares < 0 ? '⚠ ' : '✓ '}
+                            {carRecord.passive_rl_balance_hectares} ha
+                          </p>
+                        </div>
+                      )}
+                      {carRecord.owner_cpf_cnpj && (
+                        <div><p className="text-gray-500">CPF/CNPJ</p>
+                        <p className="font-semibold font-mono text-sm">{carRecord.owner_cpf_cnpj}</p></div>
+                      )}
+                      {carRecord.last_rectification_date && (
+                        <div><p className="text-gray-500">Última Retificação</p>
+                        <p className="font-semibold">{new Date(carRecord.last_rectification_date).toLocaleDateString('pt-BR')}</p></div>
+                      )}
+                      {carRecord.registration_details && (
+                        <div className="col-span-3">
+                          <p className="text-gray-500 mb-1">Matrículas Detalhadas</p>
+                          <p className="text-xs text-gray-700 whitespace-pre-line bg-gray-50 p-2 rounded border">{carRecord.registration_details}</p>
+                        </div>
+                      )}
                       {carRecord.car_inconsistencies && (
                         <div className="sm:col-span-2 md:col-span-3 p-3 bg-red-50 rounded-lg border border-red-200">
                           <p className="text-xs font-medium text-red-700 mb-1">Inconsistências:</p>
@@ -507,7 +602,7 @@ export default function CARModule() {
                     </div>
                   )}
 
-                  {(carRecord.environmental_liabilities?.length > 0 || carRecord.legal_reserve_to_recover_hectares > 0 || carRecord.app_to_recover_hectares > 0) && (
+                  {(carRecord.environmental_liabilities?.length > 0 || carRecord.legal_reserve_to_recover_hectares > 0 || carRecord.app_to_recover_hectares > 0 || carRecord.use_restriction_to_recover_hectares > 0) && (
                     <div className="p-3 bg-orange-50 border border-orange-200 rounded-xl space-y-2">
                       <div className="flex items-center gap-2">
                         <AlertTriangle className="w-4 h-4 text-orange-600" />
@@ -518,7 +613,7 @@ export default function CARModule() {
                           <Badge key={l} className="bg-orange-100 text-orange-800 border border-orange-200 text-xs">{l}</Badge>
                         ))}
                       </div>
-                      {(carRecord.legal_reserve_to_recover_hectares > 0 || carRecord.app_to_recover_hectares > 0) && (
+                      {(carRecord.legal_reserve_to_recover_hectares > 0 || carRecord.app_to_recover_hectares > 0 || carRecord.use_restriction_to_recover_hectares > 0) && (
                         <div className="grid grid-cols-2 gap-2 pt-1">
                           {carRecord.legal_reserve_to_recover_hectares > 0 && (
                             <div className="bg-white rounded-lg p-2 border border-orange-100 text-center">
@@ -530,6 +625,12 @@ export default function CARModule() {
                             <div className="bg-white rounded-lg p-2 border border-orange-100 text-center">
                               <p className="text-[10px] text-gray-500">APP a Recompor</p>
                               <p className="text-sm font-bold text-orange-600">{carRecord.app_to_recover_hectares} ha</p>
+                            </div>
+                          )}
+                          {carRecord.use_restriction_to_recover_hectares > 0 && (
+                            <div className="bg-white rounded-lg p-2 border border-orange-100 text-center">
+                              <p className="text-[10px] text-gray-500">Uso Restrito a Recompor</p>
+                              <p className="text-sm font-bold text-orange-600">{carRecord.use_restriction_to_recover_hectares} ha</p>
                             </div>
                           )}
                         </div>

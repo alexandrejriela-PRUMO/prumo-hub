@@ -33,6 +33,14 @@ const defaultForm = {
   state: '',
   registration_numbers: '',
   coordinates: '',
+  native_vegetation_hectares: '',
+  passive_rl_balance_hectares: '',
+  use_restriction_to_recover_hectares: '',
+  car_situation: '',
+  owner_cpf_cnpj: '',
+  last_rectification_date: '',
+  registration_details: '',
+  car_custom_title: '',
 };
 
 export default function CARForm({ initial, onSubmit, onCancel, isLoading, aiAnalysis }) {
@@ -69,6 +77,9 @@ export default function CARForm({ initial, onSubmit, onCancel, isLoading, aiAnal
       native_vegetation_hectares: form.native_vegetation_hectares !== '' ? parseFloat(form.native_vegetation_hectares) : null,
       legal_reserve_to_recover_hectares: form.legal_reserve_to_recover_hectares !== '' ? parseFloat(form.legal_reserve_to_recover_hectares) : null,
       app_to_recover_hectares: form.app_to_recover_hectares !== '' ? parseFloat(form.app_to_recover_hectares) : null,
+      native_vegetation_hectares: form.native_vegetation_hectares !== '' ? parseFloat(form.native_vegetation_hectares) : null,
+      passive_rl_balance_hectares: form.passive_rl_balance_hectares !== '' ? parseFloat(form.passive_rl_balance_hectares) : null,
+      use_restriction_to_recover_hectares: form.use_restriction_to_recover_hectares !== '' ? parseFloat(form.use_restriction_to_recover_hectares) : null,
     };
     onSubmit(data);
   };
@@ -95,6 +106,11 @@ export default function CARForm({ initial, onSubmit, onCancel, isLoading, aiAnal
         </CardHeader>
         <CardContent className="grid md:grid-cols-2 gap-4">
           <div><Label className="text-xs">Número do CAR</Label><Input value={form.car_number} onChange={e => set('car_number', e.target.value)} placeholder="Ex: SP-3500105-..." /></div>
+          <div>
+            <Label className="text-xs">Título Personalizado (opcional)</Label>
+            <Input value={form.car_custom_title} onChange={e => set('car_custom_title', e.target.value)} placeholder="Ex: Gleba Norte, Sítio das Pedras..." />
+            <p className="text-[10px] text-gray-400 mt-0.5">Se preenchido, substitui "CAR 1", "CAR 2" na exibição.</p>
+          </div>
           <div><Label className="text-xs">Situação do CAR *</Label>
             <Select value={form.car_status} onValueChange={v => set('car_status', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -112,8 +128,14 @@ export default function CARForm({ initial, onSubmit, onCancel, isLoading, aiAnal
           <div><Label className="text-xs">Veg. Nativa Remanescente (ha)</Label><Input type="number" step="0.01" value={form.native_vegetation_hectares} onChange={e => set('native_vegetation_hectares', e.target.value)} /></div>
           <div><Label className="text-xs">RL a Recompor (ha)</Label><Input type="number" step="0.01" value={form.legal_reserve_to_recover_hectares} onChange={e => set('legal_reserve_to_recover_hectares', e.target.value)} /></div>
           <div><Label className="text-xs">APP a Recompor (ha)</Label><Input type="number" step="0.01" value={form.app_to_recover_hectares} onChange={e => set('app_to_recover_hectares', e.target.value)} /></div>
+          <div><Label className="text-xs">Veg. Nativa Remanescente (ha)</Label><Input type="number" step="0.01" value={form.native_vegetation_hectares} onChange={e => set('native_vegetation_hectares', e.target.value)} /></div>
+          <div><Label className="text-xs">Passivo/Excedente RL (ha) — negativo = déficit</Label><Input type="number" step="0.01" value={form.passive_rl_balance_hectares} onChange={e => set('passive_rl_balance_hectares', e.target.value)} /></div>
+          <div><Label className="text-xs">Uso Restrito a Recompor (ha)</Label><Input type="number" step="0.01" value={form.use_restriction_to_recover_hectares} onChange={e => set('use_restriction_to_recover_hectares', e.target.value)} /></div>
           <div><Label className="text-xs">Proprietário</Label><Input value={form.owner_name} onChange={e => set('owner_name', e.target.value)} /></div>
+          <div><Label className="text-xs">CPF/CNPJ do Proprietário</Label><Input value={form.owner_cpf_cnpj} onChange={e => set('owner_cpf_cnpj', e.target.value)} placeholder="Ex: 000.000.000-00" /></div>
           <div><Label className="text-xs">Matrículas</Label><Input value={form.registration_numbers} onChange={e => set('registration_numbers', e.target.value)} /></div>
+          <div><Label className="text-xs">Data da Última Retificação</Label><Input type="date" value={form.last_rectification_date} onChange={e => set('last_rectification_date', e.target.value)} /></div>
+          <div className="md:col-span-2"><Label className="text-xs">Matrículas Detalhadas</Label><Textarea value={form.registration_details} onChange={e => set('registration_details', e.target.value)} rows={3} placeholder="Ex: Matrícula 28.356, registrada em 12/03/1998, Livro 3, Folha 45, Cartório de Imóveis de Santa Bárbara do Sul/RS" /></div>
           {(form.car_status === 'Com inconsistências' || form.car_status === 'Necessita retificação') && (
             <div className="md:col-span-2"><Label className="text-xs">Descrição das Inconsistências</Label><Textarea value={form.car_inconsistencies} onChange={e => set('car_inconsistencies', e.target.value)} rows={2} /></div>
           )}

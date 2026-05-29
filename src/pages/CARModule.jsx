@@ -15,6 +15,7 @@ import CARSmartUpload from '@/components/car/CARSmartUpload';
 import { toast } from 'sonner';
 import { format, parseISO, isValid } from 'date-fns';
 import ConsultorPropertySelector from '@/components/consultor/ConsultorPropertySelector';
+import PropertySelector from '@/components/produtor/PropertySelector';
 import CARStatusBadge from '@/components/car/CARStatusBadge';
 import CARAlerts from '@/components/car/CARAlerts';
 import CARForm from '@/components/car/CARForm';
@@ -305,7 +306,7 @@ export default function CARModule() {
           isLoading={propsLoading}
         />
       ) : properties.length > 1 && (
-        <ConsultorPropertySelector
+        <PropertySelector
           properties={properties}
           selectedPropertyId={produtorPropertyId}
           onSelect={setProdutorPropertyId}

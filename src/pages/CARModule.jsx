@@ -446,6 +446,9 @@ export default function CARModule() {
                       !carRecord.car_area_hectares && 'Área Total',
                       !carRecord.app_hectares && 'APP (ha)',
                       !carRecord.legal_reserve_hectares && 'Reserva Legal (ha)',
+                      carRecord.legal_reserve_to_recover_hectares == null && 'RL a Recompor (ha)',
+                      carRecord.app_to_recover_hectares == null && 'APP a Recompor (ha)',
+                      !carRecord.native_vegetation_hectares && 'Veg. Nativa Remanescente',
                       !carRecord.car_registration_date && 'Data de Cadastro',
                       !carRecord.ai_analysis && 'Diagnóstico IA',
                     ].filter(Boolean);
@@ -484,12 +487,12 @@ export default function CARModule() {
                         <p className="text-gray-500">Área Declarada</p>
                         <p className="font-semibold">{carRecord.car_area_hectares ? `${carRecord.car_area_hectares} ha` : '—'}</p>
                       </div>
-                      {carRecord.app_hectares && <div><p className="text-gray-500">APP</p><p className="font-semibold text-blue-600">{carRecord.app_hectares} ha</p></div>}
-                      {carRecord.legal_reserve_hectares && <div><p className="text-gray-500">Reserva Legal</p><p className="font-semibold text-green-600">{carRecord.legal_reserve_hectares} ha</p></div>}
-                      {carRecord.consolidated_area_hectares && <div><p className="text-gray-500">Área Consolidada</p><p className="font-semibold text-purple-600">{carRecord.consolidated_area_hectares} ha</p></div>}
-                      {carRecord.native_vegetation_hectares && <div><p className="text-gray-500">Veg. Nativa Remanescente</p><p className="font-semibold text-teal-600">{carRecord.native_vegetation_hectares} ha</p></div>}
-                      {carRecord.legal_reserve_to_recover_hectares && <div><p className="text-gray-500">RL a Recompor</p><p className="font-semibold text-orange-600">{carRecord.legal_reserve_to_recover_hectares} ha</p></div>}
-                      {carRecord.app_to_recover_hectares && <div><p className="text-gray-500">APP a Recompor</p><p className="font-semibold text-orange-600">{carRecord.app_to_recover_hectares} ha</p></div>}
+                      <div><p className="text-gray-500">APP</p><p className={`font-semibold ${carRecord.app_hectares ? 'text-blue-600' : 'text-gray-300'}`}>{carRecord.app_hectares ? `${carRecord.app_hectares} ha` : '—'}</p></div>
+                      <div><p className="text-gray-500">Reserva Legal</p><p className={`font-semibold ${carRecord.legal_reserve_hectares ? 'text-green-600' : 'text-gray-300'}`}>{carRecord.legal_reserve_hectares ? `${carRecord.legal_reserve_hectares} ha` : '—'}</p></div>
+                      {carRecord.consolidated_area_hectares ? <div><p className="text-gray-500">Área Consolidada</p><p className="font-semibold text-purple-600">{carRecord.consolidated_area_hectares} ha</p></div> : null}
+                      <div><p className="text-gray-500">Veg. Nativa Remanescente</p><p className={`font-semibold ${carRecord.native_vegetation_hectares ? 'text-teal-600' : 'text-gray-300'}`}>{carRecord.native_vegetation_hectares ? `${carRecord.native_vegetation_hectares} ha` : '—'}</p></div>
+                      <div><p className="text-gray-500">RL a Recompor</p><p className={`font-semibold ${carRecord.legal_reserve_to_recover_hectares > 0 ? 'text-orange-600' : carRecord.legal_reserve_to_recover_hectares === 0 ? 'text-green-600' : 'text-gray-300'}`}>{carRecord.legal_reserve_to_recover_hectares != null ? `${carRecord.legal_reserve_to_recover_hectares} ha` : '—'}</p></div>
+                      <div><p className="text-gray-500">APP a Recompor</p><p className={`font-semibold ${carRecord.app_to_recover_hectares > 0 ? 'text-orange-600' : carRecord.app_to_recover_hectares === 0 ? 'text-green-600' : 'text-gray-300'}`}>{carRecord.app_to_recover_hectares != null ? `${carRecord.app_to_recover_hectares} ha` : '—'}</p></div>
                       {carRecord.owner_name && <div><p className="text-gray-500">Proprietário</p><p className="font-semibold">{carRecord.owner_name}</p></div>}
                       {carRecord.registration_numbers && <div><p className="text-gray-500">Matrículas</p><p className="font-semibold">{carRecord.registration_numbers}</p></div>}
                       {carRecord.municipality && <div><p className="text-gray-500">Município/UF</p><p className="font-semibold">{carRecord.municipality}/{carRecord.state}</p></div>}

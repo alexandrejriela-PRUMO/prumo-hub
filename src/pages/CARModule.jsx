@@ -543,7 +543,20 @@ export default function CARModule() {
                         <p className="font-semibold">{carRecord.car_area_hectares ? `${carRecord.car_area_hectares} ha` : '—'}</p>
                       </div>
                       <div><p className="text-gray-500">APP</p><p className={`font-semibold ${carRecord.app_hectares ? 'text-blue-600' : 'text-gray-300'}`}>{carRecord.app_hectares ? `${carRecord.app_hectares} ha` : '—'}</p></div>
-                      <div><p className="text-gray-500">Reserva Legal</p><p className={`font-semibold ${carRecord.legal_reserve_hectares ? 'text-green-600' : 'text-gray-300'}`}>{carRecord.legal_reserve_hectares ? `${carRecord.legal_reserve_hectares} ha` : '—'}</p></div>
+                      <div>
+                        <p className="text-gray-500">Reserva Legal</p>
+                        <p className={`font-semibold ${carRecord.legal_reserve_hectares ? 'text-green-600' : 'text-gray-300'}`}>{carRecord.legal_reserve_hectares ? `${carRecord.legal_reserve_hectares} ha` : '—'}</p>
+                        {(() => {
+                          const passiveVal = parseFloat(carRecord.passive_rl_balance_hectares);
+                          if (isNaN(passiveVal)) return null;
+                          return (
+                            <p className={`text-xs font-semibold mt-0.5 ${passiveVal < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                              {passiveVal < 0 ? '⚠ Passivo: ' : '✓ Excedente: '}
+                              {passiveVal.toFixed(2)} ha
+                            </p>
+                          );
+                        })()}
+                      </div>
                       {carRecord.consolidated_area_hectares ? <div><p className="text-gray-500">Área Consolidada</p><p className="font-semibold text-purple-600">{carRecord.consolidated_area_hectares} ha</p></div> : null}
                       <div><p className="text-gray-500">Veg. Nativa Remanescente</p><p className={`font-semibold ${carRecord.native_vegetation_hectares ? 'text-teal-600' : 'text-gray-300'}`}>{carRecord.native_vegetation_hectares ? `${carRecord.native_vegetation_hectares} ha` : '—'}</p></div>
                       <div><p className="text-gray-500">RL a Recompor</p><p className={`font-semibold ${carRecord.legal_reserve_to_recover_hectares > 0 ? 'text-orange-600' : carRecord.legal_reserve_to_recover_hectares === 0 ? 'text-green-600' : 'text-gray-300'}`}>{carRecord.legal_reserve_to_recover_hectares != null ? `${carRecord.legal_reserve_to_recover_hectares} ha` : '—'}</p></div>
@@ -571,7 +584,6 @@ export default function CARModule() {
                           </div>
                         );
                       })()}
-                      )}
                       {carRecord.owner_cpf_cnpj && (
                         <div><p className="text-gray-500">CPF/CNPJ</p>
                         <p className="font-semibold font-mono text-sm">{carRecord.owner_cpf_cnpj}</p></div>

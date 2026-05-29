@@ -44,6 +44,39 @@ const recoveryColors = {
   'PRAD concluído': 'bg-green-100 text-green-700',
 };
 
+const R2_BASE = 'https://pub-619a5d7497a843dc84ca61263b654ac5.r2.dev/car/sicar-rs';
+
+const SICAR_LAYER_KEYS = {
+  app: 'app_layer_url',
+  legal_reserve: 'legal_reserve_url',
+  car_polygon: 'car_polygon_url',
+  consolidated_area: 'consolidated_area_url',
+  remanescente: 'remanescente_url',
+  pousio: 'pousio_url',
+  servidao: 'servidoes_url',
+  uso_restrito: 'outro_uso_restrito_url',
+};
+
+async function fetchSICARLayers(carNumber) {
+  const res = await fetch(`${R2_BASE}/${carNumber}.geojson`);
+  if (!res.ok) return null;
+  const geojson = await res.json();
+  if (!geojson.features?.length) return null;
+  const byLayer = {};
+  geojson.features.forEach(f => {
+    const layer = f.properties?._layer;
+    if (!layer) return;
+    if (!byLayer[layer]) byLayer[layer] = { type: 'FeatureCollection', features: [] };
+    byLayer[layer].features.push(f);
+  });
+  const mapLayers = {};
+  Object.entries(byLayer).forEach(([layer, fc]) => {
+    const key = SICAR_LAYER_KEYS[layer];
+    if (key) mapLayers[key] = JSON.stringify(fc);
+  });
+  return Object.keys(mapLayers).length > 0 ? mapLayers : null;
+}
+
 export default function CARModule() {
   const [consultorPropertyId, setConsultorPropertyId] = useState(null);
   const [editOpen, setEditOpen] = useState(false);
@@ -92,27 +125,36 @@ export default function CARModule() {
             owner_email: selectedProperty?.owner_email || effectiveEmail,
             consultor_email: isConsultor ? effectiveEmail : undefined,
           });
-      
-      // Atualizar Property com o CAR cadastrado
+
       if (data.car_number && selectedProperty) {
         const existingCars = selectedProperty.car_numbers || [];
-        const newCars = existingCars.includes(data.car_number) 
-          ? existingCars 
+        const newCars = existingCars.includes(data.car_number)
+          ? existingCars
           : [...existingCars, data.car_number];
-        
-        await base44.entities.Property.update(selectedProperty.id, {
-          car_numbers: newCars
-        });
+        await base44.entities.Property.update(selectedProperty.id, { car_numbers: newCars });
       }
-      
-      return carData;
+
+      let sicarLoaded = false;
+      if (data.car_number) {
+        const sicarLayers = await fetchSICARLayers(data.car_number).catch(() => null);
+        if (sicarLayers) {
+          await base44.entities.CARManagement.update(carData.id, { map_layers: sicarLayers });
+          sicarLoaded = true;
+        }
+      }
+
+      return { sicarLoaded };
     },
-    onSuccess: () => {
+    onSuccess: ({ sicarLoaded }) => {
       queryClient.invalidateQueries(['car', effectivePropertyId]);
       queryClient.invalidateQueries(['properties', effectiveEmail, userType]);
       setEditOpen(false);
       setEditingCarId(null);
-      toast.success('CAR salvo com sucesso!');
+      toast.success(
+        sicarLoaded
+          ? 'CAR salvo! Polígonos SICAR carregados automaticamente no mapa.'
+          : 'CAR salvo com sucesso!'
+      );
     },
   });
 

@@ -295,17 +295,20 @@ export default function CARModule() {
             const somaTotal = carRecords.reduce((s, c) => s + (parseFloat(c.car_area_hectares) || 0), 0);
             const somaApp = carRecords.reduce((s, c) => s + (parseFloat(c.app_hectares) || 0), 0);
             const somaRL = carRecords.reduce((s, c) => s + (parseFloat(c.legal_reserve_hectares) || 0), 0);
+            const somaRLRecompor = carRecords.reduce((s, c) => s + (parseFloat(c.legal_reserve_to_recover_hectares) || 0), 0);
+            const somaAppRecompor = carRecords.reduce((s, c) => s + (parseFloat(c.app_to_recover_hectares) || 0), 0);
+            const temPassivos = somaRLRecompor > 0 || somaAppRecompor > 0;
             return carRecords.length > 1 ? (
               <Card className="border-2 border-emerald-200 bg-emerald-50/50 mb-2">
                 <CardContent className="pt-4 pb-4">
                   <div className="flex items-center gap-2 mb-3">
                     <Layers className="w-4 h-4 text-emerald-600" />
-                    <span className="text-sm font-bold text-emerald-800">Consolidado da Propriedade</span>
+                    <span className="text-sm font-bold text-emerald-800">Somatório dos Imóveis</span>
                     <Badge className="bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs">
                       {carRecords.length} imóveis
                     </Badge>
                   </div>
-                  <div className="grid grid-cols-3 gap-4 text-center">
+                  <div className={`grid gap-4 text-center ${temPassivos ? 'grid-cols-3 md:grid-cols-5' : 'grid-cols-3'}`}>
                     <div className="bg-white rounded-lg p-3 border border-emerald-100">
                       <p className="text-xs text-gray-500 mb-1">Área Total</p>
                       <p className="text-xl font-bold text-emerald-700">{somaTotal.toFixed(2)}</p>
@@ -321,6 +324,8 @@ export default function CARModule() {
                       <p className="text-xl font-bold text-green-600">{somaRL > 0 ? somaRL.toFixed(2) : '—'}</p>
                       <p className="text-[10px] text-gray-400">hectares</p>
                     </div>
+                    {somaRLRecompor > 0 && <div className="bg-white rounded-lg p-3 border border-orange-100"><p className="text-xs text-gray-500 mb-1">RL a Recompor</p><p className="text-xl font-bold text-orange-600">{somaRLRecompor.toFixed(2)}</p><p className="text-[10px] text-gray-400">hectares</p></div>}
+                    {somaAppRecompor > 0 && <div className="bg-white rounded-lg p-3 border border-orange-100"><p className="text-xs text-gray-500 mb-1">APP a Recompor</p><p className="text-xl font-bold text-orange-600">{somaAppRecompor.toFixed(2)}</p><p className="text-[10px] text-gray-400">hectares</p></div>}
                   </div>
                 </CardContent>
               </Card>
@@ -402,6 +407,14 @@ export default function CARModule() {
                         <p className="text-gray-500">Área Declarada</p>
                         <p className="font-semibold">{carRecord.car_area_hectares ? `${carRecord.car_area_hectares} ha` : '—'}</p>
                       </div>
+                      {carRecord.app_hectares && <div><p className="text-gray-500">APP</p><p className="font-semibold text-blue-600">{carRecord.app_hectares} ha</p></div>}
+                      {carRecord.legal_reserve_hectares && <div><p className="text-gray-500">Reserva Legal</p><p className="font-semibold text-green-600">{carRecord.legal_reserve_hectares} ha</p></div>}
+                      {carRecord.consolidated_area_hectares && <div><p className="text-gray-500">Área Consolidada</p><p className="font-semibold text-purple-600">{carRecord.consolidated_area_hectares} ha</p></div>}
+                      {carRecord.legal_reserve_to_recover_hectares && <div><p className="text-gray-500">RL a Recompor</p><p className="font-semibold text-orange-600">{carRecord.legal_reserve_to_recover_hectares} ha</p></div>}
+                      {carRecord.app_to_recover_hectares && <div><p className="text-gray-500">APP a Recompor</p><p className="font-semibold text-orange-600">{carRecord.app_to_recover_hectares} ha</p></div>}
+                      {carRecord.owner_name && <div><p className="text-gray-500">Proprietário</p><p className="font-semibold">{carRecord.owner_name}</p></div>}
+                      {carRecord.registration_numbers && <div><p className="text-gray-500">Matrículas</p><p className="font-semibold">{carRecord.registration_numbers}</p></div>}
+                      {carRecord.municipality && <div><p className="text-gray-500">Município/UF</p><p className="font-semibold">{carRecord.municipality}/{carRecord.state}</p></div>}
                       {carRecord.car_inconsistencies && (
                         <div className="sm:col-span-2 md:col-span-3 p-3 bg-red-50 rounded-lg border border-red-200">
                           <p className="text-xs font-medium text-red-700 mb-1">Inconsistências:</p>

@@ -22,6 +22,16 @@ const defaultForm = {
   recovery_project_status: 'Não possui', recovery_technician: '', recovery_start_date: '',
   recovery_deadline: '', recovery_area_hectares: '', recovery_notes: '',
   ai_analysis: '',
+  app_hectares: '',
+  legal_reserve_hectares: '',
+  consolidated_area_hectares: '',
+  legal_reserve_to_recover_hectares: '',
+  app_to_recover_hectares: '',
+  owner_name: '',
+  municipality: '',
+  state: '',
+  registration_numbers: '',
+  coordinates: '',
 };
 
 export default function CARForm({ initial, onSubmit, onCancel, isLoading, aiAnalysis }) {
@@ -50,6 +60,11 @@ export default function CARForm({ initial, onSubmit, onCancel, isLoading, aiAnal
       ...form,
       car_area_hectares: form.car_area_hectares !== '' ? parseFloat(form.car_area_hectares) : null,
       recovery_area_hectares: form.recovery_area_hectares !== '' ? parseFloat(form.recovery_area_hectares) : null,
+      app_hectares: form.app_hectares !== '' ? parseFloat(form.app_hectares) : null,
+      legal_reserve_hectares: form.legal_reserve_hectares !== '' ? parseFloat(form.legal_reserve_hectares) : null,
+      consolidated_area_hectares: form.consolidated_area_hectares !== '' ? parseFloat(form.consolidated_area_hectares) : null,
+      legal_reserve_to_recover_hectares: form.legal_reserve_to_recover_hectares !== '' ? parseFloat(form.legal_reserve_to_recover_hectares) : null,
+      app_to_recover_hectares: form.app_to_recover_hectares !== '' ? parseFloat(form.app_to_recover_hectares) : null,
     };
     onSubmit(data);
   };
@@ -87,6 +102,13 @@ export default function CARForm({ initial, onSubmit, onCancel, isLoading, aiAnal
           <div><Label className="text-xs">Data de Cadastro</Label><Input type="date" value={form.car_registration_date} onChange={e => set('car_registration_date', e.target.value)} /></div>
           <div><Label className="text-xs">Última Atualização</Label><Input type="date" value={form.car_last_update} onChange={e => set('car_last_update', e.target.value)} /></div>
           <div><Label className="text-xs">Área Declarada no CAR (ha)</Label><Input type="number" step="0.01" value={form.car_area_hectares} onChange={e => set('car_area_hectares', e.target.value)} /></div>
+          <div><Label className="text-xs">APP (ha)</Label><Input type="number" step="0.01" value={form.app_hectares} onChange={e => set('app_hectares', e.target.value)} /></div>
+          <div><Label className="text-xs">Reserva Legal (ha)</Label><Input type="number" step="0.01" value={form.legal_reserve_hectares} onChange={e => set('legal_reserve_hectares', e.target.value)} /></div>
+          <div><Label className="text-xs">Área Consolidada (ha)</Label><Input type="number" step="0.01" value={form.consolidated_area_hectares} onChange={e => set('consolidated_area_hectares', e.target.value)} /></div>
+          <div><Label className="text-xs">RL a Recompor (ha)</Label><Input type="number" step="0.01" value={form.legal_reserve_to_recover_hectares} onChange={e => set('legal_reserve_to_recover_hectares', e.target.value)} /></div>
+          <div><Label className="text-xs">APP a Recompor (ha)</Label><Input type="number" step="0.01" value={form.app_to_recover_hectares} onChange={e => set('app_to_recover_hectares', e.target.value)} /></div>
+          <div><Label className="text-xs">Proprietário</Label><Input value={form.owner_name} onChange={e => set('owner_name', e.target.value)} /></div>
+          <div><Label className="text-xs">Matrículas</Label><Input value={form.registration_numbers} onChange={e => set('registration_numbers', e.target.value)} /></div>
           {(form.car_status === 'Com inconsistências' || form.car_status === 'Necessita retificação') && (
             <div className="md:col-span-2"><Label className="text-xs">Descrição das Inconsistências</Label><Textarea value={form.car_inconsistencies} onChange={e => set('car_inconsistencies', e.target.value)} rows={2} /></div>
           )}

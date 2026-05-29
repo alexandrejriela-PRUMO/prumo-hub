@@ -160,6 +160,17 @@ export default function CARSmartUpload({ onDataExtracted, onClose }) {
       car_area_hectares: result.car_area_hectares || '',
       car_notes: result.car_notes || '',
       environmental_liabilities: result.environmental_liabilities || [],
+      // Fields saved directly to CARManagement
+      app_hectares: result.app_hectares || '',
+      legal_reserve_hectares: result.legal_reserve_hectares || '',
+      consolidated_area_hectares: result.consolidated_area_hectares || '',
+      legal_reserve_to_recover_hectares: result.legal_reserve_to_recover_hectares || '',
+      app_to_recover_hectares: result.app_to_recover_hectares || '',
+      owner_name: result.owner_name || '',
+      municipality: result.municipality || '',
+      state: result.state || '',
+      registration_numbers: result.registration_numbers || '',
+      coordinates: result.coordinates || '',
       // Extra data passed for property update
       _app_hectares: result.app_hectares,
       _legal_reserve_hectares: result.legal_reserve_hectares,

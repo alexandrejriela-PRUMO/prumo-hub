@@ -11,6 +11,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import NDVIPanel from '@/components/map/NDVIPanel';
 import AdvancedPropertyMap from '@/components/map/AdvancedPropertyMap';
+import MapLayersPanel from '@/components/map/MapLayersPanel';
 import { useEffectiveUser } from '@/hooks/useEffectiveUser';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -528,35 +529,55 @@ export default function PropertyMapView() {
         </div>
       )}
 
-      {/* Advanced Map */}
-       {selectedProperty ? (
-         <AdvancedPropertyMap
-           key={selectedPropertyId}
-           property={selectedProperty}
-           onSave={handleSaveArea}
-           LAYER_STYLES={LAYER_STYLES}
-           carGeoJson={carGeoJson}
-           carLayers={carLayers}
-           kmlLayers={kmlLayers}
-           propertyAreas={[]}
-           activeLayers={activeLayers}
-           onLayerToggle={toggleLayer}
-           parseGeoJson={parseGeoJson}
-           onKmlImport={handleKmlUpload}
-           allGeoJsonLayers={allGeoJsonLayers}
-           onToggleKmlLayer={toggleKmlLayer}
-           onRemoveKmlLayer={removeKmlLayer}
-           layerFileInputRef={fileInputRef}
-         />
-      ) : (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <MapPin className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-            <p className="font-medium text-gray-900">Nenhuma propriedade selecionada</p>
-            <p className="text-sm text-gray-500">Selecione uma propriedade para visualizar o mapa</p>
-          </CardContent>
-        </Card>
-      )}
+      {/* Advanced Map + Layers Panel (side-by-side on desktop) */}
+       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+         <div className="lg:col-span-3">
+           {selectedProperty ? (
+             <AdvancedPropertyMap
+               key={selectedPropertyId}
+               property={selectedProperty}
+               onSave={handleSaveArea}
+               LAYER_STYLES={LAYER_STYLES}
+               carGeoJson={carGeoJson}
+               carLayers={carLayers}
+               kmlLayers={kmlLayers}
+               propertyAreas={[]}
+               activeLayers={activeLayers}
+               onLayerToggle={toggleLayer}
+               parseGeoJson={parseGeoJson}
+               onKmlImport={handleKmlUpload}
+               allGeoJsonLayers={allGeoJsonLayers}
+               onToggleKmlLayer={toggleKmlLayer}
+               onRemoveKmlLayer={removeKmlLayer}
+               layerFileInputRef={fileInputRef}
+             />
+           ) : (
+             <Card>
+               <CardContent className="py-12 text-center">
+                 <MapPin className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                 <p className="font-medium text-gray-900">Nenhuma propriedade selecionada</p>
+                 <p className="text-sm text-gray-500">Selecione uma propriedade para visualizar o mapa</p>
+               </CardContent>
+             </Card>
+           )}
+         </div>
+
+         {/* Layers Panel on the right */}
+         <div className="lg:col-span-1 h-fit">
+           {selectedProperty && (
+             <MapLayersPanel
+               activeLayers={activeLayers}
+               onToggleLayer={toggleLayer}
+               kmlLayers={kmlLayers}
+               onToggleKmlLayer={toggleKmlLayer}
+               onRemoveKmlLayer={removeKmlLayer}
+               onKmlUpload={handleKmlUpload}
+               propertyName={selectedProperty.property_name || ''}
+               fileInputRef={fileInputRef}
+             />
+           )}
+         </div>
+       </div>
 
       {/* Info Cards */}
       {(() => {

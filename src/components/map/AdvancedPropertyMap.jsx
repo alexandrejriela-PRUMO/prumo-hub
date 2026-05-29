@@ -408,19 +408,7 @@ export default function AdvancedPropertyMap({
         measurements={measurements}
       />
 
-      {/* Floating Layers Panel */}
-      {!isDrawing && onToggleKmlLayer && (
-        <MapLayersPanel
-          activeLayers={activeLayers}
-          onToggleLayer={onLayerToggle}
-          kmlLayers={kmlLayers}
-          onToggleKmlLayer={onToggleKmlLayer}
-          onRemoveKmlLayer={onRemoveKmlLayer}
-          onKmlUpload={onKmlImport}
-          propertyName={property?.property_name || ''}
-          fileInputRef={layerFileInputRef}
-        />
-      )}
+
 
       {/* Tools row (coordinate input + save) */}
       {!isDrawing && (

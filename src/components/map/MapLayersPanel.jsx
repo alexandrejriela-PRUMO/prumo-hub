@@ -106,7 +106,7 @@ export default function MapLayersPanel({
   };
 
   return (
-    <div className="absolute top-3 right-3 z-[1000] w-64 select-none">
+    <div className="w-full select-none">
       {/* Toggle Button */}
       <button
         onClick={() => setOpen(prev => !prev)}

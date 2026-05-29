@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   FileText, Plus, Edit, Leaf, MapPin, Clock, Building2,
-  AlertTriangle, CheckCircle2, ChevronLeft, Sparkles
+  AlertTriangle, CheckCircle2, ChevronLeft, Sparkles, Layers
 } from 'lucide-react';
 import CARSmartUpload from '@/components/car/CARSmartUpload';
 import { toast } from 'sonner';
@@ -291,6 +291,41 @@ export default function CARModule() {
 
       {carRecords.length > 0 && (
         <div className="space-y-6">
+          {(() => {
+            const somaTotal = carRecords.reduce((s, c) => s + (parseFloat(c.car_area_hectares) || 0), 0);
+            const somaApp = carRecords.reduce((s, c) => s + (parseFloat(c.app_hectares) || 0), 0);
+            const somaRL = carRecords.reduce((s, c) => s + (parseFloat(c.legal_reserve_hectares) || 0), 0);
+            return carRecords.length > 1 ? (
+              <Card className="border-2 border-emerald-200 bg-emerald-50/50 mb-2">
+                <CardContent className="pt-4 pb-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Layers className="w-4 h-4 text-emerald-600" />
+                    <span className="text-sm font-bold text-emerald-800">Consolidado da Propriedade</span>
+                    <Badge className="bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs">
+                      {carRecords.length} imóveis
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="bg-white rounded-lg p-3 border border-emerald-100">
+                      <p className="text-xs text-gray-500 mb-1">Área Total</p>
+                      <p className="text-xl font-bold text-emerald-700">{somaTotal.toFixed(2)}</p>
+                      <p className="text-[10px] text-gray-400">hectares</p>
+                    </div>
+                    <div className="bg-white rounded-lg p-3 border border-blue-100">
+                      <p className="text-xs text-gray-500 mb-1">APP Total</p>
+                      <p className="text-xl font-bold text-blue-600">{somaApp > 0 ? somaApp.toFixed(2) : '—'}</p>
+                      <p className="text-[10px] text-gray-400">hectares</p>
+                    </div>
+                    <div className="bg-white rounded-lg p-3 border border-green-100">
+                      <p className="text-xs text-gray-500 mb-1">Reserva Legal</p>
+                      <p className="text-xl font-bold text-green-600">{somaRL > 0 ? somaRL.toFixed(2) : '—'}</p>
+                      <p className="text-[10px] text-gray-400">hectares</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : null;
+          })()}
           {carRecords.map((carRecord, idx) => (
             <Card key={carRecord.id} className="border-2 border-emerald-200 overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-emerald-50 to-transparent pb-3 border-b border-emerald-100">

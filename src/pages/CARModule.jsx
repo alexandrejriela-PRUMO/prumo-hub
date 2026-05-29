@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   FileText, Plus, Edit, Leaf, MapPin, Clock, Building2,
-  AlertTriangle, CheckCircle2, ChevronLeft, Sparkles, Layers
+  AlertTriangle, CheckCircle2, ChevronLeft, Sparkles, Layers, Trash2
 } from 'lucide-react';
 import CARSmartUpload from '@/components/car/CARSmartUpload';
 import { toast } from 'sonner';
@@ -120,6 +120,7 @@ async function fetchSICARLayers(carNumber) {
 export default function CARModule() {
   const [consultorPropertyId, setConsultorPropertyId] = useState(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const queryClient = useQueryClient();
 
   const { effectiveEmail, userType, isEquipe, isEquipeProdutor, memberRole, user } = useEffectiveUser();
@@ -221,6 +222,14 @@ export default function CARModule() {
           });
     },
     onSuccess: () => queryClient.invalidateQueries(['car', effectivePropertyId]),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (carId) => base44.entities.CARManagement.delete(carId),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['car', effectivePropertyId]);
+      setDeleteConfirmId(null);
+    },
   });
 
   if (!effectiveEmail) return <div className="flex items-center justify-center h-64"><Skeleton className="w-48 h-8" /></div>;
@@ -346,6 +355,16 @@ export default function CARModule() {
                     {canEdit && <Button variant="outline" size="sm" onClick={() => { setEditingCarId(carRecord.id); setEditOpen(true); }}>
                       <Edit className="w-4 h-4" />
                     </Button>}
+                    {canEdit && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-red-500 border-red-200 hover:bg-red-50 hover:border-red-400"
+                        onClick={() => setDeleteConfirmId(carRecord.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardHeader>
@@ -559,6 +578,37 @@ export default function CARModule() {
           ))}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteConfirmId} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="w-5 h-5" />
+              Excluir CAR
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-2">
+            <p className="text-sm text-gray-700">Tem certeza que deseja excluir este CAR? Esta ação não pode ser desfeita.</p>
+            {(() => {
+              const car = carRecords.find(c => c.id === deleteConfirmId);
+              return car?.car_number ? (
+                <p className="text-xs text-gray-500 mt-2 font-mono bg-gray-50 p-2 rounded border">{car.car_number}</p>
+              ) : null;
+            })()}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>Cancelar</Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              disabled={deleteMutation.isPending}
+              onClick={() => deleteMutation.mutate(deleteConfirmId)}
+            >
+              {deleteMutation.isPending ? 'Excluindo...' : 'Sim, Excluir'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={(open) => {

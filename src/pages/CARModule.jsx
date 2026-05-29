@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   FileText, Plus, Edit, Leaf, MapPin, Clock, Building2,
-  AlertTriangle, CheckCircle2, ChevronLeft, Sparkles
+  AlertTriangle, CheckCircle2, ChevronLeft, Sparkles, Trash2
 } from 'lucide-react';
 import CARSmartUpload from '@/components/car/CARSmartUpload';
 import { toast } from 'sonner';
@@ -57,11 +57,36 @@ const SICAR_LAYER_KEYS = {
   uso_restrito: 'outro_uso_restrito_url',
 };
 
+const SICAR_LAYER_COLORS = {
+  car_polygon: '#f59e0b',
+  app: '#3b82f6',
+  legal_reserve: '#10b981',
+  consolidated_area: '#8b5cf6',
+  remanescente: '#0f766e',
+  pousio: '#f59e0b',
+  hidrografia: '#0284c7',
+  servidao: '#be123c',
+  uso_restrito: '#7c3aed',
+};
+
+const SICAR_LAYER_NAMES = {
+  car_polygon: 'Polígono do CAR',
+  app: 'APP',
+  legal_reserve: 'Reserva Legal',
+  consolidated_area: 'Área Consolidada',
+  remanescente: 'Vegetação Nativa',
+  pousio: 'Pousio',
+  hidrografia: 'Hidrografia',
+  servidao: 'Servidão Administrativa',
+  uso_restrito: 'Uso Restrito',
+};
+
 async function fetchSICARLayers(carNumber) {
   const res = await fetch(`${R2_BASE}/${carNumber}.geojson`);
   if (!res.ok) return null;
   const geojson = await res.json();
   if (!geojson.features?.length) return null;
+
   const byLayer = {};
   geojson.features.forEach(f => {
     const layer = f.properties?._layer;
@@ -69,12 +94,27 @@ async function fetchSICARLayers(carNumber) {
     if (!byLayer[layer]) byLayer[layer] = { type: 'FeatureCollection', features: [] };
     byLayer[layer].features.push(f);
   });
+
   const mapLayers = {};
+  const kmlItems = [];
+
   Object.entries(byLayer).forEach(([layer, fc]) => {
-    const key = SICAR_LAYER_KEYS[layer];
-    if (key) mapLayers[key] = JSON.stringify(fc);
+    const mapKey = SICAR_LAYER_KEYS[layer];
+    if (mapKey) mapLayers[mapKey] = JSON.stringify(fc);
+
+    kmlItems.push({
+      id: `sicar-${carNumber}-${layer}`,
+      name: SICAR_LAYER_NAMES[layer] || layer,
+      geojson: fc,
+      color: SICAR_LAYER_COLORS[layer] || '#6b7280',
+      visible: true,
+      car_number: carNumber,
+      layer_type: layer,
+      source: 'SICAR',
+    });
   });
-  return Object.keys(mapLayers).length > 0 ? mapLayers : null;
+
+  return Object.keys(mapLayers).length > 0 ? { mapLayers, kmlItems } : null;
 }
 
 export default function CARModule() {
@@ -115,6 +155,22 @@ export default function CARModule() {
   const [showSmartUpload, setShowSmartUpload] = useState(false);
   const [prefillData, setPrefillData] = useState(null);
 
+  const deleteMutation = useMutation({
+    mutationFn: async (carRecord) => {
+      await base44.entities.CARManagement.delete(carRecord.id);
+      // Remove car_number from Property.car_numbers
+      if (carRecord.car_number && selectedProperty) {
+        const updated = (selectedProperty.car_numbers || []).filter(n => n !== carRecord.car_number);
+        await base44.entities.Property.update(selectedProperty.id, { car_numbers: updated });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['car', effectivePropertyId]);
+      queryClient.invalidateQueries(['properties', effectiveEmail, userType]);
+      toast.success('CAR excluído com sucesso.');
+    },
+  });
+
   const saveMutation = useMutation({
     mutationFn: async (data) => {
       const carData = editingCarId
@@ -136,9 +192,18 @@ export default function CARModule() {
 
       let sicarLoaded = false;
       if (data.car_number) {
-        const sicarLayers = await fetchSICARLayers(data.car_number).catch(() => null);
-        if (sicarLayers) {
-          await base44.entities.CARManagement.update(carData.id, { map_layers: sicarLayers });
+        const sicar = await fetchSICARLayers(data.car_number).catch(() => null);
+        if (sicar) {
+          await base44.entities.CARManagement.update(carData.id, { map_layers: sicar.mapLayers });
+
+          const prop = await base44.entities.Property.get(effectivePropertyId);
+          const existingKml = (prop.kml_layers || []).filter(
+            l => l.car_number !== data.car_number || l.source !== 'SICAR'
+          );
+          await base44.entities.Property.update(effectivePropertyId, {
+            kml_layers: [...existingKml, ...sicar.kmlItems],
+          });
+
           sicarLoaded = true;
         }
       }
@@ -254,9 +319,26 @@ export default function CARModule() {
                   </div>
                   <div className="flex items-center gap-2">
                     <CARStatusBadge status={carRecord.car_status} large />
-                    {canEdit && <Button variant="outline" size="sm" onClick={() => { setEditingCarId(carRecord.id); setEditOpen(true); }}>
-                      <Edit className="w-4 h-4" />
-                    </Button>}
+                    {canEdit && (
+                      <>
+                        <Button variant="outline" size="sm" onClick={() => { setEditingCarId(carRecord.id); setEditOpen(true); }}>
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-red-200 text-red-600 hover:bg-red-50"
+                          onClick={() => {
+                            if (window.confirm(`Excluir o CAR "${carRecord.car_number || 'sem número'}"? Esta ação não pode ser desfeita.`)) {
+                              deleteMutation.mutate(carRecord);
+                            }
+                          }}
+                          disabled={deleteMutation.isPending}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               </CardHeader>

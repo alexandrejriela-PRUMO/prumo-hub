@@ -95,13 +95,29 @@ Extraia e retorne EXATAMENTE os seguintes dados em JSON:
 - app_hectares: APP total em hectares como número (ex: 2.97)
 - legal_reserve_hectares: Área de Reserva Legal Proposta/Declarada em hectares (área declarada pelo proprietário como RL)
 - consolidated_area_hectares: Área Rural Consolidada em hectares (ex: 58.07)
-INSTRUÇÕES CRÍTICAS PARA EXTRAÇÃO DA REGULARIDADE AMBIENTAL:
-- passive_rl_balance_hectares: Extrair EXCLUSIVAMENTE do campo "Passivo / Excedente de Reserva Legal" da tabela de Regularidade Ambiental. Valor NEGATIVO = déficit (falta declarar mais RL). Valor POSITIVO = excedente. Exemplo: "-16,05" → extrair como -16.05. NÃO confundir com "RL a Recompor" — são campos DIFERENTES na mesma tabela.
-- legal_reserve_to_recover_hectares: Extrair EXCLUSIVAMENTE do campo "Área de Reserva Legal a recompor" da tabela de Regularidade Ambiental. Significa: área que FOI declarada como RL, mas que o SICAR identificou SEM vegetação nativa efetiva. Pode ser 0,00 mesmo quando há passivo — significa que toda a RL declarada tem vegetação, mas a área declarada é insuficiente. NÃO usar o valor do Passivo/Excedente aqui.
-- app_to_recover_hectares: Extrair EXCLUSIVAMENTE do campo "Áreas de Preservação Permanente a recompor" da tabela de Regularidade Ambiental. Significa: área de APP que o SICAR identificou SEM cobertura vegetal.
-- use_restriction_to_recover_hectares: Extrair EXCLUSIVAMENTE do campo "Área de Uso Restrito a recompor" da tabela de Regularidade Ambiental.
+CAMPOS DE REGULARIDADE AMBIENTAL — extrair APENAS do Demonstrativo, seção 'Regularidade Ambiental', tabela com 4 linhas:
+
+LINHA 1 da tabela: 'Passivo / Excedente de Reserva Legal'
+→ Campo: passive_rl_balance_hectares
+→ Exemplo real: valor '-16,05' → extrair como -16.05
+→ Significa: diferença entre RL exigida por lei e RL declarada. NEGATIVO = falta declarar. NUNCA será o mesmo valor de 'RL a recompor'.
+
+LINHA 2 da tabela: 'Área de Reserva Legal a recompor'
+→ Campo: legal_reserve_to_recover_hectares
+→ Exemplo real: pode ser '0,00' mesmo quando há passivo de RL — isso é CORRETO e esperado
+→ Significa: área dentro da RL JÁ DECLARADA que não tem vegetação. Pode ser zero.
+
+LINHA 3 da tabela: 'Áreas de Preservação Permanente a recompor'
+→ Campo: app_to_recover_hectares
+→ Exemplo real: '2,63'
+
+LINHA 4 da tabela: 'Área de Uso Restrito a recompor'
+→ Campo: use_restriction_to_recover_hectares
+
+ATENÇÃO CRÍTICA: passive_rl_balance_hectares e legal_reserve_to_recover_hectares SÃO CAMPOS DIFERENTES.
+Nunca copie o valor absoluto do passivo para o campo 'a recompor'. Leia cada linha independentemente.
+
 - native_vegetation_hectares: Extrair de "Área de Remanescente de Vegetação Nativa" na seção Cobertura do Solo. Este valor é INDEPENDENTE da RL — é toda a vegetação nativa do imóvel, podendo ser maior ou menor que a RL declarada.
-ATENÇÃO: Estes 5 campos têm linhas SEPARADAS na tabela do Demonstrativo. Leia cada linha individualmente. NÃO some nem misture valores entre linhas.
 - car_situation: Situação do Cadastro: "Ativo", "Cancelado" ou "Pendente de análise". Extrair do campo "Situação do Cadastro" no Demonstrativo.
 - municipality: Município (ex: "Santa Bárbara do Sul")
 - state: Unidade da Federação (ex: "RS")
@@ -148,12 +164,27 @@ DO DEMONSTRATIVO DE SITUAÇÃO (quando presente):
 - car_last_update: Data da Última Retificação no formato YYYY-MM-DD (mesmo valor)
 - car_situation: Situação do Cadastro ("Ativo", "Cancelado", "Pendente de análise")
 
-INSTRUÇÕES CRÍTICAS PARA EXTRAÇÃO DA REGULARIDADE AMBIENTAL:
-- passive_rl_balance_hectares: Extrair EXCLUSIVAMENTE do campo "Passivo / Excedente de Reserva Legal" da tabela de Regularidade Ambiental. Valor NEGATIVO = déficit (falta declarar mais RL). Valor POSITIVO = excedente. Exemplo: "-16,05" → extrair como -16.05. NÃO confundir com "RL a Recompor" — são campos DIFERENTES na mesma tabela.
-- legal_reserve_to_recover_hectares: Extrair EXCLUSIVAMENTE do campo "Área de Reserva Legal a recompor" da tabela de Regularidade Ambiental. Significa: área que FOI declarada como RL, mas que o SICAR identificou SEM vegetação nativa efetiva. Pode ser 0,00 mesmo quando há passivo — significa que toda a RL declarada tem vegetação, mas a área declarada é insuficiente. NÃO usar o valor do Passivo/Excedente aqui.
-- app_to_recover_hectares: Extrair EXCLUSIVAMENTE do campo "Áreas de Preservação Permanente a recompor" da tabela de Regularidade Ambiental. Significa: área de APP que o SICAR identificou SEM cobertura vegetal.
-- use_restriction_to_recover_hectares: Extrair EXCLUSIVAMENTE do campo "Área de Uso Restrito a recompor" da tabela de Regularidade Ambiental.
-ATENÇÃO: Estes 4 campos têm linhas SEPARADAS na tabela do Demonstrativo. Leia cada linha individualmente. NÃO some nem misture valores entre linhas.
+CAMPOS DE REGULARIDADE AMBIENTAL — extrair APENAS do Demonstrativo, seção 'Regularidade Ambiental', tabela com 4 linhas:
+
+LINHA 1 da tabela: 'Passivo / Excedente de Reserva Legal'
+→ Campo: passive_rl_balance_hectares
+→ Exemplo real: valor '-16,05' → extrair como -16.05
+→ Significa: diferença entre RL exigida por lei e RL declarada. NEGATIVO = falta declarar. NUNCA será o mesmo valor de 'RL a recompor'.
+
+LINHA 2 da tabela: 'Área de Reserva Legal a recompor'
+→ Campo: legal_reserve_to_recover_hectares
+→ Exemplo real: pode ser '0,00' mesmo quando há passivo de RL — isso é CORRETO e esperado
+→ Significa: área dentro da RL JÁ DECLARADA que não tem vegetação. Pode ser zero.
+
+LINHA 3 da tabela: 'Áreas de Preservação Permanente a recompor'
+→ Campo: app_to_recover_hectares
+→ Exemplo real: '2,63'
+
+LINHA 4 da tabela: 'Área de Uso Restrito a recompor'
+→ Campo: use_restriction_to_recover_hectares
+
+ATENÇÃO CRÍTICA: passive_rl_balance_hectares e legal_reserve_to_recover_hectares SÃO CAMPOS DIFERENTES.
+Nunca copie o valor absoluto do passivo para o campo 'a recompor'. Leia cada linha independentemente.
 
 CAMPOS COMUNS (preencher com base nos documentos disponíveis):
 - car_status: "Validado", "Em análise pelo órgão ambiental", "Pendente de análise", "Com inconsistências", "Cancelado", "Necessita retificação"

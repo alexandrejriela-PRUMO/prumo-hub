@@ -448,7 +448,6 @@ export default function CARModule() {
                       !carRecord.legal_reserve_hectares && 'Reserva Legal (ha)',
                       carRecord.legal_reserve_to_recover_hectares == null && 'RL a Recompor (ha)',
                       carRecord.app_to_recover_hectares == null && 'APP a Recompor (ha)',
-                      !carRecord.native_vegetation_hectares && 'Veg. Nativa Remanescente',
                       !carRecord.car_registration_date && 'Data de Cadastro',
                       !carRecord.ai_analysis && 'Diagnóstico IA',
                     ].filter(Boolean);

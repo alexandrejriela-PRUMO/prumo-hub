@@ -129,18 +129,38 @@ function MapContent({
         />
       )}
 
-      {activeLayers.car && carGeoJson && (
-        <GeoJSON data={carGeoJson} style={LAYER_STYLES.car} />
-      )}
+      {/* Built-in layers: only render if there's no kmlLayer covering the same layer_type (avoid duplicates with SICAR imports) */}
+      {(() => {
+        const kmlTypes = new Set((kmlLayers || []).map(l => l.layer_type).filter(Boolean));
+        const hasKmlCar = (kmlLayers || []).some(l => l.layer_type === 'car_polygon_url');
+        const hasKmlApp = kmlTypes.has('app_layer_url');
+        const hasKmlRL = kmlTypes.has('legal_reserve_url');
+        const hasKmlRecovery = kmlTypes.has('recovery_area_url');
+        const hasKmlConsolidated = kmlTypes.has('consolidated_area_url');
 
-      {activeLayers.app && carLayers?.app_layer_url && (() => {
-        const gj = parseGeoJson(carLayers.app_layer_url);
-        return gj ? <GeoJSON data={gj} style={LAYER_STYLES.app} /> : null;
-      })()}
-
-      {activeLayers.legalReserve && carLayers?.legal_reserve_url && (() => {
-        const gj = parseGeoJson(carLayers.legal_reserve_url);
-        return gj ? <GeoJSON data={gj} style={LAYER_STYLES.legalReserve} /> : null;
+        return (
+          <>
+            {activeLayers.car && carGeoJson && !hasKmlCar && (
+              <GeoJSON data={carGeoJson} style={LAYER_STYLES.car} />
+            )}
+            {activeLayers.app && carLayers?.app_layer_url && !hasKmlApp && (() => {
+              const gj = parseGeoJson(carLayers.app_layer_url);
+              return gj ? <GeoJSON data={gj} style={LAYER_STYLES.app} /> : null;
+            })()}
+            {activeLayers.legalReserve && carLayers?.legal_reserve_url && !hasKmlRL && (() => {
+              const gj = parseGeoJson(carLayers.legal_reserve_url);
+              return gj ? <GeoJSON data={gj} style={LAYER_STYLES.legalReserve} /> : null;
+            })()}
+            {activeLayers.recovery && carLayers?.recovery_area_url && !hasKmlRecovery && (() => {
+              const gj = parseGeoJson(carLayers.recovery_area_url);
+              return gj ? <GeoJSON data={gj} style={LAYER_STYLES.recovery} /> : null;
+            })()}
+            {activeLayers.consolidated && carLayers?.consolidated_area_url && !hasKmlConsolidated && (() => {
+              const gj = parseGeoJson(carLayers.consolidated_area_url);
+              return gj ? <GeoJSON data={gj} style={LAYER_STYLES.consolidated} /> : null;
+            })()}
+          </>
+        );
       })()}
 
       {/* propertyAreas are already included in kmlLayers with visibility toggle — no duplicate render here */}

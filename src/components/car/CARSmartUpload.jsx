@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { base44 } from '@/api/base44Client';
@@ -26,17 +26,33 @@ const DOC_TYPES = [
   },
 ];
 
-function mapStatusFromDoc(conditionStr) {
-  if (!conditionStr) return 'Pendente de análise';
-  const c = conditionStr.toLowerCase();
-  if (c.includes('aguardando análise') || c.includes('aguardando analise')) return 'Pendente de análise';
-  if (c.includes('em análise') || c.includes('em analise')) return 'Em análise pelo órgão ambiental';
-  if (c.includes('validado') || c.includes('ativo')) return 'Validado';
-  if (c.includes('inconsistência') || c.includes('inconsistencia')) return 'Com inconsistências';
-  if (c.includes('cancelado')) return 'Cancelado';
-  if (c.includes('retific')) return 'Necessita retificação';
-  return 'Pendente de análise';
-}
+const SCHEMA_PROPERTIES = {
+  car_number: { type: 'string' },
+  car_registration_date: { type: 'string' },
+  car_last_update: { type: 'string' },
+  car_area_hectares: { type: 'number' },
+  app_hectares: { type: 'number' },
+  legal_reserve_hectares: { type: 'number' },
+  consolidated_area_hectares: { type: 'number' },
+  native_vegetation_hectares: { type: 'number' },
+  legal_reserve_to_recover_hectares: { type: 'number' },
+  app_to_recover_hectares: { type: 'number' },
+  municipality: { type: 'string' },
+  state: { type: 'string' },
+  owner_name: { type: 'string' },
+  registration_numbers: { type: 'string' },
+  coordinates: { type: 'string' },
+  car_status: { type: 'string' },
+  environmental_liabilities: { type: 'array', items: { type: 'string' } },
+  car_notes: { type: 'string' },
+  ai_analysis: { type: 'string' },
+  passive_rl_balance_hectares: { type: 'number' },
+  use_restriction_to_recover_hectares: { type: 'number' },
+  car_situation: { type: 'string' },
+  owner_cpf_cnpj: { type: 'string' },
+  last_rectification_date: { type: 'string' },
+  registration_details: { type: 'string' },
+};
 
 function buildPrompt(docType) {
   if (docType === 'recibo') {
@@ -98,12 +114,118 @@ Para coordenadas: converta graus/minutos/segundos para decimal.
 Para campos não encontrados: use null.`;
 }
 
+function buildPromptCompleto(hasRecibo, hasDemonstrativo) {
+  const docsDesc = hasRecibo && hasDemonstrativo
+    ? 'O PRIMEIRO documento é o Recibo de Inscrição do CAR (dados cadastrais, proprietário, matrículas). O SEGUNDO é o Demonstrativo de Situação (regularidade ambiental, áreas a recompor, data de retificação).'
+    : hasRecibo
+    ? 'O documento fornecido é o Recibo de Inscrição do CAR.'
+    : 'O documento fornecido é o Demonstrativo de Situação do CAR.';
+
+  return `Você é um especialista em Cadastro Ambiental Rural (CAR) do Brasil. ${docsDesc}
+
+Extraia e consolide em um único JSON todos os campos disponíveis nos documentos fornecidos:
+
+DO RECIBO DE INSCRIÇÃO (quando presente):
+- car_number: Número/Registro do CAR
+- car_registration_date: Data de Cadastro no formato YYYY-MM-DD
+- car_area_hectares: Área Total em hectares
+- app_hectares: APP em hectares
+- legal_reserve_hectares: Reserva Legal declarada em hectares
+- consolidated_area_hectares: Área Consolidada em hectares
+- native_vegetation_hectares: Remanescente de Vegetação Nativa em hectares (seção Cobertura do Solo)
+- municipality: Município
+- state: UF/Estado
+- owner_name: Nome do Proprietário/Possuidor
+- owner_cpf_cnpj: CPF ou CNPJ do proprietário
+- registration_numbers: Números de matrículas separados por vírgula
+- registration_details: Matrículas completas — número, data, livro, folha, município do cartório, uma por linha
+- coordinates: Coordenadas "LAT,LNG" decimais negativas para Sul/Oeste
+
+DO DEMONSTRATIVO DE SITUAÇÃO (quando presente):
+- last_rectification_date: Data da Última Retificação no formato YYYY-MM-DD
+- car_last_update: Data da Última Retificação no formato YYYY-MM-DD (mesmo valor)
+- car_situation: Situação do Cadastro ("Ativo", "Cancelado", "Pendente de análise")
+- passive_rl_balance_hectares: Passivo/Excedente de RL — NEGATIVO = déficit (campo 'Passivo / Excedente de Reserva Legal')
+- legal_reserve_to_recover_hectares: RL a Recompor — área declarada como RL SEM vegetação efetiva (NÃO é o déficit)
+- app_to_recover_hectares: APP a Recompor — APP sem cobertura vegetal
+- use_restriction_to_recover_hectares: Uso Restrito a Recompor em hectares
+
+CAMPOS COMUNS (preencher com base nos documentos disponíveis):
+- car_status: "Validado", "Em análise pelo órgão ambiental", "Pendente de análise", "Com inconsistências", "Cancelado", "Necessita retificação"
+- environmental_liabilities: Array — ["Déficit de Reserva Legal", "Déficit de APP", "Área degradada", "Uso irregular em APP", "Compensação de Reserva Legal", "Servidão ambiental"]
+- car_notes: Resumo das observações e regularidade ambiental
+- ai_analysis: Análise técnica completa em português: situação cadastral, passivos encontrados, áreas a recompor, recomendações. Máximo 400 palavras.
+
+Para coordenadas: converta graus/minutos/segundos para decimal (Sul/Oeste = negativo).
+Para datas: formato YYYY-MM-DD.
+Para campos não encontrados nos documentos disponíveis: use null.`;
+}
+
+function buildFormData(result, docType) {
+  const liabilities = [...(result.environmental_liabilities || [])];
+  if (result.legal_reserve_to_recover_hectares > 0 && !liabilities.includes('Déficit de Reserva Legal')) {
+    liabilities.push('Déficit de Reserva Legal');
+  }
+  if (result.app_to_recover_hectares > 0 && !liabilities.includes('Déficit de APP')) {
+    liabilities.push('Déficit de APP');
+  }
+
+  return {
+    car_number: result.car_number || '',
+    car_status: result.car_status || 'Pendente de análise',
+    car_registration_date: result.car_registration_date || '',
+    car_last_update: result.car_last_update || '',
+    car_area_hectares: result.car_area_hectares || '',
+    car_notes: result.car_notes || '',
+    ai_analysis: result.ai_analysis || '',
+    environmental_liabilities: liabilities,
+    app_hectares: result.app_hectares || '',
+    legal_reserve_hectares: result.legal_reserve_hectares || '',
+    consolidated_area_hectares: result.consolidated_area_hectares || '',
+    legal_reserve_to_recover_hectares: result.legal_reserve_to_recover_hectares || '',
+    app_to_recover_hectares: result.app_to_recover_hectares || '',
+    owner_name: result.owner_name || '',
+    municipality: result.municipality || '',
+    state: result.state || '',
+    registration_numbers: result.registration_numbers || '',
+    coordinates: result.coordinates || '',
+    native_vegetation_hectares: result.native_vegetation_hectares ?? '',
+    passive_rl_balance_hectares: result.passive_rl_balance_hectares ?? '',
+    use_restriction_to_recover_hectares: result.use_restriction_to_recover_hectares ?? '',
+    car_situation: result.car_situation || '',
+    owner_cpf_cnpj: result.owner_cpf_cnpj || '',
+    last_rectification_date: result.last_rectification_date || '',
+    registration_details: result.registration_details || '',
+    // Internal fields for property update
+    _app_hectares: result.app_hectares,
+    _legal_reserve_hectares: result.legal_reserve_hectares,
+    _coordinates: result.coordinates,
+    _municipality: result.municipality,
+    _state: result.state,
+    _owner_name: result.owner_name,
+    _registration_numbers: result.registration_numbers,
+    _ai_analysis: result.ai_analysis,
+    _doc_type: docType,
+    _file_url: result._file_url || '',
+    _consolidated_area: result.consolidated_area_hectares,
+    _legal_reserve_to_recover: result.legal_reserve_to_recover_hectares,
+    _app_to_recover: result.app_to_recover_hectares,
+    _missing_demonstrativo: docType === 'recibo',
+    _missing_recibo: docType === 'demonstrativo',
+  };
+}
+
 export default function CARSmartUpload({ onDataExtracted, onClose }) {
   const [step, setStep] = useState('choose'); // 'choose' | 'upload' | 'analyzing' | 'done'
   const [selectedType, setSelectedType] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
-  const [fileUrl, setFileUrl] = useState(null);
+
+  // Completo mode state
+  const [reciboFile, setReciboFile] = useState(null);
+  const [demonstrativoFile, setDemonstrativoFile] = useState(null);
+  const reciboInputRef = useRef(null);
+  const demonstrativoInputRef = useRef(null);
 
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0];
@@ -112,44 +234,12 @@ export default function CARSmartUpload({ onDataExtracted, onClose }) {
     setError(null);
 
     try {
-      // 1. Upload PDF
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setFileUrl(file_url);
 
-      // 2. Extract data with AI vision
       const extracted = await base44.integrations.Core.InvokeLLM({
         prompt: buildPrompt(selectedType),
         file_urls: [file_url],
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            car_number: { type: 'string' },
-            car_registration_date: { type: 'string' },
-            car_last_update: { type: 'string' },
-            car_area_hectares: { type: 'number' },
-            app_hectares: { type: 'number' },
-            legal_reserve_hectares: { type: 'number' },
-            consolidated_area_hectares: { type: 'number' },
-            native_vegetation_hectares: { type: 'number' },
-            legal_reserve_to_recover_hectares: { type: 'number' },
-            app_to_recover_hectares: { type: 'number' },
-            municipality: { type: 'string' },
-            state: { type: 'string' },
-            owner_name: { type: 'string' },
-            registration_numbers: { type: 'string' },
-            coordinates: { type: 'string' },
-            car_status: { type: 'string' },
-            environmental_liabilities: { type: 'array', items: { type: 'string' } },
-            car_notes: { type: 'string' },
-            ai_analysis: { type: 'string' },
-            passive_rl_balance_hectares: { type: 'number' },
-            use_restriction_to_recover_hectares: { type: 'number' },
-            car_situation: { type: 'string' },
-            owner_cpf_cnpj: { type: 'string' },
-            last_rectification_date: { type: 'string' },
-            registration_details: { type: 'string' },
-          }
-        },
+        response_json_schema: { type: 'object', properties: SCHEMA_PROPERTIES },
         model: 'gemini_3_flash',
       });
 
@@ -169,64 +259,50 @@ export default function CARSmartUpload({ onDataExtracted, onClose }) {
     e.target.value = '';
   };
 
+  const handleUploadCompleto = async () => {
+    if (!reciboFile && !demonstrativoFile) return;
+    setStep('analyzing');
+    setError(null);
+
+    try {
+      const fileUrls = [];
+      let primaryUrl = null;
+
+      if (reciboFile) {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file: reciboFile });
+        fileUrls.push(file_url);
+        primaryUrl = file_url;
+      }
+      if (demonstrativoFile) {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file: demonstrativoFile });
+        fileUrls.push(file_url);
+        if (!primaryUrl) primaryUrl = file_url;
+      }
+
+      const extracted = await base44.integrations.Core.InvokeLLM({
+        prompt: buildPromptCompleto(!!reciboFile, !!demonstrativoFile),
+        file_urls: fileUrls,
+        response_json_schema: { type: 'object', properties: SCHEMA_PROPERTIES },
+        model: 'gemini_3_flash',
+      });
+
+      setResult({
+        ...extracted,
+        _file_url: primaryUrl,
+        _doc_type: 'completo',
+        _missing_demonstrativo: false,
+        _missing_recibo: false,
+      });
+      setStep('done');
+    } catch (err) {
+      setError('Erro ao processar os PDFs. Tente novamente.');
+      setStep('upload');
+    }
+  };
+
   const handleApply = () => {
     if (!result) return;
-
-    // Map extracted data to CARManagement form fields
-    const formData = {
-      car_number: result.car_number || '',
-      car_status: result.car_status || 'Pendente de análise',
-      car_registration_date: result.car_registration_date || '',
-      car_last_update: result.car_last_update || '',
-      car_area_hectares: result.car_area_hectares || '',
-      car_notes: result.car_notes || '',
-      ai_analysis: result.ai_analysis || '',
-      environmental_liabilities: result.environmental_liabilities || [],
-      // Fields saved directly to CARManagement
-      app_hectares: result.app_hectares || '',
-      legal_reserve_hectares: result.legal_reserve_hectares || '',
-      consolidated_area_hectares: result.consolidated_area_hectares || '',
-      native_vegetation_hectares: result.native_vegetation_hectares || '',
-      legal_reserve_to_recover_hectares: result.legal_reserve_to_recover_hectares || '',
-      app_to_recover_hectares: result.app_to_recover_hectares || '',
-      owner_name: result.owner_name || '',
-      municipality: result.municipality || '',
-      state: result.state || '',
-      registration_numbers: result.registration_numbers || '',
-      coordinates: result.coordinates || '',
-      native_vegetation_hectares: result.native_vegetation_hectares ?? '',
-      passive_rl_balance_hectares: result.passive_rl_balance_hectares ?? '',
-      use_restriction_to_recover_hectares: result.use_restriction_to_recover_hectares ?? '',
-      car_situation: result.car_situation || '',
-      owner_cpf_cnpj: result.owner_cpf_cnpj || '',
-      last_rectification_date: result.last_rectification_date || '',
-      registration_details: result.registration_details || '',
-      // Extra data passed for property update
-      _app_hectares: result.app_hectares,
-      _legal_reserve_hectares: result.legal_reserve_hectares,
-      _coordinates: result.coordinates,
-      _municipality: result.municipality,
-      _state: result.state,
-      _owner_name: result.owner_name,
-      _registration_numbers: result.registration_numbers,
-      _ai_analysis: result.ai_analysis,
-      _doc_type: result._doc_type,
-      _file_url: result._file_url,
-      _consolidated_area: result.consolidated_area_hectares,
-      _legal_reserve_to_recover: result.legal_reserve_to_recover_hectares,
-      _app_to_recover: result.app_to_recover_hectares,
-      _missing_demonstrativo: result._missing_demonstrativo,
-      _missing_recibo: result._missing_recibo,
-    };
-
-    // If there are liabilities detected from demonstrativo passivos
-    if (result.legal_reserve_to_recover_hectares > 0 && !formData.environmental_liabilities.includes('Déficit de Reserva Legal')) {
-      formData.environmental_liabilities.push('Déficit de Reserva Legal');
-    }
-    if (result.app_to_recover_hectares > 0 && !formData.environmental_liabilities.includes('Déficit de APP')) {
-      formData.environmental_liabilities.push('Déficit de APP');
-    }
-
+    const formData = buildFormData(result, result._doc_type);
     onDataExtracted(formData);
   };
 
@@ -243,21 +319,40 @@ export default function CARSmartUpload({ onDataExtracted, onClose }) {
             <p className="text-sm text-gray-500 mt-1">Faça upload do PDF do CAR e a IA extrai os dados automaticamente</p>
           </div>
 
-          <div className="grid gap-3">
+          <div className="space-y-2">
+            {/* Opção destacada: Completo */}
+            <div
+              onClick={() => { setSelectedType('completo'); setStep('upload'); }}
+              className="flex items-center gap-3 p-4 rounded-xl border-2 border-emerald-300 bg-emerald-50 hover:bg-emerald-100 cursor-pointer transition-all"
+            >
+              <div className="w-10 h-10 rounded-lg bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-sm font-semibold text-emerald-800">Recibo + Demonstrativo (Dados Completos)</p>
+                  <span className="text-[10px] bg-emerald-600 text-white rounded px-1.5 py-0.5 font-semibold flex-shrink-0">RECOMENDADO</span>
+                </div>
+                <p className="text-xs text-emerald-700 mt-0.5">Envie os dois PDFs de uma vez para extração integral — proprietário, matrículas, regularidade ambiental e áreas a recompor</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+            </div>
+
+            {/* Opções individuais */}
             {DOC_TYPES.map(dt => (
               <button
                 key={dt.id}
                 onClick={() => { setSelectedType(dt.id); setStep('upload'); }}
-                className={`w-full text-left p-4 rounded-xl border-2 transition-all hover:border-${dt.color}-400 hover:bg-${dt.color}-50/50 border-gray-200 bg-white group`}
+                className="w-full text-left p-4 rounded-xl border-2 transition-all hover:border-gray-300 hover:bg-gray-50 border-gray-200 bg-white group"
               >
                 <div className="flex items-start gap-3">
                   <span className="text-2xl flex-shrink-0">{dt.icon}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 text-sm group-hover:text-emerald-800">{dt.label}</p>
+                    <p className="font-semibold text-gray-900 text-sm group-hover:text-gray-800">{dt.label}</p>
                     <p className="text-xs text-gray-500 mt-0.5">{dt.description}</p>
                     <p className="text-[11px] text-gray-400 mt-1 italic">{dt.hint}</p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 flex-shrink-0 mt-0.5" />
                 </div>
               </button>
             ))}
@@ -271,8 +366,8 @@ export default function CARSmartUpload({ onDataExtracted, onClose }) {
         </div>
       )}
 
-      {/* Step: Upload */}
-      {step === 'upload' && (
+      {/* Step: Upload — single PDF */}
+      {step === 'upload' && selectedType !== 'completo' && (
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <button onClick={() => setStep('choose')} className="text-gray-400 hover:text-gray-600">
@@ -301,6 +396,94 @@ export default function CARSmartUpload({ onDataExtracted, onClose }) {
         </div>
       )}
 
+      {/* Step: Upload — dual PDFs (completo) */}
+      {step === 'upload' && selectedType === 'completo' && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <button onClick={() => { setStep('choose'); setReciboFile(null); setDemonstrativoFile(null); }} className="text-gray-400 hover:text-gray-600">
+              <ChevronRight className="w-4 h-4 rotate-180" />
+            </button>
+            <span className="text-sm font-medium text-gray-700">Recibo + Demonstrativo (Dados Completos)</span>
+          </div>
+
+          <div className="space-y-3">
+            <p className="text-xs text-gray-500 text-center">Selecione os dois arquivos PDF do CAR para extração completa</p>
+            <div className="grid grid-cols-2 gap-3">
+              {/* Dropzone Recibo */}
+              <div
+                onClick={() => reciboInputRef.current?.click()}
+                className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed cursor-pointer transition-all ${reciboFile ? 'border-emerald-400 bg-emerald-50' : 'border-gray-200 hover:border-emerald-300 hover:bg-gray-50'}`}
+              >
+                <input
+                  ref={reciboInputRef}
+                  type="file"
+                  accept=".pdf"
+                  className="hidden"
+                  onChange={e => setReciboFile(e.target.files[0] || null)}
+                />
+                {reciboFile
+                  ? <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                  : <Upload className="w-6 h-6 text-gray-400" />
+                }
+                <p className="text-xs font-semibold text-center text-gray-700">
+                  {reciboFile ? reciboFile.name : 'Recibo de Inscrição'}
+                </p>
+                <p className="text-[10px] text-gray-400 text-center">CAR-XXXX.pdf</p>
+              </div>
+
+              {/* Dropzone Demonstrativo */}
+              <div
+                onClick={() => demonstrativoInputRef.current?.click()}
+                className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed cursor-pointer transition-all ${demonstrativoFile ? 'border-emerald-400 bg-emerald-50' : 'border-gray-200 hover:border-emerald-300 hover:bg-gray-50'}`}
+              >
+                <input
+                  ref={demonstrativoInputRef}
+                  type="file"
+                  accept=".pdf"
+                  className="hidden"
+                  onChange={e => setDemonstrativoFile(e.target.files[0] || null)}
+                />
+                {demonstrativoFile
+                  ? <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                  : <Upload className="w-6 h-6 text-gray-400" />
+                }
+                <p className="text-xs font-semibold text-center text-gray-700">
+                  {demonstrativoFile ? demonstrativoFile.name : 'Demonstrativo de Situação'}
+                </p>
+                <p className="text-[10px] text-gray-400 text-center">Demonstrativo_XX.pdf</p>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              disabled={!reciboFile && !demonstrativoFile}
+              onClick={handleUploadCompleto}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              {reciboFile && demonstrativoFile
+                ? 'Extrair dados completos (2 PDFs)'
+                : 'Extrair dados disponíveis (1 PDF)'}
+            </Button>
+
+            {(reciboFile || demonstrativoFile) && !(reciboFile && demonstrativoFile) && (
+              <p className="text-[10px] text-amber-600 text-center">
+                {!reciboFile
+                  ? '⚠ Sem o Recibo, CPF/CNPJ e matrículas não serão extraídos'
+                  : '⚠ Sem o Demonstrativo, RL/APP a Recompor não serão extraídos'}
+              </p>
+            )}
+
+            {error && (
+              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                {error}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Step: Analyzing */}
       {step === 'analyzing' && (
         <div className="py-10 text-center space-y-4">
@@ -308,7 +491,11 @@ export default function CARSmartUpload({ onDataExtracted, onClose }) {
             <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
           </div>
           <div>
-            <p className="font-semibold text-gray-900">Analisando documento com IA...</p>
+            <p className="font-semibold text-gray-900">
+              {selectedType === 'completo' && (reciboFile && demonstrativoFile)
+                ? 'Analisando 2 documentos com IA...'
+                : 'Analisando documento com IA...'}
+            </p>
             <p className="text-sm text-gray-500 mt-1">Extraindo dados do CAR, áreas ambientais e gerando análise técnica</p>
           </div>
           <div className="flex justify-center gap-2 flex-wrap text-xs text-gray-400">
@@ -327,7 +514,9 @@ export default function CARSmartUpload({ onDataExtracted, onClose }) {
           <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-emerald-800">Dados extraídos com sucesso!</p>
+              <p className="text-sm font-semibold text-emerald-800">
+                {result._doc_type === 'completo' ? 'Dados extraídos e mesclados com sucesso!' : 'Dados extraídos com sucesso!'}
+              </p>
               <p className="text-xs text-emerald-600">Revise os dados abaixo e clique em "Aplicar ao Formulário"</p>
             </div>
           </div>
@@ -367,7 +556,7 @@ export default function CARSmartUpload({ onDataExtracted, onClose }) {
           </div>
 
           {result._missing_demonstrativo && (
-            <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl mt-3">
+            <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl">
               <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-xs font-semibold text-amber-800">Dados de Regularidade Ambiental indisponíveis</p>
@@ -379,7 +568,7 @@ export default function CARSmartUpload({ onDataExtracted, onClose }) {
             </div>
           )}
           {result._missing_recibo && (
-            <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl mt-3">
+            <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl">
               <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-xs font-semibold text-blue-800">Dados do proprietário e matrículas indisponíveis</p>
@@ -421,7 +610,7 @@ export default function CARSmartUpload({ onDataExtracted, onClose }) {
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => { setStep('choose'); setResult(null); }}
+              onClick={() => { setStep('choose'); setResult(null); setReciboFile(null); setDemonstrativoFile(null); }}
               className="flex items-center gap-1"
             >
               <X className="w-3 h-3" /> Refazer

@@ -706,8 +706,8 @@ export default function CARModule() {
             </DialogTitle>
           </DialogHeader>
 
-          {/* Novo CAR: mostrar smart upload ou formulário */}
-          {!editingCarId && showSmartUpload ? (
+          {/* Smart Upload (criação ou edição) */}
+          {showSmartUpload ? (
             <CARSmartUpload
               onDataExtracted={(data) => {
                 setPrefillData(data);
@@ -717,8 +717,8 @@ export default function CARModule() {
             />
           ) : (
             <>
-              {/* Botão de IA apenas no modo criação */}
-              {!editingCarId && !prefillData && (
+              {/* Botão de IA — sempre disponível */}
+              {!prefillData && (
                 <div className="mb-2 flex justify-end">
                   <Button
                     type="button"
@@ -728,7 +728,7 @@ export default function CARModule() {
                     onClick={() => setShowSmartUpload(true)}
                   >
                     <Sparkles className="w-3.5 h-3.5" />
-                    Preencher com PDF do CAR
+                    {editingCarId ? 'Atualizar campos com PDF' : 'Preencher com PDF do CAR'}
                   </Button>
                 </div>
               )}
@@ -749,7 +749,19 @@ export default function CARModule() {
               )}
               <CARForm
                 key={editingCarId || (prefillData ? 'prefill' : 'new')}
-                initial={editingCarId ? carRecords.find(c => c.id === editingCarId) || {} : (cleanedPrefillData || {})}
+                initial={(() => {
+                  const base = editingCarId ? (carRecords.find(c => c.id === editingCarId) || {}) : {};
+                  if (!cleanedPrefillData) return base;
+                  // Mescla: prefill preenche campos nulos/vazios do registro existente
+                  const merged = { ...base };
+                  Object.entries(cleanedPrefillData).forEach(([k, v]) => {
+                    if (k.startsWith('_')) return;
+                    if (v != null && v !== '' && (merged[k] == null || merged[k] === '')) {
+                      merged[k] = v;
+                    }
+                  });
+                  return merged;
+                })()}
                 onSubmit={async (data) => {
                   // Se veio de prefillData, atualiza Property com dados extras extraídos pela IA
                   if (prefillData && selectedProperty) {
@@ -779,7 +791,7 @@ export default function CARModule() {
                 }}
                 onCancel={() => { setEditOpen(false); setEditingCarId(null); setPrefillData(null); setShowSmartUpload(false); }}
                 isLoading={saveMutation.isPending}
-                aiAnalysis={cleanedPrefillData?.ai_analysis}
+                aiAnalysis={prefillData?.ai_analysis || undefined}
               />
             </>
           )}

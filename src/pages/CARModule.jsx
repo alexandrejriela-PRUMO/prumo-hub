@@ -227,21 +227,41 @@ export default function CARModule() {
   const deleteMutation = useMutation({
     mutationFn: async (carId) => {
       const carRecord = carRecords.find(c => c.id === carId);
+      const carNumber = carRecord?.car_number;
 
+      // 1. Deleta o CAR
       await base44.entities.CARManagement.delete(carId);
 
-      if (carRecord?.car_number && selectedProperty) {
+      if (carNumber && selectedProperty) {
+        // 2. Limpa kml_layers — por car_number OU pelo padrão do id
         const kmlAtual = selectedProperty.kml_layers || [];
-        const kmlLimpo = kmlAtual.filter(l => l.car_number !== carRecord.car_number);
+        const kmlLimpo = kmlAtual.filter(l => {
+          if (l.car_number === carNumber) return false;
+          if (l.id && l.id.startsWith(`sicar-${carNumber}-`)) return false;
+          // Camadas órfãs SICAR sem car_number — tenta extrair do id
+          if (l.source === 'SICAR' && !l.car_number) {
+            const SICAR_LAYER_TYPES = ['car_polygon','app','legal_reserve','consolidated_area','remanescente','pousio','hidrografia','servidoes','outro_uso_restrito'];
+            if (l.id && l.id.startsWith('sicar-')) {
+              const withoutPrefix = l.id.slice(6);
+              const layerSuffix = SICAR_LAYER_TYPES.find(lt => withoutPrefix.endsWith('-' + lt));
+              if (layerSuffix) {
+                const extractedCar = withoutPrefix.slice(0, -(layerSuffix.length + 1));
+                if (extractedCar === carNumber) return false;
+              }
+            }
+          }
+          return true;
+        });
         await base44.entities.Property.update(selectedProperty.id, { kml_layers: kmlLimpo });
 
+        // 3. Remove de car_numbers
         const carsAtuais = selectedProperty.car_numbers || [];
-        const carsFiltrados = carsAtuais.filter(n => n !== carRecord.car_number);
+        const carsFiltrados = carsAtuais.filter(n => n !== carNumber);
         await base44.entities.Property.update(selectedProperty.id, { car_numbers: carsFiltrados });
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['car', effectivePropertyId]);
+      queryClient.invalidateQueries(['carManagement', selectedPropertyId || effectivePropertyId]);
       queryClient.invalidateQueries(['properties', effectiveEmail, userType]);
       setDeleteConfirmId(null);
     },

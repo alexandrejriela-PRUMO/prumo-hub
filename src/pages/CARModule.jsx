@@ -168,14 +168,20 @@ export default function CARModule() {
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
-      const carData = editingCarId
-        ? await base44.entities.CARManagement.update(editingCarId, data)
-        : await base44.entities.CARManagement.create({
-            ...data,
-            property_id: effectivePropertyId,
-            owner_email: selectedProperty?.owner_email || effectiveEmail,
-            consultor_email: isConsultor ? effectiveEmail : undefined,
-          });
+      console.log('[DEBUG SAVE] passive_rl_balance_hectares sendo enviado:', data.passive_rl_balance_hectares, typeof data.passive_rl_balance_hectares);
+
+      let carData;
+      if (editingCarId) {
+        carData = await base44.entities.CARManagement.update(editingCarId, data);
+      } else {
+        carData = await base44.entities.CARManagement.create({
+          ...data,
+          property_id: effectivePropertyId,
+          owner_email: selectedProperty?.owner_email || effectiveEmail,
+          consultor_email: isConsultor ? effectiveEmail : undefined,
+        });
+      }
+      console.log('[DEBUG SAVE] passive_rl_balance_hectares retornado do banco:', carData?.passive_rl_balance_hectares);
 
       if (data.car_number && selectedProperty) {
         const existingCars = selectedProperty.car_numbers || [];

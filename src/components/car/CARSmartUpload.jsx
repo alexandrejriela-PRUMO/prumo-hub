@@ -187,16 +187,42 @@ function buildFormData(result, docType) {
     app_hectares: result.app_hectares || '',
     legal_reserve_hectares: result.legal_reserve_hectares || '',
     consolidated_area_hectares: result.consolidated_area_hectares || '',
-    legal_reserve_to_recover_hectares: result.legal_reserve_to_recover_hectares || '',
-    app_to_recover_hectares: result.app_to_recover_hectares || '',
+    legal_reserve_to_recover_hectares: (() => {
+      const raw = result.legal_reserve_to_recover_hectares;
+      if (raw === null || raw === undefined) return '';
+      const parsed = parseFloat(String(raw).replace(',', '.'));
+      return isNaN(parsed) ? '' : parsed;
+    })(),
+    app_to_recover_hectares: (() => {
+      const raw = result.app_to_recover_hectares;
+      if (raw === null || raw === undefined) return '';
+      const parsed = parseFloat(String(raw).replace(',', '.'));
+      return isNaN(parsed) ? '' : parsed;
+    })(),
     owner_name: result.owner_name || '',
     municipality: result.municipality || '',
     state: result.state || '',
     registration_numbers: result.registration_numbers || '',
     coordinates: result.coordinates || '',
-    native_vegetation_hectares: result.native_vegetation_hectares ?? '',
-    passive_rl_balance_hectares: result.passive_rl_balance_hectares ?? '',
-    use_restriction_to_recover_hectares: result.use_restriction_to_recover_hectares ?? '',
+    native_vegetation_hectares: (() => {
+      const raw = result.native_vegetation_hectares;
+      if (raw === null || raw === undefined) return '';
+      const parsed = parseFloat(String(raw).replace(',', '.'));
+      return isNaN(parsed) ? '' : parsed;
+    })(),
+    passive_rl_balance_hectares: (() => {
+      const raw = result.passive_rl_balance_hectares;
+      if (raw === null || raw === undefined) return '';
+      const normalized = String(raw).replace(',', '.');
+      const parsed = parseFloat(normalized);
+      return isNaN(parsed) ? '' : parsed;
+    })(),
+    use_restriction_to_recover_hectares: (() => {
+      const raw = result.use_restriction_to_recover_hectares;
+      if (raw === null || raw === undefined) return '';
+      const parsed = parseFloat(String(raw).replace(',', '.'));
+      return isNaN(parsed) ? '' : parsed;
+    })(),
     car_situation: result.car_situation || '',
     owner_cpf_cnpj: result.owner_cpf_cnpj || '',
     last_rectification_date: result.last_rectification_date || '',

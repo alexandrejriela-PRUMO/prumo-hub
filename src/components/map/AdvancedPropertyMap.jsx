@@ -132,11 +132,13 @@ function MapContent({
       {/* Built-in layers: only render if there's no kmlLayer covering the same layer_type (avoid duplicates with SICAR imports) */}
       {(() => {
         const kmlTypes = new Set((kmlLayers || []).map(l => l.layer_type).filter(Boolean));
-        const hasKmlCar = (kmlLayers || []).some(l => l.layer_type === 'car_polygon_url');
-        const hasKmlApp = kmlTypes.has('app_layer_url');
-        const hasKmlRL = kmlTypes.has('legal_reserve_url');
-        const hasKmlRecovery = kmlTypes.has('recovery_area_url');
-        const hasKmlConsolidated = kmlTypes.has('consolidated_area_url');
+        // Se há kmlLayers vindas do SICAR (com layer_type definido), suprimir as built-ins equivalentes
+        const hasSicarImport = (kmlLayers || []).some(l => l.layer_type);
+        const hasKmlCar = hasSicarImport || kmlTypes.has('car_polygon_url');
+        const hasKmlApp = kmlTypes.has('app_layer_url') || hasSicarImport;
+        const hasKmlRL = kmlTypes.has('legal_reserve_url') || hasSicarImport;
+        const hasKmlRecovery = kmlTypes.has('recovery_area_url') || hasSicarImport;
+        const hasKmlConsolidated = kmlTypes.has('consolidated_area_url') || hasSicarImport;
 
         return (
           <>

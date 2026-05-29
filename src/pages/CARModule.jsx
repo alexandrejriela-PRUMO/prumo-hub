@@ -375,7 +375,10 @@ export default function CARModule() {
         const somaRL = carRecords.reduce((s, c) => s + (parseFloat(c.legal_reserve_hectares) || 0), 0);
         const somaRLRecompor = carRecords.reduce((s, c) => s + (parseFloat(c.legal_reserve_to_recover_hectares) || 0), 0);
         const somaAppRecompor = carRecords.reduce((s, c) => s + (parseFloat(c.app_to_recover_hectares) || 0), 0);
-        const somaPassivoRL = carRecords.reduce((s, c) => s + (parseFloat(c.passive_rl_balance_hectares) || 0), 0);
+        const somaPassivoRL = carRecords.reduce((s, c) => {
+          const val = parseFloat(c.passive_rl_balance_hectares);
+          return s + (isNaN(val) ? 0 : val);
+        }, 0);
         const temPassivos = somaRLRecompor > 0 || somaAppRecompor > 0 || somaPassivoRL < 0;
 
         return (
@@ -503,7 +506,7 @@ export default function CARModule() {
                       !carRecord.legal_reserve_hectares && 'Reserva Legal (ha)',
                       !carRecord.car_registration_date && 'Data de Cadastro',
                       !carRecord.ai_analysis && 'Diagnóstico IA',
-                      !carRecord.last_rectification_date && !carRecord.passive_rl_balance_hectares && 'Demonstrativo (RL/APP a Recompor)',
+                      (!carRecord.last_rectification_date && isNaN(parseFloat(carRecord.passive_rl_balance_hectares))) && 'Demonstrativo (RL/APP a Recompor)',
                     ].filter(Boolean);
                     return camposFaltantes.length > 0 ? (
                       <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl">
@@ -552,14 +555,22 @@ export default function CARModule() {
                         <div><p className="text-gray-500">Veg. Nativa Remanescente</p>
                         <p className="font-semibold text-teal-600">{carRecord.native_vegetation_hectares} ha</p></div>
                       )}
-                      {carRecord.passive_rl_balance_hectares != null && carRecord.passive_rl_balance_hectares !== '' && (
-                        <div>
-                          <p className="text-gray-500">Passivo/Excedente RL</p>
-                          <p className={`font-semibold ${carRecord.passive_rl_balance_hectares < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                            {carRecord.passive_rl_balance_hectares < 0 ? '⚠ ' : '✓ '}
-                            {carRecord.passive_rl_balance_hectares} ha
-                          </p>
-                        </div>
+                      {(() => {
+                        const passiveVal = parseFloat(carRecord.passive_rl_balance_hectares);
+                        if (isNaN(passiveVal)) return null;
+                        return (
+                          <div>
+                            <p className="text-gray-500">Passivo/Excedente RL</p>
+                            <p className={`font-semibold ${passiveVal < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                              {passiveVal < 0 ? '⚠ ' : '✓ '}
+                              {passiveVal.toFixed(2)} ha
+                              <span className="text-[10px] font-normal ml-1 opacity-70">
+                                {passiveVal < 0 ? '(déficit)' : '(excedente)'}
+                              </span>
+                            </p>
+                          </div>
+                        );
+                      })()}
                       )}
                       {carRecord.owner_cpf_cnpj && (
                         <div><p className="text-gray-500">CPF/CNPJ</p>

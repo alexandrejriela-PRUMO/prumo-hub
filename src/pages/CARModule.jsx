@@ -142,7 +142,12 @@ export default function CARModule() {
     initialData: [],
   });
 
-  const effectivePropertyId = isConsultor ? consultorPropertyId : (properties[0]?.id || null);
+  const [produtorPropertyId, setProdutorPropertyId] = useState(null);
+
+  // Para produtor: usa o seletor se tiver mais de 1 propriedade, senão usa a primeira
+  const effectivePropertyId = isConsultor
+    ? consultorPropertyId
+    : (properties.length > 1 ? produtorPropertyId : (properties[0]?.id || null));
   const selectedProperty = properties.find(p => p.id === effectivePropertyId);
 
   const { data: carRecords = [], isLoading: carLoading } = useQuery({
@@ -291,12 +296,19 @@ export default function CARModule() {
         Voltar
       </a>
 
-      {/* Property Selector (consultor) */}
-      {isConsultor && (
+      {/* Property Selector (consultor ou produtor com múltiplas propriedades) */}
+      {isConsultor ? (
         <ConsultorPropertySelector
           properties={properties}
           selectedPropertyId={consultorPropertyId}
           onSelect={setConsultorPropertyId}
+          isLoading={propsLoading}
+        />
+      ) : properties.length > 1 && (
+        <ConsultorPropertySelector
+          properties={properties}
+          selectedPropertyId={produtorPropertyId}
+          onSelect={setProdutorPropertyId}
           isLoading={propsLoading}
         />
       )}
@@ -318,7 +330,7 @@ export default function CARModule() {
       </div>
 
       {/* Sem propriedade selecionada */}
-      {isConsultor && !consultorPropertyId && (
+      {((isConsultor && !consultorPropertyId) || (!isConsultor && properties.length > 1 && !produtorPropertyId)) && (
         <Card className="border-dashed border-2 border-amber-200">
           <CardContent className="py-16 text-center">
             <Building2 className="w-16 h-16 mx-auto text-amber-300 mb-4" />

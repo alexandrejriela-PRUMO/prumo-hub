@@ -168,8 +168,6 @@ export default function CARModule() {
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
-      console.log('[DEBUG SAVE] passive_rl_balance_hectares sendo enviado:', data.passive_rl_balance_hectares, typeof data.passive_rl_balance_hectares);
-
       let carData;
       if (editingCarId) {
         carData = await base44.entities.CARManagement.update(editingCarId, data);
@@ -181,7 +179,6 @@ export default function CARModule() {
           consultor_email: isConsultor ? effectiveEmail : undefined,
         });
       }
-      console.log('[DEBUG SAVE] passive_rl_balance_hectares retornado do banco:', carData?.passive_rl_balance_hectares);
 
       if (data.car_number && selectedProperty) {
         const existingCars = selectedProperty.car_numbers || [];
@@ -195,7 +192,12 @@ export default function CARModule() {
       if (data.car_number) {
         const sicar = await fetchSICARLayers(data.car_number).catch(() => null);
         if (sicar) {
-          await base44.entities.CARManagement.update(carData.id, { map_layers: sicar.mapLayers });
+          // Lê o registro atual antes de atualizar map_layers para não sobrescrever campos já salvos
+          const currentRecord = await base44.entities.CARManagement.get(carData.id);
+          await base44.entities.CARManagement.update(carData.id, {
+            ...currentRecord,
+            map_layers: sicar.mapLayers,
+          });
 
           const prop = await base44.entities.Property.get(effectivePropertyId);
           const existingKml = (prop.kml_layers || []).filter(
@@ -209,17 +211,11 @@ export default function CARModule() {
         }
       }
 
-      console.log('[PRUMO DEBUG] Dados sendo salvos:', JSON.stringify({
-        passive_rl_balance_hectares: data.passive_rl_balance_hectares,
-        legal_reserve_to_recover_hectares: data.legal_reserve_to_recover_hectares,
-        app_to_recover_hectares: data.app_to_recover_hectares,
-      }));
       return { sicarLoaded };
     },
     onSuccess: ({ sicarLoaded }) => {
       queryClient.invalidateQueries(['car', effectivePropertyId]);
       queryClient.invalidateQueries(['properties', effectiveEmail, userType]);
-      console.log('[PRUMO DEBUG] CAR salvo, buscando registro atualizado...');
       setEditOpen(false);
       setEditingCarId(null);
       toast.success(

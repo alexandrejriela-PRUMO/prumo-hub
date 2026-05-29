@@ -352,6 +352,27 @@ export default function CARModule() {
                     </CardContent>
                   </Card>
 
+                  {/* Diagnóstico IA */}
+                  {carRecord.ai_analysis && (
+                    <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Sparkles className="w-4 h-4 text-purple-600" />
+                        <p className="text-xs font-semibold text-purple-800">Diagnóstico Ambiental (IA)</p>
+                        <span className="text-[10px] text-purple-400 ml-auto">Gerado automaticamente via Smart Upload</span>
+                      </div>
+                      <p className="text-xs text-purple-900 leading-relaxed">{carRecord.ai_analysis}</p>
+                    </div>
+                  )}
+
+                  {carRecord.environmental_liabilities?.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <span className="text-xs font-semibold text-orange-700">Passivos:</span>
+                      {carRecord.environmental_liabilities.map(l => (
+                        <Badge key={l} className="bg-orange-100 text-orange-800 border border-orange-200 text-xs">{l}</Badge>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Documentos */}
                   <CARDocuments
                     carRecord={carRecord}

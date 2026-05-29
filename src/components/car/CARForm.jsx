@@ -21,12 +21,17 @@ const defaultForm = {
   environmental_liabilities: [],
   recovery_project_status: 'Não possui', recovery_technician: '', recovery_start_date: '',
   recovery_deadline: '', recovery_area_hectares: '', recovery_notes: '',
+  ai_analysis: '',
 };
 
 export default function CARForm({ initial, onSubmit, onCancel, isLoading, aiAnalysis }) {
   const [form, setForm] = useState({ ...defaultForm, ...initial });
 
   useEffect(() => { if (initial) setForm({ ...defaultForm, ...initial }); }, [initial]);
+
+  useEffect(() => {
+    if (aiAnalysis) set('ai_analysis', aiAnalysis);
+  }, [aiAnalysis]);
 
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
 
@@ -55,13 +60,13 @@ export default function CARForm({ initial, onSubmit, onCancel, isLoading, aiAnal
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* AI Analysis banner */}
-      {aiAnalysis && (
+      {form.ai_analysis && (
         <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl">
           <div className="flex items-center gap-2 mb-2">
             <Sparkles className="w-4 h-4 text-purple-600" />
             <p className="text-xs font-semibold text-purple-800">Análise Técnica Ambiental (IA)</p>
           </div>
-          <p className="text-xs text-purple-900 leading-relaxed">{aiAnalysis}</p>
+          <p className="text-xs text-purple-900 leading-relaxed">{form.ai_analysis}</p>
         </div>
       )}
       {/* CAR */}

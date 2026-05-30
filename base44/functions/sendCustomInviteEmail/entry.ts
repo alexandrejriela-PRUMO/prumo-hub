@@ -8,7 +8,7 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { email, name = '', type = 'consultor', plan = 'start', document = '' } = body;
+    const { email, name = '', type = 'consultor', plan = 'enterprise', document = '' } = body;
 
     if (!email) {
       return Response.json({ error: 'email é obrigatório' }, { status: 400 });
@@ -18,8 +18,6 @@ Deno.serve(async (req) => {
 
     const typeLabel = type === 'produtor' ? 'Produtor Rural' : 'Consultor';
     const planLabel = {
-      start: 'Consultor Start',
-      pro: 'Consultor Pro',
       enterprise: 'Consultor Enterprise',
       unico: 'Produtor Único'
     }[plan] || plan;

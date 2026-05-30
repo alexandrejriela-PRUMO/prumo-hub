@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
           user_id: user.id,
           user_type: memberUserType,
           primary_consultor_email: primaryEmail,
-          plano: 'start',
+          plano: 'enterprise',
           subscription_status: 'active',
         });
         console.log(`[persistTeamMemberUserType] UserMetadata criado: ${user.email}`);

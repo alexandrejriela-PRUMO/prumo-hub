@@ -73,21 +73,13 @@ function extractPlan(body) {
   if (offerId === 'EQL1OTT' || productNameLower.includes('enterprise')) {
     return { perfil: 'consultor', plano: 'enterprise', user_type: 'consultor', max_properties: 200, max_users: 3 };
   }
-  // Consultor - Pro
-  if (offerId === '8QA4VR2' || productNameLower.includes('consultor pro')) {
-    return { perfil: 'consultor', plano: 'pro', user_type: 'consultor', max_properties: 10, max_users: 2 };
-  }
-  // Consultor - Start
-  if (offerId === 'GYXWU5X' || productNameLower.includes('start')) {
-    return { perfil: 'consultor', plano: 'start', user_type: 'consultor', max_properties: 5, max_users: 1 };
-  }
   // Fallback produtor por nome
   if (productNameLower.includes('produtor') || productNameLower.includes('rural')) {
     return { perfil: 'produtor', plano: 'unico', user_type: 'produtor', max_properties: 1, max_users: 1 };
   }
 
   console.warn('[webhookTransacaoPaga] Plano não reconhecido. ProductName:', productName, 'OfferId:', offerId);
-  return { perfil: 'consultor', plano: 'start', user_type: 'consultor', max_properties: 5, max_users: 1 };
+  return { perfil: 'consultor', plano: 'enterprise', user_type: 'consultor', max_properties: 200, max_users: 3 };
 }
 
 async function upsertUserMetadata(base44, email, userId, planInfo) {

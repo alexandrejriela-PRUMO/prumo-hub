@@ -344,7 +344,7 @@ export default function Layout({ children, currentPageName }) {
           // Montar userMeta sintético com o user_type correto
           setUserMeta({
             user_type: effectiveData.user_type,
-            plano: effectiveData.consultor_plan || u.plano || 'start',
+            plano: effectiveData.consultor_plan || u.plano || 'enterprise',
           });
           // Se o user_type mudou, atualizar o estado do user local
           if (effectiveData.user_type !== u.user_type) {
@@ -352,7 +352,7 @@ export default function Layout({ children, currentPageName }) {
           }
         } else {
           // Fallback: usar dados do próprio user
-          setUserMeta({ user_type: u.user_type, plano: u.plano || 'start' });
+          setUserMeta({ user_type: u.user_type, plano: u.plano || 'enterprise' });
         }
       } catch (err) {
         console.warn('[Layout] getEffectiveUser falhou, usando fallback local:', err?.message);
@@ -362,9 +362,9 @@ export default function Layout({ children, currentPageName }) {
           if (u) {
             const metas = await base44.entities.UserMetadata.filter({ user_email: u.email }, '-created_date', 1);
             if (metas?.length > 0) {
-              setUserMeta({ user_type: metas[0].user_type || u.user_type, plano: metas[0].plano || u.plano || 'start' });
+              setUserMeta({ user_type: metas[0].user_type || u.user_type, plano: metas[0].plano || u.plano || 'enterprise' });
             } else {
-              setUserMeta({ user_type: u.user_type, plano: u.plano || 'start' });
+              setUserMeta({ user_type: u.user_type, plano: u.plano || 'enterprise' });
             }
           }
         } catch {
@@ -442,7 +442,7 @@ export default function Layout({ children, currentPageName }) {
 
   // Memoiza a lista de itens de menu filtrados
   const filteredMenuItems = useMemo(() => {
-    const plano = userMeta?.plano || user?.plano || 'start';
+    const plano = userMeta?.plano || user?.plano || 'enterprise';
     const isEnterprise = plano === 'enterprise';
     // userMeta é SEMPRE a fonte da verdade — nunca usar user?.user_type diretamente para menu
     // (user?.user_type pode estar em cache de sessão com valor desatualizado)

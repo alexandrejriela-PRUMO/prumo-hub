@@ -13,7 +13,7 @@ const PLAN_COLORS = {
 };
 
 const PERFIS = ['consultor', 'produtor'];
-const PLANOS = ['start', 'pro', 'enterprise', 'unico'];
+const PLANOS = ['enterprise', 'unico'];
 const STATUSES = ['pending_invite', 'invited', 'active', 'inactive'];
 
 function EditLeadModal({ lead, onClose, onSaved }) {

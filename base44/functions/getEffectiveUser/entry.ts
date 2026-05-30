@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
           { user_email: primaryEmail }, '-created_date', 1
         );
         if (primaryMeta.length > 0) {
-          primaryPlan = primaryMeta[0].plano || 'start';
+          primaryPlan = primaryMeta[0].plano || 'enterprise';
           primaryUserType = primaryMeta[0].user_type || null;
           console.log(`[getEffectiveUser] primaryUserType via UserMetadata: ${primaryUserType} para ${primaryEmail}`);
         }

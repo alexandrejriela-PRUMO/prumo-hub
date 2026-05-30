@@ -29,50 +29,6 @@ const PRODUTOR_PLAN = {
 
 const CONSULTOR_PLANS = [
   {
-    id: 'start',
-    name: 'Start',
-    icon: Leaf,
-    color: 'emerald',
-    monthlyPrice: 129,
-    annualPrice: 1290,
-    annualMonthly: 107.5,
-    users: '1 usuário',
-    properties: 'Até 5 propriedades',
-    notifications: 'Notificação pessoal (consultor)',
-    clientAccess: '—',
-    training: 'Autoatendimento',
-    commitment: 'Fidelidade de 12 meses',
-    features: [
-      '1 usuário consultor',
-      'Até 5 propriedades/clientes',
-      'Notificação pessoal para o consultor',
-      'Materiais de autoatendimento',
-      'Fidelidade de 12 meses',
-    ],
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    icon: Star,
-    color: 'blue',
-    monthlyPrice: 249,
-    annualPrice: 2490,
-    annualMonthly: 207.5,
-    users: 'Até 2 usuários',
-    properties: 'Até 10 propriedades',
-    notifications: 'Consultor + equipe',
-    clientAccess: '—',
-    training: 'Autoatendimento + Webinars',
-    commitment: 'Fidelidade de 12 meses',
-    features: [
-      'Até 2 usuários (consultor + equipe)',
-      'Até 10 propriedades/clientes',
-      'Notificação para o consultor e equipe',
-      'Autoatendimento + Webinars periódicos',
-      'Fidelidade de 12 meses',
-    ],
-  },
-  {
     id: 'enterprise',
     name: 'Enterprise',
     icon: Crown,
@@ -330,7 +286,7 @@ export default function SubscriptionStatus() {
       {/* Consultor */}
       {userType === 'consultor' && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 items-start">
+          <div className="grid grid-cols-1 max-w-lg mx-auto gap-4 md:gap-6 items-start">
             {CONSULTOR_PLANS.map((plan) => (
               <ConsultorPlanCard
                 key={plan.id}
@@ -341,50 +297,6 @@ export default function SubscriptionStatus() {
               />
             ))}
           </div>
-
-          {/* Comparison table */}
-          <Card className="border-gray-200">
-            <CardHeader>
-              <CardTitle className="text-base">Comparativo de Planos</CardTitle>
-            </CardHeader>
-            <CardContent className="overflow-x-auto p-0">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="text-left p-3 font-semibold text-gray-700">Recurso</th>
-                    <th className="text-center p-3 font-semibold text-emerald-700">Start</th>
-                    <th className="text-center p-3 font-semibold text-blue-700">Pro</th>
-                    <th className="text-center p-3 font-semibold text-amber-700">Enterprise</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {[
-                    ['Usuários', '1', 'Até 2', 'Até 3'],
-                    ['Propriedades/Clientes', 'Até 5', 'Até 10', 'Até 200'],
-                    ['CRM Prumo', '—', '—', '✅'],
-                    ['Agenda', '—', '—', '✅'],
-                    ['ERP Financeiro', '—', '—', '✅'],
-                    ['Alerta MapBiomas', '—', '—', '✅'],
-                    ['Monitoramento DOE-RS/FEPAM', '—', '—', '✅'],
-                    ['Notificação Consultor', '✅', '✅', '✅'],
-                    ['Notificação Equipe', '—', '✅', '✅'],
-                    ['Notificação Cliente', '—', '—', '✅'],
-                    ['Portal do Cliente', '—', '—', '✅'],
-                    ['Relatórios de Gestão', '—', '—', '✅'],
-                    ['Webinars Periódicos', '—', '✅', '✅'],
-                    ['Treinamentos Personalizados', '—', '—', '✅'],
-                  ].map(([feature, start, pro, enterprise]) => (
-                    <tr key={feature} className="hover:bg-gray-50">
-                      <td className="p-3 text-gray-700">{feature}</td>
-                      <td className="p-3 text-center text-emerald-700 font-medium">{start}</td>
-                      <td className="p-3 text-center text-blue-700 font-medium">{pro}</td>
-                      <td className="p-3 text-center text-amber-700 font-medium">{enterprise}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
         </>
       )}
 

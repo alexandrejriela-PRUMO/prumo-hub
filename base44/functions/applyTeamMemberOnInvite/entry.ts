@@ -23,14 +23,14 @@ Deno.serve(async (req) => {
 
     // Descobrir tipo do usuário principal
     let primaryUserType = caller.user_type || 'consultor';
-    let primaryPlano = 'start';
+    let primaryPlano = 'enterprise';
     try {
       const primaryMeta = await base44.asServiceRole.entities.UserMetadata.filter(
         { user_email: primaryEmail }, '-created_date', 1
       );
       if (primaryMeta && primaryMeta.length > 0) {
         primaryUserType = primaryMeta[0].user_type || primaryUserType;
-        primaryPlano = primaryMeta[0].plano || 'start';
+        primaryPlano = primaryMeta[0].plano || 'enterprise';
       }
     } catch (e) {
       console.warn('[applyTeamMemberOnInvite] Erro ao buscar UserMetadata do principal:', e.message);

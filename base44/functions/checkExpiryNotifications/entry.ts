@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
         await createNotif(consultorEmail, title, message, eventType, severity, link);
         const consultorData = await getUserData(consultorEmail);
         const plan = (consultorData?.plan || '').toLowerCase();
-        if (['pro', 'enterprise'].includes(plan)) {
+        if (['enterprise'].includes(plan)) {
           const teamEmails = await getTeamEmails(consultorEmail);
           for (const m of teamEmails) {
             if (m !== ownerEmail && m !== consultorEmail) {
@@ -416,7 +416,7 @@ Deno.serve(async (req) => {
           }
           // Notifica demais membros da equipe (plano pro/enterprise)
           const plan = (consultorData?.plan || '').toLowerCase();
-          if (['pro', 'enterprise'].includes(plan)) {
+          if (['enterprise'].includes(plan)) {
             const team = await getTeamEmails(crm.consultor_email);
             for (const memberEmail of team) {
               if (memberEmail === responsible) continue;

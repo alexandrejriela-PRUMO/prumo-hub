@@ -4,8 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { Search, Pencil, RefreshCw } from 'lucide-react';
 
 const PLAN_LABELS = {
-  start: { label: 'Consultor Start', color: 'bg-gray-100 text-gray-700' },
-  pro: { label: 'Consultor Pro', color: 'bg-blue-100 text-blue-700' },
   enterprise: { label: 'Consultor Enterprise', color: 'bg-orange-100 text-orange-700' },
   unico: { label: 'Produtor Único', color: 'bg-emerald-100 text-emerald-700' },
 };

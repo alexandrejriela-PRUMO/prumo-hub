@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
       email: inviteEmail,
       name: lead.nome || '',
       type: lead.perfil || 'consultor',
-      plan: lead.plano || 'start'
+      plan: lead.plano || 'enterprise'
     });
 
     // 3. Invite user via base44 platform

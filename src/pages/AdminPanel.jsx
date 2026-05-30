@@ -143,8 +143,6 @@ function AdminStatsPanel() {
     { label: 'Produtores', value: byType['produtor'] || 0, color: 'bg-emerald-50 text-emerald-700' },
     { label: 'Consultores', value: byType['consultor'] || 0, color: 'bg-amber-50 text-amber-700' },
     { label: 'Leads Pendentes', value: pendingLeads.length, color: 'bg-red-50 text-red-700' },
-    { label: 'Plano Start', value: byPlan['start'] || 0, color: 'bg-gray-50 text-gray-700' },
-    { label: 'Plano Pro', value: byPlan['pro'] || 0, color: 'bg-purple-50 text-purple-700' },
     { label: 'Plano Enterprise', value: byPlan['enterprise'] || 0, color: 'bg-orange-50 text-orange-700' },
     { label: 'Plano Único (Produtor)', value: byPlan['unico'] || 0, color: 'bg-teal-50 text-teal-700' },
   ];

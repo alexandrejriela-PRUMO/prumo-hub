@@ -13,7 +13,7 @@ import {
 import { format, differenceInDays, parseISO, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-const PLAN_LABELS = { start: 'Start', pro: 'Pro', enterprise: 'Enterprise', unico: 'Único', sem_plano: 'Sem Plano' };
+const PLAN_LABELS = { enterprise: 'Enterprise', unico: 'Único', sem_plano: 'Sem Plano' };
 const PLAN_COLORS = {
   start: 'bg-gray-100 text-gray-700 border-gray-200',
   pro: 'bg-purple-100 text-purple-700 border-purple-200',

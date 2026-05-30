@@ -10,8 +10,6 @@ import { UserPlus, Mail, Shield, AlertCircle, CheckCircle2, Info } from 'lucide-
 import { toast } from 'sonner';
 
 const PLANS = [
-  { value: 'start', label: 'Consultor Start' },
-  { value: 'pro', label: 'Consultor Pro' },
   { value: 'enterprise', label: 'Consultor Enterprise' },
   { value: 'unico', label: 'Produtor Único' },
 ];
@@ -26,7 +24,7 @@ export default function AdminInviteUser() {
     email: '',
     role: 'user',
     user_type: 'consultor',
-    plano: 'start',
+    plano: 'enterprise',
     subscription_status: 'active',
   });
   const [result, setResult] = useState(null);
@@ -80,7 +78,7 @@ export default function AdminInviteUser() {
 
       setResult({ success: true, email: form.email });
       toast.success(`Convite enviado para ${form.email}`);
-      setForm({ email: '', role: 'user', user_type: 'consultor', plano: 'start', subscription_status: 'active' });
+      setForm({ email: '', role: 'user', user_type: 'consultor', plano: 'enterprise', subscription_status: 'active' });
     } catch (err) {
       setResult({ success: false, message: err?.message || 'Erro ao convidar usuário.' });
       toast.error('Erro ao enviar convite.');
@@ -120,7 +118,7 @@ export default function AdminInviteUser() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Tipo de perfil</Label>
-              <Select value={form.user_type} onValueChange={v => setForm(f => ({ ...f, user_type: v, plano: v === 'produtor' ? 'unico' : 'start' }))}>
+              <Select value={form.user_type} onValueChange={v => setForm(f => ({ ...f, user_type: v, plano: v === 'produtor' ? 'unico' : 'enterprise' }))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

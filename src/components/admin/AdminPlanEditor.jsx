@@ -6,8 +6,6 @@ import { toast } from 'sonner';
 import AdminPropertyAccess from './AdminPropertyAccess';
 
 const PLANOS = [
-  { value: 'start', label: 'Consultor Start', user_type: 'consultor', max_properties: 5, max_users: 1 },
-  { value: 'pro', label: 'Consultor Pro', user_type: 'consultor', max_properties: 10, max_users: 2 },
   { value: 'enterprise', label: 'Consultor Enterprise', user_type: 'consultor', max_properties: 200, max_users: 3 },
   { value: 'unico', label: 'Produtor Único', user_type: 'produtor', max_properties: 1, max_users: 3 },
 ];

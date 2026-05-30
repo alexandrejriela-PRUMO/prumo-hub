@@ -8,8 +8,6 @@ const OFFER_MAP = {
   'PXP3P68': { perfil: 'produtor',  label: 'Produtor Rural',                    emoji: '🌾',    badge: 'Oferta Especial' },
   'GNJXUCE': { perfil: 'produtor',  label: 'Produtor Rural',                    emoji: '🌾',    badge: null },
   'EQL1OTT': { perfil: 'consultor', label: 'Consultor Enterprise',              emoji: '🧑‍💼', badge: null },
-  '8QA4VR2': { perfil: 'consultor', label: 'Consultor Pro',                     emoji: '🧑‍💼', badge: null },
-  'GYXWU5X': { perfil: 'consultor', label: 'Consultor Start',                   emoji: '🧑‍💼', badge: null },
   '9V4FUD5': { perfil: 'consultor', label: 'Consultor Enterprise (Desconto)',   emoji: '🧑‍💼', badge: 'Oferta Especial' },
 };
 

@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
           // Herdar plano do principal (consultor ou produtor)
           const primaryEmail = (tm.primary_user_email || tm.consultor_email || '').toLowerCase();
           const primaryMeta = metaByEmailForPending[primaryEmail];
-          const plan = primaryMeta?.plano || 'start';
+          const plan = primaryMeta?.plano || 'enterprise';
           
           return {
             id: `pending_${tm.id}`,

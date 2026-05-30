@@ -117,36 +117,6 @@ const diferenciais = [
 
 const planos = [
   {
-    name: 'Start',
-    price: 129,
-    desc: '1 usuário consultor • Até 5 propriedades/clientes.',
-    color: 'border-emerald-200',
-    badge: null,
-    checkoutUrl: 'https://checkout.nexano.com.br/checkout/cmo2vmthl06bp1yms3aaa35wv?offer=GYXWU5X',
-    items: [
-      '1 usuário consultor',
-      'Até 5 propriedades/clientes',
-      'Notificação pessoal para o consultor',
-      'Materiais de autoatendimento',
-      'Fidelidade de 12 meses',
-    ],
-  },
-  {
-    name: 'Pro',
-    price: 249,
-    desc: 'Até 2 usuários (consultor + equipe) • Até 10 propriedades.',
-    color: 'border-blue-300',
-    badge: null,
-    checkoutUrl: 'https://checkout.nexano.com.br/checkout/cmo2vmthl06bp1yms3aaa35wv?offer=8QA4VR2',
-    items: [
-      'Até 2 usuários (consultor + equipe)',
-      'Até 10 propriedades/clientes',
-      'Notificação para o consultor e equipe',
-      'Autoatendimento + Webinars periódicos',
-      'Fidelidade de 12 meses',
-    ],
-  },
-  {
     name: 'Enterprise',
     price: 497,
     desc: 'Até 3 usuários • Até 200 propriedades/clientes. Plano mais completo.',
@@ -392,11 +362,11 @@ export default function LandingConsultor({ onLogin }) {
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Escolha o plano ideal</h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-6 items-start">
+          <div className="grid md:grid-cols-1 max-w-lg mx-auto gap-6 items-start">
             {planos.map((plan) => {
-              const borderColor = plan.name === 'Start' ? 'border-emerald-200' : plan.name === 'Pro' ? 'border-blue-300' : 'border-amber-400';
-              const checkColor = plan.name === 'Start' ? 'text-emerald-600' : plan.name === 'Pro' ? 'text-blue-600' : 'text-amber-500';
-              const btnColor = plan.highlight ? 'bg-amber-500 text-white hover:bg-amber-600' : plan.name === 'Pro' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-emerald-600 text-white hover:bg-emerald-700';
+              const borderColor = 'border-amber-400';
+              const checkColor = 'text-amber-500';
+              const btnColor = 'bg-amber-500 text-white hover:bg-amber-600';
               return (
                 <div key={plan.name} className={`relative rounded-2xl border-2 ${borderColor} bg-white p-8 flex flex-col shadow-sm hover:shadow-lg transition-shadow ${plan.highlight ? 'scale-105 shadow-xl' : ''}`}>
                   {plan.badge && (
@@ -426,48 +396,6 @@ export default function LandingConsultor({ onLogin }) {
             })}
           </div>
 
-          {/* Tabela comparativa */}
-          <div className="mt-10 bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-            <div className="px-6 py-4 border-b border-gray-100">
-              <h3 className="font-bold text-gray-900">Comparativo de Planos</h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="text-left p-3 font-semibold text-gray-700">Recurso</th>
-                    <th className="text-center p-3 font-semibold text-emerald-700">Start</th>
-                    <th className="text-center p-3 font-semibold text-blue-700">Pro</th>
-                    <th className="text-center p-3 font-semibold text-amber-700">Enterprise</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {[
-                    ['Usuários', '1', 'Até 2', 'Até 3'],
-                    ['Propriedades/Clientes', 'Até 5', 'Até 10', 'Até 200'],
-                    ['CRM Prumo', '—', '—', '✅'],
-                    ['Agenda', '—', '—', '✅'],
-                    ['ERP Financeiro', '—', '—', '✅'],
-                    ['Alerta MapBiomas', '—', '—', '✅'],
-                    ['Monitoramento DOE-RS/FEPAM', '—', '—', '✅'],
-                    ['Notificação Consultor', '✅', '✅', '✅'],
-                    ['Notificação Equipe', '—', '✅', '✅'],
-                    ['Notificação Cliente', '—', '—', '✅'],
-                    ['Portal do Cliente', '—', '—', '✅'],
-                    ['Webinars Periódicos', '—', '✅', '✅'],
-                    ['Treinamentos Personalizados', '—', '—', '✅'],
-                  ].map(([feature, start, pro, enterprise]) => (
-                    <tr key={feature} className="hover:bg-gray-50">
-                      <td className="p-3 text-gray-700">{feature}</td>
-                      <td className="p-3 text-center text-emerald-700 font-medium">{start}</td>
-                      <td className="p-3 text-center text-blue-700 font-medium">{pro}</td>
-                      <td className="p-3 text-center text-amber-700 font-medium">{enterprise}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
 
           <p className="text-center text-xs text-gray-400 mt-6">
             * Fidelidade de 12 meses. Aceitamos cartão de crédito, PIX e boleto bancário.

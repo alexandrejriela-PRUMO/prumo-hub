@@ -283,26 +283,21 @@ export default function NotificationAudit() {
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
                     <th className="py-2 px-3 text-left text-xs font-semibold text-gray-600">Perfil</th>
-                    <th className="py-2 px-3 text-center"><PlanBadge plan="Start" /></th>
-                    <th className="py-2 px-3 text-center"><PlanBadge plan="Pro" /></th>
                     <th className="py-2 px-3 text-center"><PlanBadge plan="Enterprise" /></th>
                   </tr>
                 </thead>
                 <tbody>
-                  <PlanRow perfil="Produtor" start={true} pro={true} enterprise={true} />
-                  <PlanRow perfil="Consultor" start={true} pro={true} enterprise={true} />
-                  <PlanRow perfil="Equipe (staff)" start={false} pro={true} enterprise={true} />
-                  <PlanRow perfil="Cliente Visualizador" start={false} pro={false} enterprise={true} />
+                  <PlanRow perfil="Produtor" enterprise={true} />
+                  <PlanRow perfil="Consultor" enterprise={true} />
+                  <PlanRow perfil="Equipe (staff)" enterprise={true} />
+                  <PlanRow perfil="Cliente Visualizador" enterprise={true} />
                 </tbody>
               </table>
-              <p className="text-xs text-gray-500 mt-3">* Equipe recebe a partir do plano Pro. Verificação em <code className="bg-gray-100 px-1 rounded">canReceiveNotification()</code>.</p>
 
               <div className="mt-5 space-y-2">
                 <h4 className="font-semibold text-sm text-gray-700">Resumo por Plano</h4>
                 <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-2">
-                  <div className="flex items-center gap-2"><PlanBadge plan="Start" /><span className="text-xs text-gray-600">Consultor + Produtor. Equipe e visualizadores bloqueados.</span></div>
-                  <div className="flex items-center gap-2"><PlanBadge plan="Pro" /><span className="text-xs text-gray-600">Consultor + Produtor + Equipe. Tarefas CRM notificam equipe.</span></div>
-                  <div className="flex items-center gap-2"><PlanBadge plan="Enterprise" /><span className="text-xs text-gray-600">Todos, incluindo Clientes. Portal do cliente ativo. Alertas completos.</span></div>
+                  <div className="flex items-center gap-2"><PlanBadge plan="Enterprise" /><span className="text-xs text-gray-600">Todos os perfis, incluindo Equipe e Clientes. Portal do cliente ativo. Alertas completos.</span></div>
                 </div>
               </div>
             </CardContent>

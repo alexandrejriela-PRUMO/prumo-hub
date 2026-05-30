@@ -26,9 +26,8 @@ function expiresAt() {
 
 // ── Plan config ──────────────────────────────────────────────────────────────
 const PLAN_CONFIG = {
-  start:      { max_team_members: 0 },
-  pro:        { max_team_members: 1 },
   enterprise: { max_team_members: 3 },
+  unico:      { max_team_members: 3 },
 };
 
 // ── Default permissions por role ─────────────────────────────────────────────
@@ -98,12 +97,8 @@ Deno.serve(async (req) => {
 
       // 2. Verificar plano do consultor — permite adição de equipe?
       const consultorUsers = await base44.asServiceRole.entities.User.filter({ email: targetConsultorEmail });
-      const consultorPlan = consultorUsers[0]?.consultor_plan || 'start';
-      const planConfig = PLAN_CONFIG[consultorPlan] || PLAN_CONFIG.start;
-
-      if (planConfig.max_team_members === 0) {
-        return Response.json({ error: `Seu plano (${consultorPlan.toUpperCase()}) não permite adicionar membros de equipe. Faça upgrade para o plano PRO ou ENTERPRISE.` }, { status: 403 });
-      }
+      const consultorPlan = consultorUsers[0]?.consultor_plan || 'enterprise';
+      const planConfig = PLAN_CONFIG[consultorPlan] || PLAN_CONFIG.enterprise;
 
       // Contar membros ativos já existentes
       const activeMembers = await base44.asServiceRole.entities.TeamMember.filter({ primary_user_email: targetConsultorEmail, status: 'Ativo' });
@@ -315,8 +310,8 @@ Deno.serve(async (req) => {
     // ─── GET_PLAN_INFO ────────────────────────────────────────────────────────
     if (action === 'get_plan_info') {
       const consultorUsers = await base44.asServiceRole.entities.User.filter({ email: user.email });
-      const plan = consultorUsers[0]?.consultor_plan || 'start';
-      const config = PLAN_CONFIG[plan] || PLAN_CONFIG.start;
+      const plan = consultorUsers[0]?.consultor_plan || 'enterprise';
+      const config = PLAN_CONFIG[plan] || PLAN_CONFIG.enterprise;
       const activeMembers = await base44.asServiceRole.entities.TeamMember.filter({ primary_user_email: user.email, status: 'Ativo' });
       const pendingMembers = await base44.asServiceRole.entities.TeamMember.filter({ primary_user_email: user.email, status: 'Pendente' });
 

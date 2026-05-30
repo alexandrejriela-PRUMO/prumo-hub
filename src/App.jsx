@@ -102,13 +102,13 @@ const AuthenticatedApp = () => {
 
         // Buscar user_type real via getEffectiveUser (usa asServiceRole, fonte da verdade)
         // Retorna equipe_consultor / equipe_produtor para membros de equipe
-        let effectiveUserType = user.user_type;
+        let effectiveUserType = user.user_type || urlUserType;
         const isEquipeMember = ['equipe', 'equipe_consultor', 'equipe_produtor'].includes(user.user_type);
         try {
           const effectiveRes = await base44.functions.invoke('getEffectiveUser', {});
           const effectiveData = effectiveRes?.data;
           if (effectiveData && !effectiveData.error) {
-            effectiveUserType = effectiveData.user_type || user.user_type;
+            effectiveUserType = effectiveData.user_type || user.user_type || urlUserType;
 
             // Se o convite foi recém aplicado, NÃO sobrescrever com resultado de getEffectiveUser.
             // getEffectiveUser pode encontrar um TeamMember antigo de outro contexto (ex: equipe_consultor

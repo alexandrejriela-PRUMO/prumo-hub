@@ -1,16 +1,27 @@
 import { CheckCircle, Copy, Bookmark, UserPlus, Smartphone, ChevronDown, ChevronUp, Leaf } from 'lucide-react';
 import { useState } from 'react';
 
-const LOGIN_URL = 'https://hub.prumo.site/login?from_url=https%3A%2F%2Fhub.prumo.site%2F';
 const APP_URL = 'https://hub.prumo.site/';
 
 // Mapeamento de offer codes para perfil/plano
 const OFFER_MAP = {
-  'PXP3P68': { perfil: 'produtor', label: 'Produtor Rural', emoji: '🌾', badge: 'Oferta Especial' },
-  'GNJXUCE': { perfil: 'produtor', label: 'Produtor Rural', emoji: '🌾', badge: null },
-  'EQL1OTT': { perfil: 'consultor', label: 'Consultor Enterprise', emoji: '🧑‍💼', badge: null },
-  '8QA4VR2': { perfil: 'consultor', label: 'Consultor Pro', emoji: '🧑‍💼', badge: null },
-  'GYXWU5X': { perfil: 'consultor', label: 'Consultor Start', emoji: '🧑‍💼', badge: null },
+  'PXP3P68': { perfil: 'produtor',  label: 'Produtor Rural',                    emoji: '🌾',    badge: 'Oferta Especial' },
+  'GNJXUCE': { perfil: 'produtor',  label: 'Produtor Rural',                    emoji: '🌾',    badge: null },
+  'EQL1OTT': { perfil: 'consultor', label: 'Consultor Enterprise',              emoji: '🧑‍💼', badge: null },
+  '8QA4VR2': { perfil: 'consultor', label: 'Consultor Pro',                     emoji: '🧑‍💼', badge: null },
+  'GYXWU5X': { perfil: 'consultor', label: 'Consultor Start',                   emoji: '🧑‍💼', badge: null },
+  '9V4FUD5': { perfil: 'consultor', label: 'Consultor Enterprise (Desconto)',   emoji: '🧑‍💼', badge: 'Oferta Especial' },
+};
+
+const buildLoginUrl = (offerCode, perfil) => {
+  const base = 'https://hub.prumo.site/login';
+  const fromUrl = 'https://hub.prumo.site/';
+  const params = new URLSearchParams({
+    from_url: fromUrl,
+    ...(offerCode && { offer: offerCode }),
+    ...(perfil && { user_type: perfil }),
+  });
+  return `${base}?${params.toString()}`;
 };
 
 export default function CompraConfirmada() {
@@ -22,8 +33,10 @@ export default function CompraConfirmada() {
   const offerCode = urlParams.get('offer')?.toUpperCase() || '';
   const offerInfo = OFFER_MAP[offerCode] || null;
 
+  const loginUrl = buildLoginUrl(offerCode, offerInfo?.perfil);
+
   const handleCopy = () => {
-    navigator.clipboard.writeText(LOGIN_URL);
+    navigator.clipboard.writeText(loginUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -72,7 +85,7 @@ export default function CompraConfirmada() {
               <Bookmark className="w-4 h-4" /> Salve o link de acesso à plataforma:
             </p>
             <div className="flex items-center gap-2 bg-white border border-amber-300 rounded-lg px-3 py-2">
-              <span className="text-xs text-gray-600 flex-1 break-all">{LOGIN_URL}</span>
+              <span className="text-xs text-gray-600 flex-1 break-all">{loginUrl}</span>
               <button
                 onClick={handleCopy}
                 className="text-amber-600 hover:text-amber-800 transition-colors flex-shrink-0"
@@ -115,7 +128,7 @@ export default function CompraConfirmada() {
 
           {/* Botão principal */}
           <a
-            href={LOGIN_URL}
+            href={buildLoginUrl(offerCode, offerInfo?.perfil)}
             target="_blank"
             rel="noopener noreferrer"
             className="w-full flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold py-3 px-6 rounded-xl transition-colors mb-4"

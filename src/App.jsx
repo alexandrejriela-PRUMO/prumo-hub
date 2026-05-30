@@ -69,6 +69,20 @@ const AuthenticatedApp = () => {
         let user = await base44.auth.me();
         if (!user) { setTermsChecked(true); return; }
 
+        // Etapa 0: ler user_type da URL (repassado pelo CompraConfirmada após checkout Nexano)
+        // Aplica imediatamente se o usuário ainda não tem user_type definido.
+        const urlUserType = new URLSearchParams(window.location.search).get('user_type');
+        if (urlUserType && !user.user_type) {
+          try {
+            await base44.auth.updateMe({ user_type: urlUserType });
+            console.log('[App] user_type aplicado da URL:', urlUserType);
+            await refreshUser();
+            user = await base44.auth.me();
+          } catch (urlTypeErr) {
+            console.warn('[App] Erro ao aplicar user_type da URL:', urlTypeErr.message);
+          }
+        }
+
         // Verificar automaticamente se há convite de equipe pendente e aplicar user_type
         // IMPORTANTE: guardar se o convite foi recém aplicado para não sobrescrever abaixo
         let inviteJustApplied = false;

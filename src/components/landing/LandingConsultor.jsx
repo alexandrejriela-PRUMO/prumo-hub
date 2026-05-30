@@ -115,6 +115,7 @@ const diferenciais = [
   },
 ];
 
+// v2 - enterprise only
 const planos = [
   {
     name: 'Enterprise',

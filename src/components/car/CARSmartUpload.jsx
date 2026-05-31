@@ -199,8 +199,11 @@ Para campos não encontrados nos documentos disponíveis: use null.`;
 
 function buildFormData(result, docType) {
   const liabilities = [...(result.environmental_liabilities || [])];
-  if (result.legal_reserve_to_recover_hectares > 0 && !liabilities.includes('Déficit de Reserva Legal')) {
+  if (result.passive_rl_balance_hectares < 0 && !liabilities.includes('Déficit de Reserva Legal')) {
     liabilities.push('Déficit de Reserva Legal');
+  }
+  if (result.legal_reserve_to_recover_hectares > 0 && !liabilities.includes('RL Declarada Inconsistente')) {
+    liabilities.push('RL Declarada Inconsistente');
   }
   if (result.app_to_recover_hectares > 0 && !liabilities.includes('Déficit de APP')) {
     liabilities.push('Déficit de APP');

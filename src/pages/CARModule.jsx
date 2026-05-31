@@ -588,7 +588,7 @@ export default function CARModule() {
                     </div>
                   )}
 
-                  {(carRecord.environmental_liabilities?.length > 0 || carRecord.legal_reserve_to_recover_hectares > 0 || carRecord.app_to_recover_hectares > 0 || carRecord.use_restriction_to_recover_hectares > 0) && (
+                  {(carRecord.environmental_liabilities?.length > 0 || parseFloat(carRecord.passive_rl_balance_hectares) < 0 || carRecord.legal_reserve_to_recover_hectares > 0 || carRecord.app_to_recover_hectares > 0 || carRecord.use_restriction_to_recover_hectares > 0) && (
                     <div className="p-3 bg-orange-50 border border-orange-200 rounded-xl space-y-2">
                       <div className="flex items-center gap-2">
                         <AlertTriangle className="w-4 h-4 text-orange-600" />
@@ -598,6 +598,10 @@ export default function CARModule() {
                         {carRecord.environmental_liabilities?.map(l => (
                           <Badge key={l} className="bg-orange-100 text-orange-800 border border-orange-200 text-xs">{l}</Badge>
                         ))}
+                        {(() => { const v = parseFloat(carRecord.passive_rl_balance_hectares); return (!isNaN(v) && v < 0) ? <Badge className="bg-red-100 text-red-800 border border-red-200 text-xs">Déficit de RL: {Math.abs(v).toFixed(2)} ha</Badge> : null; })()}
+                        {carRecord.legal_reserve_to_recover_hectares > 0 && <Badge className="bg-orange-100 text-orange-800 border border-orange-200 text-xs">RL Declarada Inconsistente: {carRecord.legal_reserve_to_recover_hectares} ha</Badge>}
+                        {carRecord.app_to_recover_hectares > 0 && <Badge className="bg-red-100 text-red-800 border border-red-200 text-xs">Déficit de APP: {carRecord.app_to_recover_hectares} ha</Badge>}
+                        {carRecord.use_restriction_to_recover_hectares > 0 && <Badge className="bg-yellow-100 text-yellow-800 border border-yellow-200 text-xs">Uso Restrito Inconsistente: {carRecord.use_restriction_to_recover_hectares} ha</Badge>}
                       </div>
                       {(() => {
                         const passiveVal = parseFloat(carRecord.passive_rl_balance_hectares);

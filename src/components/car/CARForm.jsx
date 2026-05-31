@@ -9,8 +9,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { FileText, Leaf, MapPin, Save, X, Sparkles } from 'lucide-react';
 
 const LIABILITIES = [
-  'Déficit de Reserva Legal', 'Déficit de APP', 'Área degradada',
-  'Uso irregular em APP', 'Compensação de Reserva Legal', 'Servidão ambiental', 'Outro'
+  'Déficit de Reserva Legal', 'RL Declarada Inconsistente', 'Déficit de APP', 'Uso Restrito Inconsistente',
+  'Área degradada', 'Uso irregular em APP', 'Compensação de Reserva Legal', 'Servidão ambiental', 'Outro'
 ];
 
 const defaultForm = {

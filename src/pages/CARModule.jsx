@@ -195,6 +195,7 @@ export default function CARModule() {
           // Lê o registro atual antes de atualizar map_layers para não sobrescrever campos já salvos
           await base44.entities.CARManagement.update(carData.id, {
             ...carData,
+            ...data,
             map_layers: sicar.mapLayers,
           });
 

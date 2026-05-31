@@ -529,7 +529,7 @@ export default function CARModule() {
                           if (isNaN(passiveVal) || carRecord.passive_rl_balance_hectares === null || carRecord.passive_rl_balance_hectares === undefined) {
                             return <p className="text-gray-300">—</p>;
                           }
-                          const abs = Math.abs(passiveVal).toFixed(2);
+                          const abs = Math.abs(passiveVal).toFixed(2).replace('.', ',');
                           return (
                             <p className={`font-semibold ${passiveVal < 0 ? 'text-red-600' : 'text-green-600'}`}>
                               {abs} ha
@@ -595,13 +595,14 @@ export default function CARModule() {
                         <span className="text-xs font-semibold text-orange-800">Passivos Ambientais</span>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        {carRecord.environmental_liabilities?.map(l => (
-                          <Badge key={l} className="bg-orange-100 text-orange-800 border border-orange-200 text-xs">{l}</Badge>
-                        ))}
-                        {(() => { const v = parseFloat(carRecord.passive_rl_balance_hectares); return (!isNaN(v) && v < 0) ? <Badge className="bg-red-100 text-red-800 border border-red-200 text-xs">Déficit de RL: {Math.abs(v).toFixed(2)} ha</Badge> : null; })()}
-                        {carRecord.legal_reserve_to_recover_hectares > 0 && <Badge className="bg-orange-100 text-orange-800 border border-orange-200 text-xs">RL Declarada Inconsistente: {carRecord.legal_reserve_to_recover_hectares} ha</Badge>}
-                        {carRecord.app_to_recover_hectares > 0 && <Badge className="bg-red-100 text-red-800 border border-red-200 text-xs">Déficit de APP: {carRecord.app_to_recover_hectares} ha</Badge>}
-                        {carRecord.use_restriction_to_recover_hectares > 0 && <Badge className="bg-yellow-100 text-yellow-800 border border-yellow-200 text-xs">Uso Restrito Inconsistente: {carRecord.use_restriction_to_recover_hectares} ha</Badge>}
+                        {(carRecord.environmental_liabilities || [])
+                          .filter(l => !['Déficit de Reserva Legal', 'RL Declarada Inconsistente', 'Déficit de APP', 'Uso Restrito Inconsistente'].includes(l))
+                          .map(l => <Badge key={l} className="bg-orange-100 text-orange-800 border border-orange-200 text-xs">{l}</Badge>)
+                        }
+                        {(() => { const v = parseFloat(carRecord.passive_rl_balance_hectares); return (!isNaN(v) && v < 0) ? <Badge className="bg-red-100 text-red-800 border border-red-200 text-xs">Déficit de RL: {Math.abs(v).toFixed(2).replace('.', ',')} ha</Badge> : null; })()}
+                        {carRecord.legal_reserve_to_recover_hectares > 0 && <Badge className="bg-orange-100 text-orange-800 border border-orange-200 text-xs">RL Declarada Inconsistente: {parseFloat(carRecord.legal_reserve_to_recover_hectares).toFixed(2).replace('.', ',')} ha</Badge>}
+                        {carRecord.app_to_recover_hectares > 0 && <Badge className="bg-red-100 text-red-800 border border-red-200 text-xs">Déficit de APP: {parseFloat(carRecord.app_to_recover_hectares).toFixed(2).replace('.', ',')} ha</Badge>}
+                        {carRecord.use_restriction_to_recover_hectares > 0 && <Badge className="bg-yellow-100 text-yellow-800 border border-yellow-200 text-xs">Uso Restrito Inconsistente: {parseFloat(carRecord.use_restriction_to_recover_hectares).toFixed(2).replace('.', ',')} ha</Badge>}
                       </div>
                       {(() => {
                         const passiveVal = parseFloat(carRecord.passive_rl_balance_hectares);

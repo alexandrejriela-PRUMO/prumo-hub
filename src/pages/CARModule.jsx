@@ -193,9 +193,8 @@ export default function CARModule() {
         const sicar = await fetchSICARLayers(data.car_number).catch(() => null);
         if (sicar) {
           // Lê o registro atual antes de atualizar map_layers para não sobrescrever campos já salvos
-          const currentRecord = await base44.entities.CARManagement.get(carData.id);
           await base44.entities.CARManagement.update(carData.id, {
-            ...currentRecord,
+            ...carData,
             map_layers: sicar.mapLayers,
           });
 

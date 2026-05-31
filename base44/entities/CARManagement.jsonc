@@ -174,7 +174,9 @@
         "type": "string",
         "enum": [
           "D\u00e9ficit de Reserva Legal",
+          "RL Declarada Inconsistente",
           "D\u00e9ficit de APP",
+          "Uso Restrito Inconsistente",
           "\u00c1rea degradada",
           "Uso irregular em APP",
           "Compensa\u00e7\u00e3o de Reserva Legal",
@@ -261,6 +263,35 @@
         }
       },
       "default": []
+    },
+    "passive_rl_balance_hectares": {
+      "type": "number",
+      "description": "Passivo ou excedente de Reserva Legal (ha) — negativo indica déficit de declaração"
+    },
+    "use_restriction_to_recover_hectares": {
+      "type": "number",
+      "description": "Área de Uso Restrito a recompor (ha)"
+    },
+    "car_situation": {
+      "type": "string",
+      "description": "Situação do cadastro: Ativo, Cancelado ou Pendente de análise"
+    },
+    "owner_cpf_cnpj": {
+      "type": "string",
+      "description": "CPF ou CNPJ do proprietário/possuidor"
+    },
+    "last_rectification_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data da última retificação do CAR"
+    },
+    "registration_details": {
+      "type": "string",
+      "description": "Matrículas detalhadas — número, data, livro, folha e cartório"
+    },
+    "car_custom_title": {
+      "type": "string",
+      "description": "Título personalizado exibido no lugar de CAR 1, CAR 2 etc."
     }
   },
   "required": [

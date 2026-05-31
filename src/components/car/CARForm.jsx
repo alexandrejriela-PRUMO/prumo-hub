@@ -66,18 +66,19 @@ export default function CARForm({ initial, onSubmit, onCancel, isLoading, aiAnal
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const pf = (v) => v !== '' ? parseFloat(String(v).replace(',', '.')) : null;
     const data = {
       ...form,
-      car_area_hectares: form.car_area_hectares !== '' ? parseFloat(form.car_area_hectares) : null,
-      recovery_area_hectares: form.recovery_area_hectares !== '' ? parseFloat(form.recovery_area_hectares) : null,
-      app_hectares: form.app_hectares !== '' ? parseFloat(form.app_hectares) : null,
-      legal_reserve_hectares: form.legal_reserve_hectares !== '' ? parseFloat(form.legal_reserve_hectares) : null,
-      consolidated_area_hectares: form.consolidated_area_hectares !== '' ? parseFloat(form.consolidated_area_hectares) : null,
-      native_vegetation_hectares: form.native_vegetation_hectares !== '' ? parseFloat(form.native_vegetation_hectares) : null,
-      legal_reserve_to_recover_hectares: form.legal_reserve_to_recover_hectares !== '' ? parseFloat(form.legal_reserve_to_recover_hectares) : null,
-      app_to_recover_hectares: form.app_to_recover_hectares !== '' ? parseFloat(form.app_to_recover_hectares) : null,
-      passive_rl_balance_hectares: form.passive_rl_balance_hectares !== '' ? parseFloat(form.passive_rl_balance_hectares) : null,
-      use_restriction_to_recover_hectares: form.use_restriction_to_recover_hectares !== '' ? parseFloat(form.use_restriction_to_recover_hectares) : null,
+      car_area_hectares: pf(form.car_area_hectares),
+      recovery_area_hectares: pf(form.recovery_area_hectares),
+      app_hectares: pf(form.app_hectares),
+      legal_reserve_hectares: pf(form.legal_reserve_hectares),
+      consolidated_area_hectares: pf(form.consolidated_area_hectares),
+      native_vegetation_hectares: pf(form.native_vegetation_hectares),
+      legal_reserve_to_recover_hectares: pf(form.legal_reserve_to_recover_hectares),
+      app_to_recover_hectares: pf(form.app_to_recover_hectares),
+      passive_rl_balance_hectares: pf(form.passive_rl_balance_hectares),
+      use_restriction_to_recover_hectares: pf(form.use_restriction_to_recover_hectares),
     };
     onSubmit(data);
   };

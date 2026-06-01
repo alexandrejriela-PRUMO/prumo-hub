@@ -517,6 +517,7 @@ export default function PropertyMapView() {
     for (const car of carsToLoad) {
       try {
         const kmlItems = await fetchSICARLayersForMap(car.car_number);
+        console.log('[SICAR]', car.car_number, '→', kmlItems ? kmlItems.length + ' camadas' : 'null (sem dados)');
         if (kmlItems) {
           const prop = await base44.entities.Property.get(selectedPropertyId);
           const existingKml = (prop.kml_layers || []).filter(

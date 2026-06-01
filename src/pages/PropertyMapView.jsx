@@ -351,6 +351,9 @@ export default function PropertyMapView() {
       base44.entities.Property.update(selectedProperty.id, { kml_layers: semOrfas }).catch(() => {});
     }
 
+    console.log('[SICAR-DEBUG] carNumbersAtivos:', [...carNumbersAtivos]);
+    console.log('[SICAR-DEBUG] camadas SICAR encontradas:', normalized.filter(l => l.source === 'SICAR').map(l => ({ id: l.id, car_number: l.car_number, normado: normCarNum(l.car_number) })));
+    console.log('[SICAR-DEBUG] semOrfas SICAR:', semOrfas.filter(l => l.source === 'SICAR').length, 'de', normalized.filter(l => l.source === 'SICAR').length);
     setKmlLayers(semOrfas);
     setDrawnGeometry(null);
   }, [selectedPropertyId, carRecords, carRecordsLoaded]);

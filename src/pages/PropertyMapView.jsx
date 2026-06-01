@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMap } from 'react-leaflet';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MapPin, Info, TreePine, Droplets, ChevronLeft } from 'lucide-react';
+import { MapPin, Info, TreePine, Droplets, ChevronLeft, RefreshCw, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import NDVIPanel from '@/components/map/NDVIPanel';
@@ -17,6 +17,45 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+
+const SICAR_R2_BASE = 'https://pub-619a5d7497a843dc84ca61263b654ac5.r2.dev/car/sicar-rs';
+const SICAR_LAYER_NAMES_MAP = {
+  car_polygon: 'Polígono do CAR', app: 'APP', legal_reserve: 'Reserva Legal',
+  consolidated_area: 'Área Consolidada', remanescente: 'Vegetação Nativa',
+  pousio: 'Pousio', hidrografia: 'Hidrografia', servidao: 'Servidão Administrativa',
+  uso_restrito: 'Uso Restrito',
+};
+const SICAR_LAYER_COLORS_MAP = {
+  car_polygon: '#f59e0b', app: '#3b82f6', legal_reserve: '#10b981',
+  consolidated_area: '#8b5cf6', remanescente: '#0f766e', pousio: '#f59e0b',
+  hidrografia: '#0284c7', servidao: '#be123c', uso_restrito: '#7c3aed',
+};
+
+async function fetchSICARLayersForMap(carNumber) {
+  const normalized = carNumber.replace(/\./g, '');
+  const res = await fetch(`${SICAR_R2_BASE}/${normalized}.geojson`);
+  if (!res.ok) return null;
+  const geojson = await res.json();
+  if (!geojson.features?.length) return null;
+  const byLayer = {};
+  geojson.features.forEach(f => {
+    const layer = f.properties?._layer;
+    if (!layer) return;
+    if (!byLayer[layer]) byLayer[layer] = { type: 'FeatureCollection', features: [] };
+    byLayer[layer].features.push(f);
+  });
+  const kmlItems = Object.entries(byLayer).map(([layer, fc]) => ({
+    id: `sicar-${normalized}-${layer}`,
+    name: SICAR_LAYER_NAMES_MAP[layer] || layer,
+    geojson: fc,
+    color: SICAR_LAYER_COLORS_MAP[layer] || '#6b7280',
+    visible: true,
+    car_number: normalized,
+    layer_type: layer,
+    source: 'SICAR',
+  }));
+  return kmlItems.length > 0 ? kmlItems : null;
+}
 
 // KML to GeoJSON inline parser (no external dependency)
 function kml(doc) {
@@ -191,8 +230,11 @@ function downloadKml(content, filename) {
 
 export default function PropertyMapView() {
    const { effectiveEmail, isEquipe, userType, isLoading: loadingUser } = useEffectiveUser();
+   const queryClient = useQueryClient();
    const [user, setUser] = useState(null);
    const [selectedPropertyId, setSelectedPropertyId] = useState('');
+   const [reloadingSICAR, setReloadingSICAR] = useState(false);
+   const [sicarProgress, setSicarProgress] = useState({ done: 0, total: 0 });
    const [activeLayers, setActiveLayers] = useState({
       satellite: true,
       car: true,
@@ -456,6 +498,48 @@ export default function PropertyMapView() {
       }
     };
 
+  const handleReloadSICAR = async () => {
+    if (!selectedProperty) return;
+    const normCarNum = (n) => (n || '').replace(/\./g, '').toUpperCase();
+    const carsInMap = new Set(
+      kmlLayers.filter(l => l.source === 'SICAR').map(l => normCarNum(l.car_number))
+    );
+    const carsToLoad = carRecords.filter(
+      c => c.car_number && !carsInMap.has(normCarNum(c.car_number))
+    );
+    if (!carsToLoad.length) {
+      toast.info('Todos os CARs já possuem camadas SICAR no mapa.');
+      return;
+    }
+    setReloadingSICAR(true);
+    setSicarProgress({ done: 0, total: carsToLoad.length });
+    let loaded = 0;
+    for (const car of carsToLoad) {
+      try {
+        const kmlItems = await fetchSICARLayersForMap(car.car_number);
+        if (kmlItems) {
+          const prop = await base44.entities.Property.get(selectedPropertyId);
+          const existingKml = (prop.kml_layers || []).filter(
+            l => normCarNum(l.car_number) !== normCarNum(car.car_number) || l.source !== 'SICAR'
+          );
+          const updated = [...existingKml, ...kmlItems];
+          await base44.entities.Property.update(selectedPropertyId, { kml_layers: updated });
+          setKmlLayers(prev => [
+            ...prev.filter(l => normCarNum(l.car_number) !== normCarNum(car.car_number) || l.source !== 'SICAR'),
+            ...kmlItems,
+          ]);
+          loaded++;
+        }
+      } catch { /* ignora falha individual */ }
+      setSicarProgress(p => ({ ...p, done: p.done + 1 }));
+    }
+    setReloadingSICAR(false);
+    queryClient.invalidateQueries(['properties', effectiveEmail, userType]);
+    loaded > 0
+      ? toast.success(`Camadas SICAR carregadas para ${loaded} CAR(s)!`)
+      : toast.warning('Nenhuma camada SICAR encontrada para os CARs sem camadas.');
+  };
+
   const calcKmlArea = (geojson) => {
     if (!geojson?.features) return null;
     let totalArea = 0;
@@ -491,20 +575,36 @@ export default function PropertyMapView() {
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">Desenhe, importe e visualize camadas ambientais com precisão Google Earth</p>
         </div>
-        {properties.length > 1 && (
-          <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
-            <SelectTrigger className="w-72">
-              <SelectValue placeholder="Selecionar propriedade..." />
-            </SelectTrigger>
-            <SelectContent>
-              {properties.map(p => (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.property_name} {p.city ? `— ${p.city}` : ''}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          {selectedProperty && carRecords.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleReloadSICAR}
+              disabled={reloadingSICAR}
+              className="border-blue-200 text-blue-700 hover:bg-blue-50 gap-2"
+            >
+              {reloadingSICAR
+                ? <><Loader2 className="w-4 h-4 animate-spin" />Carregando {sicarProgress.done}/{sicarProgress.total} CARs...</>
+                : <><RefreshCw className="w-4 h-4" />Recarregar Camadas SICAR</>
+              }
+            </Button>
+          )}
+          {properties.length > 1 && (
+            <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
+              <SelectTrigger className="w-72">
+                <SelectValue placeholder="Selecionar propriedade..." />
+              </SelectTrigger>
+              <SelectContent>
+                {properties.map(p => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.property_name} {p.city ? `— ${p.city}` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
       </div>
 
       {/* Property Info Bar */}

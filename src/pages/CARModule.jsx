@@ -9,8 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   FileText, Plus, Edit, Leaf, MapPin, Clock, Building2,
-  AlertTriangle, CheckCircle2, ChevronLeft, Sparkles, Layers, Trash2, Pencil,
-  RefreshCw, Loader2
+  AlertTriangle, CheckCircle2, ChevronLeft, Sparkles, Layers, Trash2, Pencil
 } from 'lucide-react';
 import CARSmartUpload from '@/components/car/CARSmartUpload';
 import { toast } from 'sonner';
@@ -167,47 +166,6 @@ export default function CARModule() {
   const [selectedCarId, setSelectedCarId] = useState(null);
   const [editingTitle, setEditingTitle] = useState(null);
   const [titleValue, setTitleValue] = useState('');
-  const [reloadingSICAR, setReloadingSICAR] = useState(false);
-  const [sicarProgress, setSicarProgress] = useState({ done: 0, total: 0 });
-
-  const handleReloadSICAR = async () => {
-    const carsToReload = carRecords.filter(c =>
-      c.car_number && (!c.map_layers || Object.keys(c.map_layers).length === 0)
-    );
-    if (!carsToReload.length) {
-      toast.info('Todos os CARs já possuem camadas SICAR carregadas.');
-      return;
-    }
-    setReloadingSICAR(true);
-    setSicarProgress({ done: 0, total: carsToReload.length });
-    let loaded = 0;
-    for (const car of carsToReload) {
-      try {
-        const sicar = await fetchSICARLayers(car.car_number).catch(() => null);
-        if (sicar) {
-          await base44.entities.CARManagement.update(car.id, {
-            ...car,
-            map_layers: sicar?.mapLayers || car.map_layers,
-          });
-          const prop = await base44.entities.Property.get(effectivePropertyId);
-          const existingKml = (prop.kml_layers || []).filter(
-            l => l.car_number !== car.car_number || l.source !== 'SICAR'
-          );
-          await base44.entities.Property.update(effectivePropertyId, {
-            kml_layers: [...existingKml, ...sicar.kmlItems],
-          });
-          loaded++;
-        }
-      } catch { /* ignora falha individual */ }
-      setSicarProgress(p => ({ ...p, done: p.done + 1 }));
-    }
-    setReloadingSICAR(false);
-    queryClient.invalidateQueries(['car', effectivePropertyId]);
-    queryClient.invalidateQueries(['properties', effectiveEmail, userType]);
-    loaded > 0
-      ? toast.success(`Camadas SICAR carregadas para ${loaded} CAR(s)!`)
-      : toast.warning('Nenhuma camada SICAR encontrada nos CARs sem camadas.');
-  };
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
@@ -382,27 +340,11 @@ export default function CARModule() {
           </h1>
           <p className="text-gray-500 mt-1">Cadastro Ambiental Rural e Regularização Ambiental</p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap justify-end">
-          {carRecords.some(c => !c.map_layers || Object.keys(c.map_layers).length === 0) && canEdit && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleReloadSICAR}
-              disabled={reloadingSICAR}
-              className="border-blue-200 text-blue-700 hover:bg-blue-50 gap-2"
-            >
-              {reloadingSICAR
-                ? <><Loader2 className="w-4 h-4 animate-spin" />Carregando SICAR {sicarProgress.done}/{sicarProgress.total}...</>
-                : <><RefreshCw className="w-4 h-4" />Recarregar Camadas SICAR</>
-              }
-            </Button>
-          )}
-          {(!isConsultor || effectivePropertyId) && canEdit && (
-            <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => { setEditingCarId(null); setEditOpen(true); }}>
-              <Plus className="w-4 h-4 mr-2" />Adicionar CAR
-            </Button>
-          )}
-        </div>
+        {(!isConsultor || effectivePropertyId) && canEdit && (
+          <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => { setEditingCarId(null); setEditOpen(true); }}>
+            <Plus className="w-4 h-4 mr-2" />Adicionar CAR
+          </Button>
+        )}
       </div>
 
       {/* Sem propriedade selecionada */}

@@ -32,8 +32,17 @@ const SICAR_LAYER_COLORS_MAP = {
 };
 
 async function fetchSICARLayersForMap(carNumber) {
-  const normalized = carNumber.replace(/\./g, '');
-  const res = await fetch(`${SICAR_R2_BASE}/${normalized}.geojson`);
+  const withDots = carNumber;
+  const withoutDots = carNumber.replace(/\./g, '');
+
+  // Tenta primeiro com pontos (formato atual dos arquivos no R2)
+  let res = await fetch(`${SICAR_R2_BASE}/${withDots}.geojson`);
+
+  // Fallback: tenta sem pontos
+  if (!res.ok) {
+    res = await fetch(`${SICAR_R2_BASE}/${withoutDots}.geojson`);
+  }
+
   if (!res.ok) return null;
   const geojson = await res.json();
   if (!geojson.features?.length) return null;
@@ -45,12 +54,12 @@ async function fetchSICARLayersForMap(carNumber) {
     byLayer[layer].features.push(f);
   });
   const kmlItems = Object.entries(byLayer).map(([layer, fc]) => ({
-    id: `sicar-${normalized}-${layer}`,
+    id: `sicar-${withDots}-${layer}`,
     name: SICAR_LAYER_NAMES_MAP[layer] || layer,
     geojson: fc,
     color: SICAR_LAYER_COLORS_MAP[layer] || '#6b7280',
     visible: true,
-    car_number: normalized,
+    car_number: withDots,
     layer_type: layer,
     source: 'SICAR',
   }));

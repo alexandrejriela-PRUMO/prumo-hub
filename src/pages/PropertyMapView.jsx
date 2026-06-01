@@ -393,6 +393,12 @@ export default function PropertyMapView() {
     setKmlLayers(updated);
     saveKmlLayers(updated);
   };
+  const toggleKmlLayers = (ids) => {
+    const idSet = new Set(ids);
+    const updated = kmlLayers.map(l => idSet.has(l.id) ? { ...l, visible: !l.visible } : l);
+    setKmlLayers(updated);
+    saveKmlLayers(updated);
+  };
   const removeKmlLayer = (id) => {
     const updated = kmlLayers.filter(l => l.id !== id);
     setKmlLayers(updated);
@@ -696,6 +702,7 @@ export default function PropertyMapView() {
                onToggleLayer={toggleLayer}
                kmlLayers={kmlLayers}
                onToggleKmlLayer={toggleKmlLayer}
+               onToggleKmlLayers={toggleKmlLayers}
                onRemoveKmlLayer={removeKmlLayer}
                onKmlUpload={handleKmlUpload}
                propertyName={selectedProperty.property_name || ''}

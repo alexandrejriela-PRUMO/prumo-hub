@@ -70,6 +70,7 @@ export default function MapLayersPanel({
   onToggleLayer,
   kmlLayers = [],
   onToggleKmlLayer,
+  onToggleKmlLayers,
   onRemoveKmlLayer,
   onKmlUpload,
   propertyName = '',
@@ -175,9 +176,8 @@ export default function MapLayersPanel({
                       <div className="flex items-center gap-1 flex-shrink-0 ml-1">
                         <button
                           onClick={() => {
-                            layers.forEach(l => {
-                              if (l.visible === allVisible) onToggleKmlLayer(l.id);
-                            });
+                            const idsToToggle = layers.filter(l => l.visible === allVisible).map(l => l.id);
+                            onToggleKmlLayers(idsToToggle);
                           }}
                           className="p-0.5 rounded hover:bg-amber-100 text-amber-600 transition-colors"
                           title={allVisible ? 'Ocultar todas' : 'Mostrar todas'}

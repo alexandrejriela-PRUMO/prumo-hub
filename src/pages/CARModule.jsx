@@ -196,7 +196,7 @@ export default function CARModule() {
           await base44.entities.CARManagement.update(carData.id, {
             ...carData,
             ...data,
-            map_layers: sicar.mapLayers,
+            map_layers: sicar?.mapLayers || carData?.map_layers || data?.map_layers,
           });
 
           const prop = await base44.entities.Property.get(effectivePropertyId);

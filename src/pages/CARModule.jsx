@@ -228,9 +228,9 @@ export default function CARModule() {
 
   const updateMapLayers = useMutation({
     mutationFn: (data) => {
-      const firstRecord = carRecords[0];
-      return firstRecord
-        ? base44.entities.CARManagement.update(firstRecord.id, data)
+      const activeId = selectedCarId && carRecords.find(c => c.id === selectedCarId) ? selectedCarId : carRecords[0]?.id;
+      return activeId
+        ? base44.entities.CARManagement.update(activeId, data)
         : base44.entities.CARManagement.create({
             ...data,
             property_id: effectivePropertyId,

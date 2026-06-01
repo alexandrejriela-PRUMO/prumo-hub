@@ -354,6 +354,8 @@ export default function CARSmartUpload({ onDataExtracted, onClose }) {
       setResult({
         ...extracted,
         _file_url: primaryUrl,
+        _file_url_recibo: reciboFile ? fileUrls[0] : null,
+        _file_url_demonstrativo: demonstrativoFile ? fileUrls[fileUrls.length - 1] : null,
         _doc_type: 'completo',
         _missing_demonstrativo: false,
         _missing_recibo: false,

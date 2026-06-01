@@ -888,18 +888,26 @@ export default function CARModule() {
                       await base44.entities.Property.update(selectedProperty.id, updates);
                       queryClient.invalidateQueries(['properties', effectiveEmail, userType]);
                     }
-                    // Add PDF as document in CAR — preserva existentes, substitui só do mesmo tipo
-                    if (prefillData._file_url) {
-                      const docType = prefillData._doc_type === 'recibo' ? 'Recibo de Cadastro' : 'CAR PDF';
-                      const newDoc = {
-                        name: prefillData._doc_type === 'recibo' ? 'Recibo de Cadastro' : 'Demonstrativo CAR',
-                        url: prefillData._file_url,
-                        type: docType,
-                        upload_date: new Date().toISOString(),
-                      };
-                      const existingDocs = data.documents || [];
-                      const filteredDocs = existingDocs.filter(d => d.type !== docType);
-                      data.documents = [...filteredDocs, newDoc];
+                    // Add PDFs as documents in CAR — preserva existentes, substitui só do mesmo tipo
+                    const existingDocs = data.documents || [];
+                    let updatedDocs = [...existingDocs];
+
+                    // Documento recibo
+                    if (prefillData._file_url_recibo || (prefillData._doc_type === 'recibo' && prefillData._file_url)) {
+                      const url = prefillData._file_url_recibo || prefillData._file_url;
+                      const newDoc = { name: 'Recibo de Cadastro', url, type: 'Recibo de Cadastro', upload_date: new Date().toISOString() };
+                      updatedDocs = [...updatedDocs.filter(d => d.type !== 'Recibo de Cadastro'), newDoc];
+                    }
+
+                    // Documento demonstrativo
+                    if (prefillData._file_url_demonstrativo || (prefillData._doc_type !== 'recibo' && prefillData._file_url)) {
+                      const url = prefillData._file_url_demonstrativo || prefillData._file_url;
+                      const newDoc = { name: 'Demonstrativo CAR', url, type: 'CAR PDF', upload_date: new Date().toISOString() };
+                      updatedDocs = [...updatedDocs.filter(d => d.type !== 'CAR PDF'), newDoc];
+                    }
+
+                    if (updatedDocs.length !== existingDocs.length || updatedDocs.some((d, i) => d.url !== existingDocs[i]?.url)) {
+                      data.documents = updatedDocs;
                     }
                   }
                   saveMutation.mutate(data);

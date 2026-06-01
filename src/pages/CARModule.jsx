@@ -376,8 +376,17 @@ export default function CARModule() {
       {carRecords.length > 0 && (() => {
         const activeCarId = selectedCarId && carRecords.find(c => c.id === selectedCarId) ? selectedCarId : carRecords[0].id;
         const carRecord = carRecords.find(c => c.id === activeCarId);
-        console.log('PASSIVE_RL:', JSON.stringify(carRecord?.passive_rl_balance_hectares));
         const idx = carRecords.findIndex(c => c.id === activeCarId);
+        const rawPassivo = carRecord.passive_rl_balance_hectares;
+        const passivo = (rawPassivo !== null && rawPassivo !== undefined && rawPassivo !== '')
+          ? parseFloat(String(rawPassivo).replace(',', '.'))
+          : null;
+        const _areaTotal = parseFloat(String(carRecord.car_area_hectares || '0').replace(',', '.'));
+        const _rlDeclarada = parseFloat(String(carRecord.legal_reserve_hectares || '0').replace(',', '.'));
+        const _vegNativa = parseFloat(String(carRecord.native_vegetation_hectares || '0').replace(',', '.'));
+        const _rlMinima = _areaTotal * 0.20;
+        const passivocalc = (_rlDeclarada > 0 || _vegNativa > 0) ? Math.min(_rlDeclarada, _vegNativa) - _rlMinima : null;
+        const passivofinal = (passivo !== null && !isNaN(passivo)) ? passivo : passivocalc;
 
         const somaTotal = carRecords.reduce((s, c) => s + (parseFloat(c.car_area_hectares) || 0), 0);
         const somaApp = carRecords.reduce((s, c) => s + (parseFloat(c.app_hectares) || 0), 0);
@@ -589,7 +598,7 @@ export default function CARModule() {
                     </div>
                   )}
 
-                  {(carRecord.environmental_liabilities?.length > 0 || parseFloat(carRecord.passive_rl_balance_hectares) < 0 || carRecord.legal_reserve_to_recover_hectares > 0 || carRecord.app_to_recover_hectares > 0 || carRecord.use_restriction_to_recover_hectares > 0) && (
+                  {(carRecord.environmental_liabilities?.length > 0 || (passivofinal !== null && !isNaN(passivofinal) && passivofinal < 0) || carRecord.legal_reserve_to_recover_hectares > 0 || carRecord.app_to_recover_hectares > 0 || carRecord.use_restriction_to_recover_hectares > 0) && (
                     <div className="p-3 bg-orange-50 border border-orange-200 rounded-xl space-y-2">
                       <div className="flex items-center gap-2">
                         <AlertTriangle className="w-4 h-4 text-orange-600" />
@@ -600,37 +609,31 @@ export default function CARModule() {
                           .filter(l => !['Déficit de Reserva Legal', 'RL Declarada Inconsistente', 'Déficit de APP', 'Uso Restrito Inconsistente'].includes(l))
                           .map(l => <Badge key={l} className="bg-orange-100 text-orange-800 border border-orange-200 text-xs">{l}</Badge>)
                         }
-                        {(() => { const v = parseFloat(carRecord.passive_rl_balance_hectares); return (!isNaN(v) && v < 0) ? <Badge className="bg-red-100 text-red-800 border border-red-200 text-xs">Déficit de RL: {Math.abs(v).toFixed(2).replace('.', ',')} ha</Badge> : null; })()}
+                        {passivofinal !== null && !isNaN(passivofinal) && passivofinal < 0 && (
+                          <Badge className="bg-red-100 text-red-800 border border-red-200 text-xs">Déficit de RL: {Math.abs(passivofinal).toFixed(2).replace('.', ',')} ha</Badge>
+                        )}
                         {carRecord.legal_reserve_to_recover_hectares > 0 && <Badge className="bg-orange-100 text-orange-800 border border-orange-200 text-xs">RL Declarada Inconsistente: {parseFloat(carRecord.legal_reserve_to_recover_hectares).toFixed(2).replace('.', ',')} ha</Badge>}
                         {carRecord.app_to_recover_hectares > 0 && <Badge className="bg-red-100 text-red-800 border border-red-200 text-xs">Déficit de APP: {parseFloat(carRecord.app_to_recover_hectares).toFixed(2).replace('.', ',')} ha</Badge>}
                         {carRecord.use_restriction_to_recover_hectares > 0 && <Badge className="bg-yellow-100 text-yellow-800 border border-yellow-200 text-xs">Uso Restrito Inconsistente: {parseFloat(carRecord.use_restriction_to_recover_hectares).toFixed(2).replace('.', ',')} ha</Badge>}
                       </div>
-                      {(() => {
-                        const passiveVal = parseFloat(carRecord.passive_rl_balance_hectares);
-                        if (isNaN(passiveVal) || passiveVal >= 0) return null;
-                        return (
-                          <div className="grid grid-cols-1 gap-2 mb-2">
-                            <div className="bg-red-50 rounded-lg p-3 border border-red-200">
-                              <p className="text-[10px] text-gray-500 mb-0.5">Déficit de Declaração de RL</p>
-                              <p className="text-lg font-bold text-red-600">{Math.abs(passiveVal).toFixed(2)} ha</p>
-                              <p className="text-[10px] text-red-400 mt-0.5">
-                                RL exigida por lei (20%) − RL declarada = falta declarar esta área
-                              </p>
-                            </div>
+                      {passivofinal !== null && !isNaN(passivofinal) && passivofinal < 0 && (
+                        <div className="grid grid-cols-1 gap-2 mb-2">
+                          <div className="bg-red-50 rounded-lg p-3 border border-red-200">
+                            <p className="text-[10px] text-gray-500 mb-0.5">Déficit de Declaração de RL</p>
+                            <p className="text-lg font-bold text-red-600">{Math.abs(passivofinal).toFixed(2).replace('.', ',')} ha</p>
+                            <p className="text-[10px] text-red-400 mt-0.5">
+                              RL exigida por lei (20%) − RL declarada = falta declarar esta área
+                            </p>
                           </div>
-                        );
-                      })()}
-                      {(() => {
-                        const passiveVal = parseFloat(carRecord.passive_rl_balance_hectares);
-                        if (isNaN(passiveVal) || passiveVal <= 0) return null;
-                        return (
-                          <div className="bg-green-50 rounded-lg p-3 border border-green-200 mb-2">
-                            <p className="text-[10px] text-gray-500 mb-0.5">Excedente de RL Declarada</p>
-                            <p className="text-lg font-bold text-green-600">+{passiveVal.toFixed(2)} ha</p>
-                            <p className="text-[10px] text-green-400 mt-0.5">RL declarada supera o mínimo legal exigido</p>
-                          </div>
-                        );
-                      })()}
+                        </div>
+                      )}
+                      {passivofinal !== null && !isNaN(passivofinal) && passivofinal > 0 && (
+                        <div className="bg-green-50 rounded-lg p-3 border border-green-200 mb-2">
+                          <p className="text-[10px] text-gray-500 mb-0.5">Excedente de RL Declarada</p>
+                          <p className="text-lg font-bold text-green-600">+{passivofinal.toFixed(2).replace('.', ',')} ha</p>
+                          <p className="text-[10px] text-green-400 mt-0.5">RL declarada supera o mínimo legal exigido</p>
+                        </div>
+                      )}
                       {(carRecord.legal_reserve_to_recover_hectares > 0 || carRecord.app_to_recover_hectares > 0 || carRecord.use_restriction_to_recover_hectares > 0) && (
                         <div className="grid grid-cols-2 gap-2 pt-1">
                           {carRecord.legal_reserve_to_recover_hectares > 0 && (

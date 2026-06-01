@@ -393,11 +393,20 @@ export default function CARModule() {
         const somaRL = carRecords.reduce((s, c) => s + (parseFloat(c.legal_reserve_hectares) || 0), 0);
         const somaRLRecompor = carRecords.reduce((s, c) => s + (parseFloat(c.legal_reserve_to_recover_hectares) || 0), 0);
         const somaAppRecompor = carRecords.reduce((s, c) => s + (parseFloat(c.app_to_recover_hectares) || 0), 0);
-        const somaPassivoRL = carRecords.reduce((s, c) => {
-          const val = parseFloat(c.passive_rl_balance_hectares);
-          return s + (isNaN(val) ? 0 : val);
+        const somaDeficitRL = carRecords.reduce((s, c) => {
+          const rawPassivo = c.passive_rl_balance_hectares;
+          const passivo = (rawPassivo !== null && rawPassivo !== undefined && rawPassivo !== '')
+            ? parseFloat(String(rawPassivo).replace(',', '.'))
+            : null;
+          const areaTotal = parseFloat(String(c.car_area_hectares || '0').replace(',', '.'));
+          const rlDeclarada = parseFloat(String(c.legal_reserve_hectares || '0').replace(',', '.'));
+          const vegNativa = parseFloat(String(c.native_vegetation_hectares || '0').replace(',', '.'));
+          const rlMinima = areaTotal * 0.20;
+          const passivocalc = (rlDeclarada > 0 || vegNativa > 0) ? Math.min(rlDeclarada, vegNativa) - rlMinima : null;
+          const pf = (passivo !== null && !isNaN(passivo)) ? passivo : passivocalc;
+          return s + ((pf !== null && pf < 0) ? Math.abs(pf) : 0);
         }, 0);
-        const temPassivos = somaRLRecompor > 0 || somaAppRecompor > 0 || somaPassivoRL < 0;
+        const temPassivos = somaRLRecompor > 0 || somaAppRecompor > 0 || somaDeficitRL > 0;
 
         return (
           <div className="space-y-4">
@@ -440,10 +449,10 @@ export default function CARModule() {
                     </div>
                     {somaRLRecompor > 0 && <div className="bg-white rounded-lg p-3 border border-orange-100"><p className="text-xs text-gray-500 mb-1">RL a Recompor</p><p className="text-xl font-bold text-orange-600">{somaRLRecompor.toFixed(2)}</p><p className="text-[10px] text-gray-400">hectares</p></div>}
                     {somaAppRecompor > 0 && <div className="bg-white rounded-lg p-3 border border-orange-100"><p className="text-xs text-gray-500 mb-1">APP a Recompor</p><p className="text-xl font-bold text-orange-600">{somaAppRecompor.toFixed(2)}</p><p className="text-[10px] text-gray-400">hectares</p></div>}
-                    {somaPassivoRL < 0 && (
+                    {somaDeficitRL > 0 && (
                       <div className="bg-white rounded-lg p-3 border border-red-100">
-                        <p className="text-xs text-gray-500 mb-1">Passivo Total RL</p>
-                        <p className="text-xl font-bold text-red-600">{somaPassivoRL.toFixed(2)}</p>
+                        <p className="text-xs text-gray-500 mb-1">Déf. RL Total</p>
+                        <p className="text-xl font-bold text-red-600">{somaDeficitRL.toFixed(2).replace('.', ',')}</p>
                         <p className="text-[10px] text-gray-400">hectares</p>
                       </div>
                     )}

@@ -32,20 +32,28 @@ const SICAR_LAYER_COLORS_MAP = {
 };
 
 async function fetchSICARLayersForMap(carNumber) {
-  const withDots = carNumber;
+  // Converte UUID sem pontos para formato com pontos (como estão no R2)
+  // Ex: RS-4313904-3C36C4F0AD9244A58814CDEBE5F38A15
+  //  → RS-4313904-3C36.C4F0.AD92.44A5.8814.CDEB.E5F3.8A15
+  const addDots = (num) => {
+    const parts = num.split('-');
+    if (parts.length < 3) return num;
+    const uuid = parts.slice(2).join('-').replace(/\./g, '');
+    const dotted = uuid.match(/.{1,4}/g)?.join('.') || uuid;
+    return `${parts[0]}-${parts[1]}-${dotted}`;
+  };
+
+  const withDots = addDots(carNumber);
   const withoutDots = carNumber.replace(/\./g, '');
 
-  // Tenta primeiro com pontos (formato atual dos arquivos no R2)
+  // Tenta com pontos primeiro (formato atual do R2), depois sem pontos (fallback)
   let res = await fetch(`${SICAR_R2_BASE}/${withDots}.geojson`);
-
-  // Fallback: tenta sem pontos
-  if (!res.ok) {
-    res = await fetch(`${SICAR_R2_BASE}/${withoutDots}.geojson`);
-  }
-
+  if (!res.ok) res = await fetch(`${SICAR_R2_BASE}/${withoutDots}.geojson`);
   if (!res.ok) return null;
+
   const geojson = await res.json();
   if (!geojson.features?.length) return null;
+
   const byLayer = {};
   geojson.features.forEach(f => {
     const layer = f.properties?._layer;
@@ -53,16 +61,18 @@ async function fetchSICARLayersForMap(carNumber) {
     if (!byLayer[layer]) byLayer[layer] = { type: 'FeatureCollection', features: [] };
     byLayer[layer].features.push(f);
   });
+
   const kmlItems = Object.entries(byLayer).map(([layer, fc]) => ({
-    id: `sicar-${withDots}-${layer}`,
+    id: `sicar-${withoutDots}-${layer}`,
     name: SICAR_LAYER_NAMES_MAP[layer] || layer,
     geojson: fc,
     color: SICAR_LAYER_COLORS_MAP[layer] || '#6b7280',
     visible: true,
-    car_number: withDots,
+    car_number: withoutDots,
     layer_type: layer,
     source: 'SICAR',
   }));
+
   return kmlItems.length > 0 ? kmlItems : null;
 }
 

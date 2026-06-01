@@ -376,6 +376,7 @@ export default function CARModule() {
       {carRecords.length > 0 && (() => {
         const activeCarId = selectedCarId && carRecords.find(c => c.id === selectedCarId) ? selectedCarId : carRecords[0].id;
         const carRecord = carRecords.find(c => c.id === activeCarId);
+        console.log('PASSIVE_RL:', JSON.stringify(carRecord?.passive_rl_balance_hectares));
         const idx = carRecords.findIndex(c => c.id === activeCarId);
 
         const somaTotal = carRecords.reduce((s, c) => s + (parseFloat(c.car_area_hectares) || 0), 0);

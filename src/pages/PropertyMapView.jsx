@@ -296,11 +296,13 @@ export default function PropertyMapView() {
     }
 
     // Remove camadas SICAR cujo car_number não tem CAR cadastrado
-    const carNumbersAtivos = new Set(carRecords.map(c => c.car_number).filter(Boolean));
+    // Normaliza removendo pontos do segmento hex para comparar RS-XXX-AABB.CCDD == RS-XXX-AABBCCDD
+    const normCarNum = (n) => (n || '').replace(/\./g, '').toUpperCase();
+    const carNumbersAtivos = new Set(carRecords.map(c => normCarNum(c.car_number)).filter(Boolean));
     const semOrfas = normalized.filter(l => {
       if (l.source !== 'SICAR') return true;
       if (!l.car_number) return false;
-      return carNumbersAtivos.has(l.car_number);
+      return carNumbersAtivos.has(normCarNum(l.car_number));
     });
 
     if (semOrfas.length !== normalized.length) {

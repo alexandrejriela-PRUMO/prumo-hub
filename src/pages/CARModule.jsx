@@ -886,15 +886,18 @@ export default function CARModule() {
                       await base44.entities.Property.update(selectedProperty.id, updates);
                       queryClient.invalidateQueries(['properties', effectiveEmail, userType]);
                     }
-                    // Add PDF as document in CAR
+                    // Add PDF as document in CAR — preserva existentes, substitui só do mesmo tipo
                     if (prefillData._file_url) {
                       const docType = prefillData._doc_type === 'recibo' ? 'Recibo de Cadastro' : 'CAR PDF';
-                      data.documents = [{
-                        name: prefillData._doc_type === 'recibo' ? 'Recibo de Inscrição CAR' : 'Demonstrativo CAR',
+                      const newDoc = {
+                        name: prefillData._doc_type === 'recibo' ? 'Recibo de Cadastro' : 'Demonstrativo CAR',
                         url: prefillData._file_url,
                         type: docType,
                         upload_date: new Date().toISOString(),
-                      }];
+                      };
+                      const existingDocs = data.documents || [];
+                      const filteredDocs = existingDocs.filter(d => d.type !== docType);
+                      data.documents = [...filteredDocs, newDoc];
                     }
                   }
                   saveMutation.mutate(data);

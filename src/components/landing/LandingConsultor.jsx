@@ -125,7 +125,7 @@ const planos = [
     badge: 'Mais Popular',
     badgeColor: 'bg-amber-500',
     highlight: true,
-    checkoutUrl: 'https://checkout.nexano.com.br/checkout/cmo2vmthl06bp1yms3aaa35wv?offer=EQL1OTT',
+    checkoutUrl: 'https://wa.me/5555999480489',
     items: [
       'Até 3 usuários (consultor + equipe)',
       'Até 200 propriedades/clientes',

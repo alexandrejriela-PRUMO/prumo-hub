@@ -120,6 +120,13 @@ Deno.serve(async (req) => {
       accepted_at: now,
     });
 
+    // Desativa TeamMembers antigos do mesmo email para evitar conflito no getEffectiveUser
+    const outrosAtivos = teamMembers.filter(m => m.id !== tm.id && m.status === 'Ativo');
+    for (const antigo of outrosAtivos) {
+      await base44.asServiceRole.entities.TeamMember.update(antigo.id, { status: 'Inativo' });
+      console.log(`[applyInviteConfig] Desativado TeamMember antigo ${antigo.id} para ${user.email}`);
+    }
+
     console.log(`[applyInviteConfigOnFirstLogin] user_type '${memberUserType}' aplicado para ${user.email}, principal: ${primaryEmail} (${primaryUserType})`);
 
     return Response.json({ 

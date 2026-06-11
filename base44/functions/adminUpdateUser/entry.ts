@@ -61,6 +61,18 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.User.update(userId, userUpdate);
     }
 
+    // Se o novo user_type não é equipe, desativa TeamMembers ativos conflitantes
+    if (data.user_type && !data.user_type.startsWith('equipe')) {
+      const activeMembers = await base44.asServiceRole.entities.TeamMember.filter({
+        member_email: userEmail,
+        status: 'Ativo',
+      });
+      for (const tm of activeMembers) {
+        await base44.asServiceRole.entities.TeamMember.update(tm.id, { status: 'Inativo' });
+        console.log(`[adminUpdateUser] TeamMember ${tm.id} desativado para ${userEmail}`);
+      }
+    }
+
     return Response.json({ success: true, message: 'Usuário atualizado com sucesso' });
   } catch (error) {
     console.error('[adminUpdateUser]', error);

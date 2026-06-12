@@ -203,6 +203,8 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
+    console.log('[r2UploadLarge] body recebido:', JSON.stringify({ action: body?.action, folder: body?.folder, fileName: body?.fileName, contentType: body?.contentType }));
+    console.log('[r2UploadLarge] ENV:', { R2_ACCOUNT_ID: !!R2_ACCOUNT_ID, R2_ACCESS_KEY_ID: !!R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY: !!R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME });
     const { fileName, contentType, folder, action } = body;
 
     // OWASP A05 - Valida MIME type contra lista de tipos permitidos

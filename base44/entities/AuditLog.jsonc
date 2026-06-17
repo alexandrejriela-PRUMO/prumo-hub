@@ -1,0 +1,50 @@
+{
+  "name": "AuditLog",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email do usu\u00e1rio que realizou a a\u00e7\u00e3o"
+    },
+    "user_full_name": {
+      "type": "string",
+      "description": "Nome do usu\u00e1rio"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "description": "Tipo de a\u00e7\u00e3o realizada"
+    },
+    "entity_name": {
+      "type": "string",
+      "description": "Nome da entidade alterada (ex: Property, License)"
+    },
+    "entity_id": {
+      "type": "string",
+      "description": "ID do registro alterado"
+    },
+    "entity_label": {
+      "type": "string",
+      "description": "Nome leg\u00edvel do registro alterado"
+    },
+    "description": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o leg\u00edvel da altera\u00e7\u00e3o"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data e hora da altera\u00e7\u00e3o"
+    }
+  },
+  "required": [
+    "action",
+    "entity_name",
+    "entity_id",
+    "timestamp"
+  ]
+}

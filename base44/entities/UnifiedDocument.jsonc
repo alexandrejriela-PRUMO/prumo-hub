@@ -1,0 +1,96 @@
+{
+  "name": "UnifiedDocument",
+  "type": "object",
+  "properties": {
+    "entity_type": {
+      "type": "string",
+      "enum": [
+        "Property",
+        "CarbonCredit",
+        "PSAContract",
+        "EnvironmentalEasement",
+        "EnvironmentalAlert",
+        "License",
+        "General"
+      ],
+      "description": "Tipo de entidade relacionada"
+    },
+    "entity_id": {
+      "type": "string",
+      "description": "ID da entidade relacionada"
+    },
+    "module": {
+      "type": "string",
+      "enum": [
+        "Trabalhista",
+        "Cont\u00e1bil",
+        "Ambiental",
+        "Tribut\u00e1rio",
+        "Imobili\u00e1rio",
+        "Civil",
+        "Fiscal",
+        "Recursos Humanos",
+        "Administrativo"
+      ],
+      "description": "M\u00f3dulo/setor do documento"
+    },
+    "document_type": {
+      "type": "string",
+      "description": "Tipo de documento"
+    },
+    "document_name": {
+      "type": "string",
+      "description": "Nome do documento"
+    },
+    "description": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o do documento"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "URL do arquivo"
+    },
+    "file_size": {
+      "type": "number",
+      "description": "Tamanho do arquivo em bytes"
+    },
+    "file_type": {
+      "type": "string",
+      "description": "MIME type do arquivo"
+    },
+    "upload_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data do documento/upload"
+    },
+    "uploaded_by": {
+      "type": "string",
+      "description": "Email de quem fez upload"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags para categoriza\u00e7\u00e3o",
+      "default": []
+    },
+    "version": {
+      "type": "number",
+      "description": "Vers\u00e3o do documento",
+      "default": 1
+    },
+    "is_active": {
+      "type": "boolean",
+      "description": "Se o documento est\u00e1 ativo",
+      "default": true
+    }
+  },
+  "required": [
+    "entity_type",
+    "document_type",
+    "document_name",
+    "file_url",
+    "upload_date"
+  ]
+}

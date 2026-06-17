@@ -1,0 +1,679 @@
+{
+  "name": "PRAD",
+  "type": "object",
+  "properties": {
+    "property_id": {
+      "type": "string",
+      "description": "ID da propriedade"
+    },
+    "owner_email": {
+      "type": "string",
+      "description": "Email do propriet\u00e1rio"
+    },
+    "project_name": {
+      "type": "string",
+      "description": "Nome do projeto"
+    },
+    "area_identification": {
+      "type": "object",
+      "properties": {
+        "coordinates": {
+          "type": "string",
+          "description": "Localiza\u00e7\u00e3o georreferenciada"
+        },
+        "total_area_ha": {
+          "type": "number",
+          "description": "\u00c1rea total degradada (ha)"
+        },
+        "plot_name": {
+          "type": "string",
+          "description": "Talh\u00e3o / gleba"
+        },
+        "degradation_type": {
+          "type": "string",
+          "enum": [
+            "Eros\u00e3o",
+            "Supress\u00e3o",
+            "Compacta\u00e7\u00e3o",
+            "APP",
+            "Passivo Legal",
+            "Outro"
+          ],
+          "description": "Tipo de degrada\u00e7\u00e3o"
+        },
+        "diagnosis_date": {
+          "type": "string",
+          "format": "date",
+          "description": "Data do diagn\u00f3stico"
+        }
+      },
+      "description": "Identifica\u00e7\u00e3o da \u00e1rea"
+    },
+    "environmental_diagnosis": {
+      "type": "object",
+      "properties": {
+        "degradation_description": {
+          "type": "string",
+          "description": "Descri\u00e7\u00e3o da degrada\u00e7\u00e3o"
+        },
+        "probable_cause": {
+          "type": "string",
+          "description": "Causa prov\u00e1vel"
+        },
+        "impact_level": {
+          "type": "string",
+          "enum": [
+            "Baixo",
+            "M\u00e9dio",
+            "Alto"
+          ],
+          "description": "Grau de impacto"
+        },
+        "mapped_areas": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "area_name": {
+                "type": "string"
+              },
+              "area_hectares": {
+                "type": "number"
+              },
+              "vegetation_stages": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "stage_type": {
+                      "type": "string",
+                      "enum": [
+                        "Inicial",
+                        "M\u00e9dio",
+                        "Avan\u00e7ado"
+                      ]
+                    },
+                    "area_percentage": {
+                      "type": "number"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "default": []
+              },
+              "soil_characterization": {
+                "type": "object",
+                "properties": {
+                  "soil_type": {
+                    "type": "string"
+                  },
+                  "texture": {
+                    "type": "string",
+                    "enum": [
+                      "Arenosa",
+                      "M\u00e9dia",
+                      "Argilosa",
+                      "Muito Argilosa"
+                    ]
+                  },
+                  "ph": {
+                    "type": "number"
+                  },
+                  "organic_matter": {
+                    "type": "number"
+                  },
+                  "slope": {
+                    "type": "number"
+                  },
+                  "erosion_risk": {
+                    "type": "string",
+                    "enum": [
+                      "Baixo",
+                      "M\u00e9dio",
+                      "Alto",
+                      "Muito Alto"
+                    ]
+                  },
+                  "local_hydrology": {
+                    "type": "string"
+                  },
+                  "environmental_restrictions": {
+                    "type": "string"
+                  }
+                }
+              },
+              "photos": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "date": {
+                      "type": "string",
+                      "format": "date"
+                    }
+                  }
+                },
+                "default": []
+              }
+            }
+          },
+          "description": "\u00c1reas mapeadas",
+          "default": []
+        },
+        "before_photos": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          },
+          "description": "Registro fotogr\u00e1fico (antes)",
+          "default": []
+        },
+        "degraded_area_map": {
+          "type": "string"
+        }
+      },
+      "description": "Diagn\u00f3stico ambiental"
+    },
+    "recovery_objective": {
+      "type": "object",
+      "properties": {
+        "main_objective": {
+          "type": "string",
+          "enum": [
+            "Regulariza\u00e7\u00e3o Ambiental",
+            "Atendimento a Auto de Infra\u00e7\u00e3o",
+            "Condicionante de Licen\u00e7a",
+            "Recupera\u00e7\u00e3o Volunt\u00e1ria",
+            "Compensa\u00e7\u00e3o Ambiental"
+          ]
+        },
+        "objective_details": {
+          "type": "string"
+        },
+        "legal_requirements": {
+          "type": "string"
+        }
+      },
+      "description": "Objetivo da recupera\u00e7\u00e3o"
+    },
+    "soil_characterization": {
+      "type": "object",
+      "properties": {
+        "soil_type": {
+          "type": "string"
+        },
+        "slope": {
+          "type": "number"
+        },
+        "erosion_risk": {
+          "type": "string",
+          "enum": [
+            "Baixo",
+            "M\u00e9dio",
+            "Alto",
+            "Muito Alto"
+          ]
+        },
+        "local_hydrology": {
+          "type": "string"
+        },
+        "environmental_restrictions": {
+          "type": "string"
+        }
+      },
+      "description": "Caracteriza\u00e7\u00e3o do solo"
+    },
+    "recovery_methods": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Regenera\u00e7\u00e3o Natural Assistida",
+          "Plantio de Esp\u00e9cies Nativas",
+          "Isolamento da \u00c1rea",
+          "Controle de Eros\u00e3o",
+          "Bioengenharia do Solo",
+          "Outro"
+        ]
+      },
+      "description": "M\u00e9todos de recupera\u00e7\u00e3o",
+      "default": []
+    },
+    "species_and_techniques": {
+      "type": "object",
+      "properties": {
+        "species_list": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "scientific_name": {
+                "type": "string"
+              },
+              "common_name": {
+                "type": "string"
+              },
+              "quantity": {
+                "type": "number"
+              },
+              "spacing": {
+                "type": "string"
+              }
+            }
+          },
+          "default": []
+        },
+        "total_seedlings": {
+          "type": "number"
+        },
+        "planting_schedule": {
+          "type": "string"
+        },
+        "required_inputs": {
+          "type": "string"
+        }
+      },
+      "description": "Esp\u00e9cies e t\u00e9cnicas"
+    },
+    "execution_schedule": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "type": "string"
+          },
+          "deadline": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Pendente",
+              "Em Execu\u00e7\u00e3o",
+              "Conclu\u00eddo",
+              "Atrasado"
+            ]
+          },
+          "responsible": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Cronograma de execu\u00e7\u00e3o",
+      "default": []
+    },
+    "pipeline_status": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "stage_order": {
+            "type": "number"
+          },
+          "stage_name": {
+            "type": "string",
+            "enum": [
+              "Em Elabora\u00e7\u00e3o",
+              "Aguardando Documentos",
+              "Protocolado",
+              "Complementa\u00e7\u00f5es",
+              "Deferido",
+              "Indeferido",
+              "Em Execu\u00e7\u00e3o",
+              "Pedido de Desembargo",
+              "Em Averba\u00e7\u00e3o"
+            ]
+          },
+          "current_status": {
+            "type": "string",
+            "enum": [
+              "Pendente",
+              "Em Progresso",
+              "Conclu\u00eddo"
+            ],
+            "default": "Pendente"
+          },
+          "status_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Timeline de etapas do PRAD",
+      "default": []
+    },
+    "annual_reports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "year": {
+            "type": "number",
+            "description": "Ano do relat\u00f3rio (1 a 4)"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Pendente",
+              "Em Elabora\u00e7\u00e3o",
+              "Entregue",
+              "Atrasado"
+            ],
+            "default": "Pendente"
+          },
+          "delivery_date": {
+            "type": "string",
+            "format": "date",
+            "description": "Data de entrega"
+          },
+          "survival_rate": {
+            "type": "number",
+            "description": "Taxa de sobreviv\u00eancia (%)"
+          },
+          "vegetation_cover": {
+            "type": "number",
+            "description": "Cobertura vegetal (%)"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Observa\u00e7\u00f5es t\u00e9cnicas"
+          },
+          "file_url": {
+            "type": "string",
+            "description": "URL do relat\u00f3rio em PDF"
+          },
+          "file_name": {
+            "type": "string",
+            "description": "Nome do arquivo"
+          }
+        }
+      },
+      "description": "Relat\u00f3rios anuais obrigat\u00f3rios de acompanhamento (4 anos)",
+      "default": []
+    },
+    "technical_responsible": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "registration": {
+          "type": "string",
+          "description": "CREA/CRBio"
+        },
+        "contact": {
+          "type": "string"
+        }
+      },
+      "description": "Respons\u00e1vel t\u00e9cnico"
+    },
+    "monitoring": {
+      "type": "object",
+      "properties": {
+        "survival_rate": {
+          "type": "number"
+        },
+        "vegetation_cover": {
+          "type": "number"
+        },
+        "invasive_control": {
+          "type": "string"
+        },
+        "periodic_reports": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "report_type": {
+                "type": "string"
+              },
+              "observations": {
+                "type": "string"
+              },
+              "file_url": {
+                "type": "string"
+              },
+              "survival_rate": {
+                "type": "number"
+              },
+              "vegetation_cover": {
+                "type": "number"
+              }
+            }
+          },
+          "default": []
+        },
+        "before_after": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "before_url": {
+                "type": "string"
+              },
+              "after_url": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          },
+          "default": []
+        }
+      },
+      "description": "Monitoramento e indicadores"
+    },
+    "image_monitoring": {
+      "type": "object",
+      "properties": {
+        "satellite_images": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "image_url": {
+                "type": "string"
+              },
+              "ndvi_value": {
+                "type": "number"
+              }
+            }
+          },
+          "default": []
+        },
+        "ndvi_evolution": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "ndvi": {
+                "type": "number"
+              },
+              "file_url": {
+                "type": "string"
+              },
+              "report_notes": {
+                "type": "string"
+              }
+            }
+          },
+          "default": []
+        },
+        "failure_alerts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "alert_type": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "resolved": {
+                "type": "boolean",
+                "default": false
+              }
+            }
+          },
+          "default": []
+        }
+      },
+      "description": "Monitoramento por imagem"
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "PRAD Completo",
+              "Relat\u00f3rio de Acompanhamento",
+              "ART/RRT",
+              "Protocolo Ambiental",
+              "Comprovante de Execu\u00e7\u00e3o",
+              "Outro"
+            ]
+          },
+          "url": {
+            "type": "string"
+          },
+          "observations": {
+            "type": "string"
+          },
+          "upload_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "uploaded_by": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Documentos e relat\u00f3rios",
+      "default": []
+    },
+    "alerts_and_risks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "alert_type": {
+            "type": "string",
+            "enum": [
+              "Atraso de Etapa",
+              "Falha de Plantio",
+              "Risco de Autua\u00e7\u00e3o",
+              "Descumprimento de Condicionante",
+              "Outro"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "Baixa",
+              "M\u00e9dia",
+              "Alta",
+              "Cr\u00edtica"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Aberto",
+              "Em Tratamento",
+              "Resolvido"
+            ],
+            "default": "Aberto"
+          },
+          "action_taken": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Alertas e riscos",
+      "default": []
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Planejamento",
+        "Em Execu\u00e7\u00e3o",
+        "Conclu\u00eddo",
+        "Suspenso"
+      ],
+      "default": "Planejamento",
+      "description": "Status geral do PRAD"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es gerais"
+    }
+  },
+  "required": [
+    "property_id",
+    "owner_email",
+    "project_name"
+  ]
+}

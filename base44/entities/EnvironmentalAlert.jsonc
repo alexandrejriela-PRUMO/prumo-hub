@@ -1,0 +1,178 @@
+{
+  "name": "EnvironmentalAlert",
+  "type": "object",
+  "properties": {
+    "property_id": {
+      "type": "string",
+      "description": "ID da propriedade"
+    },
+    "alert_type": {
+      "type": "string",
+      "enum": [
+        "Desmatamento",
+        "Mudan\u00e7a de Uso da Terra",
+        "\u00cdndice de Vegeta\u00e7\u00e3o",
+        "APP",
+        "Reserva Legal",
+        "Polui\u00e7\u00e3o",
+        "Outro"
+      ],
+      "description": "Tipo de alerta ambiental"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "Baixa",
+        "M\u00e9dia",
+        "Alta",
+        "Cr\u00edtica"
+      ],
+      "description": "Gravidade do alerta"
+    },
+    "title": {
+      "type": "string",
+      "description": "T\u00edtulo do alerta"
+    },
+    "description": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o detalhada"
+    },
+    "affected_area_hectares": {
+      "type": "number",
+      "description": "\u00c1rea afetada em hectares"
+    },
+    "coordinates": {
+      "type": "string",
+      "description": "Coordenadas da \u00e1rea afetada (lat,lng)"
+    },
+    "ndvi_value": {
+      "type": "number",
+      "description": "Valor do NDVI (se aplic\u00e1vel)"
+    },
+    "detection_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de detec\u00e7\u00e3o/ocorr\u00eancia"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Aberto",
+        "Em An\u00e1lise",
+        "Resolvido",
+        "Ignorado"
+      ],
+      "default": "Aberto",
+      "description": "Status do alerta"
+    },
+    "responsible_email": {
+      "type": "string",
+      "description": "Email do respons\u00e1vel pelo alerta"
+    },
+    "data_source": {
+      "type": "string",
+      "enum": [
+        "PRODES",
+        "DETER",
+        "MapBiomas",
+        "Google Earth Engine",
+        "Manual",
+        "Outro"
+      ],
+      "description": "Fonte dos dados"
+    },
+    "recommended_actions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "A\u00e7\u00f5es recomendadas"
+    },
+    "resolution_notes": {
+      "type": "string",
+      "description": "Notas sobre a resolu\u00e7\u00e3o"
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Nome do arquivo"
+          },
+          "url": {
+            "type": "string",
+            "description": "URL do arquivo"
+          },
+          "type": {
+            "type": "string",
+            "description": "Tipo do anexo (relat\u00f3rio, foto, documento)"
+          },
+          "uploaded_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "uploaded_by": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Anexos (relat\u00f3rios, fotos, documentos)",
+      "default": []
+    },
+    "history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "action": {
+            "type": "string"
+          },
+          "user": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Hist\u00f3rico de a\u00e7\u00f5es e atualiza\u00e7\u00f5es",
+      "default": []
+    },
+    "notification_sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se notifica\u00e7\u00e3o foi enviada"
+    },
+    "notification_config": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "boolean",
+          "default": true
+        },
+        "push": {
+          "type": "boolean",
+          "default": true
+        },
+        "sms": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "description": "Configura\u00e7\u00f5es de notifica\u00e7\u00e3o"
+    }
+  },
+  "required": [
+    "property_id",
+    "alert_type",
+    "severity",
+    "title",
+    "detection_date"
+  ]
+}

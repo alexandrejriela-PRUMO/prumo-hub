@@ -1,0 +1,282 @@
+{
+  "name": "PSAContract",
+  "type": "object",
+  "properties": {
+    "property_id": {
+      "type": "string",
+      "description": "ID da propriedade vinculada"
+    },
+    "contract_name": {
+      "type": "string",
+      "description": "Nome/identifica\u00e7\u00e3o do contrato"
+    },
+    "contract_number": {
+      "type": "string",
+      "description": "N\u00famero do contrato"
+    },
+    "program_name": {
+      "type": "string",
+      "description": "Nome do programa de PSA"
+    },
+    "payer": {
+      "type": "string",
+      "description": "Pagador (institui\u00e7\u00e3o/empresa)"
+    },
+    "beneficiary_email": {
+      "type": "string",
+      "description": "Email do benefici\u00e1rio principal"
+    },
+    "beneficiaries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "description": "Papel no contrato"
+          }
+        }
+      },
+      "description": "Lista de benefici\u00e1rios",
+      "default": []
+    },
+    "environmental_services": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Prote\u00e7\u00e3o de Recursos H\u00eddricos",
+          "Conserva\u00e7\u00e3o de Biodiversidade",
+          "Sequestro de Carbono",
+          "Conserva\u00e7\u00e3o do Solo",
+          "Recupera\u00e7\u00e3o de APP",
+          "Manuten\u00e7\u00e3o de Corredores Ecol\u00f3gicos",
+          "Prote\u00e7\u00e3o de Nascentes",
+          "Outro"
+        ]
+      },
+      "description": "Servi\u00e7os ambientais prestados",
+      "default": []
+    },
+    "area_hectares": {
+      "type": "number",
+      "description": "\u00c1rea do contrato em hectares"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de in\u00edcio do contrato"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de t\u00e9rmino do contrato"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Ativo",
+        "Em Aprova\u00e7\u00e3o",
+        "Suspenso",
+        "Conclu\u00eddo",
+        "Cancelado"
+      ],
+      "default": "Em Aprova\u00e7\u00e3o",
+      "description": "Status do contrato"
+    },
+    "payment_value": {
+      "type": "number",
+      "description": "Valor do pagamento por per\u00edodo (R$)"
+    },
+    "payment_periodicity": {
+      "type": "string",
+      "enum": [
+        "Mensal",
+        "Trimestral",
+        "Semestral",
+        "Anual"
+      ],
+      "description": "Periodicidade do pagamento"
+    },
+    "total_contract_value": {
+      "type": "number",
+      "description": "Valor total do contrato (R$)"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "Transfer\u00eancia Banc\u00e1ria",
+        "Boleto",
+        "Dep\u00f3sito",
+        "Outro"
+      ],
+      "description": "Forma de pagamento"
+    },
+    "obligations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "Descri\u00e7\u00e3o da obriga\u00e7\u00e3o"
+          },
+          "frequency": {
+            "type": "string",
+            "description": "Frequ\u00eancia de cumprimento"
+          },
+          "responsible": {
+            "type": "string",
+            "description": "Respons\u00e1vel"
+          }
+        }
+      },
+      "description": "Obriga\u00e7\u00f5es contratuais",
+      "default": []
+    },
+    "monitoring": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "type": {
+            "type": "string",
+            "description": "Tipo de monitoramento"
+          },
+          "compliance_status": {
+            "type": "string",
+            "enum": [
+              "Conforme",
+              "N\u00e3o Conforme",
+              "Parcialmente Conforme"
+            ]
+          },
+          "observations": {
+            "type": "string"
+          },
+          "file_url": {
+            "type": "string",
+            "description": "URL de evid\u00eancia/relat\u00f3rio"
+          },
+          "monitored_by": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Registros de monitoramento",
+      "default": []
+    },
+    "compliance_score": {
+      "type": "number",
+      "description": "Score de conformidade (0-100)",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "payments_received": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "period_reference": {
+            "type": "string",
+            "description": "Per\u00edodo de refer\u00eancia do pagamento"
+          },
+          "receipt_url": {
+            "type": "string",
+            "description": "URL do comprovante"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Hist\u00f3rico de pagamentos recebidos",
+      "default": []
+    },
+    "environmental_indicators": {
+      "type": "object",
+      "properties": {
+        "water_quality_improvement": {
+          "type": "string",
+          "description": "Melhoria na qualidade da \u00e1gua"
+        },
+        "biodiversity_index": {
+          "type": "string",
+          "description": "\u00cdndice de biodiversidade"
+        },
+        "carbon_sequestration": {
+          "type": "number",
+          "description": "Sequestro de carbono (tCO2e)"
+        },
+        "forest_cover_percentage": {
+          "type": "number",
+          "description": "Percentual de cobertura florestal"
+        }
+      },
+      "description": "Indicadores ambientais"
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "Contrato",
+              "Termo de Compromisso",
+              "Plano de Manejo",
+              "Relat\u00f3rio",
+              "Comprovante",
+              "Outro"
+            ]
+          },
+          "url": {
+            "type": "string"
+          },
+          "upload_date": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "description": "Documentos relacionados ao contrato",
+      "default": []
+    },
+    "notes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es gerais"
+    }
+  },
+  "required": [
+    "property_id",
+    "contract_name",
+    "payer",
+    "beneficiary_email",
+    "environmental_services",
+    "area_hectares",
+    "start_date",
+    "payment_value",
+    "payment_periodicity"
+  ]
+}

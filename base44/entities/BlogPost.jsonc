@@ -1,0 +1,51 @@
+{
+  "name": "BlogPost",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "T\u00edtulo do post"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "Not\u00edcia",
+        "Artigo"
+      ],
+      "description": "Tipo de conte\u00fado"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Resumo do conte\u00fado"
+    },
+    "content": {
+      "type": "string",
+      "description": "Conte\u00fado completo"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "URL da imagem de capa"
+    },
+    "published_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de publica\u00e7\u00e3o"
+    },
+    "author": {
+      "type": "string",
+      "description": "Autor do post"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags/categorias"
+    }
+  },
+  "required": [
+    "title",
+    "type",
+    "content"
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "name": "FinancialAccount",
+  "type": "object",
+  "properties": {
+    "consultor_email": {
+      "type": "string",
+      "description": "Email do consultor dono da conta"
+    },
+    "name": {
+      "type": "string",
+      "description": "Nome da conta (ex: Conta Bradesco, Caixa Escrit\u00f3rio)"
+    },
+    "account_type": {
+      "type": "string",
+      "enum": [
+        "Caixa",
+        "Conta Corrente",
+        "Conta Poupan\u00e7a",
+        "Stripe",
+        "PIX",
+        "Outro"
+      ],
+      "default": "Conta Corrente",
+      "description": "Tipo da conta"
+    },
+    "bank_name": {
+      "type": "string",
+      "description": "Nome do banco (para conta corrente/poupan\u00e7a)"
+    },
+    "is_stripe": {
+      "type": "boolean",
+      "default": false,
+      "description": "True se \u00e9 a conta integrada ao Stripe"
+    },
+    "is_system": {
+      "type": "boolean",
+      "default": false,
+      "description": "True se \u00e9 uma conta do sistema (n\u00e3o pode ser exclu\u00edda)"
+    },
+    "initial_balance": {
+      "type": "number",
+      "default": 0,
+      "description": "Saldo inicial da conta (R$)"
+    },
+    "color": {
+      "type": "string",
+      "default": "#10b981",
+      "description": "Cor de identifica\u00e7\u00e3o visual da conta"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "consultor_email",
+    "name",
+    "account_type"
+  ]
+}

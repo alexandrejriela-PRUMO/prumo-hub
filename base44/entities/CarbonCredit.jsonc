@@ -1,0 +1,265 @@
+{
+  "name": "CarbonCredit",
+  "type": "object",
+  "properties": {
+    "property_id": {
+      "type": "string",
+      "description": "ID da propriedade vinculada"
+    },
+    "project_name": {
+      "type": "string",
+      "description": "Nome do projeto de carbono"
+    },
+    "project_type": {
+      "type": "string",
+      "enum": [
+        "Reflorestamento",
+        "Conserva\u00e7\u00e3o Florestal",
+        "Recupera\u00e7\u00e3o de APP",
+        "Sistemas Agroflorestais",
+        "Manejo Sustent\u00e1vel",
+        "Agricultura Regenerativa",
+        "Outro"
+      ],
+      "description": "Tipo de projeto"
+    },
+    "description": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o detalhada do projeto"
+    },
+    "area_hectares": {
+      "type": "number",
+      "description": "\u00c1rea do projeto em hectares"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de in\u00edcio do projeto"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data prevista de t\u00e9rmino/renova\u00e7\u00e3o"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Planejamento",
+        "Em Implementa\u00e7\u00e3o",
+        "Em Valida\u00e7\u00e3o",
+        "Validado",
+        "Certificado",
+        "Comercializado",
+        "Cancelado"
+      ],
+      "default": "Planejamento",
+      "description": "Status do projeto"
+    },
+    "estimated_credits": {
+      "type": "number",
+      "description": "Estimativa de cr\u00e9ditos de carbono (tCO2e)"
+    },
+    "verified_credits": {
+      "type": "number",
+      "description": "Cr\u00e9ditos verificados/certificados (tCO2e)"
+    },
+    "available_credits": {
+      "type": "number",
+      "description": "Cr\u00e9ditos dispon\u00edveis para comercializa\u00e7\u00e3o (tCO2e)"
+    },
+    "sold_credits": {
+      "type": "number",
+      "description": "Cr\u00e9ditos j\u00e1 comercializados (tCO2e)"
+    },
+    "certification_standard": {
+      "type": "string",
+      "enum": [
+        "VCS (Verified Carbon Standard)",
+        "Gold Standard",
+        "CCB (Climate, Community & Biodiversity)",
+        "REDD+",
+        "CAR (Climate Action Reserve)",
+        "Outro"
+      ],
+      "description": "Padr\u00e3o de certifica\u00e7\u00e3o"
+    },
+    "validator": {
+      "type": "string",
+      "description": "Nome da empresa/institui\u00e7\u00e3o validadora"
+    },
+    "validation_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de valida\u00e7\u00e3o"
+    },
+    "certification_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de certifica\u00e7\u00e3o"
+    },
+    "methodology": {
+      "type": "string",
+      "description": "Metodologia aplicada ao projeto"
+    },
+    "baseline_data": {
+      "type": "object",
+      "properties": {
+        "carbon_stock_initial": {
+          "type": "number",
+          "description": "Estoque inicial de carbono (tCO2e)"
+        },
+        "deforestation_risk": {
+          "type": "string",
+          "enum": [
+            "Baixo",
+            "M\u00e9dio",
+            "Alto"
+          ]
+        },
+        "baseline_scenario": {
+          "type": "string",
+          "description": "Descri\u00e7\u00e3o do cen\u00e1rio de linha de base"
+        }
+      },
+      "description": "Dados de linha de base do projeto"
+    },
+    "transactions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "Venda",
+              "Transfer\u00eancia",
+              "Aposentadoria"
+            ]
+          },
+          "quantity": {
+            "type": "number",
+            "description": "Quantidade de cr\u00e9ditos (tCO2e)"
+          },
+          "price_per_credit": {
+            "type": "number",
+            "description": "Pre\u00e7o por cr\u00e9dito (R$)"
+          },
+          "buyer": {
+            "type": "string",
+            "description": "Comprador/destinat\u00e1rio"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Hist\u00f3rico de transa\u00e7\u00f5es",
+      "default": []
+    },
+    "monitoring": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "carbon_sequestration": {
+            "type": "number",
+            "description": "Sequestro de carbono medido (tCO2e)"
+          },
+          "biomass": {
+            "type": "number",
+            "description": "Biomassa (t/ha)"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "file_url": {
+            "type": "string",
+            "description": "URL de relat\u00f3rio/evid\u00eancia"
+          }
+        }
+      },
+      "description": "Dados de monitoramento peri\u00f3dico",
+      "default": []
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "PDD",
+              "Valida\u00e7\u00e3o",
+              "Verifica\u00e7\u00e3o",
+              "Certificado",
+              "Contrato",
+              "Relat\u00f3rio",
+              "Outro"
+            ]
+          },
+          "url": {
+            "type": "string"
+          },
+          "upload_date": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "description": "Documentos relacionados ao projeto",
+      "default": []
+    },
+    "financial_data": {
+      "type": "object",
+      "properties": {
+        "total_investment": {
+          "type": "number",
+          "description": "Investimento total no projeto (R$)"
+        },
+        "total_revenue": {
+          "type": "number",
+          "description": "Receita total obtida (R$)"
+        },
+        "expected_roi": {
+          "type": "number",
+          "description": "ROI esperado (%)"
+        }
+      },
+      "description": "Dados financeiros do projeto"
+    },
+    "co_benefits": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Co-benef\u00edcios do projeto (biodiversidade, \u00e1gua, social, etc.)"
+    },
+    "responsible_email": {
+      "type": "string",
+      "description": "Email do respons\u00e1vel pelo projeto"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es gerais"
+    }
+  },
+  "required": [
+    "property_id",
+    "project_name",
+    "project_type",
+    "area_hectares",
+    "status"
+  ]
+}

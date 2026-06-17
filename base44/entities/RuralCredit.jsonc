@@ -1,0 +1,152 @@
+{
+  "name": "RuralCredit",
+  "type": "object",
+  "properties": {
+    "consultor_email": {
+      "type": "string"
+    },
+    "property_id": {
+      "type": "string",
+      "description": "ID da propriedade vinculada"
+    },
+    "client_name": {
+      "type": "string"
+    },
+    "instituicao": {
+      "type": "string",
+      "description": "Institui\u00e7\u00e3o financeira"
+    },
+    "tipo_credito": {
+      "type": "string",
+      "enum": [
+        "Custeio",
+        "Investimento",
+        "Comercializa\u00e7\u00e3o",
+        "Industrializa\u00e7\u00e3o",
+        "Outro"
+      ],
+      "description": "Tipo de cr\u00e9dito rural"
+    },
+    "programa": {
+      "type": "string",
+      "description": "Programa (ex: Plano Safra, PRONAF, PRONAMP)"
+    },
+    "numero_contrato": {
+      "type": "string"
+    },
+    "data_contratacao": {
+      "type": "string",
+      "format": "date"
+    },
+    "data_vencimento": {
+      "type": "string",
+      "format": "date"
+    },
+    "valor_contratado": {
+      "type": "number"
+    },
+    "saldo_devedor": {
+      "type": "number"
+    },
+    "taxa_juros": {
+      "type": "number",
+      "description": "Taxa de juros anual (%)"
+    },
+    "prazo_total_meses": {
+      "type": "number"
+    },
+    "num_parcelas": {
+      "type": "number"
+    },
+    "parcelas_pagas": {
+      "type": "number",
+      "default": 0
+    },
+    "garantia": {
+      "type": "string",
+      "description": "Garantia vinculada (ex: hipoteca, penhor)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Em dia",
+        "Vencendo em breve",
+        "Inadimplente",
+        "Liquidado",
+        "Em renegocia\u00e7\u00e3o"
+      ],
+      "default": "Em dia"
+    },
+    "parcelas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "numero": {
+            "type": "number"
+          },
+          "vencimento": {
+            "type": "string",
+            "format": "date"
+          },
+          "valor": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Paga",
+              "A vencer",
+              "Vencida"
+            ],
+            "default": "A vencer"
+          },
+          "data_pagamento": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "default": []
+    },
+    "documentos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "Contrato de Financiamento",
+              "CPR",
+              "Garantia",
+              "Aditivo Contratual",
+              "Outro"
+            ]
+          },
+          "upload_date": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "default": []
+    },
+    "notas": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "consultor_email",
+    "instituicao",
+    "tipo_credito",
+    "valor_contratado",
+    "data_vencimento"
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "name": "RealtimeNotification",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email do usu\u00e1rio destinat\u00e1rio"
+    },
+    "title": {
+      "type": "string",
+      "description": "T\u00edtulo da notifica\u00e7\u00e3o"
+    },
+    "message": {
+      "type": "string",
+      "description": "Mensagem da notifica\u00e7\u00e3o"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "alerta_ambiental",
+        "alerta_climatico",
+        "sistema",
+        "atualizado_dados"
+      ],
+      "description": "Tipo de notifica\u00e7\u00e3o"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "baixa",
+        "media",
+        "alta",
+        "critica"
+      ],
+      "description": "Severidade da notifica\u00e7\u00e3o"
+    },
+    "source": {
+      "type": "string",
+      "description": "Fonte do alerta (ex: property_id, location_name)"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "ID da fonte (environmental_alert_id, climate_monitoring_id)"
+    },
+    "read": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se foi lida"
+    },
+    "email_sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se foi enviada por email"
+    },
+    "push_sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se foi enviada por push"
+    },
+    "action_url": {
+      "type": "string",
+      "description": "URL para a\u00e7\u00e3o relacionada \u00e0 notifica\u00e7\u00e3o"
+    }
+  },
+  "required": [
+    "user_email",
+    "title",
+    "message",
+    "type",
+    "severity"
+  ]
+}

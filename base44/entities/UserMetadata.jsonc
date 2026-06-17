@@ -13,6 +13,8 @@
     "plano": {
       "type": "string",
       "enum": [
+        "start",
+        "pro",
         "enterprise",
         "unico"
       ],

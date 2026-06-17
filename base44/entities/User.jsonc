@@ -29,5 +29,10 @@
       "format": "date-time",
       "description": "Data e hora em que o usu\u00e1rio aceitou os termos"
     }
-  }
+  },
+  "required": [
+    "user_type",
+    "accepted_terms_version",
+    "accepted_terms_date"
+  ]
 }

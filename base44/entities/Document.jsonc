@@ -1,0 +1,148 @@
+{
+  "name": "Document",
+  "type": "object",
+  "properties": {
+    "owner_email": {
+      "type": "string",
+      "description": "Email do propriet\u00e1rio"
+    },
+    "property_id": {
+      "type": "string",
+      "description": "ID da propriedade"
+    },
+    "document_type": {
+      "type": "string",
+      "enum": [
+        "CCIR",
+        "ITR",
+        "Georreferenciamento",
+        "Matr\u00edcula do Im\u00f3vel",
+        "Escritura",
+        "Certid\u00e3o de Zoneamento",
+        "Certid\u00e3o Negativa de D\u00e9bitos",
+        "Certid\u00e3o de Registro de Im\u00f3veis",
+        "Certid\u00e3o de Inteiro Teor",
+        "Declara\u00e7\u00e3o de Aptid\u00e3o ao Pronaf (DAP/CAF)",
+        "Declara\u00e7\u00e3o de Uso e Cobertura",
+        "Declara\u00e7\u00e3o de Produtor Rural",
+        "Declara\u00e7\u00e3o de Movimenta\u00e7\u00e3o de Animais (DMA)",
+        "Identidade (RG)",
+        "CPF",
+        "CNPJ",
+        "Comprovante de Resid\u00eancia",
+        "Nota Fiscal",
+        "Comprovante de Pagamento",
+        "Procura\u00e7\u00e3o",
+        "Alvar\u00e1",
+        "Outro"
+      ],
+      "description": "Tipo de documento"
+    },
+    "other_description": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o quando tipo for Outro"
+    },
+    "document_name": {
+      "type": "string",
+      "description": "Nome do documento"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "URL do arquivo atual"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es"
+    },
+    "versions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "version_number": {
+            "type": "number"
+          },
+          "file_url": {
+            "type": "string"
+          },
+          "uploaded_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "uploaded_by": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Hist\u00f3rico de vers\u00f5es do documento",
+      "default": []
+    },
+    "current_version": {
+      "type": "number",
+      "description": "N\u00famero da vers\u00e3o atual",
+      "default": 1
+    }
+  },
+  "required": [
+    "owner_email",
+    "document_type"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "data.owner_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.owner_email": "{{user.email}}"
+        },
+        {
+          "data.property_id": {
+            "$in": "{{user.properties_ids}}"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.owner_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.owner_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

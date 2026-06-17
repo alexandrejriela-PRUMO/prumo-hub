@@ -1,0 +1,125 @@
+{
+  "name": "Request",
+  "type": "object",
+  "properties": {
+    "client_email": {
+      "type": "string",
+      "description": "Email do cliente"
+    },
+    "subject": {
+      "type": "string",
+      "description": "Assunto do requerimento"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Jur\u00eddico",
+        "Ambiental",
+        "Licenciamento",
+        "Documenta\u00e7\u00e3o",
+        "Outro"
+      ],
+      "description": "Categoria"
+    },
+    "description": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o detalhada"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Aberto",
+        "Em An\u00e1lise",
+        "Respondido",
+        "Fechado"
+      ],
+      "description": "Status"
+    },
+    "response": {
+      "type": "string",
+      "description": "Resposta da equipe"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "Baixa",
+        "M\u00e9dia",
+        "Alta",
+        "Urgente"
+      ],
+      "description": "Prioridade"
+    },
+    "conversation": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sender": {
+            "type": "string",
+            "description": "Email de quem enviou"
+          },
+          "sender_name": {
+            "type": "string",
+            "description": "Nome de quem enviou"
+          },
+          "sender_type": {
+            "type": "string",
+            "enum": [
+              "client",
+              "team"
+            ],
+            "description": "Tipo de remetente"
+          },
+          "message": {
+            "type": "string",
+            "description": "Mensagem"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Data e hora"
+          },
+          "offer_budget": {
+            "type": "boolean",
+            "description": "Se oferece or\u00e7amento",
+            "default": false
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Nome do arquivo"
+                },
+                "url": {
+                  "type": "string",
+                  "description": "URL do arquivo"
+                },
+                "type": {
+                  "type": "string",
+                  "description": "Tipo do documento (or\u00e7amento, contrato, documento assinado, outro)"
+                },
+                "size": {
+                  "type": "number",
+                  "description": "Tamanho do arquivo em bytes"
+                }
+              }
+            },
+            "description": "Documentos anexados \u00e0 mensagem",
+            "default": []
+          }
+        }
+      },
+      "description": "Hist\u00f3rico de conversa\u00e7\u00e3o",
+      "default": []
+    }
+  },
+  "required": [
+    "client_email",
+    "subject",
+    "category",
+    "description"
+  ]
+}

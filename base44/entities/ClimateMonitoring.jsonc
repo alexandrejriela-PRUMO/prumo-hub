@@ -1,0 +1,213 @@
+{
+  "name": "ClimateMonitoring",
+  "type": "object",
+  "properties": {
+    "property_id": {
+      "type": "string",
+      "description": "ID da propriedade"
+    },
+    "location_name": {
+      "type": "string",
+      "description": "Nome do local na propriedade (ex: Zona Norte, Zona Sul)"
+    },
+    "coordinates": {
+      "type": "string",
+      "description": "Coordenadas GPS (lat,lng)"
+    },
+    "temperature_current": {
+      "type": "number",
+      "description": "Temperatura atual em \u00b0C"
+    },
+    "humidity": {
+      "type": "number",
+      "description": "Umidade relativa do ar (%)"
+    },
+    "precipitation": {
+      "type": "number",
+      "description": "Precipita\u00e7\u00e3o recente (mm)"
+    },
+    "wind_speed": {
+      "type": "number",
+      "description": "Velocidade do vento (km/h)"
+    },
+    "wind_direction": {
+      "type": "string",
+      "description": "Dire\u00e7\u00e3o do vento (N, NE, L, SE, S, SO, O, NO)"
+    },
+    "uv_index": {
+      "type": "number",
+      "description": "\u00cdndice UV"
+    },
+    "soil_moisture": {
+      "type": "number",
+      "description": "Umidade do solo (%)"
+    },
+    "forecast_7days": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "temp_max": {
+            "type": "number"
+          },
+          "temp_min": {
+            "type": "number"
+          },
+          "precipitation_chance": {
+            "type": "number"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Previs\u00e3o para 7 dias",
+      "default": []
+    },
+    "alerts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "Chuva Intensa",
+              "Seca",
+              "Geada",
+              "Tempestade",
+              "Vento Forte",
+              "Outro"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "Baixa",
+              "M\u00e9dia",
+              "Alta",
+              "Cr\u00edtica"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "description": "Alertas clim\u00e1ticos",
+      "default": []
+    },
+    "historical_records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "temperature_max": {
+            "type": "number",
+            "description": "Temperatura m\u00e1xima (\u00b0C)"
+          },
+          "temperature_min": {
+            "type": "number",
+            "description": "Temperatura m\u00ednima (\u00b0C)"
+          },
+          "precipitation": {
+            "type": "number",
+            "description": "Precipita\u00e7\u00e3o acumulada (mm)"
+          },
+          "humidity_avg": {
+            "type": "number",
+            "description": "Umidade m\u00e9dia (%)"
+          },
+          "climate_events": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Eventos clim\u00e1ticos do dia",
+            "default": []
+          }
+        }
+      },
+      "description": "Registros hist\u00f3ricos di\u00e1rios",
+      "default": []
+    },
+    "monthly_summary": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "description": "M\u00eas/Ano (MM/YYYY)"
+          },
+          "total_precipitation": {
+            "type": "number",
+            "description": "Precipita\u00e7\u00e3o total (mm)"
+          },
+          "dry_days": {
+            "type": "number",
+            "description": "Dias sem chuva"
+          },
+          "avg_temperature": {
+            "type": "number",
+            "description": "Temperatura m\u00e9dia (\u00b0C)"
+          },
+          "extreme_events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "event_type": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Eventos extremos do m\u00eas",
+            "default": []
+          }
+        }
+      },
+      "description": "Resumo mensal",
+      "default": []
+    },
+    "last_update": {
+      "type": "string",
+      "format": "date-time",
+      "description": "\u00daltima atualiza\u00e7\u00e3o dos dados"
+    },
+    "data_source": {
+      "type": "string",
+      "enum": [
+        "API P\u00fablica",
+        "Esta\u00e7\u00e3o Local",
+        "Sensor IoT",
+        "Manual"
+      ],
+      "default": "API P\u00fablica"
+    }
+  },
+  "required": [
+    "property_id",
+    "location_name",
+    "coordinates"
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "name": "NotificationPreference",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email do usu\u00e1rio"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "nova_licenca",
+        "atualizacao_licenca",
+        "remocao_licenca",
+        "licenca_vencendo",
+        "licenca_vencida",
+        "novo_processo",
+        "atualizacao_processo",
+        "remocao_processo",
+        "novo_alerta_ambiental",
+        "atualizacao_alerta_ambiental",
+        "remocao_alerta_ambiental",
+        "alerta_resolvido",
+        "novo_prad",
+        "atualizacao_prad",
+        "remocao_prad",
+        "novo_mapeamento",
+        "atualizacao_mapeamento",
+        "remocao_mapeamento",
+        "novo_documento",
+        "atualizacao_documento",
+        "remocao_documento",
+        "documento_vencendo",
+        "nova_fatura",
+        "fatura_vencendo",
+        "novo_requerimento",
+        "resposta_requerimento",
+        "novo_credito_carbono",
+        "atualizacao_credito_carbono",
+        "novo_psa",
+        "atualizacao_psa",
+        "nova_servidao_ambiental",
+        "atualizacao_servidao_ambiental",
+        "novo_georreferenciamento",
+        "atualizacao_georreferenciamento",
+        "novo_cliente_crm",
+        "atualizacao_cliente_crm",
+        "todos"
+      ],
+      "description": "Tipo de evento"
+    },
+    "email_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Receber notifica\u00e7\u00f5es por email"
+    },
+    "push_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Receber notifica\u00e7\u00f5es push no app"
+    },
+    "sms_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Receber notifica\u00e7\u00f5es por SMS"
+    },
+    "phone_number": {
+      "type": "string",
+      "description": "N\u00famero de telefone para SMS"
+    }
+  },
+  "required": [
+    "user_email",
+    "event_type"
+  ]
+}

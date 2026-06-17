@@ -1,0 +1,300 @@
+{
+  "name": "EnvironmentalEasement",
+  "type": "object",
+  "properties": {
+    "property_id": {
+      "type": "string",
+      "description": "ID da propriedade vinculada"
+    },
+    "easement_name": {
+      "type": "string",
+      "description": "Nome/identifica\u00e7\u00e3o da servid\u00e3o"
+    },
+    "easement_number": {
+      "type": "string",
+      "description": "N\u00famero do registro da servid\u00e3o"
+    },
+    "easement_type": {
+      "type": "string",
+      "enum": [
+        "Permanente",
+        "Tempor\u00e1ria"
+      ],
+      "description": "Tipo de servid\u00e3o"
+    },
+    "area_hectares": {
+      "type": "number",
+      "description": "\u00c1rea sob servid\u00e3o em hectares"
+    },
+    "vegetation_type": {
+      "type": "string",
+      "enum": [
+        "Mata Atl\u00e2ntica",
+        "Cerrado",
+        "Amaz\u00f4nia",
+        "Caatinga",
+        "Pampa",
+        "Pantanal",
+        "\u00c1rea de Preserva\u00e7\u00e3o Permanente",
+        "Reserva Legal Excedente",
+        "Outro"
+      ],
+      "description": "Tipo de vegeta\u00e7\u00e3o preservada"
+    },
+    "conservation_purpose": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Conserva\u00e7\u00e3o de Biodiversidade",
+          "Prote\u00e7\u00e3o de Recursos H\u00eddricos",
+          "Sequestro de Carbono",
+          "Prote\u00e7\u00e3o de Fauna",
+          "Corredor Ecol\u00f3gico",
+          "Preserva\u00e7\u00e3o de Esp\u00e9cies Amea\u00e7adas",
+          "Outro"
+        ]
+      },
+      "description": "Finalidades de conserva\u00e7\u00e3o",
+      "default": []
+    },
+    "beneficiary": {
+      "type": "string",
+      "description": "Benefici\u00e1rio da servid\u00e3o (pessoa f\u00edsica/jur\u00eddica)"
+    },
+    "beneficiary_email": {
+      "type": "string",
+      "description": "Email do benefici\u00e1rio"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de in\u00edcio da servid\u00e3o"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de t\u00e9rmino (se tempor\u00e1ria)"
+    },
+    "duration_years": {
+      "type": "number",
+      "description": "Dura\u00e7\u00e3o em anos (se tempor\u00e1ria)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Em Aprova\u00e7\u00e3o",
+        "Ativa",
+        "Registrada",
+        "Suspensa",
+        "Cancelada",
+        "Expirada"
+      ],
+      "default": "Em Aprova\u00e7\u00e3o",
+      "description": "Status da servid\u00e3o"
+    },
+    "registry_info": {
+      "type": "object",
+      "properties": {
+        "registry_office": {
+          "type": "string",
+          "description": "Cart\u00f3rio de registro"
+        },
+        "registration_number": {
+          "type": "string",
+          "description": "N\u00famero de matr\u00edcula"
+        },
+        "registration_date": {
+          "type": "string",
+          "format": "date",
+          "description": "Data de registro"
+        },
+        "book": {
+          "type": "string",
+          "description": "Livro"
+        },
+        "page": {
+          "type": "string",
+          "description": "P\u00e1gina/Folha"
+        }
+      },
+      "description": "Informa\u00e7\u00f5es de registro em cart\u00f3rio"
+    },
+    "compensation": {
+      "type": "object",
+      "properties": {
+        "has_compensation": {
+          "type": "boolean",
+          "default": false,
+          "description": "Se h\u00e1 compensa\u00e7\u00e3o financeira"
+        },
+        "compensation_value": {
+          "type": "number",
+          "description": "Valor da compensa\u00e7\u00e3o (R$)"
+        },
+        "payment_type": {
+          "type": "string",
+          "enum": [
+            "Pagamento \u00danico",
+            "Anual",
+            "Semestral",
+            "Mensal"
+          ],
+          "description": "Tipo de pagamento"
+        },
+        "total_paid": {
+          "type": "number",
+          "description": "Total j\u00e1 pago (R$)"
+        }
+      },
+      "description": "Compensa\u00e7\u00e3o financeira pela servid\u00e3o"
+    },
+    "tax_benefits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "benefit_type": {
+            "type": "string",
+            "description": "Tipo de benef\u00edcio fiscal"
+          },
+          "description": {
+            "type": "string",
+            "description": "Descri\u00e7\u00e3o do benef\u00edcio"
+          },
+          "estimated_value": {
+            "type": "number",
+            "description": "Valor estimado do benef\u00edcio (R$/ano)"
+          }
+        }
+      },
+      "description": "Benef\u00edcios fiscais obtidos",
+      "default": []
+    },
+    "restrictions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Restri\u00e7\u00f5es de uso da \u00e1rea",
+      "default": []
+    },
+    "allowed_activities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Atividades permitidas na \u00e1rea",
+      "default": []
+    },
+    "monitoring": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "inspector": {
+            "type": "string",
+            "description": "Respons\u00e1vel pela vistoria"
+          },
+          "compliance_status": {
+            "type": "string",
+            "enum": [
+              "Conforme",
+              "N\u00e3o Conforme",
+              "Parcialmente Conforme"
+            ]
+          },
+          "vegetation_condition": {
+            "type": "string",
+            "enum": [
+              "Excelente",
+              "Boa",
+              "Regular",
+              "Degradada"
+            ],
+            "description": "Condi\u00e7\u00e3o da vegeta\u00e7\u00e3o"
+          },
+          "observations": {
+            "type": "string"
+          },
+          "file_url": {
+            "type": "string",
+            "description": "URL de relat\u00f3rio/fotos"
+          }
+        }
+      },
+      "description": "Registros de monitoramento e vistoria",
+      "default": []
+    },
+    "environmental_indicators": {
+      "type": "object",
+      "properties": {
+        "forest_cover_percentage": {
+          "type": "number",
+          "description": "Percentual de cobertura florestal (%)"
+        },
+        "carbon_stock": {
+          "type": "number",
+          "description": "Estoque de carbono estimado (tCO2e)"
+        },
+        "biodiversity_index": {
+          "type": "string",
+          "description": "\u00cdndice de biodiversidade"
+        },
+        "water_sources": {
+          "type": "number",
+          "description": "N\u00famero de nascentes protegidas"
+        }
+      },
+      "description": "Indicadores ambientais da \u00e1rea"
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "Termo de Servid\u00e3o",
+              "Certid\u00e3o de Registro",
+              "Laudo T\u00e9cnico",
+              "Plano de Manejo",
+              "Relat\u00f3rio de Vistoria",
+              "Outro"
+            ]
+          },
+          "url": {
+            "type": "string"
+          },
+          "upload_date": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "description": "Documentos relacionados \u00e0 servid\u00e3o",
+      "default": []
+    },
+    "notes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es gerais"
+    }
+  },
+  "required": [
+    "property_id",
+    "easement_name",
+    "easement_type",
+    "area_hectares",
+    "vegetation_type",
+    "start_date",
+    "status"
+  ]
+}

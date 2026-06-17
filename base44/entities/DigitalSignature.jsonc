@@ -1,0 +1,99 @@
+{
+  "name": "DigitalSignature",
+  "type": "object",
+  "properties": {
+    "document_type": {
+      "type": "string",
+      "enum": [
+        "Termos de Uso da Plataforma",
+        "Contrato Cliente Consultor"
+      ],
+      "description": "Tipo de documento"
+    },
+    "clicksign_document_key": {
+      "type": "string",
+      "description": "Chave do documento na Clicksign"
+    },
+    "document_filename": {
+      "type": "string",
+      "description": "Nome do arquivo PDF"
+    },
+    "document_url": {
+      "type": "string",
+      "description": "URL do PDF original"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Aguardando Assinaturas",
+        "Assinado",
+        "Recusado",
+        "Cancelado",
+        "Expirado",
+        "Erro"
+      ],
+      "default": "Aguardando Assinaturas",
+      "description": "Status da assinatura"
+    },
+    "signers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "clicksign_signer_key": {
+            "type": "string"
+          },
+          "clicksign_list_key": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Pendente",
+              "Assinado",
+              "Recusado"
+            ],
+            "default": "Pendente"
+          },
+          "signed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "default": [],
+      "description": "Signat\u00e1rios e seus status"
+    },
+    "client_contract_id": {
+      "type": "string",
+      "description": "ID do ClientContract vinculado (se contrato)"
+    },
+    "consultor_email": {
+      "type": "string",
+      "description": "Email do consultor (se contrato)"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email do usu\u00e1rio (se Termos de Uso)"
+    },
+    "webhook_payload_history": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "default": [],
+      "description": "Hist\u00f3rico de webhooks recebidos da Clicksign"
+    }
+  },
+  "required": [
+    "document_type",
+    "document_filename",
+    "document_url"
+  ]
+}

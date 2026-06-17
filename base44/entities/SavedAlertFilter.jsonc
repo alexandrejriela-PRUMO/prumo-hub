@@ -1,0 +1,53 @@
+{
+  "name": "SavedAlertFilter",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email do usu\u00e1rio que salvou o filtro"
+    },
+    "filter_name": {
+      "type": "string",
+      "description": "Nome do filtro salvo"
+    },
+    "description": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o do filtro"
+    },
+    "alert_type": {
+      "type": "string",
+      "description": "Tipo de alerta (all, environmental, climate)"
+    },
+    "severity": {
+      "type": "string",
+      "description": "Gravidade (all, Baixa, M\u00e9dia, Alta, Cr\u00edtica)"
+    },
+    "date_start": {
+      "type": "string",
+      "format": "date",
+      "description": "Data inicial"
+    },
+    "date_end": {
+      "type": "string",
+      "format": "date",
+      "description": "Data final"
+    },
+    "property_id": {
+      "type": "string",
+      "description": "ID da propriedade selecionada"
+    },
+    "min_area": {
+      "type": "number",
+      "description": "\u00c1rea m\u00ednima em hectares"
+    },
+    "is_default": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se \u00e9 o filtro padr\u00e3o do usu\u00e1rio"
+    }
+  },
+  "required": [
+    "user_email",
+    "filter_name"
+  ]
+}

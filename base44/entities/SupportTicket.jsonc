@@ -1,0 +1,37 @@
+{
+  "name": "SupportTicket",
+  "type": "object",
+  "properties": {
+    "client_email": {
+      "type": "string",
+      "description": "Email do cliente"
+    },
+    "subject": {
+      "type": "string",
+      "description": "Assunto"
+    },
+    "message": {
+      "type": "string",
+      "description": "Mensagem"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Aberto",
+        "Em Atendimento",
+        "Resolvido",
+        "Fechado"
+      ],
+      "description": "Status"
+    },
+    "response": {
+      "type": "string",
+      "description": "Resposta do suporte"
+    }
+  },
+  "required": [
+    "client_email",
+    "subject",
+    "message"
+  ]
+}

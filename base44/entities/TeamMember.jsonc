@@ -1,0 +1,149 @@
+{
+  "name": "TeamMember",
+  "type": "object",
+  "properties": {
+    "primary_user_email": {
+      "type": "string",
+      "description": "Email do usu\u00e1rio principal (dono da equipe)"
+    },
+    "consultor_email": {
+      "type": "string",
+      "description": "Email do consultor (alias de primary_user_email para queries)"
+    },
+    "member_email": {
+      "type": "string",
+      "description": "Email do membro da equipe"
+    },
+    "member_name": {
+      "type": "string",
+      "description": "Nome do membro"
+    },
+    "member_role": {
+      "type": "string",
+      "enum": [
+        "Estagi\u00e1rio",
+        "Engenheiro",
+        "Advogado",
+        "Administrador",
+        "Outro"
+      ],
+      "description": "Fun\u00e7\u00e3o na equipe"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Ativo",
+        "Pendente",
+        "Inativo"
+      ],
+      "default": "Pendente",
+      "description": "Status do membro"
+    },
+    "invite_token": {
+      "type": "string",
+      "description": "Token \u00fanico para convite por link (UUID)"
+    },
+    "permissions": {
+      "type": "object",
+      "description": "Permiss\u00f5es do membro por m\u00f3dulo",
+      "properties": {
+        "office": {
+          "type": "object",
+          "properties": {
+            "view": {
+              "type": "boolean"
+            },
+            "edit": {
+              "type": "boolean"
+            }
+          }
+        },
+        "property_center": {
+          "type": "object",
+          "properties": {
+            "view": {
+              "type": "boolean"
+            },
+            "edit": {
+              "type": "boolean"
+            }
+          }
+        },
+        "advanced_modules": {
+          "type": "object",
+          "properties": {
+            "access": {
+              "type": "boolean"
+            }
+          }
+        },
+        "reports": {
+          "type": "object",
+          "properties": {
+            "view": {
+              "type": "boolean"
+            }
+          }
+        },
+        "ai_chat": {
+          "type": "object",
+          "properties": {
+            "access": {
+              "type": "boolean"
+            }
+          }
+        },
+        "team_management": {
+          "type": "object",
+          "properties": {
+            "manage": {
+              "type": "boolean"
+            }
+          }
+        },
+        "financial": {
+          "type": "object",
+          "properties": {
+            "view": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "pending_user_type": {
+      "type": "string",
+      "default": "equipe",
+      "description": "Tipo de usu\u00e1rio a ser aplicado ao aceitar o convite"
+    },
+    "user_type_applied": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se o user_type j\u00e1 foi aplicado (idempot\u00eancia)"
+    },
+    "invited_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data do convite (ou do \u00faltimo reenvio)"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data de expira\u00e7\u00e3o do convite (invited_at + 7 dias)"
+    },
+    "activated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data em que o membro foi ativado"
+    },
+    "accepted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data em que o membro aceitou o convite (rastreabilidade)"
+    }
+  },
+  "required": [
+    "primary_user_email",
+    "member_email"
+  ]
+}

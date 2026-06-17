@@ -1,0 +1,400 @@
+{
+  "name": "Mapping",
+  "type": "object",
+  "properties": {
+    "property_id": {
+      "type": "string",
+      "description": "ID da propriedade"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email do usu\u00e1rio respons\u00e1vel"
+    },
+    "mapping_type": {
+      "type": "string",
+      "enum": [
+        "Mapa de Talh\u00f5es",
+        "Mapa de Solo",
+        "Fertilidade do Solo",
+        "Mapa de Produtividade",
+        "\u00cdndices de Vegeta\u00e7\u00e3o",
+        "Umidade e Drenagem",
+        "Tr\u00e1fego e Compacta\u00e7\u00e3o",
+        "Curvas de N\u00edvel",
+        "Prescri\u00e7\u00e3o Agron\u00f4mica"
+      ],
+      "description": "Tipo de mapeamento"
+    },
+    "title": {
+      "type": "string",
+      "description": "T\u00edtulo do mapeamento"
+    },
+    "description": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o"
+    },
+    "mapping_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data do mapeamento"
+    },
+    "area_hectares": {
+      "type": "number",
+      "description": "\u00c1rea mapeada em hectares"
+    },
+    "field_plots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "plot_name": {
+            "type": "string",
+            "description": "Nome do talh\u00e3o"
+          },
+          "area_ha": {
+            "type": "number",
+            "description": "\u00c1rea em hectares"
+          },
+          "crop": {
+            "type": "string",
+            "description": "Cultura implantada"
+          },
+          "harvest_year": {
+            "type": "string",
+            "description": "Safra / ano agr\u00edcola"
+          },
+          "usage_history": {
+            "type": "string",
+            "description": "Hist\u00f3rico de uso da \u00e1rea"
+          }
+        }
+      },
+      "description": "Talh\u00f5es da propriedade",
+      "default": []
+    },
+    "soil_data": {
+      "type": "object",
+      "properties": {
+        "texture": {
+          "type": "string",
+          "enum": [
+            "Arenosa",
+            "M\u00e9dia",
+            "Argilosa",
+            "Muito Argilosa"
+          ],
+          "description": "Textura do solo"
+        },
+        "clay_content": {
+          "type": "number",
+          "description": "Teor de argila (%)"
+        },
+        "ph": {
+          "type": "number",
+          "description": "pH do solo"
+        },
+        "organic_matter": {
+          "type": "number",
+          "description": "Mat\u00e9ria org\u00e2nica (g/dm\u00b3)"
+        },
+        "productive_capacity": {
+          "type": "string",
+          "enum": [
+            "Baixa",
+            "M\u00e9dia",
+            "Alta",
+            "Muito Alta"
+          ],
+          "description": "Capacidade produtiva estimada"
+        }
+      },
+      "description": "Dados do solo"
+    },
+    "soil_fertility": {
+      "type": "object",
+      "properties": {
+        "phosphorus": {
+          "type": "number",
+          "description": "F\u00f3sforo (P) mg/dm\u00b3"
+        },
+        "potassium": {
+          "type": "number",
+          "description": "Pot\u00e1ssio (K) mmolc/dm\u00b3"
+        },
+        "calcium": {
+          "type": "number",
+          "description": "C\u00e1lcio mmolc/dm\u00b3"
+        },
+        "magnesium": {
+          "type": "number",
+          "description": "Magn\u00e9sio mmolc/dm\u00b3"
+        },
+        "base_saturation": {
+          "type": "number",
+          "description": "Satura\u00e7\u00e3o por bases (%)"
+        },
+        "correction_needed": {
+          "type": "string",
+          "description": "Necessidade de corre\u00e7\u00e3o"
+        }
+      },
+      "description": "Fertilidade do solo"
+    },
+    "productivity_data": {
+      "type": "object",
+      "properties": {
+        "productivity_by_plot": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "plot_name": {
+                "type": "string"
+              },
+              "productivity": {
+                "type": "number",
+                "description": "Produtividade (sc/ha ou t/ha)"
+              }
+            }
+          },
+          "default": []
+        },
+        "harvest_comparison": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "year": {
+                "type": "string"
+              },
+              "avg_productivity": {
+                "type": "number"
+              }
+            }
+          },
+          "default": []
+        },
+        "high_performance_zones": {
+          "type": "string",
+          "description": "Pontos de alta performance"
+        },
+        "low_performance_zones": {
+          "type": "string",
+          "description": "Pontos de baixa performance"
+        }
+      },
+      "description": "Dados de produtividade"
+    },
+    "vegetation_indices": {
+      "type": "object",
+      "properties": {
+        "ndvi": {
+          "type": "number",
+          "description": "NDVI"
+        },
+        "ndre": {
+          "type": "number",
+          "description": "NDRE"
+        },
+        "crop_vigor": {
+          "type": "string",
+          "enum": [
+            "Baixo",
+            "M\u00e9dio",
+            "Alto",
+            "Muito Alto"
+          ],
+          "description": "Vigor da cultura"
+        },
+        "early_stress": {
+          "type": "boolean",
+          "default": false,
+          "description": "Estresse precoce detectado"
+        },
+        "planting_failures": {
+          "type": "boolean",
+          "default": false,
+          "description": "Falhas de plantio detectadas"
+        },
+        "cycle_evolution": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "ndvi_value": {
+                "type": "number"
+              }
+            }
+          },
+          "description": "Evolu\u00e7\u00e3o ao longo do ciclo",
+          "default": []
+        }
+      },
+      "description": "\u00cdndices de vegeta\u00e7\u00e3o"
+    },
+    "moisture_drainage": {
+      "type": "object",
+      "properties": {
+        "soil_moisture": {
+          "type": "number",
+          "description": "Umidade do solo (%)"
+        },
+        "waterlogged_areas": {
+          "type": "string",
+          "description": "\u00c1reas encharcadas"
+        },
+        "water_deficit": {
+          "type": "boolean",
+          "default": false,
+          "description": "Defici\u00eancia h\u00eddrica"
+        },
+        "compaction_risk": {
+          "type": "string",
+          "enum": [
+            "Baixo",
+            "M\u00e9dio",
+            "Alto"
+          ],
+          "description": "Risco de compacta\u00e7\u00e3o"
+        }
+      },
+      "description": "Umidade e drenagem"
+    },
+    "traffic_compaction": {
+      "type": "object",
+      "properties": {
+        "traffic_lines": {
+          "type": "string",
+          "description": "Linhas de tr\u00e1fego de m\u00e1quinas"
+        },
+        "compacted_areas": {
+          "type": "string",
+          "description": "\u00c1reas compactadas"
+        },
+        "subsoiling_suggestion": {
+          "type": "string",
+          "description": "Sugest\u00e3o de subsolagem localizada"
+        }
+      },
+      "description": "Tr\u00e1fego e compacta\u00e7\u00e3o"
+    },
+    "contour_slope": {
+      "type": "object",
+      "properties": {
+        "terrain_slope": {
+          "type": "number",
+          "description": "Declividade do terreno (%)"
+        },
+        "erosion_risk": {
+          "type": "string",
+          "enum": [
+            "Baixo",
+            "M\u00e9dio",
+            "Alto",
+            "Muito Alto"
+          ],
+          "description": "Risco de eros\u00e3o"
+        },
+        "planting_direction": {
+          "type": "string",
+          "description": "Direcionamento de plantio"
+        },
+        "terrace_planning": {
+          "type": "string",
+          "description": "Planejamento de terra\u00e7os"
+        }
+      },
+      "description": "Curvas de n\u00edvel e declividade"
+    },
+    "agronomic_prescription": {
+      "type": "object",
+      "properties": {
+        "variable_rate_liming": {
+          "type": "string",
+          "description": "Calagem em taxa vari\u00e1vel"
+        },
+        "variable_rate_fertilization": {
+          "type": "string",
+          "description": "Aduba\u00e7\u00e3o em taxa vari\u00e1vel"
+        },
+        "variable_rate_seeding": {
+          "type": "string",
+          "description": "Sementes em taxa vari\u00e1vel"
+        },
+        "exportable_maps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "map_type": {
+                "type": "string"
+              },
+              "file_url": {
+                "type": "string"
+              },
+              "machine_compatible": {
+                "type": "boolean",
+                "default": true
+              }
+            }
+          },
+          "description": "Mapas export\u00e1veis para m\u00e1quinas",
+          "default": []
+        }
+      },
+      "description": "Prescri\u00e7\u00e3o agron\u00f4mica"
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "upload_date": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "description": "Arquivos do mapeamento",
+      "default": []
+    },
+    "coordinates": {
+      "type": "string",
+      "description": "Coordenadas da \u00e1rea mapeada"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Em Processamento",
+        "Conclu\u00eddo",
+        "Arquivado"
+      ],
+      "default": "Em Processamento",
+      "description": "Status do mapeamento"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es"
+    }
+  },
+  "required": [
+    "property_id",
+    "user_email",
+    "mapping_type",
+    "title",
+    "mapping_date"
+  ]
+}

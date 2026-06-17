@@ -1,0 +1,78 @@
+{
+  "name": "AlertThreshold",
+  "type": "object",
+  "properties": {
+    "alert_type": {
+      "type": "string",
+      "enum": [
+        "Desmatamento",
+        "Mudan\u00e7a de Uso da Terra",
+        "\u00cdndice de Vegeta\u00e7\u00e3o",
+        "APP",
+        "Reserva Legal"
+      ],
+      "description": "Tipo de alerta"
+    },
+    "parameter_name": {
+      "type": "string",
+      "description": "Nome do par\u00e2metro monitorado"
+    },
+    "threshold_value": {
+      "type": "number",
+      "description": "Valor limite para disparo do alerta"
+    },
+    "comparison_operator": {
+      "type": "string",
+      "enum": [
+        "maior_que",
+        "menor_que",
+        "igual_a",
+        "diferente_de"
+      ],
+      "description": "Operador de compara\u00e7\u00e3o"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "Baixa",
+        "M\u00e9dia",
+        "Alta",
+        "Cr\u00edtica"
+      ],
+      "description": "Gravidade atribu\u00edda ao alerta quando disparado"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Se o limiar est\u00e1 ativo"
+    },
+    "description": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o do limiar"
+    },
+    "notification_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Se notifica\u00e7\u00f5es est\u00e3o habilitadas"
+    },
+    "notification_channels": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "email",
+          "push",
+          "sms"
+        ]
+      },
+      "description": "Canais de notifica\u00e7\u00e3o"
+    }
+  },
+  "required": [
+    "alert_type",
+    "parameter_name",
+    "threshold_value",
+    "comparison_operator",
+    "severity"
+  ]
+}

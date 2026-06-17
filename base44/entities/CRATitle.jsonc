@@ -1,0 +1,136 @@
+{
+  "name": "CRATitle",
+  "type": "object",
+  "properties": {
+    "cra_number": {
+      "type": "string",
+      "description": "N\u00famero do t\u00edtulo CRA"
+    },
+    "origin_id": {
+      "type": "string",
+      "description": "ID da origem da CRA (refer\u00eancia a CRAOrigin)"
+    },
+    "property_id": {
+      "type": "string",
+      "description": "ID da propriedade de origem"
+    },
+    "owner_email": {
+      "type": "string",
+      "description": "Email do propriet\u00e1rio (vendedor potencial)"
+    },
+    "cra_area_hectares": {
+      "type": "number",
+      "description": "\u00c1rea da CRA (hectares)"
+    },
+    "biome": {
+      "type": "string",
+      "enum": [
+        "Amaz\u00f4nia",
+        "Cerrado",
+        "Mata Atl\u00e2ntica",
+        "Caatinga",
+        "Pantanal",
+        "Pampas"
+      ]
+    },
+    "state": {
+      "type": "string"
+    },
+    "municipality": {
+      "type": "string"
+    },
+    "issue_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "issuing_body": {
+      "type": "string",
+      "description": "\u00d3rg\u00e3o emissor (INEA, OEMA, etc)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Dispon\u00edvel",
+        "Reservada",
+        "Vendida",
+        "Vinculada"
+      ],
+      "default": "Dispon\u00edvel"
+    },
+    "available_area_hectares": {
+      "type": "number",
+      "description": "\u00c1rea ainda dispon\u00edvel (n\u00e3o vendida)"
+    },
+    "current_holder_email": {
+      "type": "string",
+      "description": "Email do detentor atual da CRA"
+    },
+    "transaction_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "transaction_id": {
+            "type": "string"
+          },
+          "from_email": {
+            "type": "string"
+          },
+          "to_email": {
+            "type": "string"
+          },
+          "area_hectares": {
+            "type": "number"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "default": []
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "T\u00edtulo da CRA",
+              "Certificado de Emiss\u00e3o",
+              "Outro"
+            ]
+          },
+          "upload_date": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "default": []
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "cra_number",
+    "origin_id",
+    "property_id",
+    "owner_email",
+    "cra_area_hectares",
+    "biome",
+    "issue_date"
+  ]
+}

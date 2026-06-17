@@ -1,0 +1,370 @@
+{
+  "name": "Georeferencing",
+  "type": "object",
+  "properties": {
+    "property_id": {
+      "type": "string",
+      "description": "ID da propriedade vinculada"
+    },
+    "owner_email": {
+      "type": "string",
+      "description": "Email do propriet\u00e1rio"
+    },
+    "municipality": {
+      "type": "string",
+      "description": "Munic\u00edpio"
+    },
+    "registration_number": {
+      "type": "string",
+      "description": "N\u00famero da matr\u00edcula"
+    },
+    "coordinate_system": {
+      "type": "string",
+      "enum": [
+        "SIRGAS2000",
+        "WGS84",
+        "SAD69",
+        "Outro"
+      ],
+      "description": "Sistema de coordenadas utilizado"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Regular",
+        "Pendente",
+        "Em Atualiza\u00e7\u00e3o",
+        "Irregular"
+      ],
+      "default": "Pendente",
+      "description": "Status do georreferenciamento"
+    },
+    "georeferenced_perimeter": {
+      "type": "number",
+      "description": "Per\u00edmetro georreferenciado em metros"
+    },
+    "vertices": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "vertex_number": {
+            "type": "string",
+            "description": "N\u00famero do v\u00e9rtice"
+          },
+          "latitude": {
+            "type": "number",
+            "description": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "description": "Longitude"
+          },
+          "elevation": {
+            "type": "number",
+            "description": "Eleva\u00e7\u00e3o em metros"
+          }
+        }
+      },
+      "description": "V\u00e9rtices do im\u00f3vel",
+      "default": []
+    },
+    "neighbors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": [
+              "Norte",
+              "Sul",
+              "Leste",
+              "Oeste",
+              "Nordeste",
+              "Noroeste",
+              "Sudeste",
+              "Sudoeste"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome do confrontante"
+          },
+          "registration": {
+            "type": "string",
+            "description": "Matr\u00edcula do confrontante"
+          }
+        }
+      },
+      "description": "Confrontantes (vizinhos)",
+      "default": []
+    },
+    "overlap_detected": {
+      "type": "boolean",
+      "default": false,
+      "description": "Sobreposi\u00e7\u00e3o detectada?"
+    },
+    "overlap_details": {
+      "type": "string",
+      "description": "Detalhes da sobreposi\u00e7\u00e3o"
+    },
+    "perimeter_adjustments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Motivo da altera\u00e7\u00e3o"
+          },
+          "technician": {
+            "type": "string",
+            "description": "Respons\u00e1vel t\u00e9cnico"
+          },
+          "previous_perimeter": {
+            "type": "number",
+            "description": "Per\u00edmetro anterior"
+          },
+          "new_perimeter": {
+            "type": "number",
+            "description": "Novo per\u00edmetro"
+          },
+          "file_url": {
+            "type": "string",
+            "description": "Arquivo da vers\u00e3o"
+          }
+        }
+      },
+      "description": "Hist\u00f3rico de ajustes de per\u00edmetro",
+      "default": []
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "Planta Georreferenciada",
+              "Memorial Descritivo",
+              "ART/RRT",
+              "Shapefile/KML",
+              "Certifica\u00e7\u00e3o SIGEF",
+              "Outro"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "upload_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "uploaded_by": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Documentos do georreferenciamento",
+      "default": []
+    },
+    "sigef_status": {
+      "type": "string",
+      "enum": [
+        "N\u00e3o Cadastrado",
+        "Em An\u00e1lise",
+        "Aprovado",
+        "Rejeitado"
+      ],
+      "description": "Status no SIGEF"
+    },
+    "sigef_code": {
+      "type": "string",
+      "description": "C\u00f3digo de certifica\u00e7\u00e3o SIGEF"
+    },
+    "sigef_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de certifica\u00e7\u00e3o SIGEF"
+    },
+    "registration_integration": {
+      "type": "boolean",
+      "default": false,
+      "description": "Integra\u00e7\u00e3o com matr\u00edcula realizada?"
+    },
+    "car_compatibility": {
+      "type": "string",
+      "enum": [
+        "Compat\u00edvel",
+        "Parcialmente Compat\u00edvel",
+        "Incompat\u00edvel",
+        "N\u00e3o Verificado"
+      ],
+      "description": "Compatibilidade com CAR"
+    },
+    "pending_issues": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Pend\u00eancias identificadas",
+      "default": []
+    },
+    "legal_risk": {
+      "type": "string",
+      "enum": [
+        "Baixo",
+        "M\u00e9dio",
+        "Alto"
+      ],
+      "default": "Baixo",
+      "description": "Risco jur\u00eddico"
+    },
+    "environmental_areas": {
+      "type": "object",
+      "properties": {
+        "app_mapped": {
+          "type": "number",
+          "description": "APP mapeada em hectares"
+        },
+        "legal_reserve": {
+          "type": "number",
+          "description": "Reserva Legal em hectares"
+        },
+        "consolidated_areas": {
+          "type": "number",
+          "description": "\u00c1reas consolidadas em hectares"
+        },
+        "regularizable_areas": {
+          "type": "number",
+          "description": "\u00c1reas pass\u00edveis de regulariza\u00e7\u00e3o em hectares"
+        }
+      },
+      "description": "\u00c1reas ambientais mapeadas"
+    },
+    "environmental_conflict_alerts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "alert_type": {
+            "type": "string",
+            "description": "Tipo do alerta"
+          },
+          "description": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "Baixa",
+              "M\u00e9dia",
+              "Alta"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Aberto",
+              "Em Resolu\u00e7\u00e3o",
+              "Resolvido"
+            ]
+          }
+        }
+      },
+      "description": "Alertas de conflito ambiental",
+      "default": []
+    },
+    "map_layers": {
+      "type": "object",
+      "properties": {
+        "satellite_imagery": {
+          "type": "string",
+          "description": "URL da imagem de sat\u00e9lite"
+        },
+        "contour_lines": {
+          "type": "boolean",
+          "default": false,
+          "description": "Curvas de n\u00edvel dispon\u00edveis"
+        },
+        "hydrography": {
+          "type": "boolean",
+          "default": false,
+          "description": "Hidrografia mapeada"
+        },
+        "land_use": {
+          "type": "string",
+          "description": "Mapa de uso e ocupa\u00e7\u00e3o do solo"
+        }
+      },
+      "description": "Camadas do mapa"
+    },
+    "conflicts": {
+      "type": "object",
+      "properties": {
+        "public_land_overlap": {
+          "type": "boolean",
+          "default": false,
+          "description": "Sobreposi\u00e7\u00e3o com terras p\u00fablicas"
+        },
+        "app_invasion": {
+          "type": "boolean",
+          "default": false,
+          "description": "Invas\u00e3o de APP"
+        },
+        "boundary_conflict": {
+          "type": "boolean",
+          "default": false,
+          "description": "Conflito de limites"
+        },
+        "area_inconsistency": {
+          "type": "boolean",
+          "default": false,
+          "description": "Inconsist\u00eancia de \u00e1rea"
+        },
+        "details": {
+          "type": "string",
+          "description": "Detalhes dos conflitos"
+        }
+      },
+      "description": "Conflitos identificados"
+    },
+    "automatic_notifications": {
+      "type": "boolean",
+      "default": true,
+      "description": "Notifica\u00e7\u00f5es autom\u00e1ticas habilitadas"
+    },
+    "last_survey_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data do \u00faltimo levantamento"
+    },
+    "technician_name": {
+      "type": "string",
+      "description": "Nome do respons\u00e1vel t\u00e9cnico"
+    },
+    "technician_crea": {
+      "type": "string",
+      "description": "CREA do respons\u00e1vel t\u00e9cnico"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es gerais"
+    }
+  },
+  "required": [
+    "property_id",
+    "owner_email",
+    "coordinate_system",
+    "status"
+  ]
+}

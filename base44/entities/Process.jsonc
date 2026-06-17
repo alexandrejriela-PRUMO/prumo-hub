@@ -124,12 +124,31 @@
   ],
   "rls": {
     "create": {
-      "data.client_email": "{{user.email}}"
+      "$or": [
+        {
+          "data.client_email": "{{user.email}}"
+        },
+        {
+          "data.property_id": {
+            "$in": "{{user.properties_ids}}"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
     },
     "read": {
       "$or": [
         {
           "data.client_email": "{{user.email}}"
+        },
+        {
+          "data.property_id": {
+            "$in": "{{user.properties_ids}}"
+          }
         },
         {
           "user_condition": {
@@ -142,6 +161,11 @@
       "$or": [
         {
           "data.client_email": "{{user.email}}"
+        },
+        {
+          "data.property_id": {
+            "$in": "{{user.properties_ids}}"
+          }
         },
         {
           "user_condition": {

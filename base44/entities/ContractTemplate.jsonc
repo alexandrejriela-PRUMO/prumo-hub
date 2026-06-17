@@ -53,5 +53,46 @@
     "name",
     "contract_type",
     "html_template"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "data.consultor_email": "{{user.email}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.consultor_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.consultor_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.consultor_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
 }

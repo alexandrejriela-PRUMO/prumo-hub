@@ -84,5 +84,19 @@
     "client_email",
     "amount",
     "due_date"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "data.client_email": "{{user.email}}"
+    },
+    "read": {
+      "data.client_email": "{{user.email}}"
+    },
+    "update": {
+      "data.client_email": "{{user.email}}"
+    },
+    "delete": {
+      "data.client_email": "{{user.email}}"
+    }
+  }
 }

@@ -209,5 +209,66 @@
     "property_id",
     "location_name",
     "coordinates"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "data.property_id": {
+        "$in": [
+          "{{user.properties_ids}}",
+          "{{user.owned_property_ids}}"
+        ]
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "data.property_id": {
+            "$in": [
+              "{{user.properties_ids}}",
+              "{{user.owned_property_ids}}"
+            ]
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.property_id": {
+            "$in": [
+              "{{user.properties_ids}}",
+              "{{user.owned_property_ids}}"
+            ]
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.property_id": {
+            "$in": [
+              "{{user.properties_ids}}",
+              "{{user.owned_property_ids}}"
+            ]
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
 }

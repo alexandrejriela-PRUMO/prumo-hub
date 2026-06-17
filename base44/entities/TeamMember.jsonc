@@ -145,5 +145,49 @@
   "required": [
     "primary_user_email",
     "member_email"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "data.primary_user_email": "{{user.email}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.primary_user_email": "{{user.email}}"
+        },
+        {
+          "data.member_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.primary_user_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.primary_user_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
 }

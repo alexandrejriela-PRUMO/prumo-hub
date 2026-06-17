@@ -278,5 +278,46 @@
     "start_date",
     "payment_value",
     "payment_periodicity"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "data.beneficiary_email": "{{user.email}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.beneficiary_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.beneficiary_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.beneficiary_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
 }

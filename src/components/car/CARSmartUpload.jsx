@@ -272,6 +272,8 @@ function buildFormData(result, docType) {
     _ai_analysis: result.ai_analysis,
     _doc_type: docType,
     _file_url: result._file_url || '',
+    _file_url_recibo: result._file_url_recibo || '',
+    _file_url_demonstrativo: result._file_url_demonstrativo || '',
     _consolidated_area: result.consolidated_area_hectares,
     _legal_reserve_to_recover: result.legal_reserve_to_recover_hectares,
     _app_to_recover: result.app_to_recover_hectares,
@@ -634,6 +636,47 @@ export default function CARSmartUpload({ onDataExtracted, onClose }) {
               </div>
             </div>
           )}
+          {/* Arquivos carregados */}
+          {(result._file_url_recibo || result._file_url_demonstrativo || result._file_url) && (
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div className="px-4 py-2 bg-gray-50 border-b border-gray-200">
+                <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Arquivos Enviados</p>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {result._file_url_recibo && (
+                  <div className="flex items-center gap-3 px-4 py-2.5">
+                    <FileText className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-gray-900 truncate">Recibo de Inscrição</p>
+                      <p className="text-[10px] text-gray-400 truncate">{result._file_url_recibo.split('/').pop()}</p>
+                    </div>
+                    <a href={result._file_url_recibo} target="_blank" rel="noreferrer" className="text-[10px] text-emerald-600 hover:text-emerald-800 underline flex-shrink-0">Visualizar</a>
+                  </div>
+                )}
+                {result._file_url_demonstrativo && (
+                  <div className="flex items-center gap-3 px-4 py-2.5">
+                    <FileText className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-gray-900 truncate">Demonstrativo de Situação</p>
+                      <p className="text-[10px] text-gray-400 truncate">{result._file_url_demonstrativo.split('/').pop()}</p>
+                    </div>
+                    <a href={result._file_url_demonstrativo} target="_blank" rel="noreferrer" className="text-[10px] text-blue-600 hover:text-blue-800 underline flex-shrink-0">Visualizar</a>
+                  </div>
+                )}
+                {!result._file_url_recibo && !result._file_url_demonstrativo && result._file_url && (
+                  <div className="flex items-center gap-3 px-4 py-2.5">
+                    <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-gray-900 truncate">Documento CAR</p>
+                      <p className="text-[10px] text-gray-400 truncate">{result._file_url.split('/').pop()}</p>
+                    </div>
+                    <a href={result._file_url} target="_blank" rel="noreferrer" className="text-[10px] text-gray-600 hover:text-gray-800 underline flex-shrink-0">Visualizar</a>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {result._missing_recibo && (
             <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl">
               <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />

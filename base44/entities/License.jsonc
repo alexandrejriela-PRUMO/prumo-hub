@@ -159,6 +159,14 @@
       ],
       "description": "Status"
     },
+    "renewal_required": {
+      "type": "boolean",
+      "description": "Indica se a licen\u00e7a requer renova\u00e7\u00e3o"
+    },
+    "renewal_days_before": {
+      "type": "integer",
+      "description": "Dias de anteced\u00eancia para alertar sobre a renova\u00e7\u00e3o"
+    },
     "updates": {
       "type": "array",
       "items": {

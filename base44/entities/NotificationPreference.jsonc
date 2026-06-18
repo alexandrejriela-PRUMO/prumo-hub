@@ -67,6 +67,10 @@
     "phone_number": {
       "type": "string",
       "description": "N\u00famero de telefone para SMS"
+    },
+    "days_before": {
+      "type": "string",
+      "description": "Dias de anteced\u00eancia para alertas de vencimento"
     }
   },
   "required": [

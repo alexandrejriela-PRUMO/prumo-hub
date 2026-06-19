@@ -65,7 +65,9 @@ export default function ConsultantPayments() {
   };
 
   const handleCreateSubaccount = async () => {
+    console.log('[ConsultantPayments] handleCreateSubaccount chamado', { name: subaccountForm.name, cpfCnpj: subaccountForm.cpfCnpj });
     if (!subaccountForm.name || !subaccountForm.cpfCnpj) {
+      console.log('[ConsultantPayments] Validação falhou - nome ou CPF/CNPJ vazio');
       toast.error('Preencha nome e CPF/CNPJ para ativar sua subconta');
       return;
     }
@@ -282,7 +284,7 @@ export default function ConsultantPayments() {
                 />
               </div>
             </div>
-            <Button onClick={handleCreateSubaccount} disabled={creatingSubaccount} className="w-full bg-emerald-600 hover:bg-emerald-700">
+            <Button type="button" onClick={handleCreateSubaccount} disabled={creatingSubaccount} className="w-full bg-emerald-600 hover:bg-emerald-700">
               {creatingSubaccount ? (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
               ) : (

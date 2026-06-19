@@ -47,8 +47,9 @@ async function fetchSICARLayersForMap(carNumber) {
   const withoutDots = carNumber.replace(/\./g, '');
 
   // Tenta com pontos primeiro (formato atual do R2), depois sem pontos (fallback)
-  let res = await fetch(`${SICAR_R2_BASE}/${withDots}.geojson`);
-  if (!res.ok) res = await fetch(`${SICAR_R2_BASE}/${withoutDots}.geojson`);
+  const cacheBust = `?t=${Date.now()}`;
+  let res = await fetch(`${SICAR_R2_BASE}/${withDots}.geojson${cacheBust}`, { cache: 'no-store' });
+  if (!res.ok) res = await fetch(`${SICAR_R2_BASE}/${withoutDots}.geojson${cacheBust}`, { cache: 'no-store' });
   if (!res.ok) return null;
 
   const geojson = await res.json();

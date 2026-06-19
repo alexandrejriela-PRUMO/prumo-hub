@@ -31,6 +31,18 @@ async function fetchAsaasCustomer(customerId, apiKey) {
   }
 }
 
+async function fetchAsaasCheckout(checkoutId, apiKey) {
+  try {
+    const res = await fetch(`https://api-sandbox.asaas.com/v3/checkouts/${checkoutId}`, {
+      headers: { 'access_token': apiKey, 'User-Agent': 'PRUMOHub/1.0.0' },
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     const webhookToken = req.headers.get('asaas-access-token');
@@ -52,7 +64,17 @@ Deno.serve(async (req) => {
       return Response.json({ received: true, event }, { status: 200 });
     }
 
-    const planInfo = extractPlanInfo(payment.externalReference);
+    // O externalReference do checkout NÃO vem no payment — buscar via checkoutSession
+    let externalRef = payment.externalReference;
+    if (!externalRef && payment.checkoutSession) {
+      const apiKey = Deno.env.get('ASAAS_API_KEY');
+      const checkout = await fetchAsaasCheckout(payment.checkoutSession, apiKey);
+      if (checkout) {
+        externalRef = checkout.externalReference;
+        console.log(`[webhookAsaas] externalReference obtido do checkout: ${externalRef}`);
+      }
+    }
+    const planInfo = extractPlanInfo(externalRef);
     console.log(`[webhookAsaas] Plano: ${planInfo.user_type} / ${planInfo.plano}`);
 
     // Extract customer info from payment

@@ -29,19 +29,8 @@ Deno.serve(async (req) => {
     const subaccount = metas[0];
     const subaccountApiKey = subaccount.asaas_subaccount_api_key || masterApiKey;
 
-    // Buscar walletId do PRUMO (master account) para split
-    let prumoWalletIdActual = null;
-    try {
-      const walletRes = await fetch('https://api-sandbox.asaas.com/v3/wallet', {
-        headers: { 'access_token': masterApiKey, 'User-Agent': 'PRUMOHub/1.0.0' },
-      });
-      if (walletRes.ok) {
-        const walletData = await walletRes.json();
-        prumoWalletIdActual = walletData.id;
-      }
-    } catch (e) {
-      console.warn('[createConsultantCheckout] Não foi possível obter walletId do PRUMO:', e.message);
-    }
+    // Wallet ID do PRUMO (master account) para split de comissão
+    const prumoWalletIdActual = '1475d263-44f4-45f1-b0eb-384f8c2dd98d';
 
     // API Asaas v3: billingType (singular, string), chargeType (singular)
     const checkoutPayload = {

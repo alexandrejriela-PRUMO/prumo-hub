@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Link, ExternalLink, CreditCard, Plus, Copy, Check, Wallet, Building, Link2, UserPlus, Users, Clock, History, ArrowLeftRight, TrendingUp } from 'lucide-react';
+import { Link, ExternalLink, CreditCard, Plus, Copy, Check, Wallet, Building, Link2, UserPlus, Users, Clock, History, ArrowLeftRight, TrendingUp, Info, ArrowDown, PiggyBank } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, parseISO, isValid } from 'date-fns';
 import { createPageUrl } from '../utils';
@@ -248,6 +248,22 @@ export default function ConsultantPayments() {
   }
 
   const hasSubaccount = meta?.asaas_subaccount_id;
+
+  // ── Calculadora de taxas ──────────────────────────────────────────
+  const valorDigitado = parseFloat(form.value) || 0;
+  const billingType = form.billingType;
+
+  const taxasAsaas = {
+    pix:    { nome: 'PIX',      percentual: 0.0099, fixa: 0,    desc: '0,99%' },
+    boleto: { nome: 'Boleto',   percentual: 0,      fixa: 3.49, desc: 'R$ 3,49 fixo' },
+    cartao: { nome: 'Cartão',   percentual: 0.0399, fixa: 0,    desc: '3,99%' },
+  };
+
+  const metodoSelecionado = taxasAsaas[billingType] || { percentual: 0, fixa: 0, nome: '—', desc: 'Selecione' };
+  const taxaAsaasEstimada = valorDigitado * metodoSelecionado.percentual + metodoSelecionado.fixa;
+  const valorAposAsaas = Math.max(0, valorDigitado - taxaAsaasEstimada);
+  const comissaoPrumo = valorAposAsaas * 0.10;
+  const valorLiquidoConsultor = valorAposAsaas - comissaoPrumo;
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
@@ -498,6 +514,74 @@ export default function ConsultantPayments() {
                   placeholder="Ex: Elaboração de PRAD - Fazenda São João"
                 />
               </div>
+              <div>
+                <Label>Forma de Pagamento</Label>
+                <select
+                  value={billingType}
+                  onChange={e => setForm({ ...form, billingType: e.target.value })}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value="">Cliente escolhe no link</option>
+                  <option value="pix">PIX (0,99% Asaas)</option>
+                  <option value="boleto">Boleto (R$ 3,49 Asaas)</option>
+                  <option value="cartao">Cartão de Crédito (3,99% Asaas)</option>
+                </select>
+              </div>
+
+              {/* Prévia de valores */}
+              {valorDigitado > 0 && (
+                <Card className="bg-gradient-to-br from-slate-50 to-white border-slate-200 shadow-sm">
+                  <CardContent className="pt-4 pb-3 space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                      <Info className="w-4 h-4 text-slate-500" />
+                      Prévia do recebimento
+                      {billingType && <Badge className="ml-auto bg-slate-100 text-slate-600 border-slate-200 text-[10px]">{metodoSelecionado.nome}</Badge>}
+                    </div>
+
+                    <div className="space-y-2 text-xs">
+                      {/* Valor cobrado */}
+                      <div className="flex justify-between items-center py-1.5 px-3 bg-white rounded-lg border border-slate-100">
+                        <span className="text-slate-600">Valor cobrado do cliente</span>
+                        <span className="font-bold text-slate-800">{valorDigitado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                      </div>
+
+                      <div className="flex justify-center">
+                        <ArrowDown className="w-3 h-3 text-slate-300" />
+                      </div>
+
+                      {/* Taxa Asaas */}
+                      <div className="flex justify-between items-center py-1.5 px-3 bg-red-50/50 rounded-lg border border-red-100">
+                        <span className="text-red-600">Taxa Asaas ({metodoSelecionado.desc})</span>
+                        <span className="font-semibold text-red-600">-{taxaAsaasEstimada.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                      </div>
+
+                      {/* Comissão PRUMO */}
+                      <div className="flex justify-between items-center py-1.5 px-3 bg-amber-50/50 rounded-lg border border-amber-100">
+                        <span className="text-amber-700 flex items-center gap-1">
+                          <PiggyBank className="w-3 h-3" />
+                          Comissão PRUMO (10%)
+                        </span>
+                        <span className="font-semibold text-amber-700">-{comissaoPrumo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                      </div>
+
+                      <div className="flex justify-center">
+                        <ArrowDown className="w-3 h-3 text-emerald-300" />
+                      </div>
+
+                      {/* Valor líquido */}
+                      <div className="flex justify-between items-center py-2 px-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                        <span className="text-emerald-800 font-semibold text-sm">Você recebe</span>
+                        <span className="font-bold text-emerald-700 text-base">{valorLiquidoConsultor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                      </div>
+
+                      <p className="text-[10px] text-slate-400 text-center">
+                        Taxas do Asaas são estimadas — os valores finais podem variar conforme o contrato da sua subconta.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <Button
                 onClick={handleCreateCheckout}
                 disabled={creating}
@@ -544,19 +628,50 @@ export default function ConsultantPayments() {
 
       {/* Info sobre split */}
       {hasSubaccount && (
-        <Card className="bg-amber-50/50 border-amber-200">
+        <Card className="border-slate-200 bg-gradient-to-r from-slate-50 to-white">
           <CardContent className="pt-6">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
-                <span className="text-amber-700 font-bold text-sm">10%</span>
+            <p className="font-semibold text-slate-800 text-sm mb-4 flex items-center gap-1.5">
+              <Info className="w-4 h-4 text-slate-500" />
+              Como funciona o repasse
+            </p>
+            <div className="grid grid-cols-3 gap-3 text-center">
+              {/* Asaas */}
+              <div className="bg-white rounded-xl p-3 border border-red-100">
+                <div className="w-8 h-8 mx-auto mb-1.5 rounded-full bg-red-100 flex items-center justify-center">
+                  <Building className="w-4 h-4 text-red-600" />
+                </div>
+                <p className="text-[10px] font-semibold text-red-700">Asaas</p>
+                <p className="text-[9px] text-red-500 mt-0.5">Taxa por transação</p>
+                <p className="text-[10px] font-bold text-red-600 mt-1">Boleto ~R$3,49</p>
+                <p className="text-[10px] font-bold text-red-600">PIX ~0,99%</p>
+                <p className="text-[10px] font-bold text-red-600">Cartão ~3,99%</p>
               </div>
-              <div>
-                <p className="font-medium text-amber-900">Comissão automática</p>
-                <p className="text-sm text-amber-700 mt-1">
-                  Toda cobrança feita por você tem 10% do valor líquido repassado automaticamente ao PRUMO via split do Asaas.
-                </p>
+
+              {/* PRUMO */}
+              <div className="bg-white rounded-xl p-3 border border-amber-100">
+                <div className="w-8 h-8 mx-auto mb-1.5 rounded-full bg-amber-100 flex items-center justify-center">
+                  <PiggyBank className="w-4 h-4 text-amber-600" />
+                </div>
+                <p className="text-[10px] font-semibold text-amber-700">PRUMO</p>
+                <p className="text-[9px] text-amber-500 mt-0.5">Comissão da plataforma</p>
+                <p className="text-[10px] font-bold text-amber-600 mt-1">10%</p>
+                <p className="text-[9px] text-amber-500">do valor após Asaas</p>
+              </div>
+
+              {/* Consultor */}
+              <div className="bg-white rounded-xl p-3 border border-emerald-100">
+                <div className="w-8 h-8 mx-auto mb-1.5 rounded-full bg-emerald-100 flex items-center justify-center">
+                  <Wallet className="w-4 h-4 text-emerald-600" />
+                </div>
+                <p className="text-[10px] font-semibold text-emerald-700">Você</p>
+                <p className="text-[9px] text-emerald-500 mt-0.5">Recebimento líquido</p>
+                <p className="text-[10px] font-bold text-emerald-600 mt-1">~87% a 97%</p>
+                <p className="text-[9px] text-emerald-500">do valor cobrado</p>
               </div>
             </div>
+            <p className="text-[10px] text-slate-400 mt-3 text-center">
+              O split é automático — o Asaas envia cada parte para a conta correta assim que o cliente paga.
+            </p>
           </CardContent>
         </Card>
       )}

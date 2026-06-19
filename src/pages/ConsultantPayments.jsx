@@ -732,7 +732,7 @@ export default function ConsultantPayments() {
               <Wallet className="w-5 h-5 text-emerald-600" />
               Sua Carteira
             </CardTitle>
-            <CardDescription>Saldo disponível para saque, extrato e transferência via PIX</CardDescription>
+            <CardDescription>Seu saldo de honorários. Transfira para sua conta bancária via PIX quando quiser.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Saldo */}
@@ -800,34 +800,12 @@ export default function ConsultantPayments() {
                 )}
                 {transferring ? 'Solicitando...' : 'Transferir via PIX'}
               </Button>
-              <div className="mt-3 p-3 bg-amber-50/80 rounded-lg border border-amber-100 space-y-2 text-[11px] text-amber-800">
-                <p className="font-semibold flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5" /> Prazos de resgate
+              <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2 text-xs text-slate-600">
+                <p className="font-medium text-slate-700 flex items-center gap-1.5">
+                  <Info className="w-3.5 h-3.5" /> Como funciona o saque
                 </p>
-                <ul className="space-y-1.5">
-                  <li className="flex items-start gap-1.5">
-                    <span className="mt-0.5 w-3.5 h-3.5 rounded-full bg-emerald-200 flex items-center justify-center flex-shrink-0">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                    </span>
-                    <span><strong>PIX imediato:</strong> cai na conta destino em minutos. Liquidação em tempo real pelo Asaas.</span>
-                  </li>
-                  <li className="flex items-start gap-1.5">
-                    <span className="mt-0.5 w-3.5 h-3.5 rounded-full bg-amber-200 flex items-center justify-center flex-shrink-0">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
-                    </span>
-                    <span><strong>Agendado:</strong> se informar uma data futura, o valor só é transferido na data escolhida (dias úteis).</span>
-                  </li>
-                  <li className="flex items-start gap-1.5">
-                    <span className="mt-0.5 w-3.5 h-3.5 rounded-full bg-red-200 flex items-center justify-center flex-shrink-0">
-                      <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
-                    </span>
-                    <span><strong>TED:</strong> somente quando a conta destino não aceita PIX — aí leva até 1 dia útil.</span>
-                  </li>
-                </ul>
-                <p className="text-[10px] text-amber-600 mt-1">
-                  Após solicitar, a transferência aparece como "PENDENTE" e em minutos muda para "CONCLUÍDA". 
-                  O extrato abaixo reflete todas as movimentações.
-                </p>
+                <p>Você mesmo transfere o saldo da sua carteira PRUMO para sua <strong>conta bancária pessoal</strong> via PIX. Não dependa de ninguém — o dinheiro é seu.</p>
+                <p className="text-[11px]">O PIX é processado pelo Asaas em <strong>tempo real</strong> e o valor cai na sua conta em minutos. Simples assim.</p>
               </div>
             </div>
 

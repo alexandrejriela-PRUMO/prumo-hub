@@ -84,6 +84,7 @@ const consultorNavItems = [
     children: [
       { name: 'Painel Financeiro', page: 'FinancialDashboard', icon: BarChart3 },
       { name: 'Transações Consolidadas', page: 'FinancialTransactions', icon: ReceiptText },
+      { name: 'Gateway de Cobrança', page: 'ConsultantPayments', icon: Wallet },
       { name: 'Config. de Pagamento', page: 'PaymentSettings', icon: CreditCard, badge: 'Em breve' },
       { name: 'Notas Fiscais (NF-e)', page: 'NFeManagement', icon: ReceiptText, badge: 'Em breve' },
     ]
@@ -204,6 +205,7 @@ const equipeNavItems = [
     children: [
       { name: 'Painel Financeiro', page: 'FinancialDashboard', icon: BarChart3 },
       { name: 'Transações Consolidadas', page: 'FinancialTransactions', icon: ReceiptText },
+      { name: 'Gateway de Cobrança', page: 'ConsultantPayments', icon: Wallet },
     ]
   },
   {

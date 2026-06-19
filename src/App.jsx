@@ -20,6 +20,7 @@ const Parceiros = lazy(() => import('./pages/Parceiros'));
 const CompraConfirmada = lazy(() => import('./pages/CompraConfirmada'));
 const ErrorLogsAdmin = lazy(() => import('./pages/ErrorLogsAdmin'));
 const AdminPanel = lazy(() => import('./pages/AdminPanel'));
+const ConsultantPayments = lazy(() => import('./pages/ConsultantPayments'));
 
 import OfflineIndicator from '@/components/offline/OfflineIndicator';
 import AccessBlockedGuard from '@/components/AccessBlockedGuard';
@@ -258,6 +259,7 @@ const AuthenticatedApp = () => {
         <Route path="/AccessBlocked" element={<Suspense fallback={<LoadingSpinner />}><AccessBlocked /></Suspense>} />
         <Route path="/ErrorLogsAdmin" element={<Suspense fallback={<LoadingSpinner />}><ErrorLogsAdmin /></Suspense>} />
         <Route path="/admin" element={<Suspense fallback={<LoadingSpinner />}><AdminPanel /></Suspense>} />
+        <Route path="/ConsultantPayments" element={<LayoutWrapper currentPageName="ConsultantPayments"><Suspense fallback={<LoadingSpinner />}><ConsultantPayments /></Suspense></LayoutWrapper>} />
         <Route path="*" element={<PageNotFound />} />
       </Routes>
       </AccessBlockedGuard>

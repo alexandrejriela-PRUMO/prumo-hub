@@ -64,10 +64,11 @@ Deno.serve(async (req) => {
       return Response.json({ received: true, event }, { status: 200 });
     }
 
+    const apiKey = Deno.env.get('ASAAS_API_KEY');
+
     // O externalReference do checkout NÃO vem no payment — buscar via checkoutSession
     let externalRef = payment.externalReference;
     if (!externalRef && payment.checkoutSession) {
-      const apiKey = Deno.env.get('ASAAS_API_KEY');
       const checkout = await fetchAsaasCheckout(payment.checkoutSession, apiKey);
       if (checkout) {
         externalRef = checkout.externalReference;
@@ -83,7 +84,6 @@ Deno.serve(async (req) => {
     let customerDoc = null;
 
     if (typeof payment.customer === 'string') {
-      const apiKey = Deno.env.get('ASAAS_API_KEY');
       const custData = await fetchAsaasCustomer(payment.customer, apiKey);
       if (custData) {
         customerEmail = custData.email;
@@ -120,6 +120,51 @@ Deno.serve(async (req) => {
       });
 
       const existingMeta = await base44.asServiceRole.entities.UserMetadata.filter({ user_email: customerEmail });
+
+      // Criar subconta para consultor existente se não tiver
+      let existingSubaccountId = existingMeta?.[0]?.asaas_subaccount_id;
+      let existingWalletId = existingMeta?.[0]?.asaas_wallet_id;
+      let existingSubaccountApiKey = existingMeta?.[0]?.asaas_subaccount_api_key;
+
+      if (planInfo.user_type === 'consultor' && !existingSubaccountId) {
+        try {
+          const subaccountRes = await fetch('https://api-sandbox.asaas.com/v3/accounts', {
+            method: 'POST',
+            headers: {
+              'access_token': apiKey,
+              'User-Agent': 'PRUMOHub/1.0.0',
+              'accept': 'application/json',
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({
+              name: customerName || customerEmail,
+              email: customerEmail,
+              cpfCnpj: cleanDoc,
+              webhooks: [{
+                name: 'PRUMO Hub - Cobranças',
+                url: 'https://hub.prumo.site/api/functions/webhookAsaas',
+                email: customerEmail,
+                sendType: 'SEQUENTIALLY',
+                interrupted: false,
+                enabled: true,
+                apiVersion: 3,
+                authToken: expectedToken,
+                events: ['PAYMENT_CREATED','PAYMENT_UPDATED','PAYMENT_CONFIRMED','PAYMENT_RECEIVED','PAYMENT_OVERDUE','PAYMENT_DELETED'],
+              }],
+            }),
+          });
+          if (subaccountRes.ok) {
+            const subData = await subaccountRes.json();
+            existingSubaccountId = subData.id;
+            existingWalletId = subData.walletId;
+            existingSubaccountApiKey = subData.apiKey;
+            console.log(`[webhookAsaas] Subconta criada para existente: ${existingSubaccountId}`);
+          }
+        } catch (subErr) {
+          console.warn('[webhookAsaas] Erro ao criar subconta para existente:', subErr.message);
+        }
+      }
+
       if (existingMeta && existingMeta.length > 0) {
         await base44.asServiceRole.entities.UserMetadata.update(existingMeta[0].id, {
           plano: planInfo.plano,
@@ -127,6 +172,7 @@ Deno.serve(async (req) => {
           max_properties: planInfo.max_properties,
           max_users: planInfo.max_users,
           subscription_status: 'active',
+          ...(existingSubaccountId ? { asaas_subaccount_id: existingSubaccountId, asaas_wallet_id: existingWalletId, asaas_subaccount_api_key: existingSubaccountApiKey } : {}),
         });
       } else {
         await base44.asServiceRole.entities.UserMetadata.create({
@@ -137,13 +183,62 @@ Deno.serve(async (req) => {
           max_properties: planInfo.max_properties,
           max_users: planInfo.max_users,
           subscription_status: 'active',
+          asaas_subaccount_id: existingSubaccountId || undefined,
+          asaas_wallet_id: existingWalletId || undefined,
+          asaas_subaccount_api_key: existingSubaccountApiKey || undefined,
         });
       }
 
       return Response.json({ received: true, message: 'Usuário existente atualizado', email: customerEmail }, { status: 200 });
     }
 
-    // New user
+    // New user — criar subconta Asaas automaticamente para consultores
+    let subaccountId = null;
+    let walletId = null;
+    let subaccountApiKey = null;
+
+    if (planInfo.user_type === 'consultor') {
+    try {
+      const subaccountRes = await fetch('https://api-sandbox.asaas.com/v3/accounts', {
+        method: 'POST',
+        headers: {
+          'access_token': apiKey,
+          'User-Agent': 'PRUMOHub/1.0.0',
+          'accept': 'application/json',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: customerName || customerEmail,
+          email: customerEmail,
+          cpfCnpj: cleanDoc,
+          webhooks: [{
+            name: 'PRUMO Hub - Cobranças',
+            url: 'https://hub.prumo.site/api/functions/webhookAsaas',
+            email: customerEmail,
+            sendType: 'SEQUENTIALLY',
+            interrupted: false,
+            enabled: true,
+            apiVersion: 3,
+            authToken: expectedToken,
+            events: ['PAYMENT_CREATED','PAYMENT_UPDATED','PAYMENT_CONFIRMED','PAYMENT_RECEIVED','PAYMENT_OVERDUE','PAYMENT_DELETED'],
+          }],
+        }),
+      });
+      if (subaccountRes.ok) {
+        const subData = await subaccountRes.json();
+        subaccountId = subData.id;
+        walletId = subData.walletId;
+        subaccountApiKey = subData.apiKey;
+        console.log(`[webhookAsaas] Subconta criada: ${subaccountId}, wallet: ${walletId}`);
+      } else {
+        const errData = await subaccountRes.text();
+        console.warn(`[webhookAsaas] Erro ao criar subconta: ${errData}`);
+      }
+    } catch (subErr) {
+      console.warn('[webhookAsaas] Erro ao criar subconta:', subErr.message);
+    }
+    }
+
     await base44.users.inviteUser(customerEmail, 'user');
     console.log(`[webhookAsaas] Usuário convidado: ${customerEmail}`);
 
@@ -169,6 +264,9 @@ Deno.serve(async (req) => {
         max_properties: planInfo.max_properties,
         max_users: planInfo.max_users,
         subscription_status: 'active',
+        asaas_subaccount_id: subaccountId || undefined,
+        asaas_wallet_id: walletId || undefined,
+        asaas_subaccount_api_key: subaccountApiKey || undefined,
       });
     }
 

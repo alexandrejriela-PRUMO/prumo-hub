@@ -62,6 +62,18 @@
     "primary_consultor_email": {
       "type": "string",
       "description": "Email do consultor/produtor principal (para equipe_consultor/equipe_produtor/client_consultor)"
+    },
+    "asaas_subaccount_id": {
+      "type": "string",
+      "description": "ID da subconta Asaas (BaaS)"
+    },
+    "asaas_wallet_id": {
+      "type": "string",
+      "description": "Wallet ID da subconta Asaas"
+    },
+    "asaas_subaccount_api_key": {
+      "type": "string",
+      "description": "Chave API da subconta Asaas"
     }
   },
   "required": [

@@ -1,3 +1,9 @@
+/**
+ * checkConditionDueDates — Varredura diária de condicionantes de licença com prazo próximo.
+ *
+ * v2 — Corrigido event_type ('condicionante_vencendo'), preferências por destinatário,
+ *       inclusão de consultor e visualizadores da propriedade.
+ */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 Deno.serve(async (req) => {
@@ -7,145 +13,224 @@ Deno.serve(async (req) => {
 
   try {
     const base44 = createClientFromRequest(req);
-
-    // Fetch all licenses with conditions
-    const licenses = await base44.asServiceRole.entities.License.list('-updated_date', 1000);
-    
     const now = new Date();
-    const alerts = [];
+    const todayStr = now.toISOString().split('T')[0];
+
+    // ─── Cache por execução ───────────────────────────────────────────────
+    const propConsultorCache = {};
+    const propViewersCache   = {};
+    const notifPrefsCache    = {};
+
+    // ─── Busca consultor da propriedade ──────────────────────────────────
+    const getConsultor = async (propertyId) => {
+      if (!propertyId) return null;
+      if (propConsultorCache[propertyId] !== undefined) return propConsultorCache[propertyId];
+      try {
+        const props = await base44.asServiceRole.entities.Property.filter({ id: propertyId });
+        propConsultorCache[propertyId] = props[0]?.consultor_email || null;
+        return propConsultorCache[propertyId];
+      } catch { return null; }
+    };
+
+    // ─── Visualizadores com notificação 'condicionante_vencendo' ─────────
+    const getPropertyViewers = async (propertyId) => {
+      if (!propertyId) return [];
+      if (propViewersCache[propertyId] !== undefined) return propViewersCache[propertyId];
+      try {
+        const props = await base44.asServiceRole.entities.Property.filter({ id: propertyId });
+        const prop = props[0];
+        if (!prop?.authorized_users) { propViewersCache[propertyId] = []; return []; }
+        let users = prop.authorized_users;
+        if (typeof users === 'string') { try { users = JSON.parse(users); } catch { users = []; } }
+        const viewers = (users || [])
+          .filter(u => u.role === 'Visualizador' && u.notification_settings?.condicionante_vencendo === true)
+          .map(u => u.email)
+          .filter(Boolean);
+        propViewersCache[propertyId] = viewers;
+        return viewers;
+      } catch { propViewersCache[propertyId] = []; return []; }
+    };
+
+    // ─── Preferências por destinatário ────────────────────────────────────
+    // defaultDays usado quando não há preferência cadastrada.
+    const getNotifPrefs = async (email, defaultDays) => {
+      if (notifPrefsCache[email] !== undefined) return notifPrefsCache[email];
+      try {
+        const prefs = await base44.asServiceRole.entities.NotificationPreference.filter({
+          user_email: email, event_type: 'condicionante_vencendo'
+        });
+        const pref = prefs[0];
+        let days = defaultDays;
+        if (pref?.days_before) { try { days = JSON.parse(pref.days_before); } catch {} }
+        const result = {
+          days,
+          push:     pref ? (pref.push_enabled  !== false) : true,
+          email:    pref ? (pref.email_enabled  !== false) : true,
+          whatsapp: pref ? (pref.sms_enabled    === true)  : false,
+          phone:    pref?.phone_number || null,
+        };
+        notifPrefsCache[email] = result;
+        return result;
+      } catch {
+        const result = { days: defaultDays, push: true, email: true, whatsapp: false, phone: null };
+        notifPrefsCache[email] = result;
+        return result;
+      }
+    };
+
+    // ─── Deduplicação de push por entity+condition_index+dia ─────────────
+    const alreadySentPush = async (ownerEmail, licenseId, conditionIndex) => {
+      const recentNotifs = await base44.asServiceRole.entities.InAppNotification.filter(
+        { user_email: ownerEmail, event_type: 'condicionante_vencendo' },
+        '-created_date', 100
+      );
+      return recentNotifs.some(n =>
+        n.metadata?.entity_id === licenseId &&
+        n.metadata?.condition_index === conditionIndex &&
+        n.metadata?.checked_date === todayStr
+      );
+    };
+
+    // ─── Cria notificação push (com dedup) ───────────────────────────────
+    const createNotif = async (email, licenseId, conditionIndex, propertyId, title, body, severity, link) => {
+      try {
+        const recent = await base44.asServiceRole.entities.InAppNotification.filter(
+          { user_email: email, event_type: 'condicionante_vencendo' }, '-created_date', 100
+        );
+        const alreadySent = recent.some(n =>
+          n.metadata?.entity_id === licenseId &&
+          n.metadata?.condition_index === conditionIndex &&
+          n.metadata?.checked_date === todayStr
+        );
+        if (alreadySent) return;
+        await base44.asServiceRole.entities.InAppNotification.create({
+          user_email: email,
+          title,
+          message: body,
+          event_type: 'condicionante_vencendo',
+          severity,
+          read: false,
+          link,
+          metadata: {
+            entity_name: 'License',
+            entity_id: licenseId,
+            condition_index: conditionIndex,
+            property_id: propertyId,
+            checked_date: todayStr,
+            timestamp: now.toISOString(),
+          }
+        });
+      } catch (e) {
+        console.error(`[CondDue] Erro push ${email}:`, e.message);
+      }
+    };
+
+    // ─── Envia email ─────────────────────────────────────────────────────
+    const sendEmail = async (to, subject, htmlBody) => {
+      try {
+        await base44.asServiceRole.integrations.Core.SendEmail({
+          from_name: 'PRUMO Hub', to, subject, body: htmlBody
+        });
+      } catch (e) {
+        console.error(`[CondDue] Erro email ${to}:`, e.message);
+      }
+    };
+
+    // ─── Coleta alertas ───────────────────────────────────────────────────
+    const licenses = await base44.asServiceRole.entities.License.list('-updated_date', 1000);
+    let notifsSent = 0;
 
     for (const license of licenses) {
-      if (!license.conditions || license.conditions.length === 0) continue;
+      if (!license.conditions?.length || !license.owner_email) continue;
+
+      const consultorEmail = await getConsultor(license.property_id);
+      const viewers        = await getPropertyViewers(license.property_id);
+
+      // Destinatários únicos
+      const seen = new Set();
+      const recipients = [];
+      for (const email of [license.owner_email, consultorEmail, ...viewers]) {
+        if (email && !seen.has(email)) { seen.add(email); recipients.push(email); }
+      }
 
       for (let i = 0; i < license.conditions.length; i++) {
         const cond = license.conditions[i];
-        const dueDateStr = cond.due_date;
-        
-        if (!dueDateStr) continue;
+        if (!cond?.due_date) continue;
 
-        const dueDate = new Date(dueDateStr);
+        const dueDate      = new Date(cond.due_date);
         const daysUntilDue = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
 
-        // Alert if due within 30 days or already overdue
-        if (daysUntilDue <= 30 && daysUntilDue >= -365) {
-          alerts.push({
-            license_id: license.id,
-            property_id: license.property_id,
-            owner_email: license.owner_email,
-            condition_index: i,
-            condition_text: cond.text,
-            due_date: dueDateStr,
-            days_until_due: daysUntilDue,
-            license_type: license.license_type,
-            license_number: license.license_number,
-          });
-        }
-      }
-    }
+        // Janela de alerta: até 120 dias (cobre o máximo das prefs) ou vencido há até 1 ano
+        if (daysUntilDue > 120 || daysUntilDue < -365) continue;
 
-    const todayStr = now.toISOString().split('T')[0];
+        const condText = cond.text || 'Condicionante';
+        const licLabel = `${license.license_type}${license.license_number ? ` nº ${license.license_number}` : ''}`;
 
-    // Send notifications for each alert
-    for (const alert of alerts) {
-      try {
-        // Get property info for notification
-        const property = await base44.asServiceRole.entities.Property.get(alert.property_id);
-        
-        // Determine severity and message
-        let severity = 'info';
-        let messageTitle = `Condicionante Próxima do Prazo`;
-        let messageBody = '';
+        let severity: string;
+        let messageTitle: string;
+        let messageBody: string;
 
-        if (alert.days_until_due < 0) {
-          severity = 'error';
+        if (daysUntilDue < 0) {
+          severity     = 'error';
           messageTitle = `Prazo de Condicionante Vencido`;
-          messageBody = `A condicionante "${alert.condition_text}" (${alert.license_type} ${alert.license_number}) teve prazo vencido há ${Math.abs(alert.days_until_due)} dias.`;
-        } else if (alert.days_until_due === 0) {
-          severity = 'error';
+          messageBody  = `A condicionante "${condText}" (${licLabel}) teve prazo vencido há ${Math.abs(daysUntilDue)} dias.`;
+        } else if (daysUntilDue === 0) {
+          severity     = 'error';
           messageTitle = `Condicionante Vence Hoje`;
-          messageBody = `A condicionante "${alert.condition_text}" (${alert.license_type} ${alert.license_number}) vence hoje!`;
-        } else if (alert.days_until_due <= 7) {
-          severity = 'error';
-          messageTitle = `Condicionante Vence em ${alert.days_until_due} dia(s)`;
-          messageBody = `A condicionante "${alert.condition_text}" (${alert.license_type} ${alert.license_number}) vence em ${alert.days_until_due} dia(s).`;
+          messageBody  = `A condicionante "${condText}" (${licLabel}) vence hoje!`;
+        } else if (daysUntilDue <= 7) {
+          severity     = 'error';
+          messageTitle = `Condicionante Vence em ${daysUntilDue} dia${daysUntilDue > 1 ? 's' : ''}`;
+          messageBody  = `A condicionante "${condText}" (${licLabel}) vence em ${daysUntilDue} dia${daysUntilDue > 1 ? 's' : ''}.`;
         } else {
-          severity = 'warning';
-          messageBody = `A condicionante "${alert.condition_text}" (${alert.license_type} ${alert.license_number}) vence em ${alert.days_until_due} dias.`;
+          severity     = 'warning';
+          messageTitle = `Condicionante Próxima do Prazo`;
+          messageBody  = `A condicionante "${condText}" (${licLabel}) vence em ${daysUntilDue} dias.`;
         }
 
-        // Deduplicação: verificar se já foi enviada notificação hoje para este license+condition
-        const dedupeKey = `${alert.license_id}_${alert.condition_index}`;
-        const recentNotifs = await base44.asServiceRole.entities.InAppNotification.filter(
-          { user_email: alert.owner_email, event_type: 'documento_vencendo' },
-          '-created_date',
-          100
-        );
-        const alreadySentToday = recentNotifs.some(n =>
-          n.metadata?.entity_id === alert.license_id &&
-          n.metadata?.condition_index === alert.condition_index &&
-          n.metadata?.checked_date === todayStr
-        );
-        if (alreadySentToday) {
-          console.log(`⏭ Notificação já enviada hoje para condicionante: ${alert.condition_text}`);
-          continue;
-        }
+        const link = `/Licenses?property_id=${license.property_id}`;
 
-        // Create internal notification
-        await base44.asServiceRole.entities.InAppNotification.create({
-          user_email: alert.owner_email,
-          title: messageTitle,
-          message: messageBody,
-          event_type: 'documento_vencendo',
-          severity: severity,
-          read: false,
-          link: `/Licenses?property_id=${alert.property_id}`,
-          metadata: {
-            entity_name: 'License',
-            entity_id: alert.license_id,
-            condition_index: alert.condition_index,
-            property_name: property?.property_name || 'Propriedade',
-            checked_date: todayStr,
-            timestamp: new Date().toISOString(),
+        for (const email of recipients) {
+          const prefs = await getNotifPrefs(email, [1, 7, 15, 30]);
+
+          // Vencidas: sempre notifica. A vencer: só se o dia está nas prefs
+          const shouldFire = daysUntilDue <= 0 || prefs.days.includes(daysUntilDue);
+          if (!shouldFire) continue;
+
+          if (prefs.push) {
+            await createNotif(email, license.id, i, license.property_id, messageTitle, messageBody, severity, link);
           }
-        });
 
-        // Send external email only once per alert (not daily for overdue)
-        if (alert.days_until_due >= 0) {
-          await base44.asServiceRole.integrations.Core.SendEmail({
-            to: alert.owner_email,
-            subject: messageTitle,
-            body: `
+          // Email: apenas para owner e consultor (não visualizadores), e só quando não vencido
+          if (prefs.email && (email === license.owner_email || email === consultorEmail) && daysUntilDue >= 0) {
+            const emailSubject = email === consultorEmail && email !== license.owner_email
+              ? `[Equipe] ${messageTitle}`
+              : messageTitle;
+            await sendEmail(email, emailSubject, `
               <h2>${messageTitle}</h2>
               <p>${messageBody}</p>
               <hr/>
-              <p><strong>Propriedade:</strong> ${property?.property_name || 'N/A'}</p>
-              <p><strong>Licença:</strong> ${alert.license_type} ${alert.license_number || ''}</p>
-              <p><strong>Data de Cumprimento:</strong> ${alert.due_date}</p>
-              <p><strong>Condicionante:</strong> ${alert.condition_text}</p>
+              <p><strong>Licença:</strong> ${licLabel}</p>
+              <p><strong>Condicionante:</strong> ${condText}</p>
+              <p><strong>Data de Cumprimento:</strong> ${cond.due_date}</p>
               <hr/>
-              <p><a href="https://prumo.app/Licenses?property_id=${alert.property_id}">Ver Licença no Sistema</a></p>
-            `
-          });
-        }
+              <p><a href="https://prumo.app${link}">Ver Licença no Sistema</a></p>
+            `);
+          }
 
-        console.log(`✓ Notificações enviadas para condicionante: ${alert.condition_text} (${alert.days_until_due} dias)`);
-      } catch (notifError) {
-        console.error(`✗ Erro ao enviar notificações para ${alert.owner_email}:`, notifError);
+          notifsSent++;
+        }
       }
     }
 
     return Response.json({
       success: true,
-      alerts_checked: licenses.length,
-      alerts_found: alerts.length,
-      notifications_sent: alerts.length,
-      timestamp: new Date().toISOString(),
+      licenses_checked: licenses.length,
+      notifications_sent: notifsSent,
+      timestamp: now.toISOString(),
     });
   } catch (error) {
-    console.error('Erro na verificação de condicionantes:', error);
-    return Response.json(
-      { error: error.message },
-      { status: 500 }
-    );
+    console.error('[CondDue] Erro:', error);
+    return Response.json({ error: error.message }, { status: 500 });
   }
 });

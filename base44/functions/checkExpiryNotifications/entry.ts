@@ -1,8 +1,11 @@
 /**
  * checkExpiryNotifications — Verifica vencimentos e notifica responsáveis + equipe.
- * Canais: push (in-app) + email. SMS: não implementado.
+ * Canais: push (in-app) + email + WhatsApp (registrado em metadata; sem API externa ainda).
  *
- * v3 — Adicionado envio de emails para tarefas vencidas, licenças, processos e prazos críticos.
+ * v4 — Preferências por destinatário (NotificationPreference), alerta de renovação de
+ *       licença (renewal_required/renewal_days_before), condicionantes com event_type
+ *       correto ('condicionante_vencendo'), checagem de documentos com expiry_date,
+ *       e visualizadores por propriedade (authorized_users).
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
@@ -18,7 +21,9 @@ Deno.serve(async (req) => {
     const teamCache = {};
     const userDataCache = {};
     const propConsultorCache = {};
-    const emailDedupeMap = new Map(); // evita email duplicado na mesma execução
+    const notifPrefsCache = {};
+    const propViewersCache = {};
+    const emailDedupeMap = new Map();
 
     // ─── Regras de notificação por plano ─────────────────────────────────
     function canReceiveNotification(recipient, consultor) {
@@ -65,18 +70,67 @@ Deno.serve(async (req) => {
       return canReceiveNotification(recipient, consultor);
     };
 
+    // ─── Preferências de notificação por usuário/evento ──────────────────
+    // Retorna: { days: number[], push: bool, email: bool, whatsapp: bool, phone: string|null }
+    // Se não houver preferência cadastrada, usa defaultDays e push+email habilitados.
+    const getNotifPrefs = async (email, eventType, defaultDays) => {
+      const cacheKey = `${email}:${eventType}`;
+      if (notifPrefsCache[cacheKey] !== undefined) return notifPrefsCache[cacheKey];
+      try {
+        const prefs = await base44.asServiceRole.entities.NotificationPreference.filter({
+          user_email: email, event_type: eventType
+        });
+        const pref = prefs[0];
+        let days = defaultDays;
+        if (pref?.days_before) {
+          try { days = JSON.parse(pref.days_before); } catch {}
+        }
+        const result = {
+          days,
+          push:     pref ? (pref.push_enabled  !== false) : true,
+          email:    pref ? (pref.email_enabled  !== false) : true,
+          whatsapp: pref ? (pref.sms_enabled    === true)  : false,
+          phone:    pref?.phone_number || null,
+        };
+        notifPrefsCache[cacheKey] = result;
+        return result;
+      } catch {
+        const result = { days: defaultDays, push: true, email: true, whatsapp: false, phone: null };
+        notifPrefsCache[cacheKey] = result;
+        return result;
+      }
+    };
+
+    // ─── Visualizadores de propriedade com notificação habilitada ────────
+    const getPropertyViewers = async (propertyId, eventKey) => {
+      if (!propertyId) return [];
+      const cacheKey = `${propertyId}:${eventKey}`;
+      if (propViewersCache[cacheKey] !== undefined) return propViewersCache[cacheKey];
+      try {
+        const props = await base44.asServiceRole.entities.Property.filter({ id: propertyId });
+        const prop = props[0];
+        if (!prop?.authorized_users) { propViewersCache[cacheKey] = []; return []; }
+        let users = prop.authorized_users;
+        if (typeof users === 'string') { try { users = JSON.parse(users); } catch { users = []; } }
+        const viewers = (users || [])
+          .filter(u => u.role === 'Visualizador' && u.notification_settings?.[eventKey] === true)
+          .map(u => u.email)
+          .filter(Boolean);
+        propViewersCache[cacheKey] = viewers;
+        return viewers;
+      } catch {
+        propViewersCache[cacheKey] = [];
+        return [];
+      }
+    };
+
     // ─── Push in-app com deduplicação por dia ────────────────────────────
-    // Usa todayStr para garantir que não crie duplicata no mesmo dia de execução,
-    // mesmo que a notificação anterior tenha sido deletada pelo usuário.
-    // A deduplicação é baseada em metadata.checked_date === todayStr.
     const createNotif = async (userEmail, title, message, eventType, severity, link) => {
       if (!userEmail) return;
       try {
-        // Busca notificações recentes (últimas 200) para verificar se já foi criada hoje
         const recent = await base44.asServiceRole.entities.InAppNotification.filter(
           { user_email: userEmail }, '-created_date', 200
         );
-        // Verifica se já existe notificação com mesmo título E checked_date de hoje
         const alreadySentToday = recent.some(n =>
           n.title === title &&
           n.metadata?.checked_date === todayStr
@@ -129,7 +183,7 @@ Deno.serve(async (req) => {
       }
     };
 
-    // ─── Notifica push + email ────────────────────────────────────────────
+    // ─── Notifica push + email (usado nas seções sem preferências por usuário) ─
     const notifyWithEmail = async (ownerEmail, consultorEmail, title, message, eventType, severity, link, emailSubject, emailBody) => {
       await notifyWithTeam(ownerEmail, consultorEmail, title, message, eventType, severity, link);
       if (ownerEmail) await sendEmail(ownerEmail, emailSubject, emailBody);
@@ -138,6 +192,46 @@ Deno.serve(async (req) => {
           `[Equipe] ${emailSubject}`,
           `<p><strong>Notificação sobre cliente:</strong></p>${emailBody}`
         );
+      }
+    };
+
+    // ─── Notifica via preferências do destinatário ────────────────────────
+    // O chamador já verificou se days está nos prefs.days; esta função
+    // apenas respeita os canais habilitados (push/email/whatsapp).
+    const notifyPerPrefs = async (email, prefs, title, message, eventType, severity, link, emailSubject, emailBody) => {
+      if (!email) return;
+      if (prefs.push) {
+        await createNotif(email, title, message, eventType, severity, link);
+      }
+      if (prefs.email && emailSubject && emailBody) {
+        await sendEmail(email, emailSubject, emailBody);
+      }
+      if (prefs.whatsapp && prefs.phone) {
+        // Registra intenção de envio via WhatsApp; integração n8n será implementada depois.
+        try {
+          const recent = await base44.asServiceRole.entities.InAppNotification.filter(
+            { user_email: email }, '-created_date', 50
+          );
+          const waTitle = `[WA] ${title}`;
+          const alreadySentToday = recent.some(n =>
+            n.title === waTitle && n.metadata?.checked_date === todayStr
+          );
+          if (!alreadySentToday) {
+            await base44.asServiceRole.entities.InAppNotification.create({
+              user_email: email, title: waTitle, message, event_type: eventType,
+              severity, read: false, link,
+              metadata: {
+                type: 'whatsapp_pending',
+                channel_requested: 'whatsapp',
+                phone_number: prefs.phone,
+                checked_date: todayStr,
+                checked_at: today.toISOString(),
+              }
+            });
+          }
+        } catch (e) {
+          console.error('[Expiry] Erro ao registrar WhatsApp pendente:', e.message);
+        }
       }
     };
 
@@ -151,6 +245,16 @@ Deno.serve(async (req) => {
       } catch (e) { return null; }
     };
 
+    // ─── Monta lista de destinatários únicos sem repetição ───────────────
+    const buildRecipients = (ownerEmail, consultorEmail, viewers) => {
+      const seen = new Set();
+      const list = [];
+      for (const email of [ownerEmail, consultorEmail, ...viewers]) {
+        if (email && !seen.has(email)) { seen.add(email); list.push(email); }
+      }
+      return list;
+    };
+
     // ─── LICENSES ────────────────────────────────────────────────────────
     const licenses = await base44.asServiceRole.entities.License.list();
     for (const lic of licenses) {
@@ -161,6 +265,7 @@ Deno.serve(async (req) => {
       const licLabel = `${lic.license_type}${lic.license_number ? ` nº ${lic.license_number}` : ''}`;
 
       if (days <= 0) {
+        // Vencida: comportamento original preservado
         const title = `Licença VENCIDA: ${lic.license_type}`;
         await notifyWithEmail(lic.owner_email, consultorEmail,
           title,
@@ -169,15 +274,56 @@ Deno.serve(async (req) => {
           `[PRUMO Hub] ⛔ ${title}`,
           `<p>Olá,</p><p>A licença <strong>${licLabel}</strong> está <strong>VENCIDA</strong> há ${Math.abs(days)} dia(s).</p><p>Renove imediatamente para evitar penalidades.</p><p>Equipe PRUMO Hub</p>`
         );
-      } else if ([1, 7, 15, 30].includes(days)) {
-        const title = `Licença vencendo em ${days} dia${days > 1 ? 's' : ''}`;
-        await notifyWithEmail(lic.owner_email, consultorEmail,
-          title,
-          `Licença ${licLabel} vence em ${days} dia${days > 1 ? 's' : ''}.`,
-          'licenca_vencendo', days <= 7 ? 'error' : 'warning', '/Licenses',
-          `[PRUMO Hub] ⚠️ ${title}: ${lic.license_type}`,
-          `<p>Olá,</p><p>A licença <strong>${licLabel}</strong> vencerá em <strong>${days} dia${days > 1 ? 's' : ''}</strong>.</p><p>Providencie a renovação com antecedência.</p><p>Equipe PRUMO Hub</p>`
-        );
+      } else {
+        const viewers = await getPropertyViewers(lic.property_id, 'licenca_vencendo');
+        const recipients = buildRecipients(lic.owner_email, consultorEmail, viewers);
+
+        // Notificação de vencimento para cada destinatário segundo suas preferências
+        for (const email of recipients) {
+          const prefs = await getNotifPrefs(email, 'licenca_vencendo', [1, 7, 15, 30]);
+          if (!prefs.days.includes(days)) continue;
+          const title = `Licença vencendo em ${days} dia${days > 1 ? 's' : ''}`;
+          await notifyPerPrefs(email, prefs, title,
+            `Licença ${licLabel} vence em ${days} dia${days > 1 ? 's' : ''}.`,
+            'licenca_vencendo', days <= 7 ? 'error' : 'warning', '/Licenses',
+            `[PRUMO Hub] ⚠️ ${title}: ${lic.license_type}`,
+            `<p>Olá,</p><p>A licença <strong>${licLabel}</strong> vencerá em <strong>${days} dia${days > 1 ? 's' : ''}</strong>.</p><p>Providencie a renovação com antecedência.</p><p>Equipe PRUMO Hub</p>`
+          );
+        }
+
+        // Alerta extra de protocolo de renovação (dispara quando days === renewal_days_before,
+        // independente dos dias configurados nas preferências — apenas canais são respeitados)
+        if (lic.renewal_required && lic.renewal_days_before && days === Number(lic.renewal_days_before)) {
+          const renewTitle = `Iniciar protocolo de renovação: ${lic.license_type} (${days} dias)`;
+          const renewBody = `<p>Olá,</p><p>É hora de iniciar o protocolo de renovação da licença <strong>${licLabel}</strong>. Vencimento em <strong>${days} dias</strong>. Providencie a documentação com antecedência.</p><p>Equipe PRUMO Hub</p>`;
+          for (const email of recipients) {
+            const prefs = await getNotifPrefs(email, 'licenca_vencendo', [1, 7, 15, 30]);
+            await notifyPerPrefs(email, prefs,
+              renewTitle,
+              `Iniciar protocolo de renovação da licença ${licLabel}. Vencimento em ${days} dias.`,
+              'licenca_vencendo', 'warning', '/Licenses',
+              `[PRUMO Hub] 🔄 ${renewTitle}`, renewBody
+            );
+          }
+        }
+
+        // Equipe do consultor (enterprise) — push com filtro de prefs, sem email
+        if (consultorEmail) {
+          const consultorData = await getUserData(consultorEmail);
+          if ((consultorData?.plan || '').toLowerCase() === 'enterprise') {
+            const teamEmails = await getTeamEmails(consultorEmail);
+            for (const m of teamEmails) {
+              if (recipients.includes(m)) continue;
+              const prefs = await getNotifPrefs(m, 'licenca_vencendo', [1, 7, 15, 30]);
+              if (!prefs.days.includes(days)) continue;
+              await createNotif(m,
+                `Licença vencendo em ${days} dia${days > 1 ? 's' : ''}`,
+                `Licença ${licLabel} vence em ${days} dia${days > 1 ? 's' : ''}.`,
+                'licenca_vencendo', days <= 7 ? 'error' : 'warning', '/Licenses'
+              );
+            }
+          }
+        }
       }
     }
 
@@ -185,6 +331,9 @@ Deno.serve(async (req) => {
     for (const lic of licenses) {
       if (!lic.owner_email || !lic.conditions?.length) continue;
       const consultorEmail = await getConsultor(lic.property_id);
+      const viewers = await getPropertyViewers(lic.property_id, 'condicionante_vencendo');
+      const recipients = buildRecipients(lic.owner_email, consultorEmail, viewers);
+
       for (const cond of lic.conditions) {
         if (typeof cond === 'string' || !cond?.due_date) continue;
         const days = getDays(cond.due_date);
@@ -196,19 +345,48 @@ Deno.serve(async (req) => {
           await notifyWithEmail(lic.owner_email, consultorEmail,
             'Prazo de Condicionante Vencido',
             `Condicionante "${condText}" da ${licLabel} está VENCIDA.`,
-            'licenca_vencida', 'error', '/Licenses',
+            'condicionante_vencendo', 'error', '/Licenses',
             `[PRUMO Hub] ⛔ Condicionante VENCIDA: ${condText}`,
             `<p>Olá,</p><p>A condicionante <strong>"${condText}"</strong> da licença <strong>${licLabel}</strong> está <strong>VENCIDA</strong>.</p><p>Equipe PRUMO Hub</p>`
           );
-        } else if ([1, 7, 15, 30].includes(days)) {
-          await notifyWithEmail(lic.owner_email, consultorEmail,
-            `Condicionante vence em ${days} dia${days > 1 ? 's' : ''}`,
-            `"${condText}" (${licLabel}) vence em ${days} dia${days > 1 ? 's' : ''}.`,
-            'licenca_vencendo', days <= 7 ? 'error' : 'warning', '/Licenses',
-            `[PRUMO Hub] ⚠️ Condicionante vencendo em ${days} dia${days > 1 ? 's' : ''}`,
-            `<p>Olá,</p><p>A condicionante <strong>"${condText}"</strong> da licença <strong>${licLabel}</strong> vence em <strong>${days} dia${days > 1 ? 's' : ''}</strong>.</p><p>Equipe PRUMO Hub</p>`
-          );
+        } else {
+          for (const email of recipients) {
+            const prefs = await getNotifPrefs(email, 'condicionante_vencendo', [1, 7, 15, 30]);
+            if (!prefs.days.includes(days)) continue;
+            const title = `Condicionante vence em ${days} dia${days > 1 ? 's' : ''}`;
+            await notifyPerPrefs(email, prefs, title,
+              `"${condText}" (${licLabel}) vence em ${days} dia${days > 1 ? 's' : ''}.`,
+              'condicionante_vencendo', days <= 7 ? 'error' : 'warning', '/Licenses',
+              `[PRUMO Hub] ⚠️ Condicionante vencendo em ${days} dia${days > 1 ? 's' : ''}`,
+              `<p>Olá,</p><p>A condicionante <strong>"${condText}"</strong> da licença <strong>${licLabel}</strong> vence em <strong>${days} dia${days > 1 ? 's' : ''}</strong>.</p><p>Equipe PRUMO Hub</p>`
+            );
+          }
         }
+      }
+    }
+
+    // ─── DOCUMENTS (expiry_date opcional) ────────────────────────────────
+    const documents = await base44.asServiceRole.entities.Document.list();
+    for (const doc of documents) {
+      if (!doc.expiry_date || !doc.owner_email) continue;
+      const days = getDays(doc.expiry_date);
+      if (days === null || days < 0) continue;
+      const propId = doc.entity_type === 'Property' ? doc.entity_id : null;
+      const consultorEmail = await getConsultor(propId);
+      const viewers = await getPropertyViewers(propId, 'documento_vencendo');
+      const recipients = buildRecipients(doc.owner_email, consultorEmail, viewers);
+      const docName = doc.document_name || doc.document_type || 'Documento';
+
+      for (const email of recipients) {
+        const prefs = await getNotifPrefs(email, 'documento_vencendo', [7, 30]);
+        if (!prefs.days.includes(days)) continue;
+        const title = `Documento vencendo em ${days} dia${days > 1 ? 's' : ''}`;
+        await notifyPerPrefs(email, prefs, title,
+          `"${docName}" vence em ${days} dia${days > 1 ? 's' : ''}.`,
+          'documento_vencendo', days <= 7 ? 'error' : 'warning', '/Documents',
+          `[PRUMO Hub] ⚠️ ${title}: ${docName}`,
+          `<p>Olá,</p><p>O documento <strong>"${docName}"</strong> vencerá em <strong>${days} dia${days > 1 ? 's' : ''}</strong>.</p><p>Verifique se é necessária a renovação.</p><p>Equipe PRUMO Hub</p>`
+        );
       }
     }
 
@@ -245,7 +423,6 @@ Deno.serve(async (req) => {
     const prads = await base44.asServiceRole.entities.PRAD.list();
     for (const prad of prads) {
       if (!prad.owner_email || prad.status === 'Concluído') continue;
-      // Ignorar PRADs órfãos (sem propriedade válida)
       if (prad.property_id) {
         try {
           await base44.asServiceRole.entities.Property.get(prad.property_id);
@@ -392,7 +569,6 @@ Deno.serve(async (req) => {
 
       for (const task of tasks) {
         let t = { ...task };
-        // Marca como overdue automaticamente
         if (!t.done && t.status !== 'done' && t.due_date && t.due_date < todayStr && t.status !== 'overdue') {
           t.status = 'overdue';
           crmChanged = true;
@@ -414,7 +590,6 @@ Deno.serve(async (req) => {
               `<p>Olá,</p><p>A tarefa <strong>"${t.title}"</strong> do cliente <strong>${crm.client_name || 'N/A'}</strong> está <strong>vencida</strong>.</p><p>Acesse o CRM para atualizar o status.</p><p>Equipe PRUMO Hub</p>`
             );
           }
-          // Notifica demais membros da equipe (plano pro/enterprise)
           const plan = (consultorData?.plan || '').toLowerCase();
           if (['enterprise'].includes(plan)) {
             const team = await getTeamEmails(crm.consultor_email);

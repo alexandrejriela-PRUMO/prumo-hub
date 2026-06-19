@@ -53,12 +53,8 @@ Deno.serve(async (req) => {
       },
     };
 
-    if (email) {
-      checkoutPayload.customerData = { email };
-      if (name) checkoutPayload.customerData.name = name;
-      if (cpfCnpj) checkoutPayload.customerData.cpfCnpj = cpfCnpj;
-      if (phone) checkoutPayload.customerData.phone = phone;
-    }
+    // Não enviamos customerData — o próprio checkout do Asaas coleta
+    // nome, email, CPF/CNPJ, telefone e endereço do cliente.
 
     const response = await fetch('https://api-sandbox.asaas.com/v3/checkouts', {
       method: 'POST',

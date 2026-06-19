@@ -111,14 +111,65 @@ Deno.serve(async (req) => {
           value: tx.value,
           netValue: tx.netValue,
           feeValue: tx.feeValue,
+          originalValue: tx.originalValue || null,
+          installmentInfo: tx.installmentInfo || null,
           balanceBefore: tx.balanceBefore,
           balanceAfter: tx.balanceAfter,
           date: tx.date || tx.createdAt,
           status: tx.status,
+          paymentMethod: tx.paymentMethod || null,
+          creditCardInfo: tx.creditCardInfo || null,
         })),
         hasMore: data.hasMore || false,
         totalCount: data.totalCount || 0,
       });
+    }
+
+    // ── Resumo financeiro (totais do período) ──────────
+    if (action === 'summary') {
+      const { startDate, endDate } = body;
+      // Busca últimos 100 registros para sumarizar
+      let url = `${baseUrl}/financialTransactions?offset=0&limit=100`;
+      if (startDate) url += `&startDate=${startDate}`;
+      if (endDate) url += `&endDate=${endDate}`;
+
+      const res = await fetch(url, { headers });
+      const data = await res.json();
+
+      if (!res.ok) {
+        return Response.json({ error: data.errors?.[0]?.description || 'Erro ao consultar resumo' }, { status: res.status });
+      }
+
+      const transactions = data.data || [];
+      const summary = {
+        totalCredit: 0,
+        totalDebit: 0,
+        totalFees: 0,
+        netResult: 0,
+        count: transactions.length,
+        byMethod: {},
+      };
+
+      for (const tx of transactions) {
+        if (tx.value > 0) {
+          summary.totalCredit += tx.value;
+        } else {
+          summary.totalDebit += Math.abs(tx.value);
+        }
+        summary.totalFees += tx.feeValue || 0;
+        summary.netResult += tx.netValue || 0;
+
+        const method = tx.paymentMethod || tx.type || 'outros';
+        if (!summary.byMethod[method]) {
+          summary.byMethod[method] = { count: 0, totalValue: 0, totalFees: 0, totalNet: 0 };
+        }
+        summary.byMethod[method].count += 1;
+        summary.byMethod[method].totalValue += tx.value || 0;
+        summary.byMethod[method].totalFees += tx.feeValue || 0;
+        summary.byMethod[method].totalNet += tx.netValue || 0;
+      }
+
+      return Response.json(summary);
     }
 
     return Response.json({ error: `Ação desconhecida: ${action}` }, { status: 400 });

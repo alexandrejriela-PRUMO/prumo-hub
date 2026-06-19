@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Link, ExternalLink, CreditCard, Plus, Copy, Check, Wallet, Building, Link2, UserPlus, Users, Clock, History, ArrowLeftRight, TrendingUp, Info, ArrowDown, PiggyBank } from 'lucide-react';
+import { Link, ExternalLink, CreditCard, Plus, Copy, Check, Wallet, Building, Link2, UserPlus, Users, Clock, History, ArrowLeftRight, TrendingUp, Info, ArrowDown, PiggyBank, FileText } from 'lucide-react';
+import ConsultantStatement from '@/components/consultor/ConsultantStatement';
 import { toast } from 'sonner';
 import { format, parseISO, isValid } from 'date-fns';
 import { createPageUrl } from '../utils';
@@ -57,6 +58,7 @@ export default function ConsultantPayments() {
   const [statementLoading, setStatementLoading] = useState(false);
   const [statementPage, setStatementPage] = useState(0);
   const [statementHasMore, setStatementHasMore] = useState(false);
+  const [activeTab, setActiveTab] = useState('cobranca'); // 'cobranca' | 'extrato'
 
   useEffect(() => {
     loadMeta();
@@ -350,6 +352,34 @@ export default function ConsultantPayments() {
         )}
       </div>
 
+      {/* Abas de navegação (apenas com subconta ativa) */}
+      {hasSubaccount && (
+        <div className="flex gap-1 bg-slate-100 rounded-xl p-1">
+          <button
+            onClick={() => setActiveTab('cobranca')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'cobranca'
+                ? 'bg-white text-emerald-700 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <CreditCard className="w-4 h-4" />
+            Nova Cobrança
+          </button>
+          <button
+            onClick={() => setActiveTab('extrato')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'extrato'
+                ? 'bg-white text-emerald-700 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            Extrato Financeiro
+          </button>
+        </div>
+      )}
+
       {!hasSubaccount ? (
         <Card>
           <CardHeader>
@@ -509,7 +539,7 @@ export default function ConsultantPayments() {
             </div>
           </CardContent>
         </Card>
-      ) : (
+      ) : activeTab === 'cobranca' ? (
         <>
           <Card>
             <CardHeader>
@@ -722,188 +752,12 @@ export default function ConsultantPayments() {
             </Card>
           )}
         </>
+      ) : (
+        <ConsultantStatement meta={meta} />
       )}
 
-      {/* ── Carteira / Saldo ── */}
-      {hasSubaccount && (
-        <Card className="border-emerald-200 bg-gradient-to-br from-emerald-50/80 to-white">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-emerald-600" />
-              Sua Carteira
-            </CardTitle>
-            <CardDescription>Seu saldo de honorários. Transfira para sua conta bancária via PIX quando quiser.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Saldo */}
-            <div className="bg-white rounded-xl border border-emerald-100 p-4 flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-500 mb-0.5">Saldo disponível</p>
-                {walletLoading ? (
-                  <div className="w-6 h-6 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mt-1" />
-                ) : (
-                  <p className="text-2xl font-bold text-emerald-700">
-                    {(walletBalance ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </p>
-                )}
-              </div>
-              <Button variant="outline" size="sm" onClick={loadBalance} disabled={walletLoading} className="text-xs">
-                <TrendingUp className="w-3 h-3 mr-1" /> Atualizar
-              </Button>
-            </div>
-
-            {/* Transferência PIX */}
-            <div className="bg-white rounded-xl border border-amber-100 p-4">
-              <p className="text-sm font-semibold text-amber-800 mb-3 flex items-center gap-1.5">
-                <ArrowDown className="w-4 h-4" /> Sacar via PIX
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <Label className="text-xs">Valor (R$)</Label>
-                  <Input
-                    type="number" step="0.01"
-                    value={pixForm.value}
-                    onChange={e => setPixForm({ ...pixForm, value: e.target.value })}
-                    placeholder="500.00"
-                    className="h-9 text-sm"
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <Label className="text-xs">Chave PIX de destino</Label>
-                  <Input
-                    value={pixForm.pixKey}
-                    onChange={e => setPixForm({ ...pixForm, pixKey: e.target.value })}
-                    placeholder="CPF, email, telefone ou chave aleatória"
-                    className="h-9 text-sm"
-                  />
-                </div>
-              </div>
-              <div className="mt-2">
-                <Label className="text-xs">Descrição (opcional)</Label>
-                <Input
-                  value={pixForm.description}
-                  onChange={e => setPixForm({ ...pixForm, description: e.target.value })}
-                  placeholder="Saque de honorários"
-                  className="h-9 text-sm"
-                />
-              </div>
-              <Button
-                onClick={handlePixTransfer}
-                disabled={transferring}
-                className="w-full mt-3 bg-amber-600 hover:bg-amber-700"
-                size="sm"
-              >
-                {transferring ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                ) : (
-                  <ArrowDown className="w-4 h-4 mr-2" />
-                )}
-                {transferring ? 'Solicitando...' : 'Transferir via PIX'}
-              </Button>
-              <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2.5">
-                <p className="font-medium text-slate-700 text-xs flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5" /> Quando o dinheiro fica disponível?
-                </p>
-                <div className="space-y-1.5 text-[11px]">
-                  <div className="flex justify-between items-center py-1 px-2 bg-white rounded border border-emerald-100">
-                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" /> PIX</span>
-                    <span className="font-medium text-emerald-700">Instantâneo</span>
-                  </div>
-                  <div className="flex justify-between items-center py-1 px-2 bg-white rounded border border-slate-100">
-                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-500" /> Boleto</span>
-                    <span className="font-medium text-slate-700">No mesmo dia</span>
-                  </div>
-                  <div className="flex justify-between items-center py-1 px-2 bg-white rounded border border-slate-100">
-                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500" /> Cartão de Débito</span>
-                    <span className="font-medium text-amber-700">3 dias úteis</span>
-                  </div>
-                  <div className="flex justify-between items-center py-1 px-2 bg-white rounded border border-red-100">
-                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500" /> Cartão de Crédito</span>
-                    <span className="font-medium text-red-700">32 dias</span>
-                  </div>
-                </div>
-                <p className="text-[10px] text-slate-400 leading-relaxed">
-                  Esses são os prazos do Asaas para o dinheiro entrar no <strong>seu saldo</strong>. Depois que estiver disponível, você saca via PIX para sua conta bancária em minutos.
-                </p>
-              </div>
-            </div>
-
-            {/* Extrato */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
-                  <ArrowLeftRight className="w-4 h-4" /> Extrato
-                </p>
-                <Button variant="ghost" size="sm" onClick={() => loadStatement(0)} disabled={statementLoading} className="text-xs">
-                  <TrendingUp className="w-3 h-3 mr-1" /> Atualizar
-                </Button>
-              </div>
-
-              {statementLoading ? (
-                <div className="text-center py-6">
-                  <div className="w-6 h-6 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mx-auto" />
-                </div>
-              ) : statement.length === 0 ? (
-                <div className="text-center py-6 text-gray-400">
-                  <Clock className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                  <p className="text-xs">Nenhuma movimentação encontrada</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead className="bg-gray-50 border-b">
-                      <tr>
-                        <th className="text-left px-3 py-2 text-[10px] font-semibold text-gray-500">Data</th>
-                        <th className="text-left px-3 py-2 text-[10px] font-semibold text-gray-500">Descrição</th>
-                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-gray-500">Valor</th>
-                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-gray-500 hidden sm:table-cell">Taxa</th>
-                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-gray-500">Líquido</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {statement.map(tx => {
-                        const isCredit = tx.value >= 0;
-                        return (
-                          <tr key={tx.id} className="hover:bg-gray-50">
-                            <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
-                              {tx.date ? format(parseISO(tx.date), 'dd/MM/yy') : '—'}
-                            </td>
-                            <td className="px-3 py-2 text-gray-700 max-w-[180px] truncate">{tx.description || tx.type}</td>
-                            <td className={`px-3 py-2 text-right font-semibold whitespace-nowrap ${isCredit ? 'text-emerald-600' : 'text-red-500'}`}>
-                              {isCredit ? '+' : ''}{tx.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                            </td>
-                            <td className="px-3 py-2 text-right text-red-400 hidden sm:table-cell whitespace-nowrap">
-                              {tx.feeValue ? `-${tx.feeValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}` : '—'}
-                            </td>
-                            <td className="px-3 py-2 text-right font-medium text-gray-700 whitespace-nowrap">
-                              {tx.netValue != null ? tx.netValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—'}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                  {statementHasMore && (
-                    <div className="flex justify-center mt-3 gap-2">
-                      {statementPage > 0 && (
-                        <Button variant="outline" size="sm" onClick={() => loadStatement(statementPage - 1)} className="text-xs">
-                          ← Anterior
-                        </Button>
-                      )}
-                      <Button variant="outline" size="sm" onClick={() => loadStatement(statementPage + 1)} className="text-xs">
-                        Próxima →
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Info sobre split */}
-      {hasSubaccount && (
+      {/* Info sobre split (apenas aba cobrança) */}
+      {hasSubaccount && activeTab === 'cobranca' && (
         <Card className="border-slate-200 bg-gradient-to-r from-slate-50 to-white">
           <CardContent className="pt-6">
             <p className="font-semibold text-slate-800 text-sm mb-4 flex items-center gap-1.5">
@@ -911,7 +765,6 @@ export default function ConsultantPayments() {
               Como funciona o repasse
             </p>
             <div className="grid grid-cols-3 gap-3 text-center">
-              {/* Asaas */}
               <div className="bg-white rounded-xl p-3 border border-red-100">
                 <div className="w-8 h-8 mx-auto mb-1.5 rounded-full bg-red-100 flex items-center justify-center">
                   <Building className="w-4 h-4 text-red-600" />
@@ -928,8 +781,6 @@ export default function ConsultantPayments() {
                 <p className="text-[9px] font-bold text-red-500">13-21x 0,49+3,29%</p>
                 <p className="text-[8px] text-red-300 mt-0.5">Promo até 19/09/2026</p>
               </div>
-
-              {/* PRUMO */}
               <div className="bg-white rounded-xl p-3 border border-amber-100">
                 <div className="w-8 h-8 mx-auto mb-1.5 rounded-full bg-amber-100 flex items-center justify-center">
                   <PiggyBank className="w-4 h-4 text-amber-600" />
@@ -939,8 +790,6 @@ export default function ConsultantPayments() {
                 <p className="text-[10px] font-bold text-amber-600 mt-1">10%</p>
                 <p className="text-[9px] text-amber-500">do valor após Asaas</p>
               </div>
-
-              {/* Consultor */}
               <div className="bg-white rounded-xl p-3 border border-emerald-100">
                 <div className="w-8 h-8 mx-auto mb-1.5 rounded-full bg-emerald-100 flex items-center justify-center">
                   <Wallet className="w-4 h-4 text-emerald-600" />
@@ -958,8 +807,8 @@ export default function ConsultantPayments() {
         </Card>
       )}
 
-      {/* Histórico de Cobranças */}
-      {hasSubaccount && (
+      {/* Histórico de Cobranças (apenas aba cobrança) */}
+      {hasSubaccount && activeTab === 'cobranca' && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">

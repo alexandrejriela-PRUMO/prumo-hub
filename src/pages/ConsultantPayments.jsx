@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Link, ExternalLink, CreditCard, Plus, Copy, Check, Wallet, Building, Link2 } from 'lucide-react';
+import { Link, ExternalLink, CreditCard, Plus, Copy, Check, Wallet, Building, Link2, UserPlus, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ConsultantPayments() {
@@ -40,11 +40,24 @@ export default function ConsultantPayments() {
   });
   const [manualSubaccountId, setManualSubaccountId] = useState('');
   const [linkingSubaccount, setLinkingSubaccount] = useState(false);
+  const [clients, setClients] = useState([]);
+  const [selectedClientId, setSelectedClientId] = useState('');
 
   useEffect(() => {
     loadMeta();
     loadUser();
+    loadClients();
   }, []);
+
+  const loadClients = async () => {
+    try {
+      const user = await base44.auth.me();
+      const result = await base44.entities.ClientCRM.filter({ consultor_email: user.email }, '-created_date', 100);
+      setClients(result || []);
+    } catch (e) {
+      console.error('Erro ao carregar clientes:', e);
+    }
+  };
 
   const loadUser = async () => {
     try {
@@ -135,6 +148,24 @@ export default function ConsultantPayments() {
       toast.error('Erro ao vincular subconta: ' + (e?.message || 'Tente novamente'));
     } finally {
       setLinkingSubaccount(false);
+    }
+  };
+
+  const handleSelectClient = (clientId) => {
+    setSelectedClientId(clientId);
+    if (!clientId) {
+      setForm({ clientName: '', clientEmail: '', clientCpfCnpj: '', description: '', value: '', billingType: '' });
+      return;
+    }
+    const client = clients.find(c => c.id === clientId);
+    if (client) {
+      const doc = client.cnpj || client.cpf || '';
+      setForm(prev => ({
+        ...prev,
+        clientName: client.client_name || '',
+        clientEmail: client.client_email || '',
+        clientCpfCnpj: doc,
+      }));
     }
   };
 
@@ -369,12 +400,30 @@ export default function ConsultantPayments() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {clients.length > 0 && (
+                <div>
+                  <Label className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> Cliente do CRM</Label>
+                  <select
+                    value={selectedClientId}
+                    onChange={e => handleSelectClient(e.target.value)}
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    <option value="">Selecione um cliente cadastrado...</option>
+                    {clients.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.client_name || 'Sem nome'} {c.client_email ? `(${c.client_email})` : ''} {c.cnpj ? `— CNPJ: ${c.cnpj}` : c.cpf ? `— CPF: ${c.cpf}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1">Ou preencha os campos manualmente abaixo</p>
+                </div>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>Nome do Cliente *</Label>
                   <Input
                     value={form.clientName}
-                    onChange={e => setForm({ ...form, clientName: e.target.value })}
+                    onChange={e => { setSelectedClientId(''); setForm({ ...form, clientName: e.target.value }); }}
                     placeholder="Nome completo"
                   />
                 </div>
@@ -383,7 +432,7 @@ export default function ConsultantPayments() {
                   <Input
                     type="email"
                     value={form.clientEmail}
-                    onChange={e => setForm({ ...form, clientEmail: e.target.value })}
+                    onChange={e => { setSelectedClientId(''); setForm({ ...form, clientEmail: e.target.value }); }}
                     placeholder="cliente@email.com"
                   />
                 </div>
@@ -391,7 +440,7 @@ export default function ConsultantPayments() {
                   <Label>CPF/CNPJ</Label>
                   <Input
                     value={form.clientCpfCnpj}
-                    onChange={e => setForm({ ...form, clientCpfCnpj: e.target.value })}
+                    onChange={e => { setSelectedClientId(''); setForm({ ...form, clientCpfCnpj: e.target.value }); }}
                     placeholder="000.000.000-00"
                   />
                 </div>
@@ -448,7 +497,7 @@ export default function ConsultantPayments() {
                       <ExternalLink className="w-3 h-3 mr-1" /> Abrir link
                     </a>
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => { setCheckoutUrl(null); setForm({ clientName: '', clientEmail: '', clientCpfCnpj: '', description: '', value: '', billingType: 'UNDEFINED' }); }}>
+                  <Button variant="ghost" size="sm" onClick={() => { setCheckoutUrl(null); setSelectedClientId(''); setForm({ clientName: '', clientEmail: '', clientCpfCnpj: '', description: '', value: '', billingType: '' }); }}>
                     Nova cobrança
                   </Button>
                 </div>

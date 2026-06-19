@@ -79,39 +79,61 @@ Deno.serve(async (req) => {
 
     if (!response.ok) {
       const errorDescriptions = data.errors?.map(e => e.description || '').join(' ') || data.message || '';
-      console.log('[createAsaasSubaccount] Erro Asaas:', errorDescriptions);
+      console.log('[createAsaasSubaccount] HTTP', response.status, '- Erro:', errorDescriptions);
 
       if (errorDescriptions.includes('já está em uso')) {
-        console.log('[createAsaasSubaccount] Buscando conta existente...');
-        const listRes = await fetch(
-          'https://api-sandbox.asaas.com/v3/accounts?limit=50',
-          { headers: { 'access_token': apiKey, 'User-Agent': 'PRUMOHub/1.0.0', 'accept': 'application/json' } }
-        );
-        const listData = await listRes.json();
-        const match = listData.data?.find(acc => acc.email === email);
+        console.log('[createAsaasSubaccount] Email já existe, tentando recuperar...');
+        // Tenta alguns métodos de busca
+        const search = async (url) => {
+          const r = await fetch(url, {
+            headers: { 'access_token': apiKey, 'User-Agent': 'PRUMOHub/1.0.0', 'accept': 'application/json' }
+          });
+          const d = await r.json();
+          return d.data?.find(acc => acc.email === email);
+        };
+        let match = await search(`https://api-sandbox.asaas.com/v3/accounts?email=${encodeURIComponent(email)}`);
+        if (!match) match = await search('https://api-sandbox.asaas.com/v3/accounts?limit=100');
+        if (!match) match = await search(`https://api-sandbox.asaas.com/v3/accounts?cpfCnpj=${encodeURIComponent(cpfCnpj)}`);
 
         if (match) {
           console.log(`[createAsaasSubaccount] Encontrada: ${match.id}`);
-          if (metas?.length > 0) {
-            await base44.entities.UserMetadata.update(metas[0].id, {
-              asaas_subaccount_id: match.id,
-              asaas_wallet_id: match.walletId,
-            });
+          const metaId = metas?.[0]?.id;
+          if (metaId) {
+            await base44.entities.UserMetadata.update(metaId, { asaas_subaccount_id: match.id, asaas_wallet_id: match.walletId });
           } else {
-            await base44.entities.UserMetadata.create({
-              user_email: email,
-              user_id: user.id,
-              asaas_subaccount_id: match.id,
-              asaas_wallet_id: match.walletId,
-            });
+            await base44.entities.UserMetadata.create({ user_email: email, user_id: user.id, asaas_subaccount_id: match.id, asaas_wallet_id: match.walletId });
           }
-          return Response.json({
-            success: true,
-            already_exists: true,
-            subaccount_id: match.id,
-            wallet_id: match.walletId,
-          });
+          return Response.json({ success: true, already_exists: true, subaccount_id: match.id, wallet_id: match.walletId });
         }
+
+        // Tenta criar com email alternativo (ex: santarute+prumo@gmail.com)
+        const altEmail = email.replace('@', '+prumo@');
+        if (altEmail !== email) {
+          console.log('[createAsaasSubaccount] Tentando com email alternativo:', altEmail);
+          const altRes = await fetch('https://api-sandbox.asaas.com/v3/accounts', {
+            method: 'POST',
+            headers: { 'access_token': apiKey, 'User-Agent': 'PRUMOHub/1.0.0', 'accept': 'application/json', 'content-type': 'application/json' },
+            body: JSON.stringify({ ...subaccountPayload, email: altEmail }),
+          });
+          if (altRes.ok) {
+            const altData = await altRes.json();
+            console.log(`[createAsaasSubaccount] Criada com email alternativo: ${altData.id}`);
+            const metaId = metas?.[0]?.id;
+            if (metaId) {
+              await base44.entities.UserMetadata.update(metaId, { asaas_subaccount_id: altData.id, asaas_wallet_id: altData.walletId, asaas_subaccount_api_key: altData.apiKey });
+            } else {
+              await base44.entities.UserMetadata.create({ user_email: email, user_id: user.id, asaas_subaccount_id: altData.id, asaas_wallet_id: altData.walletId, asaas_subaccount_api_key: altData.apiKey });
+            }
+            return Response.json({ success: true, subaccount_id: altData.id, wallet_id: altData.walletId, api_key: altData.apiKey, email_variant: altEmail }, { status: 201 });
+          }
+          const altErr = await altRes.json();
+          console.log('[createAsaasSubaccount] Email alternativo também falhou:', JSON.stringify(altErr).substring(0, 300));
+        }
+
+        return Response.json({
+          error: 'Este email já possui subconta no Asaas, mas não foi possível localizá-la automaticamente. Cole o ID da subconta no campo "Vincular Subconta Existente" abaixo do formulário.',
+          needs_manual_link: true,
+        }, { status: 409 });
       }
 
       const errorMsg = data.errors

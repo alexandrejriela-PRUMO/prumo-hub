@@ -253,18 +253,28 @@ export default function ConsultantPayments() {
   const valorDigitado = parseFloat(form.value) || 0;
   const billingType = form.billingType;
 
+  // Taxas promocionais (válidas até 19/09/2026) — depois viram padrão
   const taxasAsaas = {
-    pix:     { nome: 'PIX',               percentual: 0,      fixa: 0.99,  desc: 'R$ 0,99 fixo (promo)' },
-    boleto:  { nome: 'Boleto',            percentual: 0,      fixa: 0.99,  desc: 'R$ 0,99 fixo (promo)' },
-    cartao:  { nome: 'Cartão de Crédito', percentual: 0.0199, fixa: 0.49,  desc: 'R$ 0,49 + 1,99% (promo)' },
-    debito:  { nome: 'Cartão de Débito',  percentual: 0.0189, fixa: 0.35,  desc: 'R$ 0,35 + 1,89%' },
+    pix:           { nome: 'PIX',                      percentual: 0,       fixa: 0.99,  desc: 'R$ 0,99 (promo)',                              padraoFixa: 2.00,  padraoPct: 0,      padraoDesc: 'R$ 2,00' },
+    boleto:        { nome: 'Boleto',                   percentual: 0,       fixa: 0.99,  desc: 'R$ 0,99 (promo)',                              padraoFixa: 1.99,  padraoPct: 0,      padraoDesc: 'R$ 1,99' },
+    debito:        { nome: 'Cartão de Débito',         percentual: 0.0189,  fixa: 0.35,  desc: 'R$ 0,35 + 1,89% (promo)',                     padraoFixa: 0.35,  padraoPct: 0.0189, padraoDesc: 'R$ 0,35 + 1,89%' },
+    cartao_vista:  { nome: 'Crédito à vista',          percentual: 0.0199,  fixa: 0.49,  desc: 'R$ 0,49 + 1,99% (promo)',                    padraoFixa: 0.49,  padraoPct: 0.0299, padraoDesc: 'R$ 0,49 + 2,99%' },
+    cartao_2a6:    { nome: 'Crédito 2x a 6x',          percentual: 0.0249,  fixa: 0.49,  desc: 'R$ 0,49 + 2,49% (promo)',                    padraoFixa: 0.49,  padraoPct: 0.0349, padraoDesc: 'R$ 0,49 + 3,49%' },
+    cartao_7a12:   { nome: 'Crédito 7x a 12x',         percentual: 0.0299,  fixa: 0.49,  desc: 'R$ 0,49 + 2,99% (promo)',                    padraoFixa: 0.49,  padraoPct: 0.0399, padraoDesc: 'R$ 0,49 + 3,99%' },
+    cartao_13a21:  { nome: 'Crédito 13x a 21x',        percentual: 0.0329,  fixa: 0.49,  desc: 'R$ 0,49 + 3,29% (promo)',                    padraoFixa: 0.49,  padraoPct: 0.0429, padraoDesc: 'R$ 0,49 + 4,29%' },
   };
 
   const metodoSelecionado = taxasAsaas[billingType] || { percentual: 0, fixa: 0, nome: '—', desc: 'Selecione' };
   const taxaAsaasEstimada = valorDigitado * metodoSelecionado.percentual + metodoSelecionado.fixa;
+  const taxaPadraoEstimada = metodoSelecionado.padraoFixa !== undefined
+    ? valorDigitado * metodoSelecionado.padraoPct + metodoSelecionado.padraoFixa
+    : null;
   const valorAposAsaas = Math.max(0, valorDigitado - taxaAsaasEstimada);
+  const valorAposAsaasPadrao = taxaPadraoEstimada !== null ? Math.max(0, valorDigitado - taxaPadraoEstimada) : null;
   const comissaoPrumo = valorAposAsaas * 0.10;
+  const comissaoPrumoPadrao = valorAposAsaasPadrao !== null ? valorAposAsaasPadrao * 0.10 : null;
   const valorLiquidoConsultor = valorAposAsaas - comissaoPrumo;
+  const valorLiquidoConsultorPadrao = comissaoPrumoPadrao !== null ? valorAposAsaasPadrao - comissaoPrumoPadrao : null;
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
@@ -523,11 +533,22 @@ export default function ConsultantPayments() {
                   className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   <option value="">Cliente escolhe no link</option>
-                  <option value="pix">PIX (R$ 0,99)</option>
-                  <option value="boleto">Boleto (R$ 0,99)</option>
-                  <option value="cartao">Cartão de Crédito à vista (R$ 0,49 + 1,99%)</option>
-                  <option value="debito">Cartão de Débito (R$ 0,35 + 1,89%)</option>
+                  <optgroup label="── À vista ──">
+                    <option value="pix">PIX — R$ 0,99</option>
+                    <option value="boleto">Boleto — R$ 0,99</option>
+                    <option value="debito">Cartão de Débito — R$ 0,35 + 1,89%</option>
+                    <option value="cartao_vista">Crédito à vista — R$ 0,49 + 1,99%</option>
+                  </optgroup>
+                  <optgroup label="── Crédito parcelado ──">
+                    <option value="cartao_2a6">Crédito 2x a 6x — R$ 0,49 + 2,49%</option>
+                    <option value="cartao_7a12">Crédito 7x a 12x — R$ 0,49 + 2,99%</option>
+                    <option value="cartao_13a21">Crédito 13x a 21x — R$ 0,49 + 3,29%</option>
+                  </optgroup>
                 </select>
+                <p className="text-[10px] text-amber-600 mt-1 flex items-center gap-1">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  Taxas promocionais válidas até 19/09/2026 — após isso, as taxas padrão se aplicam.
+                </p>
               </div>
 
               {/* Prévia de valores */}
@@ -551,10 +572,20 @@ export default function ConsultantPayments() {
                         <ArrowDown className="w-3 h-3 text-slate-300" />
                       </div>
 
-                      {/* Taxa Asaas */}
-                      <div className="flex justify-between items-center py-1.5 px-3 bg-red-50/50 rounded-lg border border-red-100">
-                        <span className="text-red-600">Taxa Asaas ({metodoSelecionado.desc})</span>
-                        <span className="font-semibold text-red-600">-{taxaAsaasEstimada.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                      {/* Taxa Asaas — Promocional */}
+                      <div className="flex justify-between items-center py-1.5 px-3 bg-amber-50/80 rounded-lg border border-amber-100">
+                        <div className="flex flex-col">
+                          <span className="text-amber-700 text-[11px]">Taxa Asaas {metodoSelecionado.desc}</span>
+                          {taxaPadraoEstimada !== null && (
+                            <span className="text-[9px] text-amber-400">Após 19/09: {metodoSelecionado.padraoDesc}</span>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <span className="font-semibold text-amber-700">-{taxaAsaasEstimada.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                          {taxaPadraoEstimada !== null && (
+                            <div className="text-[9px] text-amber-400 line-through">-{taxaPadraoEstimada.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
+                          )}
+                        </div>
                       </div>
 
                       {/* Comissão PRUMO */}
@@ -572,12 +603,17 @@ export default function ConsultantPayments() {
 
                       {/* Valor líquido */}
                       <div className="flex justify-between items-center py-2 px-3 bg-emerald-50 rounded-lg border border-emerald-200">
-                        <span className="text-emerald-800 font-semibold text-sm">Você recebe</span>
+                        <div className="flex flex-col">
+                          <span className="text-emerald-800 font-semibold text-sm">Você recebe</span>
+                          {valorLiquidoConsultorPadrao !== null && (
+                            <span className="text-[9px] text-emerald-500">Após 19/09: {valorLiquidoConsultorPadrao.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                          )}
+                        </div>
                         <span className="font-bold text-emerald-700 text-base">{valorLiquidoConsultor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                       </div>
 
                       <p className="text-[10px] text-slate-400 text-center">
-                        Taxas do Asaas são estimadas — os valores finais podem variar conforme o contrato da sua subconta.
+                        Simulação com taxas promocionais. Os valores reais podem variar conforme o contrato da sua subconta.
                       </p>
                     </div>
                   </CardContent>
@@ -646,8 +682,13 @@ export default function ConsultantPayments() {
                 <p className="text-[9px] text-red-500 mt-0.5">Taxa por transação</p>
                 <p className="text-[10px] font-bold text-red-600 mt-1">Boleto R$ 0,99</p>
                 <p className="text-[10px] font-bold text-red-600">PIX R$ 0,99</p>
-                <p className="text-[10px] font-bold text-red-600">Crédito R$ 0,49+1,99%</p>
-                <p className="text-[10px] font-bold text-red-600">Débito R$ 0,35+1,89%</p>
+                <p className="text-[10px] font-bold text-red-600">Débito 0,35+1,89%</p>
+                <p className="text-[9px] text-red-400 mt-1 leading-tight">Crédito:</p>
+                <p className="text-[9px] font-bold text-red-500">À vista 0,49+1,99%</p>
+                <p className="text-[9px] font-bold text-red-500">2-6x 0,49+2,49%</p>
+                <p className="text-[9px] font-bold text-red-500">7-12x 0,49+2,99%</p>
+                <p className="text-[9px] font-bold text-red-500">13-21x 0,49+3,29%</p>
+                <p className="text-[8px] text-red-300 mt-0.5">Promo até 19/09/2026</p>
               </div>
 
               {/* PRUMO */}

@@ -254,9 +254,10 @@ export default function ConsultantPayments() {
   const billingType = form.billingType;
 
   const taxasAsaas = {
-    pix:    { nome: 'PIX',      percentual: 0.0099, fixa: 0,    desc: '0,99%' },
-    boleto: { nome: 'Boleto',   percentual: 0,      fixa: 3.49, desc: 'R$ 3,49 fixo' },
-    cartao: { nome: 'Cartão',   percentual: 0.0399, fixa: 0,    desc: '3,99%' },
+    pix:     { nome: 'PIX',               percentual: 0,      fixa: 0.99,  desc: 'R$ 0,99 fixo (promo)' },
+    boleto:  { nome: 'Boleto',            percentual: 0,      fixa: 0.99,  desc: 'R$ 0,99 fixo (promo)' },
+    cartao:  { nome: 'Cartão de Crédito', percentual: 0.0199, fixa: 0.49,  desc: 'R$ 0,49 + 1,99% (promo)' },
+    debito:  { nome: 'Cartão de Débito',  percentual: 0.0189, fixa: 0.35,  desc: 'R$ 0,35 + 1,89%' },
   };
 
   const metodoSelecionado = taxasAsaas[billingType] || { percentual: 0, fixa: 0, nome: '—', desc: 'Selecione' };
@@ -522,9 +523,10 @@ export default function ConsultantPayments() {
                   className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   <option value="">Cliente escolhe no link</option>
-                  <option value="pix">PIX (0,99% Asaas)</option>
-                  <option value="boleto">Boleto (R$ 3,49 Asaas)</option>
-                  <option value="cartao">Cartão de Crédito (3,99% Asaas)</option>
+                  <option value="pix">PIX (R$ 0,99)</option>
+                  <option value="boleto">Boleto (R$ 0,99)</option>
+                  <option value="cartao">Cartão de Crédito à vista (R$ 0,49 + 1,99%)</option>
+                  <option value="debito">Cartão de Débito (R$ 0,35 + 1,89%)</option>
                 </select>
               </div>
 
@@ -642,9 +644,10 @@ export default function ConsultantPayments() {
                 </div>
                 <p className="text-[10px] font-semibold text-red-700">Asaas</p>
                 <p className="text-[9px] text-red-500 mt-0.5">Taxa por transação</p>
-                <p className="text-[10px] font-bold text-red-600 mt-1">Boleto ~R$3,49</p>
-                <p className="text-[10px] font-bold text-red-600">PIX ~0,99%</p>
-                <p className="text-[10px] font-bold text-red-600">Cartão ~3,99%</p>
+                <p className="text-[10px] font-bold text-red-600 mt-1">Boleto R$ 0,99</p>
+                <p className="text-[10px] font-bold text-red-600">PIX R$ 0,99</p>
+                <p className="text-[10px] font-bold text-red-600">Crédito R$ 0,49+1,99%</p>
+                <p className="text-[10px] font-bold text-red-600">Débito R$ 0,35+1,89%</p>
               </div>
 
               {/* PRUMO */}
@@ -665,7 +668,7 @@ export default function ConsultantPayments() {
                 </div>
                 <p className="text-[10px] font-semibold text-emerald-700">Você</p>
                 <p className="text-[9px] text-emerald-500 mt-0.5">Recebimento líquido</p>
-                <p className="text-[10px] font-bold text-emerald-600 mt-1">~87% a 97%</p>
+                <p className="text-[10px] font-bold text-emerald-600 mt-1">~88% a 89%</p>
                 <p className="text-[9px] text-emerald-500">do valor cobrado</p>
               </div>
             </div>

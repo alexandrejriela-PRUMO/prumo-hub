@@ -27,8 +27,9 @@ Deno.serve(async (req) => {
     }
 
     const subaccount = metas[0];
+    const subaccountApiKey = subaccount.asaas_subaccount_api_key || masterApiKey;
 
-    // Buscar walletId do PRUMO (master account)
+    // Buscar walletId do PRUMO (master account) para split
     let prumoWalletIdActual = null;
     try {
       const walletRes = await fetch('https://api-sandbox.asaas.com/v3/wallet', {
@@ -42,26 +43,19 @@ Deno.serve(async (req) => {
       console.warn('[createConsultantCheckout] Não foi possível obter walletId do PRUMO:', e.message);
     }
 
+    // API Asaas v3: billingType (singular, string), chargeType (singular)
     const checkoutPayload = {
-      accountId: subaccount.asaas_subaccount_id,
+      billingType: (billingType && billingType !== 'UNDEFINED' && billingType !== '') ? billingType : 'UNDEFINED',
       chargeType: 'DETACHED',
       name: description,
       description: `Serviço prestado por: ${user.full_name || user.email}`,
       value,
+      dueDateLimitDays: 5,
       externalReference: `consultant_${user.email}_${Date.now()}`,
       notification: {
         email: clientEmail || user.email,
       },
-      callback: {
-        successUrl: `https://hub.prumo.site/CompraConfirmada?consultant=${user.email}`,
-        cancelUrl: 'https://hub.prumo.site/',
-      },
     };
-
-    // billingTypes é opcional segundo a API v3
-    if (billingType && billingType !== 'UNDEFINED' && billingType !== '') {
-      checkoutPayload.billingTypes = [billingType];
-    }
 
     // Adicionar split se tivermos o walletId do PRUMO
     if (prumoWalletIdActual && prumoWalletIdActual !== subaccount.asaas_wallet_id) {
@@ -71,14 +65,14 @@ Deno.serve(async (req) => {
       }];
     }
 
-    console.log('[createConsultantCheckout] Criando checkout na subconta:', subaccount.asaas_subaccount_id);
+    console.log('[createConsultantCheckout] Criando paymentLink na subconta:', subaccount.asaas_subaccount_id);
     console.log('[createConsultantCheckout] Payload:', JSON.stringify(checkoutPayload));
 
-    // Usar a API key MASTER com accountId para criar na subconta
+    // Usar a chave da subconta para criar o link de pagamento
     const response = await fetch('https://api-sandbox.asaas.com/v3/paymentLinks', {
       method: 'POST',
       headers: {
-        'access_token': masterApiKey,
+        'access_token': subaccountApiKey,
         'User-Agent': 'PRUMOHub/1.0.0',
         'accept': 'application/json',
         'content-type': 'application/json',
@@ -97,9 +91,9 @@ Deno.serve(async (req) => {
       return Response.json({ error: errorMsg }, { status: 400 });
     }
 
-    // O Asaas retorna { url: "..." } para paymentLinks
+    // Montar URL do checkout
     const checkoutUrl = data.url || `https://sandbox.asaas.com/c/${data.id}`;
-    console.log(`[createConsultantCheckout] Checkout criado: ${data.id} → ${checkoutUrl}`);
+    console.log(`[createConsultantCheckout] PaymentLink criado: ${data.id} → ${checkoutUrl}`);
 
     return Response.json({
       success: true,

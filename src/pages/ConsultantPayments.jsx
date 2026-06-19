@@ -800,9 +800,35 @@ export default function ConsultantPayments() {
                 )}
                 {transferring ? 'Solicitando...' : 'Transferir via PIX'}
               </Button>
-              <p className="text-[10px] text-gray-400 mt-1.5">
-                A transferência via PIX é processada pelo Asaas e o valor cai na conta destino em até 1 hora.
-              </p>
+              <div className="mt-3 p-3 bg-amber-50/80 rounded-lg border border-amber-100 space-y-2 text-[11px] text-amber-800">
+                <p className="font-semibold flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5" /> Prazos de resgate
+                </p>
+                <ul className="space-y-1.5">
+                  <li className="flex items-start gap-1.5">
+                    <span className="mt-0.5 w-3.5 h-3.5 rounded-full bg-emerald-200 flex items-center justify-center flex-shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                    </span>
+                    <span><strong>PIX imediato:</strong> cai na conta destino em minutos. Liquidação em tempo real pelo Asaas.</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <span className="mt-0.5 w-3.5 h-3.5 rounded-full bg-amber-200 flex items-center justify-center flex-shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
+                    </span>
+                    <span><strong>Agendado:</strong> se informar uma data futura, o valor só é transferido na data escolhida (dias úteis).</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <span className="mt-0.5 w-3.5 h-3.5 rounded-full bg-red-200 flex items-center justify-center flex-shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
+                    </span>
+                    <span><strong>TED:</strong> somente quando a conta destino não aceita PIX — aí leva até 1 dia útil.</span>
+                  </li>
+                </ul>
+                <p className="text-[10px] text-amber-600 mt-1">
+                  Após solicitar, a transferência aparece como "PENDENTE" e em minutos muda para "CONCLUÍDA". 
+                  O extrato abaixo reflete todas as movimentações.
+                </p>
+              </div>
             </div>
 
             {/* Extrato */}

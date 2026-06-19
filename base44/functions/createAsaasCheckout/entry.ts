@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
 
     const checkoutPayload = {
       billingTypes: ['CREDIT_CARD'],
-      chargeTypes: ['RECURRENT'],
+      chargeType: 'RECURRENT',
       externalReference,
       callback: {
         successUrl: `https://hub.prumo.site/CompraConfirmada?offer=${plan.externalRef}&external_ref=${externalReference}`,

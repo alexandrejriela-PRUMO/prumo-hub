@@ -66,6 +66,24 @@ Deno.serve(async (req) => {
 
     const apiKey = Deno.env.get('ASAAS_API_KEY');
 
+    // Atualizar ConsultorCharge se a cobrança for de um paymentLink de consultor
+    try {
+      const paymentLinkId = payment.paymentLink;
+      if (paymentLinkId) {
+        const base44ForCharge = createClientFromRequest(req);
+        const charges = await base44ForCharge.asServiceRole.entities.ConsultorCharge.filter({ stripe_payment_intent_id: paymentLinkId });
+        if (charges?.length > 0) {
+          await base44ForCharge.asServiceRole.entities.ConsultorCharge.update(charges[0].id, {
+            status: 'Pago',
+            paid_at: new Date().toISOString().split('T')[0],
+          });
+          console.log(`[webhookAsaas] ConsultorCharge ${charges[0].id} atualizado para Pago (link: ${paymentLinkId})`);
+        }
+      }
+    } catch (chargeErr) {
+      console.warn('[webhookAsaas] Erro ao atualizar ConsultorCharge:', chargeErr.message);
+    }
+
     // O externalReference do checkout NÃO vem no payment — buscar via checkoutSession
     let externalRef = payment.externalReference;
     if (!externalRef && payment.checkoutSession) {

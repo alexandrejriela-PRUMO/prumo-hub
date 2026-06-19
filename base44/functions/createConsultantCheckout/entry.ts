@@ -84,6 +84,27 @@ Deno.serve(async (req) => {
     const checkoutUrl = data.url || `https://sandbox.asaas.com/c/${data.id}`;
     console.log(`[createConsultantCheckout] PaymentLink criado: ${data.id} → ${checkoutUrl}`);
 
+    // Salvar cobrança no histórico (ConsultorCharge)
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 5);
+    try {
+      await base44.entities.ConsultorCharge.create({
+        consultor_email: user.email,
+        client_email: clientEmail || '',
+        client_name: clientName,
+        description,
+        amount: value,
+        due_date: dueDate.toISOString().split('T')[0],
+        status: 'Pendente',
+        stripe_payment_intent_id: data.id,
+        stripe_payment_url: checkoutUrl,
+        notes: `Asaas PaymentLink: ${data.id}`,
+      });
+      console.log('[createConsultantCheckout] ConsultorCharge salvo');
+    } catch (chargeErr) {
+      console.warn('[createConsultantCheckout] Erro ao salvar ConsultorCharge:', chargeErr.message);
+    }
+
     return Response.json({
       success: true,
       checkoutUrl,

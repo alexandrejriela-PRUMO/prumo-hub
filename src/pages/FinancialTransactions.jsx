@@ -52,7 +52,11 @@ export default function FinancialTransactions() {
 
   useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);
 
-  const charges = [];
+  const { data: consultorCharges = [] } = useQuery({
+    queryKey: ['fin-charges', user?.email],
+    queryFn: () => base44.entities.ConsultorCharge.filter({ consultor_email: user.email }, '-created_date', 200),
+    enabled: !!user?.email,
+  });
   const { data: manualEntries = [] } = useQuery({
     queryKey: ['fin-manual', user?.email],
     queryFn: () => base44.entities.Expense.filter({ consultor_email: user.email }, '-date', 500),
@@ -85,6 +89,30 @@ export default function FinancialTransactions() {
   const allTransactions = useMemo(() => {
     const txns = [];
 
+    // Cobranças do gateway (ConsultorCharge)
+    consultorCharges.forEach(c => {
+      txns.push({
+        id: `charge-${c.id}`,
+        type: 'receita',
+        source: 'Gateway PRUMO',
+        sourceIcon: 'gateway',
+        description: c.description || 'Cobrança',
+        client: c.client_name || null,
+        amount: c.amount || 0,
+        date: c.paid_at || c.due_date || c.created_date?.substring(0, 10),
+        competencia: (c.paid_at || c.due_date || c.created_date)?.substring(0, 7),
+        status: c.status === 'Pago' ? 'Pago' : c.status === 'Vencido' ? 'Vencido' : c.status === 'Cancelado' ? 'Cancelado' : 'Pendente',
+        payment_method: c.stripe_payment_url ? 'Link Asaas' : null,
+        accountLabel: 'Gateway PRUMO',
+        accountId: null,
+        propertyId: null,
+        propertyName: null,
+        editable: false,
+        raw: c,
+        isInstallment: false,
+      });
+    });
+
     // Todas as entradas manuais (Expense) — incluindo parcelamentos registrados
     manualEntries.forEach(e => {
       const acc = e.account_id ? accountMap[e.account_id] : null;
@@ -116,7 +144,7 @@ export default function FinancialTransactions() {
     });
 
     return txns;
-  }, [charges, manualEntries, propertyMap, accountMap]);
+  }, [consultorCharges, manualEntries, propertyMap, accountMap]);
 
   // Clientes: todos os cadastrados (via Property) + os que aparecem nas transações
   const clients = useMemo(() => {

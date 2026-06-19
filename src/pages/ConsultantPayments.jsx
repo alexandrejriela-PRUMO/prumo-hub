@@ -6,8 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Link, ExternalLink, CreditCard, Plus, Copy, Check, Wallet, Building, Link2, UserPlus, Users } from 'lucide-react';
+import { Link, ExternalLink, CreditCard, Plus, Copy, Check, Wallet, Building, Link2, UserPlus, Users, Clock, History, ArrowLeftRight, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
+import { format, parseISO, isValid } from 'date-fns';
+import { createPageUrl } from '../utils';
 
 export default function ConsultantPayments() {
   const [meta, setMeta] = useState(null);
@@ -42,12 +44,36 @@ export default function ConsultantPayments() {
   const [linkingSubaccount, setLinkingSubaccount] = useState(false);
   const [clients, setClients] = useState([]);
   const [selectedClientId, setSelectedClientId] = useState('');
+  const [charges, setCharges] = useState([]);
+  const [chargesLoading, setChargesLoading] = useState(false);
+  const [chargeFilter, setChargeFilter] = useState('todos');
 
   useEffect(() => {
     loadMeta();
     loadUser();
     loadClients();
   }, []);
+
+  useEffect(() => {
+    if (hasSubaccount) loadCharges();
+  }, [meta]);
+
+  const loadCharges = async () => {
+    setChargesLoading(true);
+    try {
+      const user = await base44.auth.me();
+      const result = await base44.entities.ConsultorCharge.filter(
+        { consultor_email: user.email },
+        '-created_date',
+        100
+      );
+      setCharges(result || []);
+    } catch (e) {
+      console.error('Erro ao carregar histórico:', e);
+    } finally {
+      setChargesLoading(false);
+    }
+  };
 
   const loadClients = async () => {
     try {
@@ -194,6 +220,7 @@ export default function ConsultantPayments() {
       } else if (res.data?.checkoutUrl) {
         setCheckoutUrl(res.data.checkoutUrl);
         toast.success('Link de pagamento criado!');
+        loadCharges();
       } else {
         toast.error('Resposta inesperada do servidor');
       }
@@ -530,6 +557,127 @@ export default function ConsultantPayments() {
                 </p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Histórico de Cobranças */}
+      {hasSubaccount && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <History className="w-5 h-5 text-emerald-600" />
+                Histórico de Cobranças
+              </CardTitle>
+              <Link to={createPageUrl('FinancialTransactions')} className="text-xs text-emerald-600 hover:text-emerald-800 flex items-center gap-1">
+                <ArrowLeftRight className="w-3 h-3" /> Transações Consolidadas
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-2 flex-wrap">
+              {['todos','Pendente','Pago','Vencido','Cancelado'].map(f => (
+                <Button
+                  key={f}
+                  variant={chargeFilter === f ? 'default' : 'outline'}
+                  size="sm"
+                  className={chargeFilter === f ? 'bg-emerald-600 hover:bg-emerald-700' : ''}
+                  onClick={() => setChargeFilter(f)}
+                >
+                  {f === 'todos' ? 'Todos' : f}
+                  {f !== 'todos' && (
+                    <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-white/20 text-[10px]">
+                      {charges.filter(c => c.status === f).length}
+                    </span>
+                  )}
+                </Button>
+              ))}
+            </div>
+
+            {chargesLoading ? (
+              <div className="text-center py-8">
+                <div className="w-6 h-6 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mx-auto" />
+              </div>
+            ) : (() => {
+              const filtered = chargeFilter === 'todos' ? charges : charges.filter(c => c.status === chargeFilter);
+              if (filtered.length === 0) {
+                return (
+                  <div className="text-center py-8 text-gray-400">
+                    <Clock className="w-10 h-10 mx-auto mb-2 opacity-20" />
+                    <p className="text-sm">Nenhuma cobrança {chargeFilter !== 'todos' ? chargeFilter.toLowerCase() : ''} encontrada.</p>
+                  </div>
+                );
+              }
+              return (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500">Cliente</th>
+                        <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500">Descrição</th>
+                        <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500">Valor</th>
+                        <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500 hidden sm:table-cell">Vencimento</th>
+                        <th className="text-center px-3 py-2 text-xs font-semibold text-gray-500">Status</th>
+                        <th className="px-3 py-2 w-10"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {filtered.map(c => {
+                        const statusColors = {
+                          'Pendente': 'bg-amber-100 text-amber-700',
+                          'Pago': 'bg-emerald-100 text-emerald-700',
+                          'Vencido': 'bg-red-100 text-red-700',
+                          'Cancelado': 'bg-gray-100 text-gray-500',
+                        };
+                        return (
+                          <tr key={c.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-3 py-2.5 text-sm text-gray-800">
+                              <div>{c.client_name}</div>
+                              {c.client_email && <div className="text-[10px] text-gray-400">{c.client_email}</div>}
+                            </td>
+                            <td className="px-3 py-2.5 text-xs text-gray-600 max-w-[140px] truncate">{c.description}</td>
+                            <td className="px-3 py-2.5 text-right font-semibold text-sm">
+                              {c.amount?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </td>
+                            <td className="px-3 py-2.5 text-xs text-gray-500 hidden sm:table-cell">
+                              {c.due_date ? format(parseISO(c.due_date), 'dd/MM/yyyy') : '—'}
+                            </td>
+                            <td className="px-3 py-2.5 text-center">
+                              <Badge className={`${statusColors[c.status] || 'bg-gray-100 text-gray-500'} border-0 text-[10px]`}>
+                                {c.status}
+                              </Badge>
+                              {c.status === 'Pago' && c.paid_at && (
+                                <div className="text-[9px] text-gray-400 mt-0.5">{format(parseISO(c.paid_at), 'dd/MM')}</div>
+                              )}
+                            </td>
+                            <td className="px-3 py-2.5">
+                              {c.stripe_payment_url && (
+                                <a href={c.stripe_payment_url} target="_blank" rel="noopener noreferrer"
+                                  className="p-1.5 hover:bg-gray-100 rounded-lg inline-flex" title="Abrir link">
+                                  <ExternalLink className="w-3.5 h-3.5 text-gray-400" />
+                                </a>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot className="bg-gray-50 border-t-2">
+                      <tr>
+                        <td colSpan={2} className="px-3 py-2 text-xs font-semibold text-gray-600">
+                          {filtered.length} cobrança{filtered.length !== 1 ? 's' : ''}
+                        </td>
+                        <td className="px-3 py-2 text-right text-sm font-bold text-emerald-700">
+                          {filtered.reduce((s, c) => s + (c.amount || 0), 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </td>
+                        <td className="hidden sm:table-cell" /><td /><td />
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
       )}

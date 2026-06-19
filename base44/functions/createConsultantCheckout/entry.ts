@@ -27,8 +27,6 @@ Deno.serve(async (req) => {
     }
 
     const subaccount = metas[0];
-    const subaccountApiKey = subaccount.asaas_subaccount_api_key || masterApiKey;
-    const prumoWalletId = subaccount.asaas_wallet_id ? null : null; // Precisamos do walletId do PRUMO
 
     // Buscar walletId do PRUMO (master account)
     let prumoWalletIdActual = null;
@@ -45,26 +43,25 @@ Deno.serve(async (req) => {
     }
 
     const checkoutPayload = {
-      billingTypes: billingType && billingType !== 'UNDEFINED' && billingType !== '' ? [billingType] : ['UNDEFINED'],
-      chargeTypes: ['DETACHED'],
+      accountId: subaccount.asaas_subaccount_id,
+      chargeType: 'DETACHED',
+      name: description,
+      description: `Serviço prestado por: ${user.full_name || user.email}`,
+      value,
       externalReference: `consultant_${user.email}_${Date.now()}`,
-      customerData: {
-        name: clientName,
-        email: clientEmail || undefined,
-        cpfCnpj: clientCpfCnpj || undefined,
+      notification: {
+        email: clientEmail || user.email,
       },
       callback: {
         successUrl: `https://hub.prumo.site/CompraConfirmada?consultant=${user.email}`,
         cancelUrl: 'https://hub.prumo.site/',
-        expiredUrl: 'https://hub.prumo.site/',
       },
-      items: [{
-        name: description,
-        description: `Serviço prestado por: ${user.full_name || user.email}`,
-        value,
-        quantity: 1,
-      }],
     };
+
+    // billingTypes é opcional segundo a API v3
+    if (billingType && billingType !== 'UNDEFINED' && billingType !== '') {
+      checkoutPayload.billingTypes = [billingType];
+    }
 
     // Adicionar split se tivermos o walletId do PRUMO
     if (prumoWalletIdActual && prumoWalletIdActual !== subaccount.asaas_wallet_id) {
@@ -75,14 +72,13 @@ Deno.serve(async (req) => {
     }
 
     console.log('[createConsultantCheckout] Criando checkout na subconta:', subaccount.asaas_subaccount_id);
+    console.log('[createConsultantCheckout] Payload:', JSON.stringify(checkoutPayload));
 
-    // Usar a API key da subconta para criar o checkout
-    const apiKeyToUse = subaccountApiKey;
-
-    const response = await fetch('https://api-sandbox.asaas.com/v3/checkouts', {
+    // Usar a API key MASTER com accountId para criar na subconta
+    const response = await fetch('https://api-sandbox.asaas.com/v3/paymentLinks', {
       method: 'POST',
       headers: {
-        'access_token': apiKeyToUse,
+        'access_token': masterApiKey,
         'User-Agent': 'PRUMOHub/1.0.0',
         'accept': 'application/json',
         'content-type': 'application/json',
@@ -91,16 +87,18 @@ Deno.serve(async (req) => {
     });
 
     const data = await response.json();
+    console.log('[createConsultantCheckout] Resposta Asaas:', response.status, JSON.stringify(data).substring(0, 500));
 
     if (!response.ok) {
-      console.error('[createConsultantCheckout] Erro Asaas:', JSON.stringify(data));
       const errorMsg = data.errors
         ? data.errors.map(e => e.description || e.message).join('; ')
         : data.message || 'Erro ao criar checkout';
+      console.error('[createConsultantCheckout] Erro Asaas:', errorMsg);
       return Response.json({ error: errorMsg }, { status: 400 });
     }
 
-    const checkoutUrl = `https://sandbox.asaas.com/checkoutSession/show?id=${data.id}`;
+    // O Asaas retorna { url: "..." } para paymentLinks
+    const checkoutUrl = data.url || `https://sandbox.asaas.com/c/${data.id}`;
     console.log(`[createConsultantCheckout] Checkout criado: ${data.id} → ${checkoutUrl}`);
 
     return Response.json({

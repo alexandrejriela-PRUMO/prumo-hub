@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: errorMsg }, { status: 400 });
     }
 
-    const checkoutUrl = data.url || `https://sandbox.asaas.com/c/${data.id}`;
+    const checkoutUrl = `https://sandbox.asaas.com/checkoutSession/show?id=${data.id}`;
     console.log(`[createAsaasCheckout] Checkout criado: ${data.id} → ${checkoutUrl}`);
     return Response.json({ checkoutUrl, id: data.id, externalReference });
   } catch (error) {

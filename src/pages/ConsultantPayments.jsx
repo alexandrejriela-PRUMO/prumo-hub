@@ -321,6 +321,38 @@ export default function ConsultantPayments() {
               )}
               {creatingSubaccount ? 'Ativando...' : 'Ativar Subconta'}
             </Button>
+
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-200" /></div>
+              <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-400">ou</span></div>
+            </div>
+
+            <div className="space-y-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <p className="text-xs text-gray-600 flex items-center gap-1">
+                <Link2 className="w-3 h-3" /> Já tem subconta Asaas?
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  value={manualSubaccountId}
+                  onChange={e => setManualSubaccountId(e.target.value)}
+                  placeholder="Cole o ID da subconta"
+                  className="text-xs h-9"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLinkSubaccount}
+                  disabled={linkingSubaccount || !manualSubaccountId.trim()}
+                  className="whitespace-nowrap h-9"
+                >
+                  {linkingSubaccount ? 'Vinculando...' : 'Vincular'}
+                </Button>
+              </div>
+              <p className="text-[10px] text-gray-400">
+                Encontre o ID no painel do Asaas em Minha Conta → Dados Cadastrais
+              </p>
+            </div>
           </CardContent>
         </Card>
       ) : (

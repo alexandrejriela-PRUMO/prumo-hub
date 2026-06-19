@@ -22,7 +22,6 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Campos obrigatórios: name, email, cpfCnpj' }, { status: 400 });
     }
 
-    // Verificar se já existe subconta
     const metas = await base44.entities.UserMetadata.filter({ user_email: email });
     if (metas?.length > 0 && metas[0].asaas_subaccount_id) {
       return Response.json({
@@ -46,30 +45,24 @@ Deno.serve(async (req) => {
       complement: complement || undefined,
       province: province || undefined,
       incomeValue: income || 5000,
-      webhooks: [
-        {
-          name: 'PRUMO Hub - Cobranças',
-          url: 'https://hub.prumo.site/api/functions/webhookAsaas',
-          email,
-          sendType: 'SEQUENTIALLY',
-          interrupted: false,
-          enabled: true,
-          apiVersion: 3,
-          authToken: Deno.env.get('ASAAS_WEBHOOK_TOKEN') || '',
-          events: [
-            'PAYMENT_CREATED',
-            'PAYMENT_UPDATED',
-            'PAYMENT_CONFIRMED',
-            'PAYMENT_RECEIVED',
-            'PAYMENT_OVERDUE',
-            'PAYMENT_DELETED',
-            'PAYMENT_SPLIT_DIVERGENCE_BLOCK',
-          ],
-        },
-      ],
+      webhooks: [{
+        name: 'PRUMO Hub - Cobranças',
+        url: 'https://hub.prumo.site/api/functions/webhookAsaas',
+        email,
+        sendType: 'SEQUENTIALLY',
+        interrupted: false,
+        enabled: true,
+        apiVersion: 3,
+        authToken: Deno.env.get('ASAAS_WEBHOOK_TOKEN') || '',
+        events: [
+          'PAYMENT_CREATED', 'PAYMENT_UPDATED', 'PAYMENT_CONFIRMED',
+          'PAYMENT_RECEIVED', 'PAYMENT_OVERDUE', 'PAYMENT_DELETED',
+          'PAYMENT_SPLIT_DIVERGENCE_BLOCK',
+        ],
+      }],
     };
 
-    console.log('[createAsaasSubaccount] Criando subconta para:', email, JSON.stringify(subaccountPayload));
+    console.log('[createAsaasSubaccount] Criando subconta:', email);
 
     const response = await fetch('https://api-sandbox.asaas.com/v3/accounts', {
       method: 'POST',
@@ -85,7 +78,42 @@ Deno.serve(async (req) => {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('[createAsaasSubaccount] Erro Asaas:', JSON.stringify(data));
+      const errorDescriptions = data.errors?.map(e => e.description || '').join(' ') || data.message || '';
+      console.log('[createAsaasSubaccount] Erro Asaas:', errorDescriptions);
+
+      if (errorDescriptions.includes('já está em uso')) {
+        console.log('[createAsaasSubaccount] Buscando conta existente...');
+        const listRes = await fetch(
+          'https://api-sandbox.asaas.com/v3/accounts?limit=50',
+          { headers: { 'access_token': apiKey, 'User-Agent': 'PRUMOHub/1.0.0', 'accept': 'application/json' } }
+        );
+        const listData = await listRes.json();
+        const match = listData.data?.find(acc => acc.email === email);
+
+        if (match) {
+          console.log(`[createAsaasSubaccount] Encontrada: ${match.id}`);
+          if (metas?.length > 0) {
+            await base44.entities.UserMetadata.update(metas[0].id, {
+              asaas_subaccount_id: match.id,
+              asaas_wallet_id: match.walletId,
+            });
+          } else {
+            await base44.entities.UserMetadata.create({
+              user_email: email,
+              user_id: user.id,
+              asaas_subaccount_id: match.id,
+              asaas_wallet_id: match.walletId,
+            });
+          }
+          return Response.json({
+            success: true,
+            already_exists: true,
+            subaccount_id: match.id,
+            wallet_id: match.walletId,
+          });
+        }
+      }
+
       const errorMsg = data.errors
         ? data.errors.map(e => e.description || e.message).join('; ')
         : data.message || 'Erro ao criar subconta';
@@ -96,9 +124,8 @@ Deno.serve(async (req) => {
     const walletId = data.walletId;
     const subaccountApiKey = data.apiKey;
 
-    console.log(`[createAsaasSubaccount] Subconta criada: ${subaccountId}, wallet: ${walletId}`);
+    console.log(`[createAsaasSubaccount] Criada: ${subaccountId}`);
 
-    // Salvar no UserMetadata
     if (metas?.length > 0) {
       await base44.entities.UserMetadata.update(metas[0].id, {
         asaas_subaccount_id: subaccountId,

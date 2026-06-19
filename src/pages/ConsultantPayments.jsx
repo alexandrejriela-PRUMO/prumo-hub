@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Link, ExternalLink, CreditCard, Plus, Copy, Check, Wallet, Building } from 'lucide-react';
+import { Link, ExternalLink, CreditCard, Plus, Copy, Check, Wallet, Building, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ConsultantPayments() {
@@ -38,6 +38,8 @@ export default function ConsultantPayments() {
     value: '',
     billingType: 'UNDEFINED',
   });
+  const [manualSubaccountId, setManualSubaccountId] = useState('');
+  const [linkingSubaccount, setLinkingSubaccount] = useState(false);
 
   useEffect(() => {
     loadMeta();
@@ -65,17 +67,14 @@ export default function ConsultantPayments() {
   };
 
   const handleCreateSubaccount = async () => {
-    window.alert('Botão clicado! Iniciando ativação...');
     console.log('[ConsultantPayments] handleCreateSubaccount chamado', { name: subaccountForm.name, cpfCnpj: subaccountForm.cpfCnpj });
     if (!subaccountForm.name || !subaccountForm.cpfCnpj) {
-      console.log('[ConsultantPayments] Validação falhou - nome ou CPF/CNPJ vazio');
       toast.error('Preencha nome e CPF/CNPJ para ativar sua subconta');
       return;
     }
     setCreatingSubaccount(true);
     try {
       const user = await base44.auth.me();
-      console.log('[ConsultantPayments] Criando subconta para:', user.email);
       const cpfCnpj = subaccountForm.cpfCnpj.replace(/\D/g, '');
       const payload = {
         name: subaccountForm.name,
@@ -107,6 +106,35 @@ export default function ConsultantPayments() {
       toast.error(e?.response?.data?.error || e?.message || 'Erro ao ativar subconta');
     } finally {
       setCreatingSubaccount(false);
+    }
+  };
+
+  const handleLinkSubaccount = async () => {
+    if (!manualSubaccountId.trim()) {
+      toast.error('Cole o ID da sua subconta Asaas');
+      return;
+    }
+    setLinkingSubaccount(true);
+    try {
+      const user = await base44.auth.me();
+      const metas = await base44.entities.UserMetadata.filter({ user_email: user.email });
+      if (metas?.length > 0) {
+        await base44.entities.UserMetadata.update(metas[0].id, {
+          asaas_subaccount_id: manualSubaccountId.trim(),
+        });
+      } else {
+        await base44.entities.UserMetadata.create({
+          user_email: user.email,
+          user_id: user.id,
+          asaas_subaccount_id: manualSubaccountId.trim(),
+        });
+      }
+      toast.success('Subconta vinculada com sucesso!');
+      await loadMeta();
+    } catch (e) {
+      toast.error('Erro ao vincular subconta: ' + (e?.message || 'Tente novamente'));
+    } finally {
+      setLinkingSubaccount(false);
     }
   };
 

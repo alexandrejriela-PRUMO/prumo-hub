@@ -533,11 +533,9 @@ export default function PropertyMapView() {
     const carsInMap = new Set(
       kmlLayers.filter(l => l.source === 'SICAR').map(l => normCarNum(l.car_number))
     );
-    const carsToLoad = carRecords.filter(
-      c => c.car_number && !carsInMap.has(normCarNum(c.car_number))
-    );
+    const carsToLoad = carRecords.filter(c => c.car_number);
     if (!carsToLoad.length) {
-      toast.info('Todos os CARs já possuem camadas SICAR no mapa.');
+      toast.info('Nenhum CAR cadastrado com número válido.');
       return;
     }
     setReloadingSICAR(true);

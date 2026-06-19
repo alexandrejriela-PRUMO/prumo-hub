@@ -65,6 +65,7 @@ export default function ConsultantPayments() {
   };
 
   const handleCreateSubaccount = async () => {
+    window.alert('Botão clicado! Iniciando ativação...');
     console.log('[ConsultantPayments] handleCreateSubaccount chamado', { name: subaccountForm.name, cpfCnpj: subaccountForm.cpfCnpj });
     if (!subaccountForm.name || !subaccountForm.cpfCnpj) {
       console.log('[ConsultantPayments] Validação falhou - nome ou CPF/CNPJ vazio');

@@ -48,6 +48,16 @@ export default function ConsultantPayments() {
   const [chargesLoading, setChargesLoading] = useState(false);
   const [chargeFilter, setChargeFilter] = useState('todos');
 
+  // ── Carteira / Saldo ──
+  const [walletBalance, setWalletBalance] = useState(null);
+  const [walletLoading, setWalletLoading] = useState(false);
+  const [pixForm, setPixForm] = useState({ value: '', pixKey: '', description: '' });
+  const [transferring, setTransferring] = useState(false);
+  const [statement, setStatement] = useState([]);
+  const [statementLoading, setStatementLoading] = useState(false);
+  const [statementPage, setStatementPage] = useState(0);
+  const [statementHasMore, setStatementHasMore] = useState(false);
+
   useEffect(() => {
     loadMeta();
     loadUser();
@@ -238,6 +248,56 @@ export default function ConsultantPayments() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  // ── Wallet / Carteira ──────────────────────────────
+  const loadBalance = async () => {
+    setWalletLoading(true);
+    try {
+      const res = await base44.functions.invoke('consultantWallet', { action: 'balance' });
+      if (res.data?.error) { toast.error(res.data.error); return; }
+      setWalletBalance(res.data?.balance ?? 0);
+    } catch (e) {
+      toast.error('Erro ao consultar saldo');
+    } finally { setWalletLoading(false); }
+  };
+
+  const loadStatement = async (page = 0) => {
+    setStatementLoading(true);
+    try {
+      const res = await base44.functions.invoke('consultantWallet', { action: 'statement', offset: page * 20, limit: 20 });
+      if (res.data?.error) { toast.error(res.data.error); return; }
+      setStatement(res.data?.data || []);
+      setStatementHasMore(res.data?.hasMore || false);
+      setStatementPage(page);
+    } catch (e) {
+      toast.error('Erro ao carregar extrato');
+    } finally { setStatementLoading(false); }
+  };
+
+  const handlePixTransfer = async () => {
+    if (!pixForm.value || parseFloat(pixForm.value) <= 0) { toast.error('Informe o valor'); return; }
+    if (!pixForm.pixKey.trim()) { toast.error('Informe a chave PIX de destino'); return; }
+    setTransferring(true);
+    try {
+      const res = await base44.functions.invoke('consultantWallet', {
+        action: 'transfer',
+        value: parseFloat(pixForm.value),
+        pixAddressKey: pixForm.pixKey.trim(),
+        description: pixForm.description || undefined,
+      });
+      if (res.data?.error) { toast.error(res.data.error); return; }
+      toast.success(`Transferência de ${parseFloat(pixForm.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} solicitada!`);
+      setPixForm({ value: '', pixKey: '', description: '' });
+      loadBalance();
+    } catch (e) {
+      toast.error('Erro ao solicitar transferência');
+    } finally { setTransferring(false); }
+  };
+
+  // Carrega saldo e extrato quando subconta ativa
+  useEffect(() => {
+    if (meta?.asaas_subaccount_id) { loadBalance(); loadStatement(); }
+  }, [meta?.asaas_subaccount_id]);
 
   if (loading) {
     return (
@@ -662,6 +722,161 @@ export default function ConsultantPayments() {
             </Card>
           )}
         </>
+      )}
+
+      {/* ── Carteira / Saldo ── */}
+      {hasSubaccount && (
+        <Card className="border-emerald-200 bg-gradient-to-br from-emerald-50/80 to-white">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-emerald-600" />
+              Sua Carteira
+            </CardTitle>
+            <CardDescription>Saldo disponível para saque, extrato e transferência via PIX</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Saldo */}
+            <div className="bg-white rounded-xl border border-emerald-100 p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 mb-0.5">Saldo disponível</p>
+                {walletLoading ? (
+                  <div className="w-6 h-6 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mt-1" />
+                ) : (
+                  <p className="text-2xl font-bold text-emerald-700">
+                    {(walletBalance ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </p>
+                )}
+              </div>
+              <Button variant="outline" size="sm" onClick={loadBalance} disabled={walletLoading} className="text-xs">
+                <TrendingUp className="w-3 h-3 mr-1" /> Atualizar
+              </Button>
+            </div>
+
+            {/* Transferência PIX */}
+            <div className="bg-white rounded-xl border border-amber-100 p-4">
+              <p className="text-sm font-semibold text-amber-800 mb-3 flex items-center gap-1.5">
+                <ArrowDown className="w-4 h-4" /> Sacar via PIX
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <Label className="text-xs">Valor (R$)</Label>
+                  <Input
+                    type="number" step="0.01"
+                    value={pixForm.value}
+                    onChange={e => setPixForm({ ...pixForm, value: e.target.value })}
+                    placeholder="500.00"
+                    className="h-9 text-sm"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <Label className="text-xs">Chave PIX de destino</Label>
+                  <Input
+                    value={pixForm.pixKey}
+                    onChange={e => setPixForm({ ...pixForm, pixKey: e.target.value })}
+                    placeholder="CPF, email, telefone ou chave aleatória"
+                    className="h-9 text-sm"
+                  />
+                </div>
+              </div>
+              <div className="mt-2">
+                <Label className="text-xs">Descrição (opcional)</Label>
+                <Input
+                  value={pixForm.description}
+                  onChange={e => setPixForm({ ...pixForm, description: e.target.value })}
+                  placeholder="Saque de honorários"
+                  className="h-9 text-sm"
+                />
+              </div>
+              <Button
+                onClick={handlePixTransfer}
+                disabled={transferring}
+                className="w-full mt-3 bg-amber-600 hover:bg-amber-700"
+                size="sm"
+              >
+                {transferring ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                ) : (
+                  <ArrowDown className="w-4 h-4 mr-2" />
+                )}
+                {transferring ? 'Solicitando...' : 'Transferir via PIX'}
+              </Button>
+              <p className="text-[10px] text-gray-400 mt-1.5">
+                A transferência via PIX é processada pelo Asaas e o valor cai na conta destino em até 1 hora.
+              </p>
+            </div>
+
+            {/* Extrato */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+                  <ArrowLeftRight className="w-4 h-4" /> Extrato
+                </p>
+                <Button variant="ghost" size="sm" onClick={() => loadStatement(0)} disabled={statementLoading} className="text-xs">
+                  <TrendingUp className="w-3 h-3 mr-1" /> Atualizar
+                </Button>
+              </div>
+
+              {statementLoading ? (
+                <div className="text-center py-6">
+                  <div className="w-6 h-6 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mx-auto" />
+                </div>
+              ) : statement.length === 0 ? (
+                <div className="text-center py-6 text-gray-400">
+                  <Clock className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                  <p className="text-xs">Nenhuma movimentação encontrada</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        <th className="text-left px-3 py-2 text-[10px] font-semibold text-gray-500">Data</th>
+                        <th className="text-left px-3 py-2 text-[10px] font-semibold text-gray-500">Descrição</th>
+                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-gray-500">Valor</th>
+                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-gray-500 hidden sm:table-cell">Taxa</th>
+                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-gray-500">Líquido</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {statement.map(tx => {
+                        const isCredit = tx.value >= 0;
+                        return (
+                          <tr key={tx.id} className="hover:bg-gray-50">
+                            <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
+                              {tx.date ? format(parseISO(tx.date), 'dd/MM/yy') : '—'}
+                            </td>
+                            <td className="px-3 py-2 text-gray-700 max-w-[180px] truncate">{tx.description || tx.type}</td>
+                            <td className={`px-3 py-2 text-right font-semibold whitespace-nowrap ${isCredit ? 'text-emerald-600' : 'text-red-500'}`}>
+                              {isCredit ? '+' : ''}{tx.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </td>
+                            <td className="px-3 py-2 text-right text-red-400 hidden sm:table-cell whitespace-nowrap">
+                              {tx.feeValue ? `-${tx.feeValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}` : '—'}
+                            </td>
+                            <td className="px-3 py-2 text-right font-medium text-gray-700 whitespace-nowrap">
+                              {tx.netValue != null ? tx.netValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  {statementHasMore && (
+                    <div className="flex justify-center mt-3 gap-2">
+                      {statementPage > 0 && (
+                        <Button variant="outline" size="sm" onClick={() => loadStatement(statementPage - 1)} className="text-xs">
+                          ← Anterior
+                        </Button>
+                      )}
+                      <Button variant="outline" size="sm" onClick={() => loadStatement(statementPage + 1)} className="text-xs">
+                        Próxima →
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Info sobre split */}

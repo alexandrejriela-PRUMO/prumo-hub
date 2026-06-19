@@ -36,7 +36,7 @@ export default function ConsultantPayments() {
     clientCpfCnpj: '',
     description: '',
     value: '',
-    billingType: 'UNDEFINED',
+    billingType: '',
   });
   const [manualSubaccountId, setManualSubaccountId] = useState('');
   const [linkingSubaccount, setLinkingSubaccount] = useState(false);
@@ -160,7 +160,8 @@ export default function ConsultantPayments() {
         toast.success('Link de pagamento criado!');
       }
     } catch (e) {
-      toast.error('Erro ao criar checkout');
+      console.error('[ConsultantPayments] Erro ao criar checkout:', e?.response?.data || e?.message || e);
+      toast.error('Erro ao criar checkout: ' + (e?.response?.data?.error || e?.message || 'Tente novamente'));
     } finally {
       setCreating(false);
     }

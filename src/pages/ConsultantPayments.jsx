@@ -55,7 +55,7 @@ export default function ConsultantPayments() {
   }, []);
 
   useEffect(() => {
-    if (hasSubaccount) loadCharges();
+    if (meta?.asaas_subaccount_id) loadCharges();
   }, [meta]);
 
   const loadCharges = async () => {

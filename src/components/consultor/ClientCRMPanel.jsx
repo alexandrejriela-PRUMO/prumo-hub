@@ -51,7 +51,7 @@ export default function ClientCRMPanel({ property, onClose }) {
   const [editingInteraction, setEditingInteraction] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
   const [editingServiceIndex, setEditingServiceIndex] = useState(null);
-  const [newInteraction, setNewInteraction] = useState({ type: 'Ligação', title: '', description: '', next_action: '', next_action_date: '', responsible_email: '', responsible_name: '' });
+  const [newInteraction, setNewInteraction] = useState({ type: 'Ligação', title: '', description: '', next_action: '', next_action_date: '', responsible_email: '', responsible_name: '', meeting_datetime: '', request_confirmation: false, confirmation_channel: 'whatsapp' });
   const [newTask, setNewTask] = useState({ title: '', due_date: '', priority: 'Média', responsible_email: '', responsible_name: '' });
   const [newService, setNewService] = useState({ name: '', status: 'Em Proposta', value: '', notes: '', payment_type: 'avista', payment_method: 'Pix', installments: '', start_date: '', due_dates: [], installments_data: [], received: false, received_at: '', account_id: '', account_name: '' });
 
@@ -148,10 +148,10 @@ export default function ClientCRMPanel({ property, onClose }) {
     if (!newInteraction.title) { toast.error('Informe o título da interação.'); return; }
     const interactions = editingInteraction
       ? (activeCRM?.interactions || []).map(i => i.id === editingInteraction.id ? { ...i, ...newInteraction } : i)
-      : [...(activeCRM?.interactions || []), { id: Date.now().toString(), date: new Date().toISOString(), ...newInteraction, created_by: crmConsultorEmail }];
+      : [...(activeCRM?.interactions || []), { id: Date.now().toString(), date: new Date().toISOString(), ...newInteraction, created_by: crmConsultorEmail, confirmation_token: newInteraction.request_confirmation?(Date.now().toString(36)+Math.random().toString(36).slice(2,10)):null, confirmation_status: newInteraction.request_confirmation?'pending':null }];
     updateCRM.mutate({ interactions });
     if (!editingInteraction && newInteraction.responsible_email) notifyAssignment(newInteraction.responsible_email, newInteraction.responsible_name, 'interaction', newInteraction.title);
-    setNewInteraction({ type: 'Ligação', title: '', description: '', next_action: '', next_action_date: '', responsible_email: '', responsible_name: '' });
+    setNewInteraction({ type: 'Ligação', title: '', description: '', next_action: '', next_action_date: '', responsible_email: '', responsible_name: '', meeting_datetime: '', request_confirmation: false, confirmation_channel: 'whatsapp' });
     setShowInteractionForm(false); setEditingInteraction(null);
     toast.success(editingInteraction ? 'Interação atualizada!' : 'Interação registrada!');
   };
@@ -163,7 +163,7 @@ export default function ClientCRMPanel({ property, onClose }) {
 
   const startEditInteraction = (interaction) => {
     setEditingInteraction(interaction);
-    setNewInteraction({ type: interaction.type, title: interaction.title, description: interaction.description || '', next_action: interaction.next_action || '', next_action_date: interaction.next_action_date || '', responsible_email: interaction.responsible_email || '', responsible_name: interaction.responsible_name || '' });
+    setNewInteraction({ type: interaction.type, title: interaction.title, description: interaction.description || '', next_action: interaction.next_action || '', next_action_date: interaction.next_action_date || '', responsible_email: interaction.responsible_email || '', responsible_name: interaction.responsible_name || '', meeting_datetime: interaction.meeting_datetime || '', request_confirmation: interaction.request_confirmation || false, confirmation_channel: interaction.confirmation_channel || 'whatsapp' });
     setShowInteractionForm(true);
   };
 
@@ -395,7 +395,7 @@ export default function ClientCRMPanel({ property, onClose }) {
 
         {/* ── Interações ── */}
         <TabsContent value="interactions" className="space-y-3 mt-4">
-          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto" onClick={() => { setEditingInteraction(null); setNewInteraction({ type: 'Ligação', title: '', description: '', next_action: '', next_action_date: '', responsible_email: '', responsible_name: '' }); setShowInteractionForm(true); }}>
+          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto" onClick={() => { setEditingInteraction(null); setNewInteraction({ type: 'Ligação', title: '', description: '', next_action: '', next_action_date: '', responsible_email: '', responsible_name: '', meeting_datetime: '', request_confirmation: false, confirmation_channel: 'whatsapp' }); setShowInteractionForm(true); }}>
             <Plus className="w-3 h-3 mr-1" /> Nova Interação
           </Button>
 
@@ -430,7 +430,8 @@ export default function ClientCRMPanel({ property, onClose }) {
                     <Input className="h-9 text-sm" type="date" value={newInteraction.next_action_date} onChange={e => setNewInteraction(p => ({ ...p, next_action_date: e.target.value }))} />
                   </div>
                 </div>
-                {assignableMembers.length > 0 && (
+                {(newInteraction.type==='Reunião'||newInteraction.type==='Visita')&&(<div className="border border-blue-200 bg-blue-50 rounded-lg p-3"><div><Label className="text-xs text-blue-800 mb-1 block">Data/Hora Encontro</Label><Input className="h-9 text-sm" type="datetime-local" value={newInteraction.meeting_datetime} onChange={e=>setNewInteraction(p=>({...p,meeting_datetime:e.target.value}))}/></div><label className="flex items-center gap-2 text-xs text-blue-800 mt-2"><input type="checkbox" checked={newInteraction.request_confirmation} onChange={e=>setNewInteraction(p=>({...p,request_confirmation:e.target.checked}))}/>Solicitar confirmacao</label>{newInteraction.request_confirmation&&(<Select value={newInteraction.confirmation_channel} onValueChange={v=>setNewInteraction(p=>({...p,confirmation_channel:v}))}><SelectTrigger className="h-8 text-xs mt-1"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="whatsapp">WhatsApp</SelectItem><SelectItem value="email">E-mail</SelectItem><SelectItem value="both">Whats+Email</SelectItem></SelectContent></Select>)}</div>)}
+{assignableMembers.length > 0 && (
                   <div>
                     <Label className="text-xs text-gray-600 mb-1 block flex items-center gap-1"><UserCheck className="w-3 h-3" /> Responsável</Label>
                     <Select value={newInteraction.responsible_email || ''} onValueChange={v => { const m = assignableMembers.find(m => m.member_email === v); setNewInteraction(p => ({ ...p, responsible_email: v || '', responsible_name: m?.member_name || v })); }}>
@@ -465,7 +466,7 @@ export default function ClientCRMPanel({ property, onClose }) {
                       <div className="flex flex-wrap items-start justify-between gap-1">
                         <span className="font-semibold text-sm text-gray-900 leading-snug">{interaction.title}</span>
                         <div className="flex items-center gap-1 flex-shrink-0">
-                          <Badge variant="outline" className="text-xs px-1.5 py-0">{interaction.type}</Badge>
+                          <Badge variant="outline" className="text-xs px-1.5 py-0">{interaction.type}</Badge>{interaction.confirmation_status&&<Badge className={interaction.confirmation_status==='confirmed'?'bg-green-100 text-green-700 text-xs px-1.5 py-0':interaction.confirmation_status==='declined'?'bg-red-100 text-red-700 text-xs px-1.5 py-0':'bg-amber-100 text-amber-700 text-xs px-1.5 py-0'}>{interaction.confirmation_status==='confirmed'?'Confirmado':interaction.confirmation_status==='declined'?'Recusou':'Aguardando'}</Badge>}
                           <button onClick={() => startEditInteraction(interaction)} className="p-1 hover:bg-blue-50 rounded text-blue-400 hover:text-blue-600"><Edit3 className="w-3.5 h-3.5" /></button>
                           <button onClick={() => syncToGoogleCalendar(interaction)} disabled={syncingInteractionId === interaction.id} className="p-1 hover:bg-emerald-50 rounded text-emerald-500 disabled:opacity-40">
                             {syncingInteractionId === interaction.id ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <Share2 className="w-3.5 h-3.5" />}
@@ -474,7 +475,7 @@ export default function ClientCRMPanel({ property, onClose }) {
                         </div>
                       </div>
                       {interaction.description && <p className="text-xs text-gray-500 mt-1 leading-relaxed">{interaction.description}</p>}
-                      {interaction.next_action && <p className="text-xs text-amber-600 mt-1.5 bg-amber-50 px-2 py-1 rounded-md inline-block">→ {interaction.next_action}{interaction.next_action_date && ` · ${interaction.next_action_date}`}</p>}
+                      {interaction.next_action && <p className="text-xs text-amber-600 mt-1.5 bg-amber-50 px-2 py-1 rounded-md inline-block">→ {interaction.next_action}{interaction.next_action_date && ` · ${interaction.next_action_date}`}</p>}{interaction.meeting_datetime&&<p className="text-xs text-blue-600 mt-1">Encontro: {new Date(interaction.meeting_datetime).toLocaleString('pt-BR')}</p>}
                       {interaction.responsible_name && <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1"><UserCheck className="w-3 h-3" /> {interaction.responsible_name}</p>}
                       <p className="text-xs text-gray-400 mt-1.5">{interaction.date ? format(new Date(interaction.date), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : ''}</p>
                       <CRMThread item={interaction} itemType="interaction" teamMembers={assignableMembers} currentUser={currentUser} onSaveThread={(thread) => saveInteractionThread(interaction.id, thread)} propertyId={crmId} clientName={property?.client_name} />

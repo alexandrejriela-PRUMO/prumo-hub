@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
     const {
       name, email, cpfCnpj, birthDate, companyType,
       phone, mobilePhone, postalCode, address, addressNumber,
-      complement, province
+      complement, province, income
     } = body || {};
 
     if (!name || !email || !cpfCnpj) {
@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
       email,
       cpfCnpj,
       birthDate: birthDate || undefined,
-      companyType: companyType || undefined,
+      companyType: companyType || (cpfCnpj.length > 11 ? 'LIMITED' : undefined),
       phone: phone || undefined,
       mobilePhone: mobilePhone || undefined,
       postalCode: postalCode || undefined,
@@ -45,6 +45,7 @@ Deno.serve(async (req) => {
       addressNumber: addressNumber || undefined,
       complement: complement || undefined,
       province: province || undefined,
+      incomeValue: income || 5000,
       webhooks: [
         {
           name: 'PRUMO Hub - Cobranças',

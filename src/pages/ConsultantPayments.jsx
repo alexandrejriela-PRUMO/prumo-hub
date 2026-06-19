@@ -20,6 +20,7 @@ export default function ConsultantPayments() {
     name: '',
     cpfCnpj: '',
     birthDate: '',
+    companyType: '',
     phone: '',
     mobilePhone: '',
     postalCode: '',
@@ -27,6 +28,7 @@ export default function ConsultantPayments() {
     addressNumber: '',
     complement: '',
     province: '',
+    income: '',
   });
   const [form, setForm] = useState({
     clientName: '',
@@ -71,18 +73,21 @@ export default function ConsultantPayments() {
     try {
       const user = await base44.auth.me();
       console.log('[ConsultantPayments] Criando subconta para:', user.email);
+      const cpfCnpj = subaccountForm.cpfCnpj.replace(/\D/g, '');
       const payload = {
         name: subaccountForm.name,
         email: user.email,
-        cpfCnpj: subaccountForm.cpfCnpj.replace(/\D/g, ''),
+        cpfCnpj,
         birthDate: subaccountForm.birthDate || undefined,
-        phone: subaccountForm.phone || undefined,
-        mobilePhone: subaccountForm.mobilePhone || undefined,
-        postalCode: subaccountForm.postalCode || undefined,
+        companyType: subaccountForm.companyType || (cpfCnpj.length > 11 ? 'LIMITED' : undefined),
+        phone: subaccountForm.phone ? subaccountForm.phone.replace(/\D/g, '') : undefined,
+        mobilePhone: subaccountForm.mobilePhone ? subaccountForm.mobilePhone.replace(/\D/g, '') : undefined,
+        postalCode: subaccountForm.postalCode ? subaccountForm.postalCode.replace(/\D/g, '') : undefined,
         address: subaccountForm.address || undefined,
         addressNumber: subaccountForm.addressNumber || undefined,
         complement: subaccountForm.complement || undefined,
         province: subaccountForm.province || undefined,
+        income: subaccountForm.income ? parseFloat(subaccountForm.income) : undefined,
       };
       const res = await base44.functions.invoke('createAsaasSubaccount', payload);
       console.log('[ConsultantPayments] Resposta:', res.data);
@@ -190,6 +195,20 @@ export default function ConsultantPayments() {
                 />
               </div>
               <div>
+                <Label>Tipo de Empresa (para CNPJ)</Label>
+                <select
+                  value={subaccountForm.companyType}
+                  onChange={e => setSubaccountForm({ ...subaccountForm, companyType: e.target.value })}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value="">Selecione...</option>
+                  <option value="MEI">MEI</option>
+                  <option value="INDIVIDUAL">EI (Empresário Individual)</option>
+                  <option value="LIMITED">LTDA</option>
+                  <option value="ASSOCIATION">Associação</option>
+                </select>
+              </div>
+              <div>
                 <Label>Data de Nascimento</Label>
                 <Input
                   type="date"
@@ -211,6 +230,15 @@ export default function ConsultantPayments() {
                   value={subaccountForm.mobilePhone}
                   onChange={e => setSubaccountForm({ ...subaccountForm, mobilePhone: e.target.value })}
                   placeholder="11 988451155"
+                />
+              </div>
+              <div>
+                <Label>Faturamento Mensal (R$)</Label>
+                <Input
+                  type="number"
+                  value={subaccountForm.income}
+                  onChange={e => setSubaccountForm({ ...subaccountForm, income: e.target.value })}
+                  placeholder="5000.00"
                 />
               </div>
               <div>

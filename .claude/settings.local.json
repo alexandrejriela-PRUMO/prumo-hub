@@ -9,7 +9,9 @@
       "Bash(git commit *)",
       "Bash(python *)",
       "Bash(git stash *)",
-      "Bash(git pull *)"
+      "Bash(git pull *)",
+      "Bash(git merge *)",
+      "Bash(git rebase *)"
     ]
   }
 }

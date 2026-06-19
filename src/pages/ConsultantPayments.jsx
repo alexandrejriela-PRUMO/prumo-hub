@@ -800,12 +800,31 @@ export default function ConsultantPayments() {
                 )}
                 {transferring ? 'Solicitando...' : 'Transferir via PIX'}
               </Button>
-              <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2 text-xs text-slate-600">
-                <p className="font-medium text-slate-700 flex items-center gap-1.5">
-                  <Info className="w-3.5 h-3.5" /> Como funciona o saque
+              <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2.5">
+                <p className="font-medium text-slate-700 text-xs flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5" /> Quando o dinheiro fica disponível?
                 </p>
-                <p>Você mesmo transfere o saldo da sua carteira PRUMO para sua <strong>conta bancária pessoal</strong> via PIX. Não dependa de ninguém — o dinheiro é seu.</p>
-                <p className="text-[11px]">O PIX é processado pelo Asaas em <strong>tempo real</strong> e o valor cai na sua conta em minutos. Simples assim.</p>
+                <div className="space-y-1.5 text-[11px]">
+                  <div className="flex justify-between items-center py-1 px-2 bg-white rounded border border-emerald-100">
+                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" /> PIX</span>
+                    <span className="font-medium text-emerald-700">Instantâneo</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 px-2 bg-white rounded border border-slate-100">
+                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-500" /> Boleto</span>
+                    <span className="font-medium text-slate-700">No mesmo dia</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 px-2 bg-white rounded border border-slate-100">
+                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500" /> Cartão de Débito</span>
+                    <span className="font-medium text-amber-700">3 dias úteis</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 px-2 bg-white rounded border border-red-100">
+                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500" /> Cartão de Crédito</span>
+                    <span className="font-medium text-red-700">32 dias</span>
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-400 leading-relaxed">
+                  Esses são os prazos do Asaas para o dinheiro entrar no <strong>seu saldo</strong>. Depois que estiver disponível, você saca via PIX para sua conta bancária em minutos.
+                </p>
               </div>
             </div>
 

@@ -4,9 +4,33 @@ import {
   BarChart3, MessageCircle, Briefcase, Building2,
   Smartphone, Globe, Lock, Award, Crown, Send, Mail, Phone, User,
   ClipboardList, ScrollText, Users, ReceiptText, Map, Leaf,
-  Sparkles, TrendingUp, Scale, AlertTriangle, MapPin
+  Sparkles, TrendingUp, Scale, AlertTriangle, MapPin, Loader2
 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+
+function useAsaasCheckout(planType) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleCheckout = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await base44.functions.invoke('createAsaasCheckout', { plan_type: planType });
+      if (res?.data?.checkoutUrl) {
+        window.location.href = res.data.checkoutUrl;
+      } else {
+        setError(res?.data?.error || 'Erro ao iniciar checkout. Tente novamente.');
+      }
+    } catch (err) {
+      setError('Erro de conexão. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { loading, error, handleCheckout };
+}
 
 function FadeIn({ children, delay = 0, className = '' }) {
   const ref = useRef(null);
@@ -270,6 +294,25 @@ function LeadForm() {
   );
 }
 
+function PlanCheckoutButtons() {
+  const { loading, error, handleCheckout } = useAsaasCheckout('consultor_enterprise');
+  return (
+    <div>
+      {error && (
+        <p className="text-red-500 text-xs text-center mb-2">{error}</p>
+      )}
+      <button
+        onClick={handleCheckout}
+        disabled={loading}
+        className="w-full py-3 rounded-xl font-semibold text-sm transition-colors text-center disabled:opacity-60 flex items-center justify-center gap-2 bg-amber-500 text-white hover:bg-amber-600"
+      >
+        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+        {loading ? 'Redirecionando...' : 'Contratar agora →'}
+      </button>
+    </div>
+  );
+}
+
 export default function LandingConsultor({ onLogin }) {
   return (
     <div className="pt-16">
@@ -389,9 +432,7 @@ export default function LandingConsultor({ onLogin }) {
                       </li>
                     ))}
                   </ul>
-                  <a href={plan.checkoutUrl} target="_blank" rel="noopener noreferrer" className={`w-full py-3 rounded-xl font-semibold text-sm transition-colors text-center ${btnColor}`}>
-                    Contratar agora →
-                  </a>
+                  <PlanCheckoutButtons />
                 </div>
               );
             })}

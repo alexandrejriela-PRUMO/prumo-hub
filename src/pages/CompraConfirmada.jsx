@@ -9,6 +9,8 @@ const OFFER_MAP = {
   'GNJXUCE': { perfil: 'produtor',  label: 'Produtor Rural',                    emoji: '🌾',    badge: null },
   'EQL1OTT': { perfil: 'consultor', label: 'Consultor Enterprise',              emoji: '🧑‍💼', badge: null },
   '9V4FUD5': { perfil: 'consultor', label: 'Consultor Enterprise (Desconto)',   emoji: '🧑‍💼', badge: 'Oferta Especial' },
+  'produtor_unico': { perfil: 'produtor',  label: 'Produtor Rural (Plano Único)',       emoji: '🌾',    badge: null },
+  'consultor_enterprise': { perfil: 'consultor', label: 'Consultor Enterprise',         emoji: '🧑‍💼', badge: null },
 };
 
 const buildLoginUrl = (offerCode, perfil) => {

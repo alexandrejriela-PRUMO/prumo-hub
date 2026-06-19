@@ -4,9 +4,33 @@ import {
   BarChart3, MessageCircle, Leaf, Wheat, Building2, Sprout,
   Map, Cloud, TrendingUp, Shield, Droplets, Smartphone,
   Globe, Lock, Award, Crown, Send, Mail, Phone, User,
-  AlertTriangle, TreePine, Sparkles, Scale, Users
+  AlertTriangle, TreePine, Sparkles, Scale, Users, Loader2
 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+
+function useAsaasCheckout(planType) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleCheckout = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await base44.functions.invoke('createAsaasCheckout', { plan_type: planType });
+      if (res?.data?.checkoutUrl) {
+        window.location.href = res.data.checkoutUrl;
+      } else {
+        setError(res?.data?.error || 'Erro ao iniciar checkout. Tente novamente.');
+      }
+    } catch (err) {
+      setError('Erro de conexão. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { loading, error, handleCheckout };
+}
 
 function FadeIn({ children, delay = 0, className = '' }) {
   const ref = useRef(null);
@@ -239,6 +263,30 @@ function LeadForm() {
   );
 }
 
+function PlanCheckoutButtons() {
+  const { loading, error, handleCheckout } = useAsaasCheckout('produtor_unico');
+  return (
+    <div className="mt-6">
+      {error && (
+        <p className="text-red-500 text-xs text-center mb-2">{error}</p>
+      )}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <button
+          onClick={handleCheckout}
+          disabled={loading}
+          className="flex-1 py-3 rounded-xl font-bold text-sm bg-emerald-700 text-white hover:bg-emerald-800 transition-colors text-center disabled:opacity-60 flex items-center justify-center gap-2"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+          {loading ? 'Redirecionando...' : 'Contratar agora →'}
+        </button>
+        <a href="https://wa.me/5555999480489" target="_blank" rel="noopener noreferrer" className="flex-1 py-3 rounded-xl font-semibold text-sm bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors text-center">
+          Quero ser Cliente Fundador
+        </a>
+      </div>
+    </div>
+  );
+}
+
 export default function LandingProdutor({ onLogin }) {
   return (
     <div className="pt-16">
@@ -406,14 +454,7 @@ export default function LandingProdutor({ onLogin }) {
                       </ul>
                     </div>
                   </div>
-                  <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                    <a href="https://wa.me/5555999480489" target="_blank" rel="noopener noreferrer" className="flex-1 py-3 rounded-xl font-bold text-sm bg-emerald-700 text-white hover:bg-emerald-800 transition-colors text-center">
-                      Contratar agora →
-                    </a>
-                    <a href="https://wa.me/5555999480489" target="_blank" rel="noopener noreferrer" className="flex-1 py-3 rounded-xl font-semibold text-sm bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors text-center">
-                      Quero ser Cliente Fundador
-                    </a>
-                  </div>
+                  <PlanCheckoutButtons />
                 </div>
               </div>
             );

@@ -5,8 +5,9 @@ import { AlertTriangle, Clock, CheckCircle, ChevronDown, ChevronUp, ArrowRight }
 function getLicenseStatusKey(license) {
   if (!license.expiry_date) return 'vigente';
   const days = differenceInDays(parseISO(license.expiry_date), new Date());
+  const threshold = license.renewal_days_before || 90;
   if (days < 0) return 'vencida';
-  if (days <= 90) return 'a_vencer';
+  if (days <= threshold) return 'a_vencer';
   return 'vigente';
 }
 
@@ -74,7 +75,7 @@ export default function LicenseStatusInfographic({ allLicenses = [], allProperti
     },
     {
       key: 'a_vencer',
-      label: 'A Vencer (90 dias)',
+      label: 'A Vencer',
       count: grouped.a_vencer.length,
       icon: Clock,
       bg: 'bg-amber-50 hover:bg-amber-100',

@@ -26,6 +26,7 @@ export default function DocumentUpload({
     document_name: '',
     description: '',
     date: new Date().toISOString().split('T')[0],
+    expiry_date: '',
     module: ''
   });
 
@@ -56,7 +57,8 @@ export default function DocumentUpload({
       file_url,
       file_size: file?.size,
       file_type: file?.type,
-      upload_date: metadata.date
+      upload_date: metadata.date,
+      expiry_date: metadata.expiry_date || null
     };
 
     onSuccess(documentData);
@@ -170,6 +172,17 @@ export default function DocumentUpload({
                 value={metadata.date}
                 onChange={(e) => setMetadata({ ...metadata, date: e.target.value })}
               />
+            </div>
+
+            {/* Validade */}
+            <div>
+              <Label>Data de Validade (opcional)</Label>
+              <Input
+                type="date"
+                value={metadata.expiry_date}
+                onChange={(e) => setMetadata({ ...metadata, expiry_date: e.target.value })}
+              />
+              <p className="text-xs text-gray-500 mt-1">Entra na regua de alertas se preenchido.</p>
             </div>
 
             {/* Description */}

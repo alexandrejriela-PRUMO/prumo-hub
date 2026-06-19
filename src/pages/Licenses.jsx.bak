@@ -8,7 +8,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useFormDirtyAlert, useDialogDirtyAlert } from '@/hooks/useFormDirtyAlert';
 import { 
@@ -130,8 +129,6 @@ export default function Licenses() {
     elaboration_stage: 'Em Elaboração',
     issue_date: '',
     expiry_date: '',
-    renewal_required: false,
-    renewal_days_before: 120,
     conditions: [],
     documents: [],
   });
@@ -299,8 +296,6 @@ export default function Licenses() {
       elaboration_stage: 'Em Elaboração',
       issue_date: '',
       expiry_date: '',
-      renewal_required: false,
-      renewal_days_before: 120,
       conditions: [],
       documents: [],
     };
@@ -320,8 +315,6 @@ export default function Licenses() {
       elaboration_stage: license.elaboration_stage || 'Em Elaboração',
       issue_date: license.issue_date || '',
       expiry_date: license.expiry_date || '',
-      renewal_required: license.renewal_required || false,
-      renewal_days_before: license.renewal_days_before || 120,
       conditions: license.conditions || [],
       documents: license.documents || [],
     };
@@ -401,8 +394,6 @@ export default function Licenses() {
       elaboration_stage: formData.elaboration_stage,
       issue_date: formData.issue_date,
       expiry_date: formData.expiry_date,
-      renewal_required: formData.renewal_required,
-      renewal_days_before: formData.renewal_days_before,
       conditions: formData.conditions && formData.conditions.length > 0 ? formData.conditions : [],
       documents: formData.documents && formData.documents.length > 0 ? formData.documents : [],
       owner_email: effectiveEmail || user?.email,
@@ -426,8 +417,6 @@ export default function Licenses() {
       elaboration_stage: formData.elaboration_stage,
       issue_date: formData.issue_date,
       expiry_date: formData.expiry_date,
-      renewal_required: formData.renewal_required,
-      renewal_days_before: formData.renewal_days_before,
       conditions: formData.conditions && formData.conditions.length > 0 ? formData.conditions : [],
       documents: formData.documents && formData.documents.length > 0 ? formData.documents : [],
     };
@@ -665,37 +654,6 @@ export default function Licenses() {
                 </div>
               </div>
 
-
-              {formData.expiry_date && (
-                <div className="border border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-blue-900 text-sm">Esta licenca exige renovacao?</p>
-                      <p className="text-xs text-blue-700 mt-0.5">LP, LO, LAS e Outorgas geralmente precisam de protocolo antecipado</p>
-                    </div>
-                    <Switch checked={formData.renewal_required || false} onCheckedChange={(v) => setFormData({ ...formData, renewal_required: v })} />
-                  </div>
-                  {formData.renewal_required && (
-                    <div className="space-y-2 pt-1">
-                      <p className="text-sm font-medium text-blue-900">Alertar para protocolar com quantos dias de antecedencia?</p>
-                      <div className="flex flex-wrap gap-2">
-                        {[180, 120, 90, 60, 30].map(days => (
-                          <button key={days} type="button"
-                            onClick={() => setFormData({ ...formData, renewal_days_before: days })}
-                            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${(formData.renewal_days_before || 120) === days ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'}`}>
-                            {days} dias
-                          </button>
-                        ))}
-                      </div>
-                      {(() => {
-                        const d = new Date(formData.expiry_date);
-                        d.setDate(d.getDate() - (formData.renewal_days_before || 120));
-                        return <p className="text-xs text-blue-700">Alerta de renovacao previsto para: <strong>{d.toLocaleDateString("pt-BR")}</strong></p>;
-                      })()}
-                    </div>
-                  )}
-                </div>
-              )}
               <div className="space-y-2">
                 <Label>Condicionantes</Label>
                 <div className="space-y-2">
@@ -824,7 +782,7 @@ export default function Licenses() {
             if (!license.expiry_date) return statusFilter === 'vigente';
             const days = differenceInDays(parseISO(license.expiry_date), new Date());
             if (statusFilter === 'vencida') return days < 0;
-            if (statusFilter === 'a_vencer') return days >= 0 && days <= (license.renewal_days_before || 90);
+            if (statusFilter === 'a_vencer') return days >= 0 && days <= 90;
             if (statusFilter === 'vigente') return days > 90;
             return true;
           }).map((license) => {

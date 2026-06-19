@@ -61,6 +61,12 @@ export default function AdminPlanEditor({ user, onClose }) {
         });
       } else {
         await base44.functions.invoke('adminUpdateUser', { userId: user.id, data });
+        // Desativa TeamMembers conflitantes e garante user_type/plano corretos em todas as fontes
+        await base44.functions.invoke('adminFixUserType', {
+          email: user.email,
+          user_type: data.user_type,
+          plano: data.plano,
+        });
       }
       queryClient.invalidateQueries({ queryKey: ['admin-all-users'] });
       queryClient.invalidateQueries({ queryKey: ['admin-users-stats'] });

@@ -9,6 +9,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { X, Plus, User, Mail, Shield, Bell } from 'lucide-react';
 import { format } from 'date-fns';
 import ConsultorAlertPanel from '../notifications/ConsultorAlertPanel';
+const VIEWER_NOTIF_EVENTS = [{key:'licenca_vencendo',label:'Licenca'},{key:'condicionante_vencendo',label:'Condicionante'},{key:'documento_vencendo',label:'Documento'},{key:'novo_alerta_ambiental',label:'Alerta Ambiental'},{key:'atualizacao_processo',label:'Processo'},{key:'atualizacao_prad',label:'PRAD'}];
+const DEFAULT_VIEWER_NOTIFS = {licenca_vencendo:true,condicionante_vencendo:true,documento_vencendo:false,novo_alerta_ambiental:true,atualizacao_processo:false,atualizacao_prad:false};
 
 export default function PropertyUsers({ property, currentUser, onSave, onCancel }) {
   const isConsultor = currentUser?.user_type === 'consultor';
@@ -21,7 +23,8 @@ export default function PropertyUsers({ property, currentUser, onSave, onCancel 
   const [newUser, setNewUser] = useState({
     email: '',
     name: '',
-    role: isConsultor ? 'Visualizador' : 'Proprietário'
+    role: isConsultor ? 'Visualizador' : 'Proprietário',
+    notification_settings: { ...DEFAULT_VIEWER_NOTIFS }
   });
 
   const addUser = async () => {
@@ -62,6 +65,9 @@ export default function PropertyUsers({ property, currentUser, onSave, onCancel 
 
   const removeUser = (email) => {
     setUsers(users.filter(u => u.email !== email));
+  };
+  const toggleViewerNotif = (idx, key) => {
+    setUsers(prev => prev.map((u, i) => i === idx ? { ...u, notification_settings: { ...(u.notification_settings || DEFAULT_VIEWER_NOTIFS), [key]: !((u.notification_settings || DEFAULT_VIEWER_NOTIFS)[key]) } } : u));
   };
 
   const handleSave = () => {
@@ -140,7 +146,7 @@ export default function PropertyUsers({ property, currentUser, onSave, onCancel 
                    />
                  </div>
                </div>
-               <div className="flex gap-3">
+               <div className="space-y-1 border rounded-lg p-2 bg-gray-50 mb-3"><p className="text-xs font-medium text-gray-600">Notificacoes:</p><div className="flex flex-wrap gap-2">{VIEWER_NOTIF_EVENTS.map(ev=>(<label key={ev.key} className="flex items-center gap-1 text-xs"><input type="checkbox" checked={!!newUser.notification_settings?.[ev.key]} onChange={()=>setNewUser({...newUser,notification_settings:{...newUser.notification_settings,[ev.key]:!newUser.notification_settings?.[ev.key]}})}/>{ev.label}</label>))}</div></div><div className="flex gap-3">
                  <div className="flex-1">
                    <Badge className="bg-gray-100 text-gray-700">
                      Visualizador
@@ -196,7 +202,7 @@ export default function PropertyUsers({ property, currentUser, onSave, onCancel 
                             Adicionado em {format(new Date(user.added_date), 'dd/MM/yyyy')}
                           </span>
                         )}
-                      </div>
+                      </div>{user.role==='Visualizador'&&(<div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-gray-100">{VIEWER_NOTIF_EVENTS.map(ev=>(<label key={ev.key} className="flex items-center gap-1 text-xs text-gray-600"><input type="checkbox" checked={!!user.notification_settings?.[ev.key]} onChange={()=>toggleViewerNotif(idx,ev.key)}/>{ev.label}</label>))}</div>)}
                     </div>
                     <Button
                       variant="ghost"

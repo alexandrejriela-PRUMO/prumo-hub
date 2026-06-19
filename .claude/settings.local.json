@@ -5,7 +5,11 @@
       "Bash(Select-Object Name, PSIsContainer)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(git commit *)",
+      "Bash(python *)",
+      "Bash(git stash *)",
+      "Bash(git pull *)"
     ]
   }
 }

@@ -15,6 +15,7 @@ export default function DocumentEditModal({ document, properties = [], onSave, o
     module: document.module || '',
     description: document.description || '',
     upload_date: document.upload_date || new Date().toISOString().split('T')[0],
+    expiry_date: document.expiry_date || '',
     entity_id: document.entity_id || '',
   });
 
@@ -115,6 +116,17 @@ export default function DocumentEditModal({ document, properties = [], onSave, o
                 type="date"
                 value={form.upload_date}
                 onChange={(e) => setForm({ ...form, upload_date: e.target.value })}
+                disabled={saving}
+              />
+            </div>
+
+            {/* Validade */}
+            <div>
+              <Label>Data de Validade (opcional)</Label>
+              <Input
+                type="date"
+                value={form.expiry_date}
+                onChange={(e) => setForm({ ...form, expiry_date: e.target.value })}
                 disabled={saving}
               />
             </div>

@@ -12,9 +12,22 @@ import { toast } from 'sonner';
 export default function ConsultantPayments() {
   const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [creatingSubaccount, setCreatingSubaccount] = useState(false);
   const [creating, setCreating] = useState(false);
   const [checkoutUrl, setCheckoutUrl] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [subaccountForm, setSubaccountForm] = useState({
+    name: '',
+    cpfCnpj: '',
+    birthDate: '',
+    phone: '',
+    mobilePhone: '',
+    postalCode: '',
+    address: '',
+    addressNumber: '',
+    complement: '',
+    province: '',
+  });
   const [form, setForm] = useState({
     clientName: '',
     clientEmail: '',
@@ -26,7 +39,17 @@ export default function ConsultantPayments() {
 
   useEffect(() => {
     loadMeta();
+    loadUser();
   }, []);
+
+  const loadUser = async () => {
+    try {
+      const user = await base44.auth.me();
+      setSubaccountForm(prev => ({ ...prev, name: user.full_name || '' }));
+    } catch (e) {
+      console.error('Erro ao carregar usuário:', e);
+    }
+  };
 
   const loadMeta = async () => {
     try {
@@ -40,20 +63,42 @@ export default function ConsultantPayments() {
   };
 
   const handleCreateSubaccount = async () => {
+    if (!subaccountForm.name || !subaccountForm.cpfCnpj) {
+      toast.error('Preencha nome e CPF/CNPJ para ativar sua subconta');
+      return;
+    }
+    setCreatingSubaccount(true);
     try {
       const user = await base44.auth.me();
-      const res = await base44.functions.invoke('createAsaasSubaccount', {
-        name: user.full_name || user.email,
+      console.log('[ConsultantPayments] Criando subconta para:', user.email);
+      const payload = {
+        name: subaccountForm.name,
         email: user.email,
-      });
+        cpfCnpj: subaccountForm.cpfCnpj.replace(/\D/g, ''),
+        birthDate: subaccountForm.birthDate || undefined,
+        phone: subaccountForm.phone || undefined,
+        mobilePhone: subaccountForm.mobilePhone || undefined,
+        postalCode: subaccountForm.postalCode || undefined,
+        address: subaccountForm.address || undefined,
+        addressNumber: subaccountForm.addressNumber || undefined,
+        complement: subaccountForm.complement || undefined,
+        province: subaccountForm.province || undefined,
+      };
+      const res = await base44.functions.invoke('createAsaasSubaccount', payload);
+      console.log('[ConsultantPayments] Resposta:', res.data);
       if (res.data?.error) {
         toast.error(res.data.error);
+      } else if (res.data?.subaccount_id || res.data?.already_exists) {
+        toast.success('Subconta Asaas ativada com sucesso!');
+        await loadMeta();
       } else {
-        toast.success('Subconta criada com sucesso!');
-        loadMeta();
+        toast.error('Resposta inesperada do servidor. Tente novamente.');
       }
     } catch (e) {
-      toast.error('Erro ao criar subconta');
+      console.error('[ConsultantPayments] Erro:', e);
+      toast.error(e?.response?.data?.error || e?.message || 'Erro ao ativar subconta');
+    } finally {
+      setCreatingSubaccount(false);
     }
   };
 
@@ -123,12 +168,99 @@ export default function ConsultantPayments() {
               Ativar Gateway de Pagamentos
             </CardTitle>
             <CardDescription>
-              Ative sua subconta Asaas para começar a cobrar seus clientes com comissão automática de 10% para o PRUMO.
+              Preencha seus dados para ativar sua subconta Asaas e começar a cobrar seus clientes com comissão automática de 10% para o PRUMO.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button onClick={handleCreateSubaccount} className="bg-emerald-600 hover:bg-emerald-700">
-              <Wallet className="w-4 h-4 mr-2" /> Ativar Subconta
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label>Nome Completo *</Label>
+                <Input
+                  value={subaccountForm.name}
+                  onChange={e => setSubaccountForm({ ...subaccountForm, name: e.target.value })}
+                  placeholder="Seu nome completo"
+                />
+              </div>
+              <div>
+                <Label>CPF/CNPJ *</Label>
+                <Input
+                  value={subaccountForm.cpfCnpj}
+                  onChange={e => setSubaccountForm({ ...subaccountForm, cpfCnpj: e.target.value })}
+                  placeholder="000.000.000-00"
+                />
+              </div>
+              <div>
+                <Label>Data de Nascimento</Label>
+                <Input
+                  type="date"
+                  value={subaccountForm.birthDate}
+                  onChange={e => setSubaccountForm({ ...subaccountForm, birthDate: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Telefone</Label>
+                <Input
+                  value={subaccountForm.phone}
+                  onChange={e => setSubaccountForm({ ...subaccountForm, phone: e.target.value })}
+                  placeholder="11 32300606"
+                />
+              </div>
+              <div>
+                <Label>Celular</Label>
+                <Input
+                  value={subaccountForm.mobilePhone}
+                  onChange={e => setSubaccountForm({ ...subaccountForm, mobilePhone: e.target.value })}
+                  placeholder="11 988451155"
+                />
+              </div>
+              <div>
+                <Label>CEP</Label>
+                <Input
+                  value={subaccountForm.postalCode}
+                  onChange={e => setSubaccountForm({ ...subaccountForm, postalCode: e.target.value })}
+                  placeholder="01001000"
+                />
+              </div>
+              <div>
+                <Label>Endereço</Label>
+                <Input
+                  value={subaccountForm.address}
+                  onChange={e => setSubaccountForm({ ...subaccountForm, address: e.target.value })}
+                  placeholder="Av Paulista"
+                />
+              </div>
+              <div>
+                <Label>Número</Label>
+                <Input
+                  value={subaccountForm.addressNumber}
+                  onChange={e => setSubaccountForm({ ...subaccountForm, addressNumber: e.target.value })}
+                  placeholder="1000"
+                />
+              </div>
+              <div>
+                <Label>Complemento</Label>
+                <Input
+                  value={subaccountForm.complement}
+                  onChange={e => setSubaccountForm({ ...subaccountForm, complement: e.target.value })}
+                  placeholder="Sala 502"
+                />
+              </div>
+              <div>
+                <Label>Bairro</Label>
+                <Input
+                  value={subaccountForm.province}
+                  onChange={e => setSubaccountForm({ ...subaccountForm, province: e.target.value })}
+                  placeholder="Bela Vista"
+                />
+              </div>
+            </div>
+            <Button onClick={handleCreateSubaccount} disabled={creatingSubaccount} className="w-full bg-emerald-600 hover:bg-emerald-700">
+              {creatingSubaccount ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+              ) : (
+                <Wallet className="w-4 h-4 mr-2" />
+              )}
+              {creatingSubaccount ? 'Ativando...' : 'Ativar Subconta'}
             </Button>
           </CardContent>
         </Card>

@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
     }
 
     const checkoutPayload = {
-      billingTypes: billingType && billingType !== 'UNDEFINED' && billingType !== '' ? [billingType] : ['BOLETO', 'CREDIT_CARD'],
+      billingTypes: billingType && billingType !== 'UNDEFINED' && billingType !== '' ? [billingType] : ['UNDEFINED'],
       chargeTypes: ['DETACHED'],
       externalReference: `consultant_${user.email}_${Date.now()}`,
       customerData: {

@@ -170,6 +170,7 @@ export default function ConsultantPayments() {
   };
 
   const handleCreateCheckout = async () => {
+    console.log('[ConsultantPayments] handleCreateCheckout chamado', form);
     if (!form.clientName || !form.description || !form.value) {
       toast.error('Preencha nome do cliente, descrição e valor');
       return;
@@ -182,17 +183,21 @@ export default function ConsultantPayments() {
         clientCpfCnpj: form.clientCpfCnpj || undefined,
         description: form.description,
         value: parseFloat(form.value),
-        billingType: form.billingType,
+        billingType: form.billingType || undefined,
       });
+      console.log('[ConsultantPayments] Resposta:', res.data);
       if (res.data?.error) {
         toast.error(res.data.error);
-      } else {
+      } else if (res.data?.checkoutUrl) {
         setCheckoutUrl(res.data.checkoutUrl);
         toast.success('Link de pagamento criado!');
+      } else {
+        toast.error('Resposta inesperada do servidor');
       }
     } catch (e) {
       console.error('[ConsultantPayments] Erro ao criar checkout:', e?.response?.data || e?.message || e);
-      toast.error('Erro ao criar checkout: ' + (e?.response?.data?.error || e?.message || 'Tente novamente'));
+      const errMsg = e?.response?.data?.error || e?.message || 'Tente novamente';
+      toast.error('Erro ao criar checkout: ' + errMsg);
     } finally {
       setCreating(false);
     }

@@ -86,8 +86,9 @@ const SICAR_LAYER_NAMES = {
 async function fetchSICARLayers(carNumber) {
   const withDots = carNumber;
   const withoutDots = carNumber.replace(/\./g, '');
-  let res = await fetch(`${R2_BASE}/${withDots}.geojson`);
-  if (!res.ok) res = await fetch(`${R2_BASE}/${withoutDots}.geojson`);
+  const cacheBust = `?t=${Date.now()}`;
+  let res = await fetch(`${R2_BASE}/${withDots}.geojson${cacheBust}`, { cache: 'no-store' });
+  if (!res.ok) res = await fetch(`${R2_BASE}/${withoutDots}.geojson${cacheBust}`, { cache: 'no-store' });
   if (!res.ok) return null;
   const geojson = await res.json();
   if (!geojson.features?.length) return null;

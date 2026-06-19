@@ -80,9 +80,12 @@ export default function ConsultantPayments() {
   };
 
   const handleCreateSubaccount = async () => {
-    console.log('[ConsultantPayments] handleCreateSubaccount chamado', { name: subaccountForm.name, cpfCnpj: subaccountForm.cpfCnpj });
-    if (!subaccountForm.name || !subaccountForm.cpfCnpj) {
-      toast.error('Preencha nome e CPF/CNPJ para ativar sua subconta');
+    console.log('[ConsultantPayments] handleCreateSubaccount chamado', subaccountForm);
+    const required = ['name', 'cpfCnpj', 'mobilePhone', 'address', 'addressNumber', 'province', 'postalCode', 'income'];
+    const missing = required.filter(f => !subaccountForm[f]);
+    if (missing.length > 0) {
+      const labels = { name: 'Nome', cpfCnpj: 'CPF/CNPJ', mobilePhone: 'Celular', address: 'Endereço', addressNumber: 'Número', province: 'Bairro', postalCode: 'CEP', income: 'Faturamento' };
+      toast.error('Preencha todos os campos obrigatórios: ' + missing.map(f => labels[f]).join(', '));
       return;
     }
     setCreatingSubaccount(true);
@@ -293,7 +296,7 @@ export default function ConsultantPayments() {
                 />
               </div>
               <div>
-                <Label>Celular</Label>
+                <Label>Celular *</Label>
                 <Input
                   value={subaccountForm.mobilePhone}
                   onChange={e => setSubaccountForm({ ...subaccountForm, mobilePhone: e.target.value })}
@@ -301,7 +304,7 @@ export default function ConsultantPayments() {
                 />
               </div>
               <div>
-                <Label>Faturamento Mensal (R$)</Label>
+                <Label>Faturamento Mensal (R$) *</Label>
                 <Input
                   type="number"
                   value={subaccountForm.income}
@@ -310,7 +313,7 @@ export default function ConsultantPayments() {
                 />
               </div>
               <div>
-                <Label>CEP</Label>
+                <Label>CEP *</Label>
                 <Input
                   value={subaccountForm.postalCode}
                   onChange={e => setSubaccountForm({ ...subaccountForm, postalCode: e.target.value })}
@@ -318,7 +321,7 @@ export default function ConsultantPayments() {
                 />
               </div>
               <div>
-                <Label>Endereço</Label>
+                <Label>Endereço *</Label>
                 <Input
                   value={subaccountForm.address}
                   onChange={e => setSubaccountForm({ ...subaccountForm, address: e.target.value })}
@@ -326,7 +329,7 @@ export default function ConsultantPayments() {
                 />
               </div>
               <div>
-                <Label>Número</Label>
+                <Label>Número *</Label>
                 <Input
                   value={subaccountForm.addressNumber}
                   onChange={e => setSubaccountForm({ ...subaccountForm, addressNumber: e.target.value })}
@@ -342,7 +345,7 @@ export default function ConsultantPayments() {
                 />
               </div>
               <div>
-                <Label>Bairro</Label>
+                <Label>Bairro *</Label>
                 <Input
                   value={subaccountForm.province}
                   onChange={e => setSubaccountForm({ ...subaccountForm, province: e.target.value })}

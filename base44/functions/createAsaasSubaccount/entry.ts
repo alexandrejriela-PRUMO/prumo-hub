@@ -18,8 +18,8 @@ Deno.serve(async (req) => {
       complement, province, income
     } = body || {};
 
-    if (!name || !email || !cpfCnpj) {
-      return Response.json({ error: 'Campos obrigatórios: name, email, cpfCnpj' }, { status: 400 });
+    if (!name || !email || !cpfCnpj || !mobilePhone || !address || !addressNumber || !province || !postalCode || !income) {
+      return Response.json({ error: 'Campos obrigatórios: nome, email, CPF/CNPJ, celular, endereço, número, bairro, CEP e faturamento' }, { status: 400 });
     }
 
     const metas = await base44.entities.UserMetadata.filter({ user_email: email });
@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
       addressNumber: addressNumber || undefined,
       complement: complement || undefined,
       province: province || undefined,
-      incomeValue: income || 5000,
+      incomeValue: Number(income),
       webhooks: [{
         name: 'PRUMO Hub - Cobranças',
         url: 'https://hub.prumo.site/api/functions/webhookAsaas',

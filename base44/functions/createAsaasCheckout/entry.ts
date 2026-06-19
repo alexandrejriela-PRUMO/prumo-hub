@@ -34,6 +34,7 @@ Deno.serve(async (req) => {
 
     const checkoutPayload = {
       billingTypes: ['CREDIT_CARD'],
+      chargeTypes: ['RECURRENT'],
       chargeType: 'RECURRENT',
       externalReference,
       callback: {

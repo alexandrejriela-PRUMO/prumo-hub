@@ -64,6 +64,7 @@ export default function ClientChargesPanel({ client }) {
     e.preventDefault();
     createChargeMutation.mutate({
       client_email: clientEmail,
+      client_name: client?.client_name || client?.name || '',
       property_id: propertyId,
       description: form.description,
       amount: parseFloat(form.amount),

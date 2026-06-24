@@ -334,7 +334,7 @@ export default function ConsultantStatement({ meta }) {
                         {isExpanded && (
                           <tr key={`${tx.id}-detail`} className="bg-slate-50/50">
                             <td colSpan={7} className="px-4 py-3">
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                              <div className="grid grid-cols-2 gap-3 text-xs">
                                 <div>
                                   <p className="text-[10px] text-slate-400 uppercase">Valor Bruto</p>
                                   <p className="font-semibold text-slate-700 mt-0.5">{formatCurrency(tx.value)}</p>
@@ -348,26 +348,8 @@ export default function ConsultantStatement({ meta }) {
                                     <p className="text-[9px] text-slate-400">{feePercent}% do valor bruto</p>
                                   )}
                                 </div>
-                                <div>
-                                  <p className="text-[10px] text-slate-400 uppercase">Comissão PRUMO (10%)</p>
-                                  <p className="font-semibold text-amber-600 mt-0.5">
-                                    {tx.netValue != null && tx.value > 0
-                                      ? `−${formatCurrency((tx.netValue || 0) * 0.10)}`
-                                      : '—'}
-                                  </p>
-                                  <p className="text-[9px] text-slate-400">sobre o líquido Asaas</p>
-                                </div>
-                                <div>
-                                  <p className="text-[10px] text-slate-400 uppercase">Você Recebe</p>
-                                  <p className="font-semibold text-emerald-700 mt-0.5">
-                                    {tx.netValue != null
-                                      ? formatCurrency((tx.netValue || 0) * 0.90)
-                                      : '—'}
-                                  </p>
-                                  <p className="text-[9px] text-slate-400">líquido final estimado</p>
-                                </div>
                                 {tx.balanceBefore != null && (
-                                  <div className="col-span-2 sm:col-span-4 flex items-center gap-4 pt-2 border-t border-slate-200">
+                                  <div className="col-span-2 flex items-center gap-4 pt-2 border-t border-slate-200">
                                     <div className="flex items-center gap-2">
                                       <span className="text-[10px] text-slate-400">Saldo antes:</span>
                                       <span className="text-xs font-medium text-slate-600">{formatCurrency(tx.balanceBefore)}</span>
@@ -380,7 +362,7 @@ export default function ConsultantStatement({ meta }) {
                                   </div>
                                 )}
                                 {tx.installmentInfo && (
-                                  <div className="col-span-2 sm:col-span-4 pt-1">
+                                  <div className="col-span-2 pt-1">
                                     <p className="text-[10px] text-slate-400">
                                       Parcela {tx.installmentInfo.current}/{tx.installmentInfo.total}
                                       {tx.installmentInfo.current > 1 && ` — valor original: ${formatCurrency(tx.originalValue)}`}

@@ -216,6 +216,10 @@ export default function ConsultantPayments() {
       toast.error('Preencha nome do cliente, descrição e valor');
       return;
     }
+    if (!form.billingType) {
+      toast.error('Escolha a forma de pagamento');
+      return;
+    }
     setCreating(true);
     try {
       const res = await base44.functions.invoke('createConsultantCheckout', {
@@ -224,7 +228,7 @@ export default function ConsultantPayments() {
         clientCpfCnpj: form.clientCpfCnpj || undefined,
         description: form.description,
         value: parseFloat(form.value),
-        billingType: form.billingType || undefined,
+        billingType: form.billingType,
       });
       console.log('[ConsultantPayments] Resposta:', res.data);
       if (res.data?.error) {
@@ -315,28 +319,12 @@ export default function ConsultantPayments() {
   const valorDigitado = parseFloat(form.value) || 0;
   const billingType = form.billingType;
 
-  // Taxas promocionais (válidas até 19/09/2026) — depois viram padrão
-  const taxasAsaas = {
-    pix:           { nome: 'PIX',                      percentual: 0,       fixa: 0.99,  desc: 'R$ 0,99 (promo)',                              padraoFixa: 2.00,  padraoPct: 0,      padraoDesc: 'R$ 2,00' },
-    boleto:        { nome: 'Boleto',                   percentual: 0,       fixa: 0.99,  desc: 'R$ 0,99 (promo)',                              padraoFixa: 1.99,  padraoPct: 0,      padraoDesc: 'R$ 1,99' },
-    debito:        { nome: 'Cartão de Débito',         percentual: 0.0189,  fixa: 0.35,  desc: 'R$ 0,35 + 1,89% (promo)',                     padraoFixa: 0.35,  padraoPct: 0.0189, padraoDesc: 'R$ 0,35 + 1,89%' },
-    cartao_vista:  { nome: 'Crédito à vista',          percentual: 0.0199,  fixa: 0.49,  desc: 'R$ 0,49 + 1,99% (promo)',                    padraoFixa: 0.49,  padraoPct: 0.0299, padraoDesc: 'R$ 0,49 + 2,99%' },
-    cartao_2a6:    { nome: 'Crédito 2x a 6x',          percentual: 0.0249,  fixa: 0.49,  desc: 'R$ 0,49 + 2,49% (promo)',                    padraoFixa: 0.49,  padraoPct: 0.0349, padraoDesc: 'R$ 0,49 + 3,49%' },
-    cartao_7a12:   { nome: 'Crédito 7x a 12x',         percentual: 0.0299,  fixa: 0.49,  desc: 'R$ 0,49 + 2,99% (promo)',                    padraoFixa: 0.49,  padraoPct: 0.0399, padraoDesc: 'R$ 0,49 + 3,99%' },
-    cartao_13a21:  { nome: 'Crédito 13x a 21x',        percentual: 0.0329,  fixa: 0.49,  desc: 'R$ 0,49 + 3,29% (promo)',                    padraoFixa: 0.49,  padraoPct: 0.0429, padraoDesc: 'R$ 0,49 + 4,29%' },
-  };
-
-  const metodoSelecionado = taxasAsaas[billingType] || { percentual: 0, fixa: 0, nome: '—', desc: 'Selecione' };
-  const taxaAsaasEstimada = valorDigitado * metodoSelecionado.percentual + metodoSelecionado.fixa;
-  const taxaPadraoEstimada = metodoSelecionado.padraoFixa !== undefined
-    ? valorDigitado * metodoSelecionado.padraoPct + metodoSelecionado.padraoFixa
-    : null;
-  const valorAposAsaas = Math.max(0, valorDigitado - taxaAsaasEstimada);
-  const valorAposAsaasPadrao = taxaPadraoEstimada !== null ? Math.max(0, valorDigitado - taxaPadraoEstimada) : null;
-  const comissaoPrumo = valorAposAsaas * 0.10;
-  const comissaoPrumoPadrao = valorAposAsaasPadrao !== null ? valorAposAsaasPadrao * 0.10 : null;
-  const valorLiquidoConsultor = valorAposAsaas - comissaoPrumo;
-  const valorLiquidoConsultorPadrao = comissaoPrumoPadrao !== null ? valorAposAsaasPadrao - comissaoPrumoPadrao : null;
+  const billingLabels = { pix: 'PIX', boleto: 'Boleto', cartao: 'Cartão' };
+  const taxaPrumoEstimada = billingType === 'pix' ? 2.90
+    : billingType === 'boleto' ? 3.90
+    : billingType === 'cartao' ? valorDigitado * 0.05
+    : 0;
+  const valorLiquidoConsultor = Math.max(0, valorDigitado - taxaPrumoEstimada);
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
@@ -616,29 +604,17 @@ export default function ConsultantPayments() {
                 />
               </div>
               <div>
-                <Label>Forma de Pagamento</Label>
+                <Label>Forma de Pagamento *</Label>
                 <select
                   value={billingType}
                   onChange={e => setForm({ ...form, billingType: e.target.value })}
                   className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
-                  <option value="">Cliente escolhe no link</option>
-                  <optgroup label="── À vista ──">
-                    <option value="pix">PIX — R$ 0,99</option>
-                    <option value="boleto">Boleto — R$ 0,99</option>
-                    <option value="debito">Cartão de Débito — R$ 0,35 + 1,89%</option>
-                    <option value="cartao_vista">Crédito à vista — R$ 0,49 + 1,99%</option>
-                  </optgroup>
-                  <optgroup label="── Crédito parcelado ──">
-                    <option value="cartao_2a6">Crédito 2x a 6x — R$ 0,49 + 2,49%</option>
-                    <option value="cartao_7a12">Crédito 7x a 12x — R$ 0,49 + 2,99%</option>
-                    <option value="cartao_13a21">Crédito 13x a 21x — R$ 0,49 + 3,29%</option>
-                  </optgroup>
+                  <option value="">Selecione...</option>
+                  <option value="pix">PIX — R$ 2,90</option>
+                  <option value="boleto">Boleto — R$ 3,90</option>
+                  <option value="cartao">Cartão de Crédito — 5%</option>
                 </select>
-                <p className="text-[10px] text-amber-600 mt-1 flex items-center gap-1">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400" />
-                  Taxas promocionais válidas até 19/09/2026 — após isso, as taxas padrão se aplicam.
-                </p>
               </div>
 
               {/* Prévia de valores */}
@@ -648,63 +624,32 @@ export default function ConsultantPayments() {
                     <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                       <Info className="w-4 h-4 text-slate-500" />
                       Prévia do recebimento
-                      {billingType && <Badge className="ml-auto bg-slate-100 text-slate-600 border-slate-200 text-[10px]">{metodoSelecionado.nome}</Badge>}
+                      {billingType && <Badge className="ml-auto bg-slate-100 text-slate-600 border-slate-200 text-[10px]">{billingLabels[billingType] || billingType}</Badge>}
                     </div>
-
                     <div className="space-y-2 text-xs">
-                      {/* Valor cobrado */}
                       <div className="flex justify-between items-center py-1.5 px-3 bg-white rounded-lg border border-slate-100">
                         <span className="text-slate-600">Valor cobrado do cliente</span>
                         <span className="font-bold text-slate-800">{valorDigitado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                       </div>
-
                       <div className="flex justify-center">
                         <ArrowDown className="w-3 h-3 text-slate-300" />
                       </div>
-
-                      {/* Taxa Asaas — Promocional */}
                       <div className="flex justify-between items-center py-1.5 px-3 bg-amber-50/80 rounded-lg border border-amber-100">
-                        <div className="flex flex-col">
-                          <span className="text-amber-700 text-[11px]">Taxa Asaas {metodoSelecionado.desc}</span>
-                          {taxaPadraoEstimada !== null && (
-                            <span className="text-[9px] text-amber-400">Após 19/09: {metodoSelecionado.padraoDesc}</span>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <span className="font-semibold text-amber-700">-{taxaAsaasEstimada.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                          {taxaPadraoEstimada !== null && (
-                            <div className="text-[9px] text-amber-400 line-through">-{taxaPadraoEstimada.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Comissão PRUMO */}
-                      <div className="flex justify-between items-center py-1.5 px-3 bg-amber-50/50 rounded-lg border border-amber-100">
                         <span className="text-amber-700 flex items-center gap-1">
                           <PiggyBank className="w-3 h-3" />
-                          Comissão PRUMO (10%)
+                          Taxa PRUMO
                         </span>
-                        <span className="font-semibold text-amber-700">-{comissaoPrumo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                        <span className="font-semibold text-amber-700">
+                          {billingType ? `-${taxaPrumoEstimada.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}` : '—'}
+                        </span>
                       </div>
-
                       <div className="flex justify-center">
                         <ArrowDown className="w-3 h-3 text-emerald-300" />
                       </div>
-
-                      {/* Valor líquido */}
                       <div className="flex justify-between items-center py-2 px-3 bg-emerald-50 rounded-lg border border-emerald-200">
-                        <div className="flex flex-col">
-                          <span className="text-emerald-800 font-semibold text-sm">Você recebe</span>
-                          {valorLiquidoConsultorPadrao !== null && (
-                            <span className="text-[9px] text-emerald-500">Após 19/09: {valorLiquidoConsultorPadrao.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                          )}
-                        </div>
+                        <span className="text-emerald-800 font-semibold text-sm">Você recebe</span>
                         <span className="font-bold text-emerald-700 text-base">{valorLiquidoConsultor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                       </div>
-
-                      <p className="text-[10px] text-slate-400 text-center">
-                        Simulação com taxas promocionais. Os valores reais podem variar conforme o contrato da sua subconta.
-                      </p>
                     </div>
                   </CardContent>
                 </Card>
@@ -764,31 +709,16 @@ export default function ConsultantPayments() {
               <Info className="w-4 h-4 text-slate-500" />
               Como funciona o repasse
             </p>
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="bg-white rounded-xl p-3 border border-red-100">
-                <div className="w-8 h-8 mx-auto mb-1.5 rounded-full bg-red-100 flex items-center justify-center">
-                  <Building className="w-4 h-4 text-red-600" />
-                </div>
-                <p className="text-[10px] font-semibold text-red-700">Asaas</p>
-                <p className="text-[9px] text-red-500 mt-0.5">Taxa por transação</p>
-                <p className="text-[10px] font-bold text-red-600 mt-1">Boleto R$ 0,99</p>
-                <p className="text-[10px] font-bold text-red-600">PIX R$ 0,99</p>
-                <p className="text-[10px] font-bold text-red-600">Débito 0,35+1,89%</p>
-                <p className="text-[9px] text-red-400 mt-1 leading-tight">Crédito:</p>
-                <p className="text-[9px] font-bold text-red-500">À vista 0,49+1,99%</p>
-                <p className="text-[9px] font-bold text-red-500">2-6x 0,49+2,49%</p>
-                <p className="text-[9px] font-bold text-red-500">7-12x 0,49+2,99%</p>
-                <p className="text-[9px] font-bold text-red-500">13-21x 0,49+3,29%</p>
-                <p className="text-[8px] text-red-300 mt-0.5">Promo até 19/09/2026</p>
-              </div>
+            <div className="grid grid-cols-2 gap-3 text-center">
               <div className="bg-white rounded-xl p-3 border border-amber-100">
                 <div className="w-8 h-8 mx-auto mb-1.5 rounded-full bg-amber-100 flex items-center justify-center">
                   <PiggyBank className="w-4 h-4 text-amber-600" />
                 </div>
-                <p className="text-[10px] font-semibold text-amber-700">PRUMO</p>
+                <p className="text-[10px] font-semibold text-amber-700">Taxa PRUMO</p>
                 <p className="text-[9px] text-amber-500 mt-0.5">Comissão da plataforma</p>
-                <p className="text-[10px] font-bold text-amber-600 mt-1">10%</p>
-                <p className="text-[9px] text-amber-500">do valor após Asaas</p>
+                <p className="text-[10px] font-bold text-amber-600 mt-1">PIX R$ 2,90</p>
+                <p className="text-[10px] font-bold text-amber-600">Boleto R$ 3,90</p>
+                <p className="text-[10px] font-bold text-amber-600">Cartão 5%</p>
               </div>
               <div className="bg-white rounded-xl p-3 border border-emerald-100">
                 <div className="w-8 h-8 mx-auto mb-1.5 rounded-full bg-emerald-100 flex items-center justify-center">
@@ -796,8 +726,8 @@ export default function ConsultantPayments() {
                 </div>
                 <p className="text-[10px] font-semibold text-emerald-700">Você</p>
                 <p className="text-[9px] text-emerald-500 mt-0.5">Recebimento líquido</p>
-                <p className="text-[10px] font-bold text-emerald-600 mt-1">~88% a 89%</p>
-                <p className="text-[9px] text-emerald-500">do valor cobrado</p>
+                <p className="text-[10px] font-bold text-emerald-600 mt-1">Valor cobrado</p>
+                <p className="text-[10px] font-bold text-emerald-600">menos a taxa</p>
               </div>
             </div>
             <p className="text-[10px] text-slate-400 mt-3 text-center">

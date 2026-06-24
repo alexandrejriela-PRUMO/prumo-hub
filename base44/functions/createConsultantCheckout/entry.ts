@@ -1,6 +1,31 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-const PRUMO_COMMISSION_PERCENT = 10; // 10% de comissão do PRUMO
+const PRUMO_FEES: Record<string, { type: 'fixed' | 'percent'; value: number }> = {
+  PIX:         { type: 'fixed',   value: 2.90 },
+  BOLETO:      { type: 'fixed',   value: 3.90 },
+  CREDIT_CARD: { type: 'percent', value: 5 },
+};
+
+const BILLING_TYPE_MAP: Record<string, string> = {
+  pix:    'PIX',
+  boleto: 'BOLETO',
+  cartao: 'CREDIT_CARD',
+};
+
+function buildSplitEntry(walletId: string, asaasBillingType: string, chargeValue: number) {
+  const rule = PRUMO_FEES[asaasBillingType];
+  if (!rule) return { split: [], estimatedFee: 0 };
+  if (rule.type === 'fixed') {
+    return {
+      split: [{ walletId, fixedValue: rule.value }],
+      estimatedFee: rule.value,
+    };
+  }
+  return {
+    split: [{ walletId, percentualValue: rule.value }],
+    estimatedFee: chargeValue * (rule.value / 100),
+  };
+}
 
 Deno.serve(async (req) => {
   try {
@@ -20,6 +45,11 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Campos obrigatórios: clientName, description, value' }, { status: 400 });
     }
 
+    const asaasBillingType = BILLING_TYPE_MAP[billingType];
+    if (!asaasBillingType) {
+      return Response.json({ error: 'Forma de pagamento inválida. Escolha PIX, Boleto ou Cartão.' }, { status: 400 });
+    }
+
     // Buscar subconta do consultor
     const metas = await base44.entities.UserMetadata.filter({ user_email: user.email });
     if (!metas?.length || !metas[0].asaas_subaccount_id) {
@@ -29,12 +59,12 @@ Deno.serve(async (req) => {
     const subaccount = metas[0];
     const subaccountApiKey = subaccount.asaas_subaccount_api_key || masterApiKey;
 
-    // Wallet ID do PRUMO (master account) para split de comissão
     const prumoWalletIdActual = '1475d263-44f4-45f1-b0eb-384f8c2dd98d';
 
-    // API Asaas v3: billingType (singular, string), chargeType (singular)
-    const checkoutPayload = {
-      billingType: (billingType && billingType !== 'UNDEFINED' && billingType !== '') ? billingType : 'UNDEFINED',
+    const { split, estimatedFee: prumoFee } = buildSplitEntry(prumoWalletIdActual, asaasBillingType, value);
+
+    const checkoutPayload: Record<string, unknown> = {
+      billingType: asaasBillingType,
       chargeType: 'DETACHED',
       name: description,
       description: `Serviço prestado por: ${user.full_name || user.email}`,
@@ -46,18 +76,13 @@ Deno.serve(async (req) => {
       },
     };
 
-    // Adicionar split se tivermos o walletId do PRUMO
-    if (prumoWalletIdActual && prumoWalletIdActual !== subaccount.asaas_wallet_id) {
-      checkoutPayload.split = [{
-        walletId: prumoWalletIdActual,
-        percentualValue: PRUMO_COMMISSION_PERCENT,
-      }];
+    if (split.length > 0 && prumoWalletIdActual !== subaccount.asaas_wallet_id) {
+      checkoutPayload.split = split;
     }
 
     console.log('[createConsultantCheckout] Criando paymentLink na subconta:', subaccount.asaas_subaccount_id);
     console.log('[createConsultantCheckout] Payload:', JSON.stringify(checkoutPayload));
 
-    // Usar a chave da subconta para criar o link de pagamento
     const response = await fetch('https://api-sandbox.asaas.com/v3/paymentLinks', {
       method: 'POST',
       headers: {
@@ -74,17 +99,15 @@ Deno.serve(async (req) => {
 
     if (!response.ok) {
       const errorMsg = data.errors
-        ? data.errors.map(e => e.description || e.message).join('; ')
+        ? data.errors.map((e: { description?: string; message?: string }) => e.description || e.message).join('; ')
         : data.message || 'Erro ao criar checkout';
       console.error('[createConsultantCheckout] Erro Asaas:', errorMsg);
       return Response.json({ error: errorMsg }, { status: 400 });
     }
 
-    // Montar URL do checkout
     const checkoutUrl = data.url || `https://sandbox.asaas.com/c/${data.id}`;
     console.log(`[createConsultantCheckout] PaymentLink criado: ${data.id} → ${checkoutUrl}`);
 
-    // Salvar cobrança no histórico (ConsultorCharge)
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 5);
     try {
@@ -102,18 +125,18 @@ Deno.serve(async (req) => {
       });
       console.log('[createConsultantCheckout] ConsultorCharge salvo');
     } catch (chargeErr) {
-      console.warn('[createConsultantCheckout] Erro ao salvar ConsultorCharge:', chargeErr.message);
+      console.warn('[createConsultantCheckout] Erro ao salvar ConsultorCharge:', (chargeErr as Error).message);
     }
 
     return Response.json({
       success: true,
       checkoutUrl,
       id: data.id,
-      split_configured: !!prumoWalletIdActual,
-      commission_percent: prumoWalletIdActual ? PRUMO_COMMISSION_PERCENT : 0,
+      split_configured: split.length > 0,
+      prumo_fee: prumoFee,
     });
   } catch (error) {
-    console.error('[createConsultantCheckout] Erro:', error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('[createConsultantCheckout] Erro:', (error as Error).message);
+    return Response.json({ error: (error as Error).message }, { status: 500 });
   }
 });

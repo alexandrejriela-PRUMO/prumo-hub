@@ -52,7 +52,7 @@ export default function MyTeam() {
   const [showPermDialog, setShowPermDialog] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [linkForm, setLinkForm] = useState({ member_email: '', member_name: '', member_role: '', primary_user_email: '' });
-  const [inviteForm, setInviteForm] = useState({ email: '', name: '', member_role: '', target_user_type: 'equipe' });
+  const [inviteForm, setInviteForm] = useState({ email: '', name: '', member_role: '', target_user_type: 'equipe', primary_user_email: '' });
   const [editPerms, setEditPerms] = useState(null);
   const queryClient = useQueryClient();
 
@@ -119,9 +119,14 @@ export default function MyTeam() {
         throw new Error(`Seu plano permite até ${maxUsers} usuário(s) de equipe. Faça upgrade para adicionar mais.`);
       }
 
+      if (isAdmin && !form.primary_user_email) {
+        throw new Error('Informe o e-mail do consultor/produtor responsável por este convite.');
+      }
+      const primaryEmail = isAdmin ? form.primary_user_email : user.email;
+
       const teamMemberData = {
-        primary_user_email: user.email,
-        consultor_email: user.email,
+        primary_user_email: primaryEmail,
+        consultor_email: primaryEmail,
         member_email: form.email,
         member_name: form.name,
         member_role: form.member_role,
@@ -139,7 +144,7 @@ export default function MyTeam() {
       await base44.functions.invoke('applyTeamMemberOnInvite', {
         member_email: form.email,
         team_member_id: teamMember.id,
-        primary_consultor_email: user.email,
+        primary_consultor_email: primaryEmail,
         user_type: form.target_user_type,
       });
 
@@ -158,7 +163,7 @@ export default function MyTeam() {
       toast.success('Convite enviado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['allTeamMembers'] });
       setShowInviteDialog(false);
-      setInviteForm({ email: '', name: '', member_role: '', target_user_type: 'equipe' });
+      setInviteForm({ email: '', name: '', member_role: '', target_user_type: 'equipe', primary_user_email: '' });
     },
     onError: (err) => toast.error(err?.message || 'Erro ao enviar convite.'),
   });
@@ -343,6 +348,19 @@ export default function MyTeam() {
             <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-xs text-green-800">
               ✓ O convite será enviado por email. O usuário criará sua conta ao aceitar.
             </div>
+            {isAdmin && (
+              <div>
+                <Label>E-mail do consultor/produtor responsável *</Label>
+                <input
+                  type="email"
+                  className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  placeholder="consultor@exemplo.com"
+                  value={inviteForm.primary_user_email}
+                  onChange={(e) => setInviteForm({ ...inviteForm, primary_user_email: e.target.value })}
+                />
+                <p className="text-xs text-gray-400 mt-1">Conta principal (consultor ou produtor) à qual este convite pertence.</p>
+              </div>
+            )}
             <div>
               <Label>E-mail do usuário *</Label>
               <input
@@ -388,7 +406,7 @@ export default function MyTeam() {
             <Button
               className="bg-emerald-700 hover:bg-emerald-800"
               onClick={() => inviteMutation.mutate(inviteForm)}
-              disabled={inviteMutation.isPending || !inviteForm.email || !inviteForm.name || !inviteForm.member_role}
+              disabled={inviteMutation.isPending || !inviteForm.email || !inviteForm.name || !inviteForm.member_role || (isAdmin && !inviteForm.primary_user_email)}
             >
               {inviteMutation.isPending ? 'Enviando...' : 'Enviar Convite'}
             </Button>

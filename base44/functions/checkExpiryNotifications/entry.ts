@@ -1,6 +1,6 @@
 /**
  * checkExpiryNotifications — Verifica vencimentos e notifica responsáveis + equipe.
- * Canais: push (in-app) + email + WhatsApp (registrado em metadata; sem API externa ainda).
+ * Canais: push (in-app) + email + WhatsApp (via webhook n8n).
  *
  * v4 — Preferências por destinatário (NotificationPreference), alerta de renovação de
  *       licença (renewal_required/renewal_days_before), condicionantes com event_type
@@ -207,30 +207,15 @@ Deno.serve(async (req) => {
         await sendEmail(email, emailSubject, emailBody);
       }
       if (prefs.whatsapp && prefs.phone) {
-        // Registra intenção de envio via WhatsApp; integração n8n será implementada depois.
         try {
-          const recent = await base44.asServiceRole.entities.InAppNotification.filter(
-            { user_email: email }, '-created_date', 50
-          );
-          const waTitle = `[WA] ${title}`;
-          const alreadySentToday = recent.some(n =>
-            n.title === waTitle && n.metadata?.checked_date === todayStr
-          );
-          if (!alreadySentToday) {
-            await base44.asServiceRole.entities.InAppNotification.create({
-              user_email: email, title: waTitle, message, event_type: eventType,
-              severity, read: false, link,
-              metadata: {
-                type: 'whatsapp_pending',
-                channel_requested: 'whatsapp',
-                phone_number: prefs.phone,
-                checked_date: todayStr,
-                checked_at: today.toISOString(),
-              }
-            });
-          }
+          await fetch('https://prumohub.app.n8n.cloud/webhook/prumo-whatsapp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: prefs.phone, message: `${title}: ${message}` })
+          });
+          console.log(`[Expiry] WhatsApp enviado → ${prefs.phone}: "${title}"`);
         } catch (e) {
-          console.error('[Expiry] Erro ao registrar WhatsApp pendente:', e.message);
+          console.error('[Expiry] Erro ao enviar WhatsApp para', prefs.phone, ':', e.message);
         }
       }
     };

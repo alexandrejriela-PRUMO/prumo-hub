@@ -44,6 +44,8 @@ Deno.serve(async (req) => {
     // Cache local por request
     const consultorCache = {};
     const recipientCache = {};
+    const propCache = {};
+    const userNameCache = {};
     const prefCache = {};
     const recentEmailsMap = new Map();
 
@@ -65,6 +67,44 @@ Deno.serve(async (req) => {
         recipientCache[email] = users[0] || { user_type: 'produtor' };
         return recipientCache[email];
       } catch (e) { return { user_type: 'produtor' }; }
+    }
+
+    async function getPropertyData(propertyId) {
+      if (!propertyId) return null;
+      if (propCache[propertyId]) return propCache[propertyId];
+      try {
+        const props = await base44.asServiceRole.entities.Property.filter({ id: propertyId });
+        propCache[propertyId] = props[0] || null;
+        return propCache[propertyId];
+      } catch (e) { return null; }
+    }
+
+    async function getUserName(email) {
+      if (!email) return null;
+      if (userNameCache[email]) return userNameCache[email];
+      const u = await getRecipientData(email);
+      const name = u?.full_name || null;
+      userNameCache[email] = name;
+      return name;
+    }
+
+    function buildCtx(data, fields, extra) {
+      extra = extra || {};
+      const fmtDate = (d) => { if (!d) return null; const dt = new Date(d.length === 10 ? d + 'T00:00:00' : d); return isNaN(dt) ? null : dt.toLocaleDateString('pt-BR'); };
+      const items = [];
+      const textParts = [];
+      if (extra.clientName) { items.push(`<li><strong>Cliente:</strong> ${extra.clientName}</li>`); textParts.push(`Cliente: ${extra.clientName}`); }
+      if (extra.propertyName) { items.push(`<li><strong>Propriedade:</strong> ${extra.propertyName}</li>`); textParts.push(`Propriedade: ${extra.propertyName}`); }
+      for (const f of fields) {
+        const key = f[0], label = f[1], type = f[2];
+        let val = data[key];
+        if (val === undefined || val === null || val === '') continue;
+        if (type === 'date') { val = fmtDate(val); if (!val) continue; }
+        if (type === 'currency') { val = `R$ ${Number(val).toLocaleString('pt-BR')}`; }
+        items.push(`<li><strong>${label}:</strong> ${val}</li>`);
+        if (key !== 'description' && key !== 'notes') textParts.push(`${label}: ${val}`);
+      }
+      return { html: `<ul>${items.join('')}</ul>`, text: textParts.length ? ` | ${textParts.join(' · ')}` : '' };
     }
 
     async function getUserPrefs(email) {
@@ -307,14 +347,11 @@ Deno.serve(async (req) => {
     // ─── PROCESS ─────────────────────────────────────────────────────────
     if (event.entity_name === 'Process') {
       const client = data.client_email;
-      let consultorEmail = null;
-
-      if (data.property_id) {
-        try {
-          const props = await base44.asServiceRole.entities.Property.filter({ id: data.property_id });
-          if (props.length > 0) consultorEmail = props[0].consultor_email;
-        } catch (e) { /* ignore */ }
-      }
+      const propData = await getPropertyData(data.property_id);
+      const consultorEmail = propData?.consultor_email || null;
+      const propertyName = propData?.property_name || propData?.name || null;
+      const clientName = await getUserName(client);
+      const ctx = buildCtx(data, [['process_type','Tipo'],['process_number','Número'],['subject','Matéria'],['parties','Partes'],['location','Local'],['filing_date','Data de Propositura','date'],['status','Status']], { clientName, propertyName });
 
       const teamEmails = await getTeamEmails(consultorEmail);
       const clientConsultorEmail = await getClientConsultorEmail(data.property_id, client);
@@ -322,20 +359,20 @@ Deno.serve(async (req) => {
       const recipients = await filterByPlan(candidates, consultorEmail);
 
       if (event.type === 'create') {
-        const message = `Processo ${data.process_number} (${data.process_type}): ${data.subject}`;
+        const message = `Processo ${data.process_number} (${data.process_type}): ${data.subject}${ctx.text}`;
         for (const r of recipients) {
           const label = r === consultorEmail ? 'Novo Processo - Cliente' : r === clientConsultorEmail ? 'Novo Processo em sua Propriedade' : 'Novo Processo Registrado';
           addNotif(notifications, r, label, message, 'novo_processo', 'info', '/Processes');
         }
         await addEmail(emailsToSend, client,
           `[PRUMO Hub] Novo Processo Registrado: ${data.process_number}`,
-          `<p>Novo processo cadastrado:</p><ul><li><strong>Número:</strong> ${data.process_number}</li><li><strong>Tipo:</strong> ${data.process_type}</li><li><strong>Matéria:</strong> ${data.subject}</li><li><strong>Status:</strong> ${data.status}</li></ul><p>Equipe PRUMO Hub</p>`,
+          `<p>Olá${clientName ? `, ${clientName}` : ''},</p><p>Novo processo cadastrado:</p>${ctx.html}<p>Equipe PRUMO Hub</p>`,
           'novo_processo'
         );
         if (clientConsultorEmail && clientConsultorEmail !== client) {
           await addEmail(emailsToSend, clientConsultorEmail,
             `[PRUMO Hub] Novo Processo Registrado em sua Propriedade`,
-            `<p>Olá,</p><p>Seu consultor registrou um novo processo para sua propriedade:</p><ul><li><strong>Número:</strong> ${data.process_number}</li><li><strong>Tipo:</strong> ${data.process_type}</li><li><strong>Matéria:</strong> ${data.subject}</li></ul><p>Equipe PRUMO Hub</p>`,
+            `<p>Olá,</p><p>Seu consultor registrou um novo processo para sua propriedade:</p>${ctx.html}<p>Equipe PRUMO Hub</p>`,
             'novo_processo'
           );
         }
@@ -345,39 +382,39 @@ Deno.serve(async (req) => {
         const oldU = old_data?.updates || [], newU = data?.updates || [];
         if (newU.length > oldU.length) {
           const latest = newU[newU.length - 1];
-          const movMessage = `Processo ${data.process_number}: ${latest.description?.substring(0, 120) || 'Nova movimentação'}`;
+          const movMessage = `Andamento no processo ${data.process_number}${ctx.text}: ${latest.description?.substring(0, 120) || 'Nova movimentação'}`;
           for (const r of recipients) {
             const label = r === consultorEmail ? 'Andamento em Processo - Cliente' : r === clientConsultorEmail ? 'Novo Andamento no seu Processo' : 'Novo Andamento em Processo';
             addNotif(notifications, r, label, movMessage, 'atualizacao_processo', 'info', '/Processes');
           }
           await addEmail(emailsToSend, client,
             `[PRUMO Hub] Novo Andamento no Processo ${data.process_number}`,
-            `<p>Nova movimentação no processo <strong>${data.process_number}</strong>:</p><blockquote style="background:#f5f5f5;padding:12px;border-left:4px solid #2d6a4f;">${latest.description || 'Nova movimentação'}</blockquote><p>Equipe PRUMO Hub</p>`,
+            `<p>Olá${clientName ? `, ${clientName}` : ''},</p><p>Nova movimentação no processo <strong>${data.process_number}</strong>:</p><blockquote style="background:#f5f5f5;padding:12px;border-left:4px solid #2d6a4f;">${latest.description || 'Nova movimentação'}</blockquote>${ctx.html}<p>Equipe PRUMO Hub</p>`,
             'atualizacao_processo'
           );
           if (clientConsultorEmail && clientConsultorEmail !== client) {
             await addEmail(emailsToSend, clientConsultorEmail,
               `[PRUMO Hub] Andamento no seu Processo ${data.process_number}`,
-              `<p>Olá,</p><p>Novo andamento no processo <strong>${data.process_number}</strong>:</p><blockquote style="background:#f5f5f5;padding:12px;border-left:4px solid #2d6a4f;">${latest.description || 'Nova movimentação'}</blockquote><p>Equipe PRUMO Hub</p>`,
+              `<p>Olá,</p><p>Novo andamento no processo <strong>${data.process_number}</strong>:</p><blockquote style="background:#f5f5f5;padding:12px;border-left:4px solid #2d6a4f;">${latest.description || 'Nova movimentação'}</blockquote>${ctx.html}<p>Equipe PRUMO Hub</p>`,
               'atualizacao_processo'
             );
           }
         }
         if (old_data?.status && old_data.status !== data.status) {
-          const statusMsg = `Processo ${data.process_number}: ${old_data.status} → ${data.status}`;
+          const statusMsg = `Processo ${data.process_number}: ${old_data.status} → ${data.status}${ctx.text}`;
           for (const r of recipients) {
             const label = r === consultorEmail ? 'Status de Processo Alterado - Cliente' : 'Status de Processo Alterado';
             addNotif(notifications, r, label, statusMsg, 'atualizacao_processo', 'warning', '/Processes');
           }
           await addEmail(emailsToSend, client,
             `[PRUMO Hub] Status do Processo ${data.process_number} Alterado`,
-            `<p>Status alterado: <strong>${old_data.status}</strong> → <strong>${data.status}</strong></p><p>Equipe PRUMO Hub</p>`,
+            `<p>Olá${clientName ? `, ${clientName}` : ''},</p><p>Status alterado: <strong>${old_data.status}</strong> → <strong>${data.status}</strong></p>${ctx.html}<p>Equipe PRUMO Hub</p>`,
             'atualizacao_processo'
           );
           if (clientConsultorEmail && clientConsultorEmail !== client) {
             await addEmail(emailsToSend, clientConsultorEmail,
               `[PRUMO Hub] Status do seu Processo ${data.process_number} Alterado`,
-              `<p>Olá,</p><p>O status do processo alterou: <strong>${old_data.status}</strong> → <strong>${data.status}</strong></p><p>Equipe PRUMO Hub</p>`,
+              `<p>Olá,</p><p>O status do processo alterou: <strong>${old_data.status}</strong> → <strong>${data.status}</strong></p>${ctx.html}<p>Equipe PRUMO Hub</p>`,
               'atualizacao_processo'
             );
           }
@@ -389,13 +426,18 @@ Deno.serve(async (req) => {
     if (event.entity_name === 'ClientContract') {
       const clientEmail = data.client_email;
       const consultorEmail = data.consultor_email;
+      const propData = await getPropertyData(data.property_id);
+      const propertyName = propData?.property_name || propData?.name || null;
+      const clientName = data.client_name || await getUserName(clientEmail);
+      const ctx = buildCtx(data, [['contract_type','Tipo'],['object','Objeto'],['start_date','Início','date'],['end_date','Vencimento','date'],['status','Status'],['signature_status','Assinatura']], { clientName, propertyName });
+
       const teamEmails = await getTeamEmails(consultorEmail);
       const clientConsultorEmail = await getClientConsultorEmail(data.property_id, clientEmail);
       const candidates = [...new Set([clientEmail, consultorEmail, ...teamEmails, clientConsultorEmail].filter(Boolean))];
       const recipients = await filterByPlan(candidates, consultorEmail);
 
       if (event.type === 'create') {
-        const msg = `Contrato "${data.contract_type}" para ${data.client_name || clientEmail} foi criado.`;
+        const msg = `Contrato "${data.contract_type}" para ${clientName || clientEmail} foi criado${ctx.text}.`;
         for (const r of recipients) {
           const label = r === clientEmail || r === clientConsultorEmail ? 'Novo Contrato Disponível' : 'Novo Contrato Criado';
           addNotif(notifications, r, label, msg, 'outro', 'info', '/Contracts');
@@ -403,7 +445,7 @@ Deno.serve(async (req) => {
         if (clientEmail) {
           await addEmail(emailsToSend, clientEmail,
             `[PRUMO Hub] Novo Contrato: ${data.contract_type}`,
-            `<p>Olá ${data.client_name || ''},</p><p>Um novo contrato foi criado para você:</p><ul><li><strong>Tipo:</strong> ${data.contract_type}</li><li><strong>Objeto:</strong> ${data.object || 'N/A'}</li><li><strong>Status:</strong> ${data.status}</li></ul><p>Acesse a plataforma para visualizar.</p><p>Equipe PRUMO Hub</p>`,
+            `<p>Olá ${clientName || ''},</p><p>Um novo contrato foi criado para você:</p>${ctx.html}<p>Acesse a plataforma para visualizar.</p><p>Equipe PRUMO Hub</p>`,
             'outro'
           );
         }
@@ -413,28 +455,28 @@ Deno.serve(async (req) => {
         // Mudança de status
         if (old_data?.status && old_data.status !== data.status) {
           const sev = data.status === 'Cancelado' ? 'error' : data.status === 'Assinado' || data.status === 'Ativo' ? 'success' : 'info';
-          const statusMsg = `Contrato "${data.contract_type}": ${old_data.status} → ${data.status}`;
+          const statusMsg = `Contrato "${data.contract_type}": ${old_data.status} → ${data.status}${ctx.text}`;
           for (const r of recipients) {
             addNotif(notifications, r, 'Status de Contrato Alterado', statusMsg, 'outro', sev, '/Contracts');
           }
           if (clientEmail) {
             await addEmail(emailsToSend, clientEmail,
               `[PRUMO Hub] Status do Contrato "${data.contract_type}" Alterado`,
-              `<p>Olá,</p><p>O status do seu contrato foi atualizado: <strong>${old_data.status}</strong> → <strong>${data.status}</strong></p><p>Equipe PRUMO Hub</p>`,
+              `<p>Olá${clientName ? `, ${clientName}` : ''},</p><p>O status do seu contrato foi atualizado: <strong>${old_data.status}</strong> → <strong>${data.status}</strong></p>${ctx.html}<p>Equipe PRUMO Hub</p>`,
               'outro'
             );
           }
           if (clientConsultorEmail && clientConsultorEmail !== clientEmail) {
             await addEmail(emailsToSend, clientConsultorEmail,
               `[PRUMO Hub] Status do seu Contrato Alterado`,
-              `<p>Olá,</p><p>O status do contrato <strong>${data.contract_type}</strong> foi alterado: <strong>${old_data.status}</strong> → <strong>${data.status}</strong></p><p>Equipe PRUMO Hub</p>`,
+              `<p>Olá,</p><p>O status do contrato <strong>${data.contract_type}</strong> foi alterado: <strong>${old_data.status}</strong> → <strong>${data.status}</strong></p>${ctx.html}<p>Equipe PRUMO Hub</p>`,
               'outro'
             );
           }
         }
         // Mudança de signature_status
         if (old_data?.signature_status && old_data.signature_status !== data.signature_status) {
-          const sigMsg = `Contrato "${data.contract_type}": assinatura ${data.signature_status}`;
+          const sigMsg = `Contrato "${data.contract_type}": assinatura ${data.signature_status}${ctx.text}`;
           const sev = data.signature_status === 'Assinado' ? 'success' : data.signature_status === 'Recusado' ? 'error' : 'info';
           for (const r of recipients) {
             addNotif(notifications, r, 'Atualização de Assinatura de Contrato', sigMsg, 'outro', sev, '/Contracts');
@@ -447,16 +489,16 @@ Deno.serve(async (req) => {
     if (event.entity_name === 'EnvironmentalAlert') {
       let ownerEmail = data.responsible_email;
       let consultorEmail = null;
+      let propertyName = null;
 
-      if (data.property_id) {
-        try {
-          const props = await base44.asServiceRole.entities.Property.filter({ id: data.property_id });
-          if (props.length > 0) {
-            ownerEmail = ownerEmail || props[0].owner_email;
-            consultorEmail = props[0].consultor_email;
-          }
-        } catch (e) { /* ignore */ }
+      const propData = await getPropertyData(data.property_id);
+      if (propData) {
+        ownerEmail = ownerEmail || propData.owner_email;
+        consultorEmail = propData.consultor_email;
+        propertyName = propData.property_name || propData.name || null;
       }
+      const ownerName = await getUserName(ownerEmail);
+      const ctx = buildCtx(data, [['alert_type','Tipo'],['severity','Severidade'],['title','Título'],['affected_area_hectares','Área Afetada (ha)'],['detection_date','Data de Detecção','date'],['data_source','Fonte'],['status','Status']], { clientName: ownerName, propertyName });
 
       const sev = (data.severity === 'Crítica' || data.severity === 'Alta') ? 'error' : 'warning';
       const teamEmails = await getTeamEmails(consultorEmail);
@@ -466,26 +508,26 @@ Deno.serve(async (req) => {
 
       if (event.type === 'create') {
         const alertTitle = 'Novo Alerta Ambiental';
-        const alertMsg = `${data.alert_type}: ${data.title}`;
+        const alertMsg = `${data.alert_type}: ${data.title}${ctx.text}`;
         for (const r of recipients) {
           addNotif(notifications, r, alertTitle, alertMsg, 'novo_alerta_ambiental', sev, '/EnvironmentalAlerts');
         }
         await addEmail(emailsToSend, ownerEmail,
           `[PRUMO Hub] ⚠️ Novo Alerta Ambiental: ${data.title}`,
-          `<p>Um novo alerta ambiental foi detectado:</p><ul><li><strong>Tipo:</strong> ${data.alert_type}</li><li><strong>Título:</strong> ${data.title}</li><li><strong>Severidade:</strong> ${data.severity}</li>${data.description ? `<li><strong>Descrição:</strong> ${data.description}</li>` : ''}</ul><p>Acesse a plataforma para mais detalhes.</p><p>Equipe PRUMO Hub</p>`,
+          `<p>Olá${ownerName ? `, ${ownerName}` : ''},</p><p>Um novo alerta ambiental foi detectado:</p>${ctx.html}${data.description ? `<p><strong>Descrição:</strong> ${data.description}</p>` : ''}<p>Acesse a plataforma para mais detalhes.</p><p>Equipe PRUMO Hub</p>`,
           'novo_alerta_ambiental'
         );
         if (consultorEmail && consultorEmail !== ownerEmail) {
           await addEmail(emailsToSend, consultorEmail,
             `[PRUMO Hub] ⚠️ Alerta Ambiental em Propriedade Monitorada: ${data.title}`,
-            `<p>Alerta detectado em propriedade de seu cliente:</p><ul><li><strong>Tipo:</strong> ${data.alert_type}</li><li><strong>Severidade:</strong> ${data.severity}</li></ul><p>Equipe PRUMO Hub</p>`,
+            `<p>Olá,</p><p>Alerta detectado em propriedade de seu cliente:</p>${ctx.html}<p>Equipe PRUMO Hub</p>`,
             'novo_alerta_ambiental'
           );
         }
         if (clientConsultorEmail && clientConsultorEmail !== ownerEmail && clientConsultorEmail !== consultorEmail) {
           await addEmail(emailsToSend, clientConsultorEmail,
             `[PRUMO Hub] ⚠️ Alerta Ambiental em sua Propriedade: ${data.title}`,
-            `<p>Olá,</p><p>Um alerta ambiental foi detectado em sua propriedade:</p><ul><li><strong>Tipo:</strong> ${data.alert_type}</li><li><strong>Severidade:</strong> ${data.severity}</li></ul><p>Acesse a plataforma para mais detalhes.</p><p>Equipe PRUMO Hub</p>`,
+            `<p>Olá,</p><p>Um alerta ambiental foi detectado em sua propriedade:</p>${ctx.html}<p>Acesse a plataforma para mais detalhes.</p><p>Equipe PRUMO Hub</p>`,
             'novo_alerta_ambiental'
           );
         }
@@ -494,12 +536,12 @@ Deno.serve(async (req) => {
         if (data.status === 'Resolvido') {
           for (const r of recipients) {
             addNotif(notifications, r, 'Alerta Ambiental Resolvido',
-              `O alerta "${data.title}" foi resolvido.`, 'alerta_resolvido', 'success', '/EnvironmentalAlerts');
+              `O alerta "${data.title}" foi resolvido${ctx.text}.`, 'alerta_resolvido', 'success', '/EnvironmentalAlerts');
           }
         } else {
           for (const r of recipients) {
             addNotif(notifications, r, 'Alerta Ambiental Atualizado',
-              `"${data.title}": ${old_data?.status} → ${data.status}`, 'novo_alerta_ambiental', sev, '/EnvironmentalAlerts');
+              `"${data.title}": ${old_data?.status} → ${data.status}${ctx.text}`, 'novo_alerta_ambiental', sev, '/EnvironmentalAlerts');
           }
         }
       }
@@ -508,13 +550,12 @@ Deno.serve(async (req) => {
     // ─── PRAD ────────────────────────────────────────────────────────────
     if (event.entity_name === 'PRAD') {
       const owner = data.owner_email;
-      let consultorEmail = null;
-      if (data.property_id) {
-        try {
-          const props = await base44.asServiceRole.entities.Property.filter({ id: data.property_id });
-          if (props.length > 0) consultorEmail = props[0].consultor_email;
-        } catch (e) { /* ignore */ }
-      }
+      const propData = await getPropertyData(data.property_id);
+      const consultorEmail = propData?.consultor_email || null;
+      const propertyName = propData?.property_name || propData?.name || null;
+      const ownerName = await getUserName(owner);
+      const ctx = buildCtx(data, [['project_name','Projeto'],['status','Status']], { clientName: ownerName, propertyName });
+
       const teamEmails = await getTeamEmails(consultorEmail);
       const clientConsultorEmail = await getClientConsultorEmail(data.property_id, owner);
       const candidates = [...new Set([owner, consultorEmail, ...teamEmails, clientConsultorEmail].filter(Boolean))];
@@ -523,15 +564,20 @@ Deno.serve(async (req) => {
       if (event.type === 'create') {
         for (const r of recipients) {
           const label = r === consultorEmail ? 'Novo PRAD - Cliente' : 'Novo PRAD Criado';
-          addNotif(notifications, r, label, `Projeto "${data.project_name}" foi registrado.`, 'outro', 'info', '/PRAD');
+          addNotif(notifications, r, label, `Projeto "${data.project_name}" foi registrado${ctx.text}.`, 'outro', 'info', '/PRAD');
         }
+        await addEmail(emailsToSend, owner,
+          `[PRUMO Hub] Novo PRAD Criado: ${data.project_name}`,
+          `<p>Olá${ownerName ? `, ${ownerName}` : ''},</p><p>Um novo PRAD foi registrado:</p>${ctx.html}<p>Equipe PRUMO Hub</p>`,
+          'outro'
+        );
       }
       if (event.type === 'update') {
         if (old_data?.status && old_data.status !== data.status) {
           const sev = data.status === 'Concluído' ? 'success' : 'info';
           for (const r of recipients) {
             const label = r === consultorEmail ? 'Status do PRAD Alterado - Cliente' : 'Status do PRAD Alterado';
-            addNotif(notifications, r, label, `"${data.project_name}": ${old_data.status} → ${data.status}`, 'outro', sev, '/PRAD');
+            addNotif(notifications, r, label, `"${data.project_name}": ${old_data.status} → ${data.status}${ctx.text}`, 'outro', sev, '/PRAD');
           }
         }
         const oldP = old_data?.pipeline_status || [], newP = data?.pipeline_status || [];
@@ -540,7 +586,7 @@ Deno.serve(async (req) => {
             const sev = newP[i].current_status === 'Concluído' ? 'success' : 'info';
             for (const r of recipients) {
               addNotif(notifications, r, 'Andamento no PRAD',
-                `Etapa "${newP[i].stage_name}": ${oldP[i].current_status} → ${newP[i].current_status}`, 'outro', sev, '/PRAD');
+                `Etapa "${newP[i].stage_name}": ${oldP[i].current_status} → ${newP[i].current_status}${ctx.text}`, 'outro', sev, '/PRAD');
             }
           }
         }
@@ -564,20 +610,39 @@ Deno.serve(async (req) => {
     // ─── GEOREFERENCING ──────────────────────────────────────────────────
     if (event.entity_name === 'Georeferencing') {
       const owner = data.owner_email;
+      const propData = await getPropertyData(data.property_id);
+      const consultorEmail = propData?.consultor_email || null;
+      const propertyName = propData?.property_name || propData?.name || null;
+      const ownerName = await getUserName(owner);
+      const ctx = buildCtx(data, [['status','Status'],['sigef_status','SIGEF'],['municipality','Município'],['state','UF']], { clientName: ownerName, propertyName });
+      const teamEmails = await getTeamEmails(consultorEmail);
+      const recipients = await filterByPlan([...new Set([owner, consultorEmail, ...teamEmails].filter(Boolean))], consultorEmail);
+
       if (event.type === 'create') {
-        addNotif(notifications, owner, 'Georreferenciamento Registrado',
-          'Novo processo de georreferenciamento iniciado.', 'outro', 'info', '/Georeferencing');
+        for (const r of recipients) {
+          addNotif(notifications, r, 'Georreferenciamento Registrado',
+            `Novo processo de georreferenciamento iniciado${ctx.text}.`, 'outro', 'info', '/Georeferencing');
+        }
+        await addEmail(emailsToSend, owner,
+          `[PRUMO Hub] Georreferenciamento Registrado`,
+          `<p>Olá${ownerName ? `, ${ownerName}` : ''},</p><p>Novo processo de georreferenciamento iniciado:</p>${ctx.html}<p>Equipe PRUMO Hub</p>`,
+          'outro'
+        );
       }
       if (event.type === 'update') {
         if (old_data?.status !== data.status) {
-          addNotif(notifications, owner, 'Status do Georreferenciamento Alterado',
-            `Status: ${old_data?.status} → ${data.status}`,
-            'outro', data.status === 'Regular' ? 'success' : 'warning', '/Georeferencing');
+          for (const r of recipients) {
+            addNotif(notifications, r, 'Status do Georreferenciamento Alterado',
+              `Status: ${old_data?.status} → ${data.status}${ctx.text}`,
+              'outro', data.status === 'Regular' ? 'success' : 'warning', '/Georeferencing');
+          }
         }
         if (old_data?.sigef_status !== data.sigef_status) {
-          addNotif(notifications, owner, 'Status SIGEF Atualizado',
-            `SIGEF: ${old_data?.sigef_status || '—'} → ${data.sigef_status}`,
-            'outro', data.sigef_status === 'Aprovado' ? 'success' : 'info', '/Georeferencing');
+          for (const r of recipients) {
+            addNotif(notifications, r, 'Status SIGEF Atualizado',
+              `SIGEF: ${old_data?.sigef_status || '—'} → ${data.sigef_status}${ctx.text}`,
+              'outro', data.sigef_status === 'Aprovado' ? 'success' : 'info', '/Georeferencing');
+          }
         }
       }
     }
@@ -671,8 +736,26 @@ Deno.serve(async (req) => {
     }
 
     // ─── REQUEST ─────────────────────────────────────────────────────────
+    // Notificações de Requerimento são destinadas APENAS a produtores e sua equipe_produtor.
     if (event.entity_name === 'Request') {
       const client = data.client_email;
+      const clientName = await getUserName(client);
+      const propData = await getPropertyData(data.property_id);
+      const propertyName = propData?.property_name || propData?.name || null;
+      const ctx = buildCtx(data, [['category','Categoria'],['subject','Assunto'],['priority','Prioridade'],['status','Status'],['created_date','Data','date']], { clientName, propertyName });
+
+      // Filtra destinatários: apenas produtor e equipe_produtor
+      const filterProdutorOnly = async (emails) => {
+        const result = [];
+        for (const email of [...new Set(emails.filter(Boolean))]) {
+          const u = await getRecipientData(email);
+          const ut = u?.user_type;
+          if (ut === 'produtor' || ut === 'equipe_produtor' || ut === 'equipe' || u?.role === 'admin') {
+            result.push(email);
+          }
+        }
+        return result;
+      };
 
       const findConsultores = async () => {
         try {
@@ -686,16 +769,21 @@ Deno.serve(async (req) => {
         const sev = (data.priority === 'Urgente' || data.priority === 'Alta') ? 'warning' : 'info';
         for (const c of consultores) {
           addNotif(notifications, c, 'Novo Requerimento Recebido',
-            `[${data.category}] ${data.subject}`, 'novo_requerimento', sev, '/Requests');
-          const teamEmails = await getTeamEmails(c);
+            `[${data.category}] ${data.subject}${ctx.text}`, 'novo_requerimento', sev, '/Requests');
+          const teamEmails = await filterProdutorOnly(await getTeamEmails(c));
           for (const memberEmail of teamEmails) {
             addNotif(notifications, memberEmail, 'Novo Requerimento - Cliente',
-              `[${data.category}] ${data.subject}`, 'novo_requerimento', sev, '/Requests');
+              `[${data.category}] ${data.subject}${ctx.text}`, 'novo_requerimento', sev, '/Requests');
           }
         }
         addNotif(notifications, client, 'Requerimento Enviado com Sucesso',
-          `Seu requerimento "${data.subject}" foi recebido e está sendo analisado.`,
+          `Seu requerimento "${data.subject}" foi recebido e está sendo analisado${ctx.text}.`,
           'resposta_requerimento', 'info', '/Requests');
+        await addEmail(emailsToSend, client,
+          `[PRUMO Hub] Requerimento Recebido: ${data.subject}`,
+          `<p>Olá${clientName ? `, ${clientName}` : ''},</p><p>Seu requerimento foi recebido e está sendo analisado:</p>${ctx.html}<p>Equipe PRUMO Hub</p>`,
+          'resposta_requerimento'
+        );
       }
 
       if (event.type === 'update') {
@@ -704,23 +792,23 @@ Deno.serve(async (req) => {
           const latest = newC[newC.length - 1];
           if (latest.sender_type === 'team') {
             addNotif(notifications, client, 'Nova Resposta ao seu Requerimento',
-              `"${data.subject}": ${latest.message?.substring(0, 120) || 'Nova mensagem da equipe'}`,
+              `"${data.subject}": ${latest.message?.substring(0, 120) || 'Nova mensagem da equipe'}${ctx.text}`,
               'resposta_requerimento', 'info', '/Requests');
             await addEmail(emailsToSend, client,
               `[PRUMO Hub] Nova resposta ao seu requerimento: ${data.subject}`,
-              `<p>Olá,</p><p>Sua equipe respondeu ao requerimento <strong>${data.subject}</strong>:</p><blockquote style="background:#f5f5f5;padding:12px;border-left:4px solid #2d6a4f;">${latest.message || ''}</blockquote><p>Equipe PRUMO Hub</p>`,
+              `<p>Olá${clientName ? `, ${clientName}` : ''},</p><p>Sua equipe respondeu ao requerimento <strong>${data.subject}</strong>:</p><blockquote style="background:#f5f5f5;padding:12px;border-left:4px solid #2d6a4f;">${latest.message || ''}</blockquote>${ctx.html}<p>Equipe PRUMO Hub</p>`,
               'resposta_requerimento'
             );
           } else {
             const consultores = await findConsultores();
             for (const c of consultores) {
               addNotif(notifications, c, 'Nova Mensagem de Cliente',
-                `"${data.subject}": ${latest.message?.substring(0, 120) || 'Nova mensagem'}`,
+                `"${data.subject}": ${latest.message?.substring(0, 120) || 'Nova mensagem'}${ctx.text}`,
                 'novo_requerimento', 'info', '/Requests');
-              const teamEmails = await getTeamEmails(c);
+              const teamEmails = await filterProdutorOnly(await getTeamEmails(c));
               for (const memberEmail of teamEmails) {
                 addNotif(notifications, memberEmail, 'Nova Mensagem de Cliente',
-                  `"${data.subject}": ${latest.message?.substring(0, 120) || 'Nova mensagem'}`,
+                  `"${data.subject}": ${latest.message?.substring(0, 120) || 'Nova mensagem'}${ctx.text}`,
                   'novo_requerimento', 'info', '/Requests');
               }
             }
@@ -728,7 +816,7 @@ Deno.serve(async (req) => {
         }
         if (old_data?.status && old_data.status !== data.status) {
           addNotif(notifications, client, 'Status do Requerimento Alterado',
-            `"${data.subject}": ${old_data.status} → ${data.status}`,
+            `"${data.subject}": ${old_data.status} → ${data.status}${ctx.text}`,
             'resposta_requerimento', data.status === 'Respondido' ? 'success' : 'info', '/Requests');
         }
       }

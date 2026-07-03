@@ -21,6 +21,8 @@ Deno.serve(async (req) => {
     const propViewersCache   = {};
     const notifPrefsCache    = {};
 
+    const propDataCache = {};
+    const userCache = {};
     // ─── Busca consultor da propriedade ──────────────────────────────────
     const getConsultor = async (propertyId) => {
       if (!propertyId) return null;
@@ -31,6 +33,41 @@ Deno.serve(async (req) => {
         return propConsultorCache[propertyId];
       } catch { return null; }
     };
+    const getPropertyName = async (propertyId) => {
+      if (!propertyId) return null;
+      if (propDataCache[propertyId] !== undefined) return propDataCache[propertyId];
+      try {
+        const props = await base44.asServiceRole.entities.Property.filter({ id: propertyId });
+        propDataCache[propertyId] = props[0]?.property_name || props[0]?.name || null;
+        return propDataCache[propertyId];
+      } catch { return null; }
+    };
+    const getUserName = async (email) => {
+      if (!email) return null;
+      if (userCache[email] !== undefined) return userCache[email];
+      try {
+        const users = await base44.asServiceRole.entities.User.filter({ email });
+        userCache[email] = users[0]?.full_name || null;
+        return userCache[email];
+      } catch { return null; }
+    };
+    function buildCtx(data, fields, extra) {
+      extra = extra || {};
+      const fmtDate = (d) => { if (!d) return null; const dt = new Date(d.length === 10 ? d + 'T00:00:00' : d); return isNaN(dt) ? null : dt.toLocaleDateString('pt-BR'); };
+      const items = [];
+      const textParts = [];
+      if (extra.clientName) { items.push(`<li><strong>Cliente:</strong> ${extra.clientName}</li>`); textParts.push(`Cliente: ${extra.clientName}`); }
+      if (extra.propertyName) { items.push(`<li><strong>Propriedade:</strong> ${extra.propertyName}</li>`); textParts.push(`Propriedade: ${extra.propertyName}`); }
+      for (const f of fields) {
+        const key = f[0], label = f[1], type = f[2];
+        let val = data[key];
+        if (val === undefined || val === null || val === '') continue;
+        if (type === 'date') { val = fmtDate(val); if (!val) continue; }
+        items.push(`<li><strong>${label}:</strong> ${val}</li>`);
+        if (key !== 'description' && key !== 'notes') textParts.push(`${label}: ${val}`);
+      }
+      return { html: `<ul>${items.join('')}</ul>`, text: textParts.length ? ` | ${textParts.join(' · ')}` : '' };
+    }
 
     // ─── Visualizadores com notificação 'condicionante_vencendo' ─────────
     const getPropertyViewers = async (propertyId) => {
@@ -144,7 +181,10 @@ Deno.serve(async (req) => {
       if (!license.conditions?.length || !license.owner_email) continue;
 
       const consultorEmail = await getConsultor(license.property_id);
+      const propertyName   = await getPropertyName(license.property_id);
+      const ownerName      = await getUserName(license.owner_email);
       const viewers        = await getPropertyViewers(license.property_id);
+      const licCtx = buildCtx(license, [['license_type','Tipo'],['license_number','Número'],['elaboration_stage','Fase'],['issue_date','Emissão','date'],['expiry_date','Validade','date'],['environmental_agency','Órgão']], { clientName: ownerName, propertyName });
 
       // Destinatários únicos
       const seen = new Set();
@@ -173,19 +213,19 @@ Deno.serve(async (req) => {
         if (daysUntilDue < 0) {
           severity     = 'error';
           messageTitle = `Prazo de Condicionante Vencido`;
-          messageBody  = `A condicionante "${condText}" (${licLabel}) teve prazo vencido há ${Math.abs(daysUntilDue)} dias.`;
+          messageBody  = `A condicionante "${condText}" (${licLabel}) teve prazo vencido há ${Math.abs(daysUntilDue)} dias${licCtx.text}.`;
         } else if (daysUntilDue === 0) {
           severity     = 'error';
           messageTitle = `Condicionante Vence Hoje`;
-          messageBody  = `A condicionante "${condText}" (${licLabel}) vence hoje!`;
+          messageBody  = `A condicionante "${condText}" (${licLabel}) vence hoje${licCtx.text}!`;
         } else if (daysUntilDue <= 7) {
           severity     = 'error';
           messageTitle = `Condicionante Vence em ${daysUntilDue} dia${daysUntilDue > 1 ? 's' : ''}`;
-          messageBody  = `A condicionante "${condText}" (${licLabel}) vence em ${daysUntilDue} dia${daysUntilDue > 1 ? 's' : ''}.`;
+          messageBody  = `A condicionante "${condText}" (${licLabel}) vence em ${daysUntilDue} dia${daysUntilDue > 1 ? 's' : ''}${licCtx.text}.`;
         } else {
           severity     = 'warning';
           messageTitle = `Condicionante Próxima do Prazo`;
-          messageBody  = `A condicionante "${condText}" (${licLabel}) vence em ${daysUntilDue} dias.`;
+          messageBody  = `A condicionante "${condText}" (${licLabel}) vence em ${daysUntilDue} dias${licCtx.text}.`;
         }
 
         const link = `/Licenses?property_id=${license.property_id}`;
@@ -209,8 +249,8 @@ Deno.serve(async (req) => {
             await sendEmail(email, emailSubject, `
               <h2>${messageTitle}</h2>
               <p>${messageBody}</p>
+              ${licCtx.html}
               <hr/>
-              <p><strong>Licença:</strong> ${licLabel}</p>
               <p><strong>Condicionante:</strong> ${condText}</p>
               <p><strong>Data de Cumprimento:</strong> ${cond.due_date}</p>
               <hr/>

@@ -16,12 +16,35 @@ Deno.serve(async (req) => {
       return Math.ceil((new Date(dateStr) - today) / (1000 * 60 * 60 * 24));
     };
 
+    const propDataCache = {};
+    const userNameCache = {};
+
     const getConsultorEmail = async (propertyId) => {
       if (!propertyId) return null;
       try {
         const props = await base44.asServiceRole.entities.Property.filter({ id: propertyId });
         return props[0]?.consultor_email || null;
       } catch (e) { return null; }
+    };
+
+    const getPropertyName = async (propertyId) => {
+      if (!propertyId) return null;
+      if (propDataCache[propertyId] !== undefined) return propDataCache[propertyId];
+      try {
+        const props = await base44.asServiceRole.entities.Property.filter({ id: propertyId });
+        propDataCache[propertyId] = props[0]?.property_name || props[0]?.name || null;
+        return propDataCache[propertyId];
+      } catch { return null; }
+    };
+
+    const getUserName = async (email) => {
+      if (!email) return null;
+      if (userNameCache[email]) return userNameCache[email];
+      try {
+        const users = await base44.asServiceRole.entities.User.filter({ email });
+        userNameCache[email] = users[0]?.full_name || null;
+        return userNameCache[email];
+      } catch { return null; }
     };
 
     const getTeamEmails = async (consultorEmail) => {
@@ -78,44 +101,48 @@ Deno.serve(async (req) => {
       const daysLeft = getDays(license.expiry_date);
       if (daysLeft === null) continue;
       const consultorEmail = await getConsultorEmail(license.property_id);
+      const propertyName = await getPropertyName(license.property_id);
+      const ownerName = await getUserName(license.owner_email);
+      const licNum = license.license_number || 'N/A';
+      const ctxText = `${ownerName ? ` | Cliente: ${ownerName}` : ''}${propertyName ? ` | Propriedade: ${propertyName}` : ''} | Nº: ${licNum}`;
+      const ctxHtml = `<ul>${ownerName ? `<li><strong>Cliente:</strong> ${ownerName}</li>` : ''}${propertyName ? `<li><strong>Propriedade:</strong> ${propertyName}</li>` : ''}<li><strong>Tipo:</strong> ${license.license_type}</li><li><strong>Número:</strong> ${licNum}</li><li><strong>Validade:</strong> ${new Date(license.expiry_date).toLocaleDateString('pt-BR')}</li></ul>`;
 
       if (daysLeft <= 0) {
         await notifyWithTeam(license.owner_email, consultorEmail,
           `⛔ Licença ${license.license_type} VENCIDA`,
-          `A licença nº ${license.license_number || 'N/A'} expirou há ${Math.abs(daysLeft)} dia(s).`,
+          `A licença nº ${licNum} expirou há ${Math.abs(daysLeft)} dia(s)${ctxText}.`,
           'licenca_vencida', 'error', '/Licenses');
-        // Email via asServiceRole (corrigido)
         await base44.asServiceRole.integrations.Core.SendEmail({
           from_name: 'PRUMO Hub',
           to: license.owner_email,
           subject: `⛔ URGENTE: Licença ${license.license_type} VENCIDA`,
-          body: `Olá,\n\nSua licença ambiental ${license.license_type} nº ${license.license_number || 'N/A'} já VENCEU há ${Math.abs(daysLeft)} dias.\n\nRenove imediatamente.\n\nAtenciosamente,\nPRUMO Hub`
+          body: `<p>Olá${ownerName ? `, ${ownerName}` : ''},</p><p>Sua licença ambiental <strong>${license.license_type} nº ${licNum}</strong> já <strong>VENCEU</strong> há ${Math.abs(daysLeft)} dia(s).</p>${ctxHtml}<p>Renove imediatamente.</p><p>Equipe PRUMO Hub</p>`
         });
         if (consultorEmail && consultorEmail !== license.owner_email) {
           await base44.asServiceRole.integrations.Core.SendEmail({
             from_name: 'PRUMO Hub',
             to: consultorEmail,
             subject: `⛔ Licença de Cliente VENCIDA: ${license.license_type}`,
-            body: `Olá,\n\nA licença ${license.license_type} nº ${license.license_number || 'N/A'} de um cliente seu está VENCIDA há ${Math.abs(daysLeft)} dia(s).\n\nVerifique a plataforma.\n\nAtenciosamente,\nPRUMO Hub`
+            body: `<p>Olá,</p><p>A licença <strong>${license.license_type} nº ${licNum}</strong> de um cliente seu está <strong>VENCIDA</strong> há ${Math.abs(daysLeft)} dia(s).</p>${ctxHtml}<p>Verifique a plataforma.</p><p>Equipe PRUMO Hub</p>`
           });
         }
       } else if ([1, 7, 15, 30].includes(daysLeft)) {
         await notifyWithTeam(license.owner_email, consultorEmail,
           `⚠️ Licença ${license.license_type} vencendo em ${daysLeft} dia${daysLeft > 1 ? 's' : ''}`,
-          `A licença nº ${license.license_number || 'N/A'} vencerá em ${daysLeft} dia${daysLeft > 1 ? 's' : ''}.`,
+          `A licença nº ${licNum} vencerá em ${daysLeft} dia${daysLeft > 1 ? 's' : ''}${ctxText}.`,
           'licenca_vencendo', daysLeft <= 7 ? 'error' : 'warning', '/Licenses');
         await base44.asServiceRole.integrations.Core.SendEmail({
           from_name: 'PRUMO Hub',
           to: license.owner_email,
           subject: `⚠️ Alerta: Licença ${license.license_type} vencendo em ${daysLeft} dia${daysLeft > 1 ? 's' : ''}`,
-          body: `Olá,\n\nSua licença ambiental ${license.license_type} nº ${license.license_number || 'N/A'} vencerá em ${daysLeft} dia${daysLeft > 1 ? 's' : ''}.\n\nTome as medidas necessárias para renovação.\n\nAtenciosamente,\nPRUMO Hub`
+          body: `<p>Olá${ownerName ? `, ${ownerName}` : ''},</p><p>Sua licença ambiental <strong>${license.license_type} nº ${licNum}</strong> vencerá em <strong>${daysLeft} dia${daysLeft > 1 ? 's' : ''}</strong>.</p>${ctxHtml}<p>Tome as medidas necessárias para renovação.</p><p>Equipe PRUMO Hub</p>`
         });
         if (consultorEmail && consultorEmail !== license.owner_email) {
           await base44.asServiceRole.integrations.Core.SendEmail({
             from_name: 'PRUMO Hub',
             to: consultorEmail,
             subject: `⚠️ Licença de Cliente vencendo em ${daysLeft} dia${daysLeft > 1 ? 's' : ''}`,
-            body: `Olá,\n\nA licença ${license.license_type} nº ${license.license_number || 'N/A'} de um cliente seu vencerá em ${daysLeft} dia${daysLeft > 1 ? 's' : ''}.\n\nVerifique a plataforma.\n\nAtenciosamente,\nPRUMO Hub`
+            body: `<p>Olá,</p><p>A licença <strong>${license.license_type} nº ${licNum}</strong> de um cliente seu vencerá em <strong>${daysLeft} dia${daysLeft > 1 ? 's' : ''}</strong>.</p>${ctxHtml}<p>Verifique a plataforma.</p><p>Equipe PRUMO Hub</p>`
           });
         }
       }
@@ -135,6 +162,10 @@ Deno.serve(async (req) => {
       }
       const schedule = prad.execution_schedule || [];
       const consultorEmail = await getConsultorEmail(prad.property_id);
+      const propertyName = await getPropertyName(prad.property_id);
+      const ownerName = await getUserName(prad.owner_email);
+      const ctxText = `${ownerName ? ` | Cliente: ${ownerName}` : ''}${propertyName ? ` | Propriedade: ${propertyName}` : ''}`;
+      const ctxHtml = `<ul>${ownerName ? `<li><strong>Cliente:</strong> ${ownerName}</li>` : ''}${propertyName ? `<li><strong>Propriedade:</strong> ${propertyName}</li>` : ''}<li><strong>Projeto:</strong> ${prad.project_name}</li></ul>`;
       for (const stage of schedule) {
         if (stage.status === 'Concluído' || !stage.deadline) continue;
         const daysLeft = getDays(stage.deadline);
@@ -143,14 +174,14 @@ Deno.serve(async (req) => {
           const severity = daysLeft <= 0 ? 'error' : daysLeft <= 3 ? 'warning' : 'info';
           const title = `PRAD: Etapa "${stage.stage}" ${daysLeft <= 0 ? 'ATRASADA' : `vencendo em ${daysLeft} dia${daysLeft > 1 ? 's' : ''}`}`;
           await notifyWithTeam(prad.owner_email, consultorEmail, title,
-            `"${prad.project_name}" — etapa vence em ${daysLeft <= 0 ? 'prazo vencido' : daysLeft + ' dias'}.`,
+            `"${prad.project_name}" — etapa vence em ${daysLeft <= 0 ? 'prazo vencido' : daysLeft + ' dias'}${ctxText}.`,
             'outro', severity, '/PRAD');
           if (daysLeft <= 3) {
             await base44.asServiceRole.integrations.Core.SendEmail({
               from_name: 'PRUMO Hub',
               to: prad.owner_email,
               subject: title,
-              body: `Olá,\n\nA etapa "${stage.stage}" do PRAD "${prad.project_name}" ${daysLeft <= 0 ? 'já venceu há ' + Math.abs(daysLeft) + ' dias' : 'vence em ' + daysLeft + ' dias'}.\n\nPor favor, verifique o status.\n\nAtenciosamente,\nPRUMO Hub`
+              body: `<p>Olá${ownerName ? `, ${ownerName}` : ''},</p><p>A etapa <strong>"${stage.stage}"</strong> do PRAD <strong>"${prad.project_name}"</strong> ${daysLeft <= 0 ? 'já venceu há ' + Math.abs(daysLeft) + ' dias' : 'vence em ' + daysLeft + ' dias'}.</p>${ctxHtml}<p>Por favor, verifique o status.</p><p>Equipe PRUMO Hub</p>`
             });
           }
         }
@@ -163,7 +194,7 @@ Deno.serve(async (req) => {
         if (daysLeft !== null && daysLeft <= 30) {
           await notifyWithTeam(prad.owner_email, consultorEmail,
             `PRAD: Relatório Anual Ano ${report.year} ${daysLeft <= 0 ? 'ATRASADO' : `vencendo em ${daysLeft} dia${daysLeft > 1 ? 's' : ''}`}`,
-            `Relatório anual (Ano ${report.year}) do PRAD "${prad.project_name}" ${daysLeft <= 0 ? 'está atrasado' : `vence em ${daysLeft} dias`}.`,
+            `Relatório anual (Ano ${report.year}) do PRAD "${prad.project_name}" ${daysLeft <= 0 ? 'está atrasado' : `vence em ${daysLeft} dias`}${ctxText}.`,
             'outro', daysLeft <= 0 ? 'error' : 'warning', '/PRAD');
         }
       }
@@ -175,16 +206,18 @@ Deno.serve(async (req) => {
       if (!cert.expiration_date || !cert.applicant_email) continue;
       const daysLeft = getDays(cert.expiration_date);
       if (daysLeft !== null && daysLeft <= 30 && daysLeft > 0) {
+        const certName = await getUserName(cert.applicant_email);
+        const ctxText = `${certName ? ` | Cliente: ${certName}` : ''}`;
         await createNotifSafe(cert.applicant_email,
           `Certificação ${cert.certification_type} vencendo em ${daysLeft} dias`,
-          `Sua certificação "${cert.certification_type}" vencerá em ${daysLeft} dia${daysLeft > 1 ? 's' : ''}.`,
+          `Sua certificação "${cert.certification_type}" vencerá em ${daysLeft} dia${daysLeft > 1 ? 's' : ''}${ctxText}.`,
           'documento_vencendo', daysLeft <= 7 ? 'error' : 'warning', '/Certifications');
         if (daysLeft <= 7) {
           await base44.asServiceRole.integrations.Core.SendEmail({
             from_name: 'PRUMO Hub',
             to: cert.applicant_email,
             subject: `⚠️ Certificação ${cert.certification_type} vencendo em ${daysLeft} dias`,
-            body: `Olá,\n\nSua certificação "${cert.certification_type}" vencerá em ${daysLeft} dias.\n\nTome as medidas necessárias para renovação.\n\nAtenciosamente,\nPRUMO Hub`
+            body: `<p>Olá${certName ? `, ${certName}` : ''},</p><p>Sua certificação <strong>"${cert.certification_type}"</strong> vencerá em <strong>${daysLeft} dia${daysLeft > 1 ? 's' : ''}</strong>.</p><ul>${certName ? `<li><strong>Cliente:</strong> ${certName}</li>` : ''}<li><strong>Certificação:</strong> ${cert.certification_type}</li><li><strong>Validade:</strong> ${new Date(cert.expiration_date).toLocaleDateString('pt-BR')}</li></ul><p>Tome as medidas necessárias para renovação.</p><p>Equipe PRUMO Hub</p>`
           });
         }
       }

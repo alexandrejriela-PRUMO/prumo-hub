@@ -21,6 +21,7 @@ const CompraConfirmada = lazy(() => import('./pages/CompraConfirmada'));
 const ErrorLogsAdmin = lazy(() => import('./pages/ErrorLogsAdmin'));
 const AdminPanel = lazy(() => import('./pages/AdminPanel'));
 const ConsultantPayments = lazy(() => import('./pages/ConsultantPayments'));
+const ConfirmPresence = lazy(() => import('./pages/ConfirmPresence'));
 
 import OfflineIndicator from '@/components/offline/OfflineIndicator';
 import AccessBlockedGuard from '@/components/AccessBlockedGuard';
@@ -279,6 +280,7 @@ function AppContent() {
         <Route path="/LandingPage" element={<Suspense fallback={<LoadingSpinner />}><LandingPage /></Suspense>} />
         <Route path="/Parceiros" element={<Suspense fallback={<LoadingSpinner />}><Parceiros /></Suspense>} />
         <Route path="/CompraConfirmada" element={<Suspense fallback={<LoadingSpinner />}><CompraConfirmada /></Suspense>} />
+        <Route path="/ConfirmPresence/:token" element={<Suspense fallback={<LoadingSpinner />}><ConfirmPresence /></Suspense>} />
         <Route path="*" element={<AuthenticatedApp />} />
       </Routes>
     </>

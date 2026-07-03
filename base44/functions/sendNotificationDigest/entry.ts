@@ -68,13 +68,16 @@ Deno.serve(async (req) => {
     const SEVERITY_EMOJI = { error: '🔴', warning: '🟡', success: '🟢', info: '⚪' };
 
     let emailsSent = 0;
+    let whatsappsSent = 0;
     const periodLabel = mode === 'weekly' ? 'semanal' : 'diário';
 
     for (const [userEmail, notifs] of Object.entries(byUser)) {
       // Verifica preferências do usuário
       let prefs = {};
+      let userPrefsList = [];
       try {
         const userPrefs = await base44.asServiceRole.entities.NotificationPreference.filter({ user_email: userEmail });
+        userPrefsList = userPrefs;
         userPrefs.forEach(p => { prefs[p.event_type] = p; });
       } catch (e) { /* sem preferências = usa padrão (enviar) */ }
 
@@ -168,10 +171,29 @@ Deno.serve(async (req) => {
       } catch (e) {
         console.error(`[Digest] Erro ao enviar para ${userEmail}:`, e.message);
       }
+
+      // WhatsApp: apenas o total resumido, sem repetir cada notificação individual
+      const whatsappPref = userPrefsList.find(p => p.sms_enabled === true && p.phone_number);
+      if (whatsappPref) {
+        try {
+          await fetch('https://prumohub.app.n8n.cloud/webhook/prumo-whatsapp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              phone: whatsappPref.phone_number,
+              message: `PRUMO Hub: você tem ${totalCount} notificaç${totalCount > 1 ? 'ões' : 'ão'} pendente${totalCount > 1 ? 's' : ''}. Acesse o app para ver os detalhes.`
+            })
+          });
+          whatsappsSent++;
+          console.log(`[Digest] WhatsApp ${periodLabel} → ${whatsappPref.phone_number}`);
+        } catch (e) {
+          console.error(`[Digest] Erro ao enviar WhatsApp para ${userEmail}:`, e.message);
+        }
+      }
     }
 
-    console.log(`[Digest] Concluído. Emails enviados: ${emailsSent}`);
-    return Response.json({ success: true, sent: emailsSent, mode, period_hours: hoursBack });
+    console.log(`[Digest] Concluído. Emails enviados: ${emailsSent} | WhatsApp enviados: ${whatsappsSent}`);
+    return Response.json({ success: true, sent: emailsSent, whatsapp_sent: whatsappsSent, mode, period_hours: hoursBack });
 
   } catch (error) {
     console.error('[Digest] Erro:', error.message);

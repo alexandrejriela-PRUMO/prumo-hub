@@ -497,21 +497,33 @@ Deno.serve(async (req) => {
       const contractCtx = buildCtx(contract, [['contract_type','Tipo'],['object','Objeto'],['start_date','Início','date'],['end_date','Vencimento','date'],['status','Status']], { clientName, propertyName });
 
       if (days <= 0) {
+        const title = `Contrato Vencido: ${contract.contract_type}`;
+        const message = `Contrato "${contract.contract_type}" expirou${contractCtx.text}.`;
         await notifyWithEmail(clientEmail, consultorEmail,
-          `Contrato Vencido: ${contract.contract_type}`,
-          `Contrato "${contract.contract_type}" expirou${contractCtx.text}.`,
+          title, message,
           'atualizacao_contrato', 'error', '/Contracts',
           `[PRUMO Hub] ⛔ Contrato Vencido: ${contract.contract_type}`,
           `<p>Olá${clientName ? `, ${clientName}` : ''},</p><p>O contrato <strong>${contract.contract_type}</strong> está <strong>vencido</strong>.</p>${contractCtx.html}<p>Verifique a necessidade de renovação.</p><p>Equipe PRUMO Hub</p>`
         );
+        // O cliente não é usuário do sistema (sem preferências); apenas o consultor recebe WhatsApp.
+        if (consultorEmail) {
+          const consultorPrefs = await getNotifPrefs(consultorEmail, 'atualizacao_contrato', []);
+          await notifyPerPrefs(consultorEmail, consultorPrefs, title, message, 'atualizacao_contrato', 'error', '/Contracts', null, null);
+        }
       } else if ([7, 30].includes(days)) {
+        const title = `Contrato vencendo em ${days} dia${days > 1 ? 's' : ''}`;
+        const message = `Contrato "${contract.contract_type}" vence em ${days} dia${days > 1 ? 's' : ''}${contractCtx.text}.`;
+        const sev = days <= 7 ? 'error' : 'warning';
         await notifyWithEmail(clientEmail, consultorEmail,
-          `Contrato vencendo em ${days} dia${days > 1 ? 's' : ''}`,
-          `Contrato "${contract.contract_type}" vence em ${days} dia${days > 1 ? 's' : ''}${contractCtx.text}.`,
-          'atualizacao_contrato', days <= 7 ? 'error' : 'warning', '/Contracts',
+          title, message,
+          'atualizacao_contrato', sev, '/Contracts',
           `[PRUMO Hub] ⚠️ Contrato vencendo em ${days} dia${days > 1 ? 's' : ''}`,
           `<p>Olá${clientName ? `, ${clientName}` : ''},</p><p>O contrato <strong>${contract.contract_type}</strong> vencerá em <strong>${days} dia${days > 1 ? 's' : ''}</strong>.</p>${contractCtx.html}<p>Equipe PRUMO Hub</p>`
         );
+        if (consultorEmail) {
+          const consultorPrefs = await getNotifPrefs(consultorEmail, 'atualizacao_contrato', []);
+          await notifyPerPrefs(consultorEmail, consultorPrefs, title, message, 'atualizacao_contrato', sev, '/Contracts', null, null);
+        }
       }
     }
 

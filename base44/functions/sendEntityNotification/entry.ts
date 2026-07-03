@@ -1,6 +1,6 @@
 /**
  * sendEntityNotification — Função principal de notificações por entidade.
- * Consolida push (in-app) + email. SMS não implementado.
+ * Consolida push (in-app) + email + WhatsApp (via webhook n8n).
  *
  * COBERTURA:
  * - License: criação/atualização/vencimento → owner + consultor + equipe + client_consultor (enterprise)
@@ -141,6 +141,15 @@ Deno.serve(async (req) => {
       }
     }
 
+    async function addWhatsapp(whatsappToSend, userEmail, title, message, eventType) {
+      if (!userEmail) return;
+      const prefs = await getUserPrefs(userEmail);
+      const pref = prefs[eventType] || prefs['todos'];
+      if (pref?.sms_enabled === true && pref?.phone_number) {
+        whatsappToSend.push({ phone: pref.phone_number, message: `${title}: ${message}` });
+      }
+    }
+
     async function saveNotifications(notifications, entityName, entityId) {
       for (const notif of notifications) {
         const prefs = await getUserPrefs(notif.user_email);
@@ -179,6 +188,21 @@ Deno.serve(async (req) => {
           });
         } catch (e) {
           console.error(`[Notif] Erro ao enviar email para ${email.to}:`, e.message);
+        }
+      }
+    }
+
+    async function sendWhatsapps(whatsappToSend) {
+      for (const wa of whatsappToSend) {
+        try {
+          await fetch('https://prumohub.app.n8n.cloud/webhook/prumo-whatsapp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: wa.phone, message: wa.message })
+          });
+          console.log(`[Notif] WhatsApp enviado → ${wa.phone}`);
+        } catch (e) {
+          console.error(`[Notif] Erro ao enviar WhatsApp para ${wa.phone}:`, e.message);
         }
       }
     }
@@ -227,6 +251,7 @@ Deno.serve(async (req) => {
 
     const notifications = [];
     const emailsToSend = [];
+    const whatsappToSend = [];
 
     // ─── LICENSE ─────────────────────────────────────────────────────────
     if (event.entity_name === 'License') {
@@ -283,6 +308,7 @@ Deno.serve(async (req) => {
         for (const r of recipients) {
           const label = r === consultorEmail ? 'Nova Licença - Cliente' : r === clientConsultorEmail ? 'Nova Licença em sua Propriedade' : 'Nova Licença Cadastrada';
           addNotif(notifications, r, label, msgCreate, 'nova_licenca', 'info', '/Licenses');
+          await addWhatsapp(whatsappToSend, r, label, msgCreate, 'nova_licenca');
         }
         await addEmail(emailsToSend, owner,
           `[PRUMO Hub] Nova Licença Cadastrada: ${data.license_type}`,
@@ -307,6 +333,7 @@ Deno.serve(async (req) => {
           for (const r of recipients) {
             const label = r === consultorEmail ? 'Andamento em Licença - Cliente' : r === clientConsultorEmail ? 'Novo Andamento em Licença da sua Propriedade' : 'Novo Andamento em Licença';
             addNotif(notifications, r, label, andamentoMsg, 'atualizacao_licenca', 'info', '/Licenses');
+            await addWhatsapp(whatsappToSend, r, label, andamentoMsg, 'atualizacao_licenca');
           }
           await addEmail(emailsToSend, owner,
             `[PRUMO Hub] Novo Andamento na Licença ${data.license_type}${data.license_number ? ` nº ${data.license_number}` : ''}`,
@@ -327,6 +354,7 @@ Deno.serve(async (req) => {
           for (const r of recipients) {
             const label = r === consultorEmail ? 'Status de Licença Alterado - Cliente' : 'Status de Licença Alterado';
             addNotif(notifications, r, label, statusMsg, 'licenca_vencida', sev, '/Licenses');
+            await addWhatsapp(whatsappToSend, r, label, statusMsg, 'licenca_vencida');
           }
           await addEmail(emailsToSend, owner,
             `[PRUMO Hub] Status da Licença ${data.license_type} Alterado`,
@@ -363,6 +391,7 @@ Deno.serve(async (req) => {
         for (const r of recipients) {
           const label = r === consultorEmail ? 'Novo Processo - Cliente' : r === clientConsultorEmail ? 'Novo Processo em sua Propriedade' : 'Novo Processo Registrado';
           addNotif(notifications, r, label, message, 'novo_processo', 'info', '/Processes');
+          await addWhatsapp(whatsappToSend, r, label, message, 'novo_processo');
         }
         await addEmail(emailsToSend, client,
           `[PRUMO Hub] Novo Processo Registrado: ${data.process_number}`,
@@ -386,6 +415,7 @@ Deno.serve(async (req) => {
           for (const r of recipients) {
             const label = r === consultorEmail ? 'Andamento em Processo - Cliente' : r === clientConsultorEmail ? 'Novo Andamento no seu Processo' : 'Novo Andamento em Processo';
             addNotif(notifications, r, label, movMessage, 'atualizacao_processo', 'info', '/Processes');
+            await addWhatsapp(whatsappToSend, r, label, movMessage, 'atualizacao_processo');
           }
           await addEmail(emailsToSend, client,
             `[PRUMO Hub] Novo Andamento no Processo ${data.process_number}`,
@@ -405,6 +435,7 @@ Deno.serve(async (req) => {
           for (const r of recipients) {
             const label = r === consultorEmail ? 'Status de Processo Alterado - Cliente' : 'Status de Processo Alterado';
             addNotif(notifications, r, label, statusMsg, 'atualizacao_processo', 'warning', '/Processes');
+            await addWhatsapp(whatsappToSend, r, label, statusMsg, 'atualizacao_processo');
           }
           await addEmail(emailsToSend, client,
             `[PRUMO Hub] Status do Processo ${data.process_number} Alterado`,
@@ -441,6 +472,7 @@ Deno.serve(async (req) => {
         for (const r of recipients) {
           const label = r === clientEmail || r === clientConsultorEmail ? 'Novo Contrato Disponível' : 'Novo Contrato Criado';
           addNotif(notifications, r, label, msg, 'outro', 'info', '/Contracts');
+          await addWhatsapp(whatsappToSend, r, label, msg, 'outro');
         }
         if (clientEmail) {
           await addEmail(emailsToSend, clientEmail,
@@ -458,6 +490,7 @@ Deno.serve(async (req) => {
           const statusMsg = `Contrato "${data.contract_type}": ${old_data.status} → ${data.status}${ctx.text}`;
           for (const r of recipients) {
             addNotif(notifications, r, 'Status de Contrato Alterado', statusMsg, 'outro', sev, '/Contracts');
+            await addWhatsapp(whatsappToSend, r, 'Status de Contrato Alterado', statusMsg, 'outro');
           }
           if (clientEmail) {
             await addEmail(emailsToSend, clientEmail,
@@ -480,6 +513,7 @@ Deno.serve(async (req) => {
           const sev = data.signature_status === 'Assinado' ? 'success' : data.signature_status === 'Recusado' ? 'error' : 'info';
           for (const r of recipients) {
             addNotif(notifications, r, 'Atualização de Assinatura de Contrato', sigMsg, 'outro', sev, '/Contracts');
+            await addWhatsapp(whatsappToSend, r, 'Atualização de Assinatura de Contrato', sigMsg, 'outro');
           }
         }
       }
@@ -511,6 +545,7 @@ Deno.serve(async (req) => {
         const alertMsg = `${data.alert_type}: ${data.title}${ctx.text}`;
         for (const r of recipients) {
           addNotif(notifications, r, alertTitle, alertMsg, 'novo_alerta_ambiental', sev, '/EnvironmentalAlerts');
+          await addWhatsapp(whatsappToSend, r, alertTitle, alertMsg, 'novo_alerta_ambiental');
         }
         await addEmail(emailsToSend, ownerEmail,
           `[PRUMO Hub] ⚠️ Novo Alerta Ambiental: ${data.title}`,
@@ -535,13 +570,17 @@ Deno.serve(async (req) => {
       if (event.type === 'update' && old_data?.status !== data.status) {
         if (data.status === 'Resolvido') {
           for (const r of recipients) {
+            const resolvedMsg = `O alerta "${data.title}" foi resolvido${ctx.text}.`;
             addNotif(notifications, r, 'Alerta Ambiental Resolvido',
-              `O alerta "${data.title}" foi resolvido${ctx.text}.`, 'alerta_resolvido', 'success', '/EnvironmentalAlerts');
+              resolvedMsg, 'alerta_resolvido', 'success', '/EnvironmentalAlerts');
+            await addWhatsapp(whatsappToSend, r, 'Alerta Ambiental Resolvido', resolvedMsg, 'alerta_resolvido');
           }
         } else {
           for (const r of recipients) {
+            const updatedMsg = `"${data.title}": ${old_data?.status} → ${data.status}${ctx.text}`;
             addNotif(notifications, r, 'Alerta Ambiental Atualizado',
-              `"${data.title}": ${old_data?.status} → ${data.status}${ctx.text}`, 'novo_alerta_ambiental', sev, '/EnvironmentalAlerts');
+              updatedMsg, 'novo_alerta_ambiental', sev, '/EnvironmentalAlerts');
+            await addWhatsapp(whatsappToSend, r, 'Alerta Ambiental Atualizado', updatedMsg, 'novo_alerta_ambiental');
           }
         }
       }
@@ -562,9 +601,11 @@ Deno.serve(async (req) => {
       const recipients = await filterByPlan(candidates, consultorEmail);
 
       if (event.type === 'create') {
+        const createMsg = `Projeto "${data.project_name}" foi registrado${ctx.text}.`;
         for (const r of recipients) {
           const label = r === consultorEmail ? 'Novo PRAD - Cliente' : 'Novo PRAD Criado';
-          addNotif(notifications, r, label, `Projeto "${data.project_name}" foi registrado${ctx.text}.`, 'outro', 'info', '/PRAD');
+          addNotif(notifications, r, label, createMsg, 'outro', 'info', '/PRAD');
+          await addWhatsapp(whatsappToSend, r, label, createMsg, 'outro');
         }
         await addEmail(emailsToSend, owner,
           `[PRUMO Hub] Novo PRAD Criado: ${data.project_name}`,
@@ -575,18 +616,22 @@ Deno.serve(async (req) => {
       if (event.type === 'update') {
         if (old_data?.status && old_data.status !== data.status) {
           const sev = data.status === 'Concluído' ? 'success' : 'info';
+          const statusMsg = `"${data.project_name}": ${old_data.status} → ${data.status}${ctx.text}`;
           for (const r of recipients) {
             const label = r === consultorEmail ? 'Status do PRAD Alterado - Cliente' : 'Status do PRAD Alterado';
-            addNotif(notifications, r, label, `"${data.project_name}": ${old_data.status} → ${data.status}${ctx.text}`, 'outro', sev, '/PRAD');
+            addNotif(notifications, r, label, statusMsg, 'outro', sev, '/PRAD');
+            await addWhatsapp(whatsappToSend, r, label, statusMsg, 'outro');
           }
         }
         const oldP = old_data?.pipeline_status || [], newP = data?.pipeline_status || [];
         for (let i = 0; i < newP.length; i++) {
           if (oldP[i] && oldP[i].current_status !== newP[i].current_status) {
             const sev = newP[i].current_status === 'Concluído' ? 'success' : 'info';
+            const stageMsg = `Etapa "${newP[i].stage_name}": ${oldP[i].current_status} → ${newP[i].current_status}${ctx.text}`;
             for (const r of recipients) {
               addNotif(notifications, r, 'Andamento no PRAD',
-                `Etapa "${newP[i].stage_name}": ${oldP[i].current_status} → ${newP[i].current_status}${ctx.text}`, 'outro', sev, '/PRAD');
+                stageMsg, 'outro', sev, '/PRAD');
+              await addWhatsapp(whatsappToSend, r, 'Andamento no PRAD', stageMsg, 'outro');
             }
           }
         }
@@ -619,9 +664,11 @@ Deno.serve(async (req) => {
       const recipients = await filterByPlan([...new Set([owner, consultorEmail, ...teamEmails].filter(Boolean))], consultorEmail);
 
       if (event.type === 'create') {
+        const createMsg = `Novo processo de georreferenciamento iniciado${ctx.text}.`;
         for (const r of recipients) {
           addNotif(notifications, r, 'Georreferenciamento Registrado',
-            `Novo processo de georreferenciamento iniciado${ctx.text}.`, 'outro', 'info', '/Georeferencing');
+            createMsg, 'outro', 'info', '/Georeferencing');
+          await addWhatsapp(whatsappToSend, r, 'Georreferenciamento Registrado', createMsg, 'outro');
         }
         await addEmail(emailsToSend, owner,
           `[PRUMO Hub] Georreferenciamento Registrado`,
@@ -631,17 +678,19 @@ Deno.serve(async (req) => {
       }
       if (event.type === 'update') {
         if (old_data?.status !== data.status) {
+          const statusMsg = `Status: ${old_data?.status} → ${data.status}${ctx.text}`;
           for (const r of recipients) {
             addNotif(notifications, r, 'Status do Georreferenciamento Alterado',
-              `Status: ${old_data?.status} → ${data.status}${ctx.text}`,
-              'outro', data.status === 'Regular' ? 'success' : 'warning', '/Georeferencing');
+              statusMsg, 'outro', data.status === 'Regular' ? 'success' : 'warning', '/Georeferencing');
+            await addWhatsapp(whatsappToSend, r, 'Status do Georreferenciamento Alterado', statusMsg, 'outro');
           }
         }
         if (old_data?.sigef_status !== data.sigef_status) {
+          const sigefMsg = `SIGEF: ${old_data?.sigef_status || '—'} → ${data.sigef_status}${ctx.text}`;
           for (const r of recipients) {
             addNotif(notifications, r, 'Status SIGEF Atualizado',
-              `SIGEF: ${old_data?.sigef_status || '—'} → ${data.sigef_status}${ctx.text}`,
-              'outro', data.sigef_status === 'Aprovado' ? 'success' : 'info', '/Georeferencing');
+              sigefMsg, 'outro', data.sigef_status === 'Aprovado' ? 'success' : 'info', '/Georeferencing');
+            await addWhatsapp(whatsappToSend, r, 'Status SIGEF Atualizado', sigefMsg, 'outro');
           }
         }
       }
@@ -656,9 +705,11 @@ Deno.serve(async (req) => {
         if (newI.length > oldI.length) {
           const latest = newI[newI.length - 1];
           // Notifica o consultor
+          const interactionMsg = `${latest.type}: ${latest.title || latest.description?.substring(0, 100) || 'Nova interação'}`;
           addNotif(notifications, consultor, 'Nova Interação com Cliente',
-            `${latest.type}: ${latest.title || latest.description?.substring(0, 100) || 'Nova interação'}`,
-            'outro', 'info', '/ConsultorClients');
+            interactionMsg,
+            'atualizacao_cliente_crm', 'info', '/ConsultorClients');
+          await addWhatsapp(whatsappToSend, consultor, 'Nova Interação com Cliente', interactionMsg, 'atualizacao_cliente_crm');
           // Notifica responsável se diferente do consultor
           if (latest.responsible_email && latest.responsible_email !== consultor) {
             addNotif(notifications, latest.responsible_email, 'Interação Atribuída a Você',
@@ -767,18 +818,23 @@ Deno.serve(async (req) => {
       if (event.type === 'create') {
         const consultores = await findConsultores();
         const sev = (data.priority === 'Urgente' || data.priority === 'Alta') ? 'warning' : 'info';
+        const novoReqMsg = `[${data.category}] ${data.subject}${ctx.text}`;
         for (const c of consultores) {
           addNotif(notifications, c, 'Novo Requerimento Recebido',
-            `[${data.category}] ${data.subject}${ctx.text}`, 'novo_requerimento', sev, '/Requests');
+            novoReqMsg, 'novo_requerimento', sev, '/Requests');
+          await addWhatsapp(whatsappToSend, c, 'Novo Requerimento Recebido', novoReqMsg, 'novo_requerimento');
           const teamEmails = await filterProdutorOnly(await getTeamEmails(c));
           for (const memberEmail of teamEmails) {
             addNotif(notifications, memberEmail, 'Novo Requerimento - Cliente',
-              `[${data.category}] ${data.subject}${ctx.text}`, 'novo_requerimento', sev, '/Requests');
+              novoReqMsg, 'novo_requerimento', sev, '/Requests');
+            await addWhatsapp(whatsappToSend, memberEmail, 'Novo Requerimento - Cliente', novoReqMsg, 'novo_requerimento');
           }
         }
+        const enviadoMsg = `Seu requerimento "${data.subject}" foi recebido e está sendo analisado${ctx.text}.`;
         addNotif(notifications, client, 'Requerimento Enviado com Sucesso',
-          `Seu requerimento "${data.subject}" foi recebido e está sendo analisado${ctx.text}.`,
+          enviadoMsg,
           'resposta_requerimento', 'info', '/Requests');
+        await addWhatsapp(whatsappToSend, client, 'Requerimento Enviado com Sucesso', enviadoMsg, 'resposta_requerimento');
         await addEmail(emailsToSend, client,
           `[PRUMO Hub] Requerimento Recebido: ${data.subject}`,
           `<p>Olá${clientName ? `, ${clientName}` : ''},</p><p>Seu requerimento foi recebido e está sendo analisado:</p>${ctx.html}<p>Equipe PRUMO Hub</p>`,
@@ -791,9 +847,10 @@ Deno.serve(async (req) => {
         if (newC.length > oldC.length) {
           const latest = newC[newC.length - 1];
           if (latest.sender_type === 'team') {
+            const respMsg = `"${data.subject}": ${latest.message?.substring(0, 120) || 'Nova mensagem da equipe'}${ctx.text}`;
             addNotif(notifications, client, 'Nova Resposta ao seu Requerimento',
-              `"${data.subject}": ${latest.message?.substring(0, 120) || 'Nova mensagem da equipe'}${ctx.text}`,
-              'resposta_requerimento', 'info', '/Requests');
+              respMsg, 'resposta_requerimento', 'info', '/Requests');
+            await addWhatsapp(whatsappToSend, client, 'Nova Resposta ao seu Requerimento', respMsg, 'resposta_requerimento');
             await addEmail(emailsToSend, client,
               `[PRUMO Hub] Nova resposta ao seu requerimento: ${data.subject}`,
               `<p>Olá${clientName ? `, ${clientName}` : ''},</p><p>Sua equipe respondeu ao requerimento <strong>${data.subject}</strong>:</p><blockquote style="background:#f5f5f5;padding:12px;border-left:4px solid #2d6a4f;">${latest.message || ''}</blockquote>${ctx.html}<p>Equipe PRUMO Hub</p>`,
@@ -801,23 +858,25 @@ Deno.serve(async (req) => {
             );
           } else {
             const consultores = await findConsultores();
+            const novaMsgMsg = `"${data.subject}": ${latest.message?.substring(0, 120) || 'Nova mensagem'}${ctx.text}`;
             for (const c of consultores) {
               addNotif(notifications, c, 'Nova Mensagem de Cliente',
-                `"${data.subject}": ${latest.message?.substring(0, 120) || 'Nova mensagem'}${ctx.text}`,
-                'novo_requerimento', 'info', '/Requests');
+                novaMsgMsg, 'novo_requerimento', 'info', '/Requests');
+              await addWhatsapp(whatsappToSend, c, 'Nova Mensagem de Cliente', novaMsgMsg, 'novo_requerimento');
               const teamEmails = await filterProdutorOnly(await getTeamEmails(c));
               for (const memberEmail of teamEmails) {
                 addNotif(notifications, memberEmail, 'Nova Mensagem de Cliente',
-                  `"${data.subject}": ${latest.message?.substring(0, 120) || 'Nova mensagem'}${ctx.text}`,
-                  'novo_requerimento', 'info', '/Requests');
+                  novaMsgMsg, 'novo_requerimento', 'info', '/Requests');
+                await addWhatsapp(whatsappToSend, memberEmail, 'Nova Mensagem de Cliente', novaMsgMsg, 'novo_requerimento');
               }
             }
           }
         }
         if (old_data?.status && old_data.status !== data.status) {
+          const statusMsg = `"${data.subject}": ${old_data.status} → ${data.status}${ctx.text}`;
           addNotif(notifications, client, 'Status do Requerimento Alterado',
-            `"${data.subject}": ${old_data.status} → ${data.status}${ctx.text}`,
-            'resposta_requerimento', data.status === 'Respondido' ? 'success' : 'info', '/Requests');
+            statusMsg, 'resposta_requerimento', data.status === 'Respondido' ? 'success' : 'info', '/Requests');
+          await addWhatsapp(whatsappToSend, client, 'Status do Requerimento Alterado', statusMsg, 'resposta_requerimento');
         }
       }
     }
@@ -925,21 +984,22 @@ Deno.serve(async (req) => {
     }
 
     // ─── PERSIST ─────────────────────────────────────────────────────────
-    if (notifications.length === 0 && emailsToSend.length === 0) {
+    if (notifications.length === 0 && emailsToSend.length === 0 && whatsappToSend.length === 0) {
       return Response.json({ success: true, message: 'Evento não requer notificação' });
     }
 
     await Promise.all([
       saveNotifications(notifications, event.entity_name, event.entity_id),
-      sendEmails(emailsToSend)
+      sendEmails(emailsToSend),
+      sendWhatsapps(whatsappToSend)
     ]);
 
-    console.log(`[Notif] ${event.entity_name}.${event.type} → push:${notifications.length} email:${emailsToSend.length} sms:0`);
+    console.log(`[Notif] ${event.entity_name}.${event.type} → push:${notifications.length} email:${emailsToSend.length} whatsapp:${whatsappToSend.length}`);
     return Response.json({
       success: true,
       notifications_sent: notifications.length,
       emails_sent: emailsToSend.length,
-      sms_sent: 0
+      whatsapp_sent: whatsappToSend.length
     });
 
   } catch (error) {

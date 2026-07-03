@@ -50,6 +50,11 @@
       "type": "string",
       "description": "URL do arquivo atual"
     },
+    "expiry_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de validade do documento"
+    },
     "notes": {
       "type": "string",
       "description": "Observa\u00e7\u00f5es"
@@ -110,7 +115,9 @@
         },
         {
           "data.property_id": {
-            "$in": "{{user.properties_ids}}"
+            "$in": [
+              "{{user.properties_ids}}"
+            ]
           }
         },
         {

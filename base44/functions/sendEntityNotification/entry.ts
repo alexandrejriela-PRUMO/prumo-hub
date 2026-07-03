@@ -471,14 +471,14 @@ Deno.serve(async (req) => {
         const msg = `Contrato "${data.contract_type}" para ${clientName || clientEmail} foi criado${ctx.text}.`;
         for (const r of recipients) {
           const label = r === clientEmail || r === clientConsultorEmail ? 'Novo Contrato Disponível' : 'Novo Contrato Criado';
-          addNotif(notifications, r, label, msg, 'outro', 'info', '/Contracts');
-          await addWhatsapp(whatsappToSend, r, label, msg, 'outro');
+          addNotif(notifications, r, label, msg, 'novo_contrato', 'info', '/Contracts');
+          await addWhatsapp(whatsappToSend, r, label, msg, 'novo_contrato');
         }
         if (clientEmail) {
           await addEmail(emailsToSend, clientEmail,
             `[PRUMO Hub] Novo Contrato: ${data.contract_type}`,
             `<p>Olá ${clientName || ''},</p><p>Um novo contrato foi criado para você:</p>${ctx.html}<p>Acesse a plataforma para visualizar.</p><p>Equipe PRUMO Hub</p>`,
-            'outro'
+            'novo_contrato'
           );
         }
       }
@@ -489,21 +489,21 @@ Deno.serve(async (req) => {
           const sev = data.status === 'Cancelado' ? 'error' : data.status === 'Assinado' || data.status === 'Ativo' ? 'success' : 'info';
           const statusMsg = `Contrato "${data.contract_type}": ${old_data.status} → ${data.status}${ctx.text}`;
           for (const r of recipients) {
-            addNotif(notifications, r, 'Status de Contrato Alterado', statusMsg, 'outro', sev, '/Contracts');
-            await addWhatsapp(whatsappToSend, r, 'Status de Contrato Alterado', statusMsg, 'outro');
+            addNotif(notifications, r, 'Status de Contrato Alterado', statusMsg, 'novo_contrato', sev, '/Contracts');
+            await addWhatsapp(whatsappToSend, r, 'Status de Contrato Alterado', statusMsg, 'novo_contrato');
           }
           if (clientEmail) {
             await addEmail(emailsToSend, clientEmail,
               `[PRUMO Hub] Status do Contrato "${data.contract_type}" Alterado`,
               `<p>Olá${clientName ? `, ${clientName}` : ''},</p><p>O status do seu contrato foi atualizado: <strong>${old_data.status}</strong> → <strong>${data.status}</strong></p>${ctx.html}<p>Equipe PRUMO Hub</p>`,
-              'outro'
+              'novo_contrato'
             );
           }
           if (clientConsultorEmail && clientConsultorEmail !== clientEmail) {
             await addEmail(emailsToSend, clientConsultorEmail,
               `[PRUMO Hub] Status do seu Contrato Alterado`,
               `<p>Olá,</p><p>O status do contrato <strong>${data.contract_type}</strong> foi alterado: <strong>${old_data.status}</strong> → <strong>${data.status}</strong></p>${ctx.html}<p>Equipe PRUMO Hub</p>`,
-              'outro'
+              'novo_contrato'
             );
           }
         }
@@ -512,8 +512,8 @@ Deno.serve(async (req) => {
           const sigMsg = `Contrato "${data.contract_type}": assinatura ${data.signature_status}${ctx.text}`;
           const sev = data.signature_status === 'Assinado' ? 'success' : data.signature_status === 'Recusado' ? 'error' : 'info';
           for (const r of recipients) {
-            addNotif(notifications, r, 'Atualização de Assinatura de Contrato', sigMsg, 'outro', sev, '/Contracts');
-            await addWhatsapp(whatsappToSend, r, 'Atualização de Assinatura de Contrato', sigMsg, 'outro');
+            addNotif(notifications, r, 'Atualização de Assinatura de Contrato', sigMsg, 'novo_contrato', sev, '/Contracts');
+            await addWhatsapp(whatsappToSend, r, 'Atualização de Assinatura de Contrato', sigMsg, 'novo_contrato');
           }
         }
       }

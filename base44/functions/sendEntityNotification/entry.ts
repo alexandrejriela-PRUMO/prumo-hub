@@ -192,13 +192,45 @@ Deno.serve(async (req) => {
     if (event.entity_name === 'License') {
       const owner = data.owner_email;
       let consultorEmail = null;
+      let propertyName = null;
+      let ownerName = null;
 
+      // Busca propriedade (consultor + nome) e proprietário (nome) para enriquecer
       if (data.property_id) {
         try {
           const props = await base44.asServiceRole.entities.Property.filter({ id: data.property_id });
-          if (props.length > 0) consultorEmail = props[0].consultor_email;
+          if (props.length > 0) {
+            consultorEmail = props[0].consultor_email;
+            propertyName = props[0].property_name || props[0].name || null;
+          }
         } catch (e) { /* ignore */ }
       }
+      if (owner) {
+        try {
+          const ownerUsers = await base44.asServiceRole.entities.User.filter({ email: owner });
+          if (ownerUsers.length > 0) ownerName = ownerUsers[0].full_name || null;
+        } catch (e) { /* ignore */ }
+      }
+
+      // Bloco de contexto comum (HTML + texto) — cliente, propriedade, número, fase, datas, status
+      const fmtDate = (d) => d ? new Date(d).toLocaleDateString('pt-BR') : null;
+      const ctxItems = [];
+      if (ownerName) ctxItems.push(`<li><strong>Cliente:</strong> ${ownerName}</li>`);
+      if (propertyName) ctxItems.push(`<li><strong>Propriedade:</strong> ${propertyName}</li>`);
+      ctxItems.push(`<li><strong>Tipo:</strong> ${data.license_type}</li>`);
+      if (data.license_number) ctxItems.push(`<li><strong>Número:</strong> ${data.license_number}</li>`);
+      if (data.elaboration_stage) ctxItems.push(`<li><strong>Fase:</strong> ${data.elaboration_stage}</li>`);
+      const di = fmtDate(data.issue_date); if (di) ctxItems.push(`<li><strong>Data de Emissão:</strong> ${di}</li>`);
+      const dv = fmtDate(data.expiry_date); if (dv) ctxItems.push(`<li><strong>Data de Validade:</strong> ${dv}</li>`);
+      if (data.status) ctxItems.push(`<li><strong>Status:</strong> ${data.status}</li>`);
+      const ctxHtml = `<ul>${ctxItems.join('')}</ul>`;
+      const ctxTextParts = [];
+      if (ownerName) ctxTextParts.push(`Cliente: ${ownerName}`);
+      if (propertyName) ctxTextParts.push(`Propriedade: ${propertyName}`);
+      if (data.license_number) ctxTextParts.push(`Nº ${data.license_number}`);
+      if (data.elaboration_stage) ctxTextParts.push(`Fase: ${data.elaboration_stage}`);
+      if (dv) ctxTextParts.push(`Validade: ${dv}`);
+      const ctxText = ctxTextParts.length > 0 ? ` | ${ctxTextParts.join(' · ')}` : '';
 
       const teamEmails = await getTeamEmails(consultorEmail);
       // Inclui o client_consultor se existir
@@ -207,21 +239,21 @@ Deno.serve(async (req) => {
       const recipients = await filterByPlan(candidates, consultorEmail);
 
       if (event.type === 'create') {
-        const msgCreate = `Licença ${data.license_type}${data.license_number ? ` nº ${data.license_number}` : ''} foi registrada.`;
+        const msgCreate = `Licença ${data.license_type}${data.license_number ? ` nº ${data.license_number}` : ''} registrada${ctxText}.`;
         for (const r of recipients) {
           const label = r === consultorEmail ? 'Nova Licença - Cliente' : r === clientConsultorEmail ? 'Nova Licença em sua Propriedade' : 'Nova Licença Cadastrada';
           addNotif(notifications, r, label, msgCreate, 'nova_licenca', 'info', '/Licenses');
         }
         await addEmail(emailsToSend, owner,
           `[PRUMO Hub] Nova Licença Cadastrada: ${data.license_type}`,
-          `<p>Olá,</p><p>Uma nova licença foi cadastrada:</p><ul><li><strong>Tipo:</strong> ${data.license_type}</li>${data.license_number ? `<li><strong>Número:</strong> ${data.license_number}</li>` : ''}<li><strong>Status:</strong> ${data.status || 'N/A'}</li></ul><p>Equipe PRUMO Hub</p>`,
+          `<p>Olá${ownerName ? `, ${ownerName}` : ''},</p><p>Uma nova licença foi cadastrada:</p>${ctxHtml}<p>Equipe PRUMO Hub</p>`,
           'nova_licenca'
         );
         // Notifica client_consultor também por email se for diferente do owner
         if (clientConsultorEmail && clientConsultorEmail !== owner) {
           await addEmail(emailsToSend, clientConsultorEmail,
             `[PRUMO Hub] Nova Licença em sua Propriedade: ${data.license_type}`,
-            `<p>Olá,</p><p>Seu consultor cadastrou uma nova licença em sua propriedade:</p><ul><li><strong>Tipo:</strong> ${data.license_type}</li>${data.license_number ? `<li><strong>Número:</strong> ${data.license_number}</li>` : ''}</ul><p>Equipe PRUMO Hub</p>`,
+            `<p>Olá,</p><p>Seu consultor cadastrou uma nova licença em sua propriedade:</p>${ctxHtml}<p>Equipe PRUMO Hub</p>`,
             'nova_licenca'
           );
         }
@@ -231,40 +263,40 @@ Deno.serve(async (req) => {
         const oldU = old_data?.updates || [], newU = data?.updates || [];
         if (newU.length > oldU.length) {
           const latest = newU[newU.length - 1];
-          const andamentoMsg = `Licença ${data.license_type}${data.license_number ? ` nº ${data.license_number}` : ''}: ${latest.description?.substring(0, 120) || 'Nova movimentação registrada'}`;
+          const andamentoMsg = `Andamento na licença ${data.license_type}${data.license_number ? ` nº ${data.license_number}` : ''}${ctxText}: ${latest.description?.substring(0, 120) || 'Nova movimentação registrada'}`;
           for (const r of recipients) {
             const label = r === consultorEmail ? 'Andamento em Licença - Cliente' : r === clientConsultorEmail ? 'Novo Andamento em Licença da sua Propriedade' : 'Novo Andamento em Licença';
             addNotif(notifications, r, label, andamentoMsg, 'atualizacao_licenca', 'info', '/Licenses');
           }
           await addEmail(emailsToSend, owner,
             `[PRUMO Hub] Novo Andamento na Licença ${data.license_type}${data.license_number ? ` nº ${data.license_number}` : ''}`,
-            `<p>Olá,</p><p>Nova movimentação na licença <strong>${data.license_type}</strong>:</p><blockquote style="background:#f5f5f5;padding:12px;border-left:4px solid #2d6a4f;">${latest.description || 'Nova movimentação registrada'}</blockquote><p>Equipe PRUMO Hub</p>`,
+            `<p>Olá${ownerName ? `, ${ownerName}` : ''},</p><p>Nova movimentação na licença <strong>${data.license_type}</strong>:</p><blockquote style="background:#f5f5f5;padding:12px;border-left:4px solid #2d6a4f;">${latest.description || 'Nova movimentação registrada'}</blockquote>${ctxHtml}<p>Equipe PRUMO Hub</p>`,
             'atualizacao_licenca'
           );
           if (clientConsultorEmail && clientConsultorEmail !== owner) {
             await addEmail(emailsToSend, clientConsultorEmail,
               `[PRUMO Hub] Andamento em Licença da sua Propriedade`,
-              `<p>Olá,</p><p>Seu consultor registrou uma atualização na licença <strong>${data.license_type}</strong>:</p><blockquote style="background:#f5f5f5;padding:12px;border-left:4px solid #2d6a4f;">${latest.description || 'Nova movimentação'}</blockquote><p>Equipe PRUMO Hub</p>`,
+              `<p>Olá,</p><p>Seu consultor registrou uma atualização na licença <strong>${data.license_type}</strong>:</p><blockquote style="background:#f5f5f5;padding:12px;border-left:4px solid #2d6a4f;">${latest.description || 'Nova movimentação'}</blockquote>${ctxHtml}<p>Equipe PRUMO Hub</p>`,
               'atualizacao_licenca'
             );
           }
         }
         if (old_data?.status && old_data.status !== data.status) {
           const sev = data.status === 'Vencida' ? 'error' : 'warning';
-          const statusMsg = `Licença ${data.license_type}: ${old_data.status} → ${data.status}`;
+          const statusMsg = `Licença ${data.license_type}: ${old_data.status} → ${data.status}${ctxText}`;
           for (const r of recipients) {
             const label = r === consultorEmail ? 'Status de Licença Alterado - Cliente' : 'Status de Licença Alterado';
             addNotif(notifications, r, label, statusMsg, 'licenca_vencida', sev, '/Licenses');
           }
           await addEmail(emailsToSend, owner,
             `[PRUMO Hub] Status da Licença ${data.license_type} Alterado`,
-            `<p>Status alterado: <strong>${old_data.status}</strong> → <strong>${data.status}</strong></p><p>Equipe PRUMO Hub</p>`,
+            `<p>Olá${ownerName ? `, ${ownerName}` : ''},</p><p>Status alterado: <strong>${old_data.status}</strong> → <strong>${data.status}</strong></p>${ctxHtml}<p>Equipe PRUMO Hub</p>`,
             'licenca_vencida'
           );
           if (clientConsultorEmail && clientConsultorEmail !== owner) {
             await addEmail(emailsToSend, clientConsultorEmail,
               `[PRUMO Hub] Status da Licença ${data.license_type} Alterado`,
-              `<p>Olá,</p><p>O status da sua licença foi alterado: <strong>${old_data.status}</strong> → <strong>${data.status}</strong></p><p>Equipe PRUMO Hub</p>`,
+              `<p>Olá,</p><p>O status da sua licença foi alterado: <strong>${old_data.status}</strong> → <strong>${data.status}</strong></p>${ctxHtml}<p>Equipe PRUMO Hub</p>`,
               'licenca_vencida'
             );
           }

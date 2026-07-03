@@ -335,7 +335,7 @@ export default function RealtimeNotificationCenter({ user, isOpen, onClose, noti
                         </p>
                         {!notif.read && <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0 mt-1" />}
                       </div>
-                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{notif.message}</p>
+                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-3">{notif.message}</p>
                       <div className="flex items-center gap-2 mt-1.5">
                         <span className="text-xs text-gray-400">{timeAgo(notif.created_date)}</span>
                         {notif.severity && notif.severity !== 'info' && (

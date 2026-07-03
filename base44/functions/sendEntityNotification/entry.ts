@@ -194,7 +194,14 @@ Deno.serve(async (req) => {
     }
 
     async function sendWhatsapps(whatsappToSend) {
+      const sent = new Set();
       for (const wa of whatsappToSend) {
+        const key = `${wa.phone}:${wa.message}`;
+        if (sent.has(key)) {
+          console.log(`[Notif] WhatsApp duplicado bloqueado para ${wa.phone}`);
+          continue;
+        }
+        sent.add(key);
         try {
           await fetch('https://prumohub.app.n8n.cloud/webhook/prumo-whatsapp', {
             method: 'POST',

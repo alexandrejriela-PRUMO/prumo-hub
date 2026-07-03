@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 const REALTIME_EVENTS = [
   { key: 'novo_alerta_ambiental', label: 'Novo Alerta Ambiental', icon: '🌍' },
   { key: 'alerta_resolvido', label: 'Alerta Ambiental Resolvido', icon: '✅' },
+  { key: 'nova_licenca', label: 'Nova Licença Criada', icon: '📋' },
   { key: 'licenca_vencida', label: 'Licença Vencida / Status Alterado', icon: '❌' },
   { key: 'atualizacao_licenca', label: 'Andamento em Licença', icon: '📋' },
   { key: 'novo_processo', label: 'Novo Processo Legal', icon: '⚖️' },

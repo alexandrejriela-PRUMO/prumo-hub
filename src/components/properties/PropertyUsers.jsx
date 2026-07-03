@@ -9,8 +9,16 @@ import { Card, CardContent } from '@/components/ui/card';
 import { X, Plus, User, Mail, Shield, Bell } from 'lucide-react';
 import { format } from 'date-fns';
 import ConsultorAlertPanel from '../notifications/ConsultorAlertPanel';
-const VIEWER_NOTIF_EVENTS = [{key:'licenca_vencendo',label:'Licenca'},{key:'condicionante_vencendo',label:'Condicionante'},{key:'documento_vencendo',label:'Documento'},{key:'novo_alerta_ambiental',label:'Alerta Ambiental'},{key:'atualizacao_processo',label:'Processo'},{key:'atualizacao_prad',label:'PRAD'}];
-const DEFAULT_VIEWER_NOTIFS = {licenca_vencendo:true,condicionante_vencendo:true,documento_vencendo:false,novo_alerta_ambiental:true,atualizacao_processo:false,atualizacao_prad:false};
+const VIEWER_NOTIF_EVENTS = [
+  {key:'licenca_vencendo', label:'Licenca'},
+  {key:'condicionante_vencendo', label:'Condicionante de Licenca'},
+  {key:'documento_vencendo', label:'Documento com Validade'},
+  {key:'novo_alerta_ambiental', label:'Alerta Ambiental'},
+  {key:'atualizacao_processo', label:'Processo Administrativo'},
+  {key:'atualizacao_prad', label:'PRAD'},
+  {key:'geo_irregular', label:'Georreferenciamento'}
+];
+const DEFAULT_VIEWER_NOTIFS = {licenca_vencendo:true,condicionante_vencendo:true,documento_vencendo:false,novo_alerta_ambiental:true,atualizacao_processo:false,atualizacao_prad:false,geo_irregular:false};
 
 export default function PropertyUsers({ property, currentUser, onSave, onCancel }) {
   const isConsultor = currentUser?.user_type === 'consultor';

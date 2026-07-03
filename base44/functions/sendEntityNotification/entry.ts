@@ -48,6 +48,7 @@ Deno.serve(async (req) => {
     const userNameCache = {};
     const prefCache = {};
     const recentEmailsMap = new Map();
+    const propViewersCache = {};
 
     async function getConsultorData(email) {
       if (!email) return null;
@@ -249,6 +250,29 @@ Deno.serve(async (req) => {
       } catch (e) { return null; }
     }
 
+    // ─── Visualizadores de propriedade com notificação habilitada ────────
+    async function getPropertyViewers(propertyId, eventKey) {
+      if (!propertyId) return [];
+      const cacheKey = `${propertyId}:${eventKey}`;
+      if (propViewersCache[cacheKey] !== undefined) return propViewersCache[cacheKey];
+      try {
+        const props = await base44.asServiceRole.entities.Property.filter({ id: propertyId });
+        const prop = props[0];
+        if (!prop?.authorized_users) { propViewersCache[cacheKey] = []; return []; }
+        let users = prop.authorized_users;
+        if (typeof users === 'string') { try { users = JSON.parse(users); } catch { users = []; } }
+        const viewers = (users || [])
+          .filter(u => u.role === 'Visualizador' && u.notification_settings?.[eventKey] === true)
+          .map(u => u.email)
+          .filter(Boolean);
+        propViewersCache[cacheKey] = viewers;
+        return viewers;
+      } catch {
+        propViewersCache[cacheKey] = [];
+        return [];
+      }
+    }
+
     const notifications = [];
     const emailsToSend = [];
     const whatsappToSend = [];
@@ -347,6 +371,17 @@ Deno.serve(async (req) => {
               'atualizacao_licenca'
             );
           }
+          const andamentoViewers = await getPropertyViewers(data.property_id, 'atualizacao_licenca');
+          for (const v of andamentoViewers) {
+            if (recipients.includes(v)) continue;
+            addNotif(notifications, v, 'Novo Andamento em Licença (Visualizador)', andamentoMsg, 'atualizacao_licenca', 'info', '/Licenses');
+            await addWhatsapp(whatsappToSend, v, 'Novo Andamento em Licença (Visualizador)', andamentoMsg, 'atualizacao_licenca');
+            await addEmail(emailsToSend, v,
+              `[PRUMO Hub] Novo Andamento na Licença ${data.license_type}${data.license_number ? ` nº ${data.license_number}` : ''}`,
+              `<p>Olá,</p><p>Nova movimentação na licença <strong>${data.license_type}</strong> da propriedade que você acompanha:</p><blockquote style="background:#f5f5f5;padding:12px;border-left:4px solid #2d6a4f;">${latest.description || 'Nova movimentação registrada'}</blockquote>${ctxHtml}<p>Equipe PRUMO Hub</p>`,
+              'atualizacao_licenca'
+            );
+          }
         }
         if (old_data?.status && old_data.status !== data.status) {
           const sev = data.status === 'Vencida' ? 'error' : 'warning';
@@ -366,6 +401,17 @@ Deno.serve(async (req) => {
               `[PRUMO Hub] Status da Licença ${data.license_type} Alterado`,
               `<p>Olá,</p><p>O status da sua licença foi alterado: <strong>${old_data.status}</strong> → <strong>${data.status}</strong></p>${ctxHtml}<p>Equipe PRUMO Hub</p>`,
               'licenca_vencida'
+            );
+          }
+          const statusViewers = await getPropertyViewers(data.property_id, 'licenca_vencendo');
+          for (const v of statusViewers) {
+            if (recipients.includes(v)) continue;
+            addNotif(notifications, v, 'Status de Licença Alterado (Visualizador)', statusMsg, 'licenca_vencendo', sev, '/Licenses');
+            await addWhatsapp(whatsappToSend, v, 'Status de Licença Alterado (Visualizador)', statusMsg, 'licenca_vencendo');
+            await addEmail(emailsToSend, v,
+              `[PRUMO Hub] Status da Licença ${data.license_type} Alterado`,
+              `<p>Olá,</p><p>O status de uma licença da propriedade que você acompanha foi alterado: <strong>${old_data.status}</strong> → <strong>${data.status}</strong></p>${ctxHtml}<p>Equipe PRUMO Hub</p>`,
+              'licenca_vencendo'
             );
           }
         }
@@ -405,6 +451,17 @@ Deno.serve(async (req) => {
             'novo_processo'
           );
         }
+        const processViewers = await getPropertyViewers(data.property_id, 'novo_processo');
+        for (const v of processViewers) {
+          if (recipients.includes(v)) continue;
+          addNotif(notifications, v, 'Novo Processo Registrado', message, 'novo_processo', 'info', '/Processes');
+          await addWhatsapp(whatsappToSend, v, 'Novo Processo Registrado', message, 'novo_processo');
+          await addEmail(emailsToSend, v,
+            `[PRUMO Hub] Novo Processo Registrado: ${data.process_number}`,
+            `<p>Olá,</p><p>Novo processo cadastrado na propriedade que você acompanha:</p>${ctx.html}<p>Equipe PRUMO Hub</p>`,
+            'novo_processo'
+          );
+        }
       }
 
       if (event.type === 'update') {
@@ -429,6 +486,12 @@ Deno.serve(async (req) => {
               'atualizacao_processo'
             );
           }
+          const andamentoViewers = await getPropertyViewers(data.property_id, 'atualizacao_processo');
+          for (const v of andamentoViewers) {
+            if (recipients.includes(v)) continue;
+            addNotif(notifications, v, 'Novo Andamento em Processo', movMessage, 'atualizacao_processo', 'info', '/Processes');
+            await addWhatsapp(whatsappToSend, v, 'Novo Andamento em Processo', movMessage, 'atualizacao_processo');
+          }
         }
         if (old_data?.status && old_data.status !== data.status) {
           const statusMsg = `Processo ${data.process_number}: ${old_data.status} → ${data.status}${ctx.text}`;
@@ -448,6 +511,12 @@ Deno.serve(async (req) => {
               `<p>Olá,</p><p>O status do processo alterou: <strong>${old_data.status}</strong> → <strong>${data.status}</strong></p>${ctx.html}<p>Equipe PRUMO Hub</p>`,
               'atualizacao_processo'
             );
+          }
+          const processStatusViewers = await getPropertyViewers(data.property_id, 'atualizacao_processo');
+          for (const v of processStatusViewers) {
+            if (recipients.includes(v)) continue;
+            addNotif(notifications, v, 'Status de Processo Alterado', statusMsg, 'atualizacao_processo', 'warning', '/Processes');
+            await addWhatsapp(whatsappToSend, v, 'Status de Processo Alterado', statusMsg, 'atualizacao_processo');
           }
         }
       }
@@ -566,14 +635,31 @@ Deno.serve(async (req) => {
             'novo_alerta_ambiental'
           );
         }
+        const alertViewers = await getPropertyViewers(data.property_id, 'novo_alerta_ambiental');
+        for (const v of alertViewers) {
+          if (recipients.includes(v)) continue;
+          addNotif(notifications, v, alertTitle, alertMsg, 'novo_alerta_ambiental', sev, '/EnvironmentalAlerts');
+          await addWhatsapp(whatsappToSend, v, alertTitle, alertMsg, 'novo_alerta_ambiental');
+          await addEmail(emailsToSend, v,
+            `[PRUMO Hub] ⚠️ Novo Alerta Ambiental: ${data.title}`,
+            `<p>Olá,</p><p>Um novo alerta ambiental foi detectado na propriedade que você acompanha:</p>${ctx.html}${data.description ? `<p><strong>Descrição:</strong> ${data.description}</p>` : ''}<p>Acesse a plataforma para mais detalhes.</p><p>Equipe PRUMO Hub</p>`,
+            'novo_alerta_ambiental'
+          );
+        }
       }
       if (event.type === 'update' && old_data?.status !== data.status) {
         if (data.status === 'Resolvido') {
+          const resolvedMsg = `O alerta "${data.title}" foi resolvido${ctx.text}.`;
           for (const r of recipients) {
-            const resolvedMsg = `O alerta "${data.title}" foi resolvido${ctx.text}.`;
             addNotif(notifications, r, 'Alerta Ambiental Resolvido',
               resolvedMsg, 'alerta_resolvido', 'success', '/EnvironmentalAlerts');
             await addWhatsapp(whatsappToSend, r, 'Alerta Ambiental Resolvido', resolvedMsg, 'alerta_resolvido');
+          }
+          const resolvedViewers = await getPropertyViewers(data.property_id, 'alerta_resolvido');
+          for (const v of resolvedViewers) {
+            if (recipients.includes(v)) continue;
+            addNotif(notifications, v, 'Alerta Ambiental Resolvido', resolvedMsg, 'alerta_resolvido', 'success', '/EnvironmentalAlerts');
+            await addWhatsapp(whatsappToSend, v, 'Alerta Ambiental Resolvido', resolvedMsg, 'alerta_resolvido');
           }
         } else {
           for (const r of recipients) {
@@ -622,6 +708,12 @@ Deno.serve(async (req) => {
             addNotif(notifications, r, label, statusMsg, 'outro', sev, '/PRAD');
             await addWhatsapp(whatsappToSend, r, label, statusMsg, 'outro');
           }
+          const pradStatusViewers = await getPropertyViewers(data.property_id, 'atualizacao_prad');
+          for (const v of pradStatusViewers) {
+            if (recipients.includes(v)) continue;
+            addNotif(notifications, v, 'Status do PRAD Alterado', statusMsg, 'atualizacao_prad', sev, '/PRAD');
+            await addWhatsapp(whatsappToSend, v, 'Status do PRAD Alterado', statusMsg, 'atualizacao_prad');
+          }
         }
         const oldP = old_data?.pipeline_status || [], newP = data?.pipeline_status || [];
         for (let i = 0; i < newP.length; i++) {
@@ -632,6 +724,12 @@ Deno.serve(async (req) => {
               addNotif(notifications, r, 'Andamento no PRAD',
                 stageMsg, 'outro', sev, '/PRAD');
               await addWhatsapp(whatsappToSend, r, 'Andamento no PRAD', stageMsg, 'outro');
+            }
+            const pradStageViewers = await getPropertyViewers(data.property_id, 'atualizacao_prad');
+            for (const v of pradStageViewers) {
+              if (recipients.includes(v)) continue;
+              addNotif(notifications, v, 'Andamento no PRAD', stageMsg, 'atualizacao_prad', sev, '/PRAD');
+              await addWhatsapp(whatsappToSend, v, 'Andamento no PRAD', stageMsg, 'atualizacao_prad');
             }
           }
         }
@@ -683,6 +781,19 @@ Deno.serve(async (req) => {
             addNotif(notifications, r, 'Status do Georreferenciamento Alterado',
               statusMsg, 'outro', data.status === 'Regular' ? 'success' : 'warning', '/Georeferencing');
             await addWhatsapp(whatsappToSend, r, 'Status do Georreferenciamento Alterado', statusMsg, 'outro');
+          }
+          if (data.status === 'Irregular') {
+            const irregularViewers = await getPropertyViewers(data.property_id, 'geo_irregular');
+            for (const v of irregularViewers) {
+              if (recipients.includes(v)) continue;
+              addNotif(notifications, v, 'Georreferenciamento Irregular', statusMsg, 'geo_irregular', 'error', '/Georeferencing');
+              await addWhatsapp(whatsappToSend, v, 'Georreferenciamento Irregular', statusMsg, 'geo_irregular');
+              await addEmail(emailsToSend, v,
+                `[PRUMO Hub] ⛔ Georreferenciamento Irregular`,
+                `<p>Olá,</p><p>O georreferenciamento da propriedade que você acompanha foi marcado como <strong>Irregular</strong>.</p>${ctx.html}<p>Equipe PRUMO Hub</p>`,
+                'geo_irregular'
+              );
+            }
           }
         }
         if (old_data?.sigef_status !== data.sigef_status) {

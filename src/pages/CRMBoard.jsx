@@ -153,7 +153,10 @@ export default function CRMBoard() {
 
   const { data: crmList = [], isLoading } = useQuery({
     queryKey: ['crm-board-list', effectiveEmail],
-    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: effectiveEmail }),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listConsultorClients', {});
+      return res?.data || [];
+    },
     enabled: !!effectiveEmail && !effectiveLoading,
   });
 

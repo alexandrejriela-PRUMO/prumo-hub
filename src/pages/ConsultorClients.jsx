@@ -46,7 +46,10 @@ export default function ConsultorClients() {
   // Busca todos os clientes do consultor, independente do status
   const { data: crmClients = [], isLoading } = useQuery({
     queryKey: ['consultor-crm-clients', effectiveEmail],
-    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: effectiveEmail }) || [],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listConsultorClients', {});
+      return res?.data || [];
+    },
     enabled: !!effectiveEmail,
     initialData: [],
   });

@@ -52,7 +52,7 @@ export default function NewClientForm({ isOpen, onClose, consultorEmail, onSucce
       return res.data;
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['crm-board-list'] });
+      queryClient.invalidateQueries({ queryKey: ['consultor-clients-data'] });
       queryClient.invalidateQueries({ queryKey: ['consultor-crm-clients'] });
       toast.success(crmStatus === 'Prospect' ? 'Lead cadastrado!' : 'Cliente cadastrado!');
       onSuccess?.(result);

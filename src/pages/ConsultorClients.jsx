@@ -43,53 +43,39 @@ export default function ConsultorClients() {
   const canCreate = !isEquipe || memberRole === 'Administrador';
 
 
-  // Busca todos os clientes do consultor, independente do status
-  const { data: crmClients = [], isLoading } = useQuery({
-    queryKey: ['consultor-crm-clients', effectiveEmail],
-    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: effectiveEmail }) || [],
-    enabled: !!effectiveEmail,
-    initialData: [],
-  });
-
-  // Busca propriedades para vincular ao perfil
-  const { data: properties = [] } = useQuery({
-    queryKey: ['consultor-properties', effectiveEmail],
-    queryFn: () => base44.entities.Property.filter({ consultor_email: effectiveEmail }) || [],
-    enabled: !!effectiveEmail,
-    initialData: [],
-  });
-
-  // Busca clientes que podem estar vinculados apenas via propriedade (sem CRM direto)
-  const { data: propertyBasedClients = [] } = useQuery({
-    queryKey: ['property-based-clients', effectiveEmail],
+  // Busca todos os clientes e propriedades do consultor via backend function
+  // (necessário para membros de equipe que não passam pela RLS)
+  const { data: consultorData, isLoading } = useQuery({
+    queryKey: ['consultor-clients-data', effectiveEmail],
     queryFn: async () => {
-      try {
-        const props = (await base44.entities.Property.filter({ consultor_email: effectiveEmail })) || [];
-        // Agrupa por client_name/owner_email para encontrar clientes únicos
-        const clients = new Map();
-        (props || []).forEach(p => {
-          if (p?.client_name && p?.owner_email) {
-            const key = `${p.owner_email}`;
-            if (!clients.has(key)) {
-              clients.set(key, {
-                property_id: p.id,
-                consultor_email: effectiveEmail,
-                client_email: p.owner_email,
-                client_name: p.client_name,
-                status: 'Ativo',
-              });
-            }
-          }
-        });
-        return Array.from(clients.values());
-      } catch (e) {
-        console.error('Erro ao buscar clientes via propriedade:', e);
-        return [];
-      }
+      const res = await base44.functions.invoke('listConsultorClients', {});
+      return res.data;
     },
     enabled: !!effectiveEmail,
-    initialData: [],
   });
+
+  const crmClients = consultorData?.crmList || [];
+  const properties = consultorData?.properties || [];
+
+  // Clientes vinculados apenas via propriedade (sem CRM direto)
+  const propertyBasedClients = useMemo(() => {
+    const clients = new Map();
+    (properties || []).forEach(p => {
+      if (p?.client_name && p?.owner_email) {
+        const key = `${p.owner_email}`;
+        if (!clients.has(key)) {
+          clients.set(key, {
+            property_id: p.id,
+            consultor_email: effectiveEmail,
+            client_email: p.owner_email,
+            client_name: p.client_name,
+            status: 'Ativo',
+          });
+        }
+      }
+    });
+    return Array.from(clients.values());
+  }, [properties, effectiveEmail]);
 
   // Mescla clientes do CRM com clientes vinculados via propriedade
   const allClients = useMemo(() => {
@@ -108,11 +94,12 @@ export default function ConsultorClients() {
   }, [crmClients, propertyBasedClients]);
 
   const deleteClientMutation = useMutation({
-    mutationFn: (client) => base44.entities.ClientCRM.delete(client.id),
+    mutationFn: async (client) => {
+      const res = await base44.functions.invoke('deleteClientCRM', { id: client.id });
+      return res.data;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['consultor-crm-clients'] });
-      queryClient.invalidateQueries({ queryKey: ['property-based-clients'] });
-      queryClient.invalidateQueries({ queryKey: ['consultor-properties'] });
+      queryClient.invalidateQueries({ queryKey: ['consultor-clients-data'] });
       setClientToDelete(null);
       toast.success('Cliente removido.');
     }

@@ -47,7 +47,10 @@ export default function NewClientForm({ isOpen, onClose, consultorEmail, onSucce
   );
 
   const createCRM = useMutation({
-    mutationFn: (data) => base44.entities.ClientCRM.create(data),
+    mutationFn: async (data) => {
+      const res = await base44.functions.invoke('createClientCRM', data);
+      return res.data;
+    },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['crm-board-list'] });
       queryClient.invalidateQueries({ queryKey: ['consultor-crm-clients'] });
@@ -55,7 +58,11 @@ export default function NewClientForm({ isOpen, onClose, consultorEmail, onSucce
       onSuccess?.(result);
       handleClose();
     },
-    onError: () => toast.error('Erro ao cadastrar.')
+    onError: (err) => {
+      console.error('[NewClientForm] Erro ao cadastrar:', err);
+      const msg = err?.response?.data?.error || err?.message || 'Erro ao cadastrar.';
+      toast.error(msg);
+    }
   });
 
   const handleSubmit = () => {

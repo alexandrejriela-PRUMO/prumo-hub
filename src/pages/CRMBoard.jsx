@@ -145,31 +145,26 @@ export default function CRMBoard() {
   const canCreateLead = !isEquipe || (memberRole === 'Administrador');
   const canViewFinancial = !isEquipe || (memberRole === 'Administrador');
 
-  const { data: properties = [] } = useQuery({
-    queryKey: ['crm-board-properties', effectiveEmail],
-    queryFn: () => base44.entities.Property.filter({ consultor_email: effectiveEmail }),
-    enabled: !!effectiveEmail && !effectiveLoading,
-  });
-
-  const { data: crmList = [], isLoading } = useQuery({
-    queryKey: ['crm-board-list', effectiveEmail],
+  const { data: consultorData, isLoading } = useQuery({
+    queryKey: ['consultor-clients-data', effectiveEmail],
     queryFn: async () => {
       const res = await base44.functions.invoke('listConsultorClients', {});
-      return res?.data || [];
+      return res.data;
     },
     enabled: !!effectiveEmail && !effectiveLoading,
   });
+
+  const properties = consultorData?.properties || [];
+  const crmList = consultorData?.crmList || [];
 
   const deleteCRMMutation = useMutation({
     mutationFn: async ({ crmId, propertyId }) => {
-      try { await base44.entities.ClientCRM.delete(crmId); } catch (e) { /* ignore 404 */ }
-      if (propertyId) {
-        try { await base44.entities.Property.delete(propertyId); } catch (e) { /* ignore 404 */ }
-      }
+      const res = await base44.functions.invoke('deleteClientCRM', { id: crmId, propertyId });
+      return res.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['crm-board-list']);
-      queryClient.invalidateQueries(['crm-board-properties']);
+      queryClient.invalidateQueries({ queryKey: ['consultor-clients-data'] });
+      queryClient.invalidateQueries({ queryKey: ['consultor-crm-clients'] });
       setSelectedCRM(null);
       toast.success('Cliente excluído com sucesso.');
     },
@@ -177,21 +172,28 @@ export default function CRMBoard() {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }) => base44.entities.ClientCRM.update(id, { status }),
+    mutationFn: async ({ id, status }) => {
+      const res = await base44.functions.invoke('updateClientCRM', { id, data: { status } });
+      return res.data;
+    },
     onMutate: async ({ id, status }) => {
-      await queryClient.cancelQueries(['crm-board-list']);
-      const previousData = queryClient.getQueryData(['crm-board-list']);
-      queryClient.setQueryData(['crm-board-list'], (old = []) =>
-        old.map(crm => crm.id === id ? { ...crm, status } : crm)
-      );
+      await queryClient.cancelQueries(['consultor-clients-data']);
+      const previousData = queryClient.getQueryData(['consultor-clients-data']);
+      queryClient.setQueryData(['consultor-clients-data'], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          crmList: (old.crmList || []).map(crm => crm.id === id ? { ...crm, status } : crm)
+        };
+      });
       return { previousData };
     },
     onError: (err, vars, context) => {
       if (context?.previousData) {
-        queryClient.setQueryData(['crm-board-list'], context.previousData);
+        queryClient.setQueryData(['consultor-clients-data'], context.previousData);
       }
     },
-    onSuccess: () => queryClient.invalidateQueries(['crm-board-list']),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['consultor-clients-data'] }),
   });
 
   const propertyMap = useMemo(() => {

@@ -60,27 +60,28 @@ export default function ClientCRMPanel({ property, onClose }) {
   const crmId = property?.id;
   const crmConsultorEmail = property?.consultor_email || hookEffectiveEmail;
 
-  // ── Busca o registro CRM pelo ID direto ──────────────────────────────────
+  // ── Busca o registro CRM pelo ID direto (via backend function para bypass de RLS) ──
   const { data: activeCRM, isLoading } = useQuery({
     queryKey: ['client-crm', crmId],
     queryFn: async () => {
-      const results = await base44.entities.ClientCRM.filter({ id: crmId });
-      return results[0] || null;
+      const res = await base44.functions.invoke('listConsultorClients', {});
+      const list = res.data?.crmList || [];
+      return list.find(c => c.id === crmId) || null;
     },
     enabled: !!crmId,
     staleTime: 0,
   });
 
-  // ── Mutation de atualização — NUNCA cria, só atualiza ───────────────────
+  // ── Mutation de atualização — NUNCA cria, só atualiza (via backend function) ──
   const updateCRM = useMutation({
-    mutationFn: (data) => {
+    mutationFn: async (data) => {
       if (!crmId) throw new Error('CRM não identificado.');
-      return base44.entities.ClientCRM.update(crmId, data);
+      const res = await base44.functions.invoke('updateClientCRM', { id: crmId, data });
+      return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['client-crm', crmId] });
-      queryClient.invalidateQueries({ queryKey: ['crm-board-list'] });
-      queryClient.invalidateQueries({ queryKey: ['consultor-crm-clients'] });
+      queryClient.invalidateQueries({ queryKey: ['consultor-clients-data'] });
     },
     onError: (e) => toast.error('Erro ao salvar: ' + e.message),
   });

@@ -346,12 +346,24 @@
   ],
   "rls": {
     "create": {
-      "data.consultor_email": "{{user.email}}"
+      "$or": [
+        {
+          "data.consultor_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
     },
     "read": {
       "$or": [
         {
           "data.consultor_email": "{{user.email}}"
+        },
+        {
+          "created_by_id": "{{user.id}}"
         },
         {
           "user_condition": {
@@ -366,6 +378,9 @@
           "data.consultor_email": "{{user.email}}"
         },
         {
+          "created_by_id": "{{user.id}}"
+        },
+        {
           "user_condition": {
             "role": "admin"
           }
@@ -376,6 +391,9 @@
       "$or": [
         {
           "data.consultor_email": "{{user.email}}"
+        },
+        {
+          "created_by_id": "{{user.id}}"
         },
         {
           "user_condition": {

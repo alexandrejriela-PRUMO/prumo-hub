@@ -22,7 +22,12 @@ Deno.serve(async (req) => {
     }
 
     // Buscar o registro para validar acesso
-    const existing = await base44.asServiceRole.entities.ClientCRM.get(id);
+    let existing;
+    try {
+      existing = await base44.asServiceRole.entities.ClientCRM.get(id);
+    } catch (e) {
+      return Response.json({ error: 'Registro não encontrado.' }, { status: 404 });
+    }
     if (!existing) {
       return Response.json({ error: 'Registro não encontrado.' }, { status: 404 });
     }

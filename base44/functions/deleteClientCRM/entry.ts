@@ -22,7 +22,13 @@ Deno.serve(async (req) => {
     }
 
     // Buscar o registro para validar acesso
-    const existing = await base44.asServiceRole.entities.ClientCRM.get(id);
+    let existing;
+    try {
+      existing = await base44.asServiceRole.entities.ClientCRM.get(id);
+    } catch (e) {
+      // Já foi excluído — retornar sucesso
+      return Response.json({ success: true, alreadyDeleted: true });
+    }
     if (!existing) {
       // Já foi excluído — retornar sucesso
       return Response.json({ success: true, alreadyDeleted: true });

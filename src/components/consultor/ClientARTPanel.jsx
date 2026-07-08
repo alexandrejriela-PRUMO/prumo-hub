@@ -51,7 +51,13 @@ export default function ClientARTPanel({ client }) {
 
   const { data: arts = [] } = useQuery({
     queryKey: ['client-arts', client?.id],
-    queryFn: () => base44.entities.ART.filter({ client_email: client?.client_email }),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listConsultorPropertyRecords', {
+        entity_name: 'ART', field_name: 'property_id', email_field: 'consultor_email'
+      });
+      const all = res.data?.records || [];
+      return all.filter(a => a.client_email === client?.client_email);
+    },
     enabled: !!client?.client_email
   });
 

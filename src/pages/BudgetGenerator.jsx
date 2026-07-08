@@ -25,17 +25,17 @@ export default function BudgetGenerator() {
   // Proteger contra saída do gerador sem salvar
   useNavigationGuard(isDirty);
 
-  const { data: templates = [] } = useQuery({
-    queryKey: ['budgetTemplates', effectiveEmail],
-    queryFn: () => base44.entities.BudgetTemplate.filter({ consultor_email: effectiveEmail }),
+  const { data: consultorBudgets } = useQuery({
+    queryKey: ['listConsultorBudgets', effectiveEmail],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listConsultorBudgets', {});
+      return res.data;
+    },
     enabled: !!effectiveEmail
   });
 
-  const { data: budgets = [] } = useQuery({
-    queryKey: ['budgets', effectiveEmail],
-    queryFn: () => base44.entities.Budget.filter({ consultor_email: effectiveEmail }, '-created_date', 100),
-    enabled: !!effectiveEmail
-  });
+  const templates = consultorBudgets?.templates || [];
+  const budgets = consultorBudgets?.budgets || [];
 
   const saveBudgetMutation = useMutation({
     mutationFn: (data) => {
@@ -46,7 +46,7 @@ export default function BudgetGenerator() {
       return base44.entities.Budget.create(data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      queryClient.invalidateQueries({ queryKey: ['listConsultorBudgets'] });
       toast.success('Orçamento salvo com sucesso!');
       setTimeout(() => setStep('history'), 1500);
     },
@@ -74,7 +74,7 @@ export default function BudgetGenerator() {
     } else {
       await base44.entities.Budget.create(fullData);
     }
-    queryClient.invalidateQueries({ queryKey: ['budgets'] });
+    queryClient.invalidateQueries({ queryKey: ['listConsultorBudgets'] });
     setIsDirty(false);
     setBudgetData(null);
     setHistoryTab('emails');
@@ -84,7 +84,7 @@ export default function BudgetGenerator() {
   const deleteBudgetMutation = useMutation({
     mutationFn: (budgetId) => base44.entities.Budget.delete(budgetId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      queryClient.invalidateQueries({ queryKey: ['listConsultorBudgets'] });
       toast.success('Orçamento deletado');
       setSelectedBudget(null);
     },
@@ -136,12 +136,12 @@ export default function BudgetGenerator() {
         saved = await base44.entities.Budget.update(id, rest);
         // update retorna undefined; retornar o próprio objeto com id
         setBudgetData(fullData);
-        queryClient.invalidateQueries({ queryKey: ['budgets'] });
+        queryClient.invalidateQueries({ queryKey: ['listConsultorBudgets'] });
         return fullData;
       } else {
         saved = await base44.entities.Budget.create(fullData);
         setBudgetData(saved);
-        queryClient.invalidateQueries({ queryKey: ['budgets'] });
+        queryClient.invalidateQueries({ queryKey: ['listConsultorBudgets'] });
         return saved;
       }
     }

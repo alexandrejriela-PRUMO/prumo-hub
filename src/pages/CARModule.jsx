@@ -158,8 +158,17 @@ export default function CARModule() {
   const selectedProperty = properties.find(p => p.id === effectivePropertyId);
 
   const { data: carRecords = [], isLoading: carLoading } = useQuery({
-    queryKey: ['car', effectivePropertyId],
-    queryFn: () => base44.entities.CARManagement.filter({ property_id: effectivePropertyId }),
+    queryKey: ['car', effectivePropertyId, isConsultor],
+    queryFn: async () => {
+      if (isConsultor) {
+        const res = await base44.functions.invoke('listConsultorPropertyRecords', {
+          entity_name: 'CARManagement', field_name: 'property_id', email_field: 'consultor_email'
+        });
+        const all = res.data?.records || [];
+        return all.filter(r => r.property_id === effectivePropertyId);
+      }
+      return base44.entities.CARManagement.filter({ property_id: effectivePropertyId });
+    },
     enabled: !!effectivePropertyId,
     initialData: [],
   });

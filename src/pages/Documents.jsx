@@ -29,7 +29,8 @@ import { useEffectiveUser } from '../hooks/useEffectiveUser';
 const documentTypes = ['CAR', 'CCIR'];
 
 export default function Documents() {
-  const { user, effectiveEmail } = useEffectiveUser();
+  const { user, effectiveEmail, userType, isEquipeProdutor } = useEffectiveUser();
+  const isConsultorFamily = (userType === 'consultor' || (userType === 'equipe' && !isEquipeProdutor));
   const [dialogOpen, setDialogOpen] = useState(false);
   const [versionDialogOpen, setVersionDialogOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState(null);
@@ -49,15 +50,29 @@ export default function Documents() {
   const queryClient = useQueryClient();
 
   const { data: documents, isLoading } = useQuery({
-    queryKey: ['documents', effectiveEmail],
-    queryFn: () => base44.entities.Document.filter({ owner_email: effectiveEmail }),
+    queryKey: ['documents', effectiveEmail, isConsultorFamily],
+    queryFn: async () => {
+      if (isConsultorFamily) {
+        const res = await base44.functions.invoke('listConsultorPropertyRecords', {
+          entity_name: 'Document', field_name: 'property_id', email_field: 'owner_email'
+        });
+        return res.data?.records || [];
+      }
+      return base44.entities.Document.filter({ owner_email: effectiveEmail });
+    },
     enabled: !!effectiveEmail,
     initialData: [],
   });
 
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties', effectiveEmail],
-    queryFn: () => base44.entities.Property.filter({ owner_email: effectiveEmail }),
+    queryKey: ['properties', effectiveEmail, isConsultorFamily],
+    queryFn: async () => {
+      if (isConsultorFamily) {
+        const res = await base44.functions.invoke('listConsultorClients', {});
+        return res.data?.properties || [];
+      }
+      return base44.entities.Property.filter({ owner_email: effectiveEmail });
+    },
     enabled: !!effectiveEmail
   });
 

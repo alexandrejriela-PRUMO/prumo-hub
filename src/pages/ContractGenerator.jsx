@@ -9,50 +9,42 @@ import ContractEditorWYSIWYG from '@/components/contract/ContractEditorWYSIWYG';
 import ContractEmailHistory from '@/components/contract/ContractEmailHistory';
 import { ChevronLeft, Download, Copy, Trash2, FileText, Mail, Plus } from 'lucide-react';
 import { useNavigationGuard } from '../hooks/useNavigationGuard';
+import { useEffectiveUser } from '../hooks/useEffectiveUser';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 export default function ContractGenerator() {
+  const { user, effectiveEmail, isLoading: loadingUser } = useEffectiveUser();
   const [step, setStep] = React.useState('form');
   const [historyTab, setHistoryTab] = React.useState('contracts');
   const [contractData, setContractData] = React.useState(null);
-  const [user, setUser] = React.useState(null);
   const [selectedContract, setSelectedContract] = React.useState(null);
-  const [loadingUser, setLoadingUser] = React.useState(true);
   const [isDirty, setIsDirty] = React.useState(false);
   const queryClient = useQueryClient();
 
   // Proteger contra saída do gerador sem salvar
   useNavigationGuard(isDirty);
 
-  React.useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      } catch (e) {
-        console.error('Erro ao carregar usuário');
-      } finally {
-        setLoadingUser(false);
-      }
-    };
-    loadUser();
-  }, []);
-
   const { data: templates = [] } = useQuery({
-    queryKey: ['contractTemplates', user?.email],
-    queryFn: () => base44.entities.ContractTemplate.filter({ consultor_email: user?.email }),
-    enabled: !!user?.email
+    queryKey: ['contractTemplates', effectiveEmail],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listConsultorContracts', {});
+      return res.data?.templates || [];
+    },
+    enabled: !!effectiveEmail
   });
 
   const { data: contracts = [] } = useQuery({
-    queryKey: ['contracts', user?.email],
-    queryFn: () => base44.entities.ClientContract.filter({ consultor_email: user?.email }, '-created_date', 100),
-    enabled: !!user?.email
+    queryKey: ['contracts', effectiveEmail],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listClientContracts', {});
+      return res.data?.contracts || [];
+    },
+    enabled: !!effectiveEmail
   });
 
   const saveContractMutation = useMutation({
-    mutationFn: (data) => base44.entities.ClientContract.create(data),
+    mutationFn: (data) => base44.functions.invoke('createClientContract', data).then(r => r.data),
     onSuccess: () => {
       toast.success('Contrato salvo com sucesso!');
       setTimeout(() => window.location.href = '/Contracts', 2000);
@@ -99,7 +91,7 @@ export default function ContractGenerator() {
   });
 
   const deleteContractMutation = useMutation({
-    mutationFn: (contractId) => base44.entities.ClientContract.delete(contractId),
+    mutationFn: (contractId) => base44.functions.invoke('deleteClientContract', { id: contractId }).then(r => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
       toast.success('Contrato deletado');
@@ -300,7 +292,7 @@ export default function ContractGenerator() {
             </div>
 
             {historyTab === 'emails' && (
-              <ContractEmailHistory consultorEmail={user?.email} />
+              <ContractEmailHistory consultorEmail={effectiveEmail} />
             )}
 
             {historyTab === 'contracts' && (

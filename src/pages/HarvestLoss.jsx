@@ -93,6 +93,13 @@ export default function HarvestLossPage() {
     queryKey: ['harvest-loss', harvestEffectiveEmail, selectedPropertyId, isConsultor],
     queryFn: async () => {
       if (!harvestEffectiveEmail) return [];
+      if (isConsultor) {
+        const res = await base44.functions.invoke('listConsultorPropertyRecords', {
+          entity_name: 'HarvestLoss', field_name: 'property_id', email_field: 'consultor_email'
+        });
+        const all = res.data?.records || [];
+        return selectedPropertyId ? all.filter(r => r.property_id === selectedPropertyId) : all;
+      }
       const propFilter = selectedPropertyId ? { property_id: selectedPropertyId } : {};
       const [byConsultor, byClient] = await Promise.all([
         base44.entities.HarvestLoss.filter({ consultor_email: harvestEffectiveEmail, ...propFilter }, '-data_evento', 200),

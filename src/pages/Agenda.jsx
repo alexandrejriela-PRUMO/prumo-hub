@@ -38,21 +38,24 @@ function AgendaContent() {
 
   const { data: agendaEvents = [] } = useQuery({
     queryKey: ['agendaEvents', effectiveEmail],
-    queryFn: () => base44.entities.AgendaEvent.filter({ consultor_email: effectiveEmail }, '-start_datetime', 200),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listConsultorAgendaEvents', {});
+      return res.data?.events || [];
+    },
     enabled: !!effectiveEmail && !effectiveLoading,
   });
 
-  const { data: properties = [] } = useQuery({
-    queryKey: ['agendaProperties', effectiveEmail],
-    queryFn: () => base44.entities.Property.filter({ consultor_email: effectiveEmail }, 'property_name', 100),
+  const { data: consultorClients } = useQuery({
+    queryKey: ['agendaConsultorClients', effectiveEmail],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listConsultorClients', {});
+      return res.data;
+    },
     enabled: !!effectiveEmail && !effectiveLoading,
   });
 
-  const { data: crmRecords = [] } = useQuery({
-    queryKey: ['agendaCRM', effectiveEmail],
-    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: effectiveEmail }, '-updated_date', 100),
-    enabled: !!effectiveEmail && !effectiveLoading,
-  });
+  const properties = consultorClients?.properties || [];
+  const crmRecords = consultorClients?.crmList || [];
 
   const { data: teamMembers = [] } = useQuery({
     queryKey: ['agendaTeam', effectiveEmail],

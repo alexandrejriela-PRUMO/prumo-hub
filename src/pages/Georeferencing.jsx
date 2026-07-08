@@ -109,8 +109,17 @@ export default function Georeferencing() {
   const effectivePropertyId = isConsultor ? consultorPropertyId : selectedProperty;
 
   const { data: georeferences = [], isLoading } = useQuery({
-    queryKey: ['georeferencing', effectivePropertyId],
-    queryFn: () => base44.entities.Georeferencing.filter({ property_id: effectivePropertyId }),
+    queryKey: ['georeferencing', effectivePropertyId, isConsultor],
+    queryFn: async () => {
+      if (isConsultor) {
+        const res = await base44.functions.invoke('listConsultorPropertyRecords', {
+          entity_name: 'Georeferencing', field_name: 'property_id'
+        });
+        const all = res.data?.records || [];
+        return all.filter(g => g.property_id === effectivePropertyId);
+      }
+      return base44.entities.Georeferencing.filter({ property_id: effectivePropertyId });
+    },
     enabled: !!effectivePropertyId,
     initialData: [],
   });

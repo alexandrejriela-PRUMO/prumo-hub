@@ -83,6 +83,13 @@ export default function RuralCreditPage() {
     queryKey: ['rural-credits', creditEffectiveEmail, selectedPropertyId, isConsultor],
     queryFn: async () => {
       if (!creditEffectiveEmail) return [];
+      if (isConsultor) {
+        const res = await base44.functions.invoke('listConsultorPropertyRecords', {
+          entity_name: 'RuralCredit', field_name: 'property_id', email_field: 'consultor_email'
+        });
+        const all = res.data?.records || [];
+        return selectedPropertyId ? all.filter(r => r.property_id === selectedPropertyId) : all;
+      }
       const propFilter = selectedPropertyId ? { property_id: selectedPropertyId } : {};
       const [byConsultor, byClient] = await Promise.all([
         base44.entities.RuralCredit.filter({ consultor_email: creditEffectiveEmail, ...propFilter }, '-created_date', 200),

@@ -45,7 +45,11 @@ export default function ClientChargesPanel({ client }) {
 
   const { data: charges = [], isLoading } = useQuery({
     queryKey: ['client-charges', clientEmail],
-    queryFn: () => base44.entities.ConsultorCharge.filter({ client_email: clientEmail }, '-created_date', 50),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listConsultorFinancials', {});
+      const all = res.data?.charges || [];
+      return all.filter(c => c.client_email === clientEmail);
+    },
     enabled: !!clientEmail,
   });
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +26,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { format, parseISO } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import RequestConversation from '../components/requests/RequestConversation';
+import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 const categories = [
   { value: 'Jurídico', icon: Scale, color: 'bg-purple-100 text-purple-700' },
@@ -45,7 +46,7 @@ const statusConfig = {
 const priorities = ['Baixa', 'Média', 'Alta', 'Urgente'];
 
 export default function Requests() {
-  const [user, setUser] = useState(null);
+  const { user, effectiveEmail } = useEffectiveUser();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [conversationDialogOpen, setConversationDialogOpen] = useState(false);
@@ -59,22 +60,13 @@ export default function Requests() {
 
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      } catch (e) {
-        console.log('User not logged in');
-      }
-    };
-    loadUser();
-  }, []);
-
   const { data: requests, isLoading } = useQuery({
-    queryKey: ['requests', user?.email],
-    queryFn: () => base44.entities.Request.filter({ client_email: user.email }, '-created_date'),
-    enabled: !!user?.email,
+    queryKey: ['requests', effectiveEmail],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listConsultorRequests', {});
+      return res.data?.requests || [];
+    },
+    enabled: !!effectiveEmail,
     initialData: [],
   });
 

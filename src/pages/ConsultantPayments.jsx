@@ -73,13 +73,9 @@ export default function ConsultantPayments() {
   const loadCharges = async () => {
     setChargesLoading(true);
     try {
-      const user = await base44.auth.me();
-      const result = await base44.entities.ConsultorCharge.filter(
-        { consultor_email: user.email },
-        '-created_date',
-        100
-      );
-      setCharges(result || []);
+      // Via backend function para funcionar também para membros de equipe (bypass RLS)
+      const res = await base44.functions.invoke('listConsultorFinancials', {});
+      setCharges(res.data?.charges || []);
     } catch (e) {
       console.error('Erro ao carregar histórico:', e);
     } finally {

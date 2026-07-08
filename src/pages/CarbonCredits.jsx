@@ -75,6 +75,12 @@ function CarbonCreditsContent() {
     queryKey: ['carbonCredits', effectiveEmail, isProdutor, properties.map(p => p.id).join(',')],
     queryFn: async () => {
       if (!properties.length) return [];
+      if (!isProdutor && !isClientConsultor) {
+        const res = await base44.functions.invoke('listConsultorPropertyRecords', {
+          entity_name: 'CarbonCredit', field_name: 'property_id'
+        });
+        return res.data?.records || [];
+      }
       const propsToSearch = isClientConsultor ? effectiveProperties : properties;
       const results = await Promise.all(
         propsToSearch.map(p => base44.entities.CarbonCredit.filter({ property_id: p.id }))

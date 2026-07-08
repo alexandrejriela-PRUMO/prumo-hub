@@ -13,19 +13,12 @@ export default function BudgetEmailHistory({ consultorEmail, budgetId = null }) 
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ['budgetEmailLogs', consultorEmail, budgetId],
-    queryFn: () => {
-      const filter = budgetId
-        ? { consultor_email: consultorEmail, budget_id: budgetId }
-        : { consultor_email: consultorEmail };
-      // Filtrar apenas logs de orçamento (não contratos)
-      return base44.entities.BudgetEmailLog.filter(
-        { ...filter, log_type: 'budget' },
-        '-sent_at', 100
-      ).catch(() =>
-        // fallback: se log_type não existir ainda, busca sem esse filtro
-        base44.entities.BudgetEmailLog.filter(filter, '-sent_at', 100)
-          .then(all => all.filter(l => !l.log_type || l.log_type === 'budget'))
-      );
+    queryFn: async () => {
+      // Via backend function para funcionar também para membros de equipe (bypass RLS)
+      const res = await base44.functions.invoke('listConsultorBudgets', {});
+      const all = res.data?.emailLogs || [];
+      // Filtrar apenas logs de orçamento (não contratos) e, se informado, do orçamento específico
+      return all.filter(l => (!l.log_type || l.log_type === 'budget') && (!budgetId || l.budget_id === budgetId));
     },
     enabled: !!consultorEmail,
   });

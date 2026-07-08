@@ -7,26 +7,15 @@ import { toast } from 'sonner';
 import { ChevronLeft, Plus } from 'lucide-react';
 import ChecklistView from '@/components/checklist/ChecklistView';
 import { useSearchParams } from 'react-router-dom';
+import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 export default function LicenseChecklist() {
   const [searchParams] = useSearchParams();
   const licenseId = searchParams.get('license_id');
-  const [user, setUser] = useState(null);
+  const { user, effectiveEmail } = useEffectiveUser();
   const [showCreateChecklist, setShowCreateChecklist] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const queryClient = useQueryClient();
-
-  React.useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      } catch (e) {
-        console.error('Erro ao carregar usuário');
-      }
-    };
-    loadUser();
-  }, []);
 
   const { data: license } = useQuery({
     queryKey: ['license', licenseId],
@@ -37,19 +26,25 @@ export default function LicenseChecklist() {
   const { data: checklist } = useQuery({
     queryKey: ['checklist', licenseId],
     queryFn: async () => {
-      const result = await base44.entities.ProjectChecklist.filter({
-        entity_type: 'License',
-        entity_id: licenseId
+      // ProjectChecklist não tem property_id — usa apenas o join por consultor_email (bypass RLS para equipe)
+      const res = await base44.functions.invoke('listConsultorPropertyRecords', {
+        entity_name: 'ProjectChecklist', field_name: 'property_id', email_field: 'consultor_email'
       });
-      return result?.[0] || null;
+      const all = res.data?.records || [];
+      return all.find(c => c.entity_type === 'License' && c.entity_id === licenseId) || null;
     },
     enabled: !!licenseId
   });
 
   const { data: templates = [] } = useQuery({
-    queryKey: ['checklistTemplates', user?.email],
-    queryFn: () => base44.entities.ChecklistTemplate.filter({ consultor_email: user?.email }),
-    enabled: !!user?.email && showCreateChecklist
+    queryKey: ['checklistTemplates', effectiveEmail],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listConsultorPropertyRecords', {
+        entity_name: 'ChecklistTemplate', field_name: 'property_id', email_field: 'consultor_email'
+      });
+      return res.data?.records || [];
+    },
+    enabled: !!effectiveEmail && showCreateChecklist
   });
 
   const createChecklistMutation = useMutation({
@@ -71,6 +66,7 @@ export default function LicenseChecklist() {
     const checklistData = {
       entity_type: 'License',
       entity_id: licenseId,
+      // RLS de ProjectChecklist exige consultor_email === user.email no create (não há função de bypass)
       consultor_email: user?.email,
       checklist_title: license?.license_type || 'Checklist de Licença',
       description: `Workflow para ${license?.license_type}`,

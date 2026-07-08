@@ -115,8 +115,16 @@ export default function EnvironmentalAlerts() {
   const effectiveProperties = isClientConsultor ? clientConsultorProperties : properties;
 
   const { data: allAlerts = [] } = useQuery({
-    queryKey: ['environmental-alerts', selectedPropertyId],
-    queryFn: () => base44.entities.EnvironmentalAlert.list('-detection_date'),
+    queryKey: ['environmental-alerts', selectedPropertyId, isConsultorFamily],
+    queryFn: async () => {
+      if (isConsultorFamily) {
+        const res = await base44.functions.invoke('listConsultorPropertyRecords', {
+          entity_name: 'EnvironmentalAlert', field_name: 'property_id'
+        });
+        return res.data?.records || [];
+      }
+      return base44.entities.EnvironmentalAlert.list('-detection_date');
+    },
     enabled: !!selectedPropertyId
   });
 

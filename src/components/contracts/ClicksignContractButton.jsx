@@ -29,7 +29,14 @@ export default function ClicksignContractButton({ contract, user }) {
 
   const { data: signatures = [], refetch } = useQuery({
     queryKey: ['signatures', contract.id],
-    queryFn: () => base44.entities.DigitalSignature.filter({ client_contract_id: contract.id }, '-created_date', 10),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listConsultorContracts', {});
+      const all = res.data?.signatures || [];
+      return all
+        .filter(s => s.client_contract_id === contract.id)
+        .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))
+        .slice(0, 10);
+    },
     enabled: !!contract.id && open,
   });
 

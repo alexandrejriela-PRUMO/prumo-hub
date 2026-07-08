@@ -741,15 +741,24 @@ export default function LicenseChecklistPanel({ license, user }) {
   const { data: checklist, isLoading } = useQuery({
     queryKey: ['licenseChecklist', license.id],
     queryFn: async () => {
-      const result = await base44.entities.ProjectChecklist.filter({ entity_type: 'License', entity_id: license.id });
-      return result?.[0] || null;
+      // ProjectChecklist não tem property_id — usa apenas o join por consultor_email (bypass RLS para equipe)
+      const res = await base44.functions.invoke('listConsultorPropertyRecords', {
+        entity_name: 'ProjectChecklist', field_name: 'property_id', email_field: 'consultor_email'
+      });
+      const all = res.data?.records || [];
+      return all.find(c => c.entity_type === 'License' && c.entity_id === license.id) || null;
     },
     enabled: !!license.id,
   });
 
   const { data: templates = [] } = useQuery({
     queryKey: ['checklistTemplates', consultorEmail],
-    queryFn: () => base44.entities.ChecklistTemplate.filter({ consultor_email: consultorEmail }),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listConsultorPropertyRecords', {
+        entity_name: 'ChecklistTemplate', field_name: 'property_id', email_field: 'consultor_email'
+      });
+      return res.data?.records || [];
+    },
     enabled: !!consultorEmail && showCreate,
   });
 

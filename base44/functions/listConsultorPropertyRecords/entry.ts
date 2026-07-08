@@ -52,9 +52,10 @@ Deno.serve(async (req) => {
 
     // Get all property IDs for the consultant
     const emailsToSearch = isEquipe ? [consultorEmail, user.email] : [consultorEmail];
-    const propPromises = emailsToSearch.map(email =>
-      base44.asServiceRole.entities.Property.filter({ consultor_email: email })
-    );
+    const propPromises = emailsToSearch.flatMap(email => [
+      base44.asServiceRole.entities.Property.filter({ consultor_email: email }),
+      base44.asServiceRole.entities.Property.filter({ owner_email: email }),
+    ]);
     const propResults = await Promise.all(propPromises);
     const propertyIds = [];
     const propSeen = new Set();

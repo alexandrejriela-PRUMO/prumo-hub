@@ -43,9 +43,10 @@ Deno.serve(async (req) => {
     const crmPromises = emailsToSearch.map(email =>
       base44.asServiceRole.entities.ClientCRM.filter({ consultor_email: email })
     );
-    const propPromises = emailsToSearch.map(email =>
-      base44.asServiceRole.entities.Property.filter({ consultor_email: email })
-    );
+    const propPromises = emailsToSearch.flatMap(email => [
+      base44.asServiceRole.entities.Property.filter({ consultor_email: email }),
+      base44.asServiceRole.entities.Property.filter({ owner_email: email }),
+    ]);
 
     const [crmResults, propResults] = await Promise.all([
       Promise.all(crmPromises),

@@ -21,6 +21,7 @@ Deno.serve(async (req) => {
 
     // Determinar o email efetivo do consultor
     let consultorEmail = user.email;
+    let isEquipe = false;
 
     if (user.role !== 'admin') {
       const memberships = await base44.asServiceRole.entities.TeamMember.filter({
@@ -30,16 +31,32 @@ Deno.serve(async (req) => {
 
       if (memberships.length > 0) {
         consultorEmail = memberships[0].primary_user_email;
+        isEquipe = true;
       }
     }
 
-    const filter = { consultor_email: consultorEmail };
-    if (propertyId) filter.property_id = propertyId;
+    // Buscar por ambos os emails (consultor principal + membro da equipe) para dados históricos
+    const emailsToSearch = isEquipe ? [consultorEmail, user.email] : [consultorEmail];
 
-    const contracts = await base44.asServiceRole.entities.ClientContract.filter(filter);
+    const contractPromises = emailsToSearch.map(email => {
+      const f = { consultor_email: email };
+      if (propertyId) f.property_id = propertyId;
+      return base44.asServiceRole.entities.ClientContract.filter(f);
+    });
+
+    const results = await Promise.all(contractPromises);
+
+    // Achatar e deduplicar por ID
+    const contracts = [];
+    const seen = new Set();
+    for (const list of results) {
+      for (const item of (list || [])) {
+        if (!seen.has(item.id)) { seen.add(item.id); contracts.push(item); }
+      }
+    }
 
     return Response.json({
-      contracts: contracts || [],
+      contracts,
       consultorEmail,
     });
   } catch (error) {

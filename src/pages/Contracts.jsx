@@ -159,6 +159,7 @@ export default function Contracts() {
   const createMutation = useMutation({
     mutationFn: async (data) => {
       const res = await base44.functions.invoke('createClientContract', data);
+      if (res.data?.error) throw new Error(res.data.error);
       return res.data;
     },
     onSuccess: () => {
@@ -166,17 +167,24 @@ export default function Contracts() {
       setDialogOpen(false);
       toast.success('Contrato criado com sucesso!');
     },
+    onError: (error) => {
+      toast.error('Erro ao criar contrato: ' + (error?.message || 'Erro desconhecido'));
+    },
   });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }) => {
       const res = await base44.functions.invoke('updateClientContract', { id, data });
+      if (res.data?.error) throw new Error(res.data.error);
       return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['contracts']);
       setDialogOpen(false);
       toast.success('Contrato atualizado!');
+    },
+    onError: (error) => {
+      toast.error('Erro ao atualizar contrato: ' + (error?.message || 'Erro desconhecido'));
     },
   });
 

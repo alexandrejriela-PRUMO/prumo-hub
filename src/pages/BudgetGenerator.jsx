@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,12 +11,13 @@ import { ChevronLeft, Download, FileEdit, Trash2, Clock, User, DollarSign, FileT
 import BudgetEmailHistory from '@/components/budget/BudgetEmailHistory';
 
 import { useNavigationGuard } from '../hooks/useNavigationGuard';
+import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 export default function BudgetGenerator() {
+  const { user, effectiveEmail } = useEffectiveUser();
   const [step, setStep] = useState('form'); // form, editor, history
   const [historyTab, setHistoryTab] = useState('budgets'); // budgets, emails
   const [budgetData, setBudgetData] = useState(null);
-  const [user, setUser] = useState(null);
   const [selectedBudget, setSelectedBudget] = useState(null);
   const [isDirty, setIsDirty] = useState(false);
   const queryClient = useQueryClient();
@@ -24,28 +25,16 @@ export default function BudgetGenerator() {
   // Proteger contra saída do gerador sem salvar
   useNavigationGuard(isDirty);
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      } catch (e) {
-        console.error('Erro ao carregar usuário');
-      }
-    };
-    loadUser();
-  }, []);
-
   const { data: templates = [] } = useQuery({
-    queryKey: ['budgetTemplates', user?.email],
-    queryFn: () => base44.entities.BudgetTemplate.filter({ consultor_email: user?.email }),
-    enabled: !!user?.email
+    queryKey: ['budgetTemplates', effectiveEmail],
+    queryFn: () => base44.entities.BudgetTemplate.filter({ consultor_email: effectiveEmail }),
+    enabled: !!effectiveEmail
   });
 
   const { data: budgets = [] } = useQuery({
-    queryKey: ['budgets', user?.email],
-    queryFn: () => base44.entities.Budget.filter({ consultor_email: user?.email }, '-created_date', 100),
-    enabled: !!user?.email
+    queryKey: ['budgets', effectiveEmail],
+    queryFn: () => base44.entities.Budget.filter({ consultor_email: effectiveEmail }, '-created_date', 100),
+    enabled: !!effectiveEmail
   });
 
   const saveBudgetMutation = useMutation({
@@ -108,6 +97,7 @@ export default function BudgetGenerator() {
     const budgetNumber = `ORC-${Date.now().toString().slice(-8)}`;
     const newData = {
       ...data,
+      // RLS de Budget exige consultor_email === user.email no create (não há função de bypass)
       consultor_email: user?.email,
       budget_number: budgetNumber,
       status: 'Rascunho'
@@ -309,7 +299,7 @@ export default function BudgetGenerator() {
             </div>
 
             {historyTab === 'emails' && (
-              <BudgetEmailHistory consultorEmail={user?.email} />
+              <BudgetEmailHistory consultorEmail={effectiveEmail} />
             )}
 
             {historyTab === 'budgets' && (

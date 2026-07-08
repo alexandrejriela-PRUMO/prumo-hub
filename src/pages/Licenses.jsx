@@ -298,13 +298,27 @@ export default function Licenses() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => useBackend
-      ? base44.functions.invoke('managePropertyRecord', { action: 'delete', entity_name: 'License', id }).then(r => r.data)
-      : base44.entities.License.delete(id),
+    mutationFn: (license) => {
+      const licenseId = typeof license === 'string' ? license : license.id;
+      const payload = {
+        license_id: licenseId,
+        property_id: typeof license === 'object' ? license.property_id : undefined,
+        consultor_email: effectiveEmail || user?.email,
+        owner_email: typeof license === 'object' ? license.owner_email : undefined,
+        license_label: typeof license === 'object'
+          ? `${license.license_type}${license.license_number ? ' Nº ' + license.license_number : ''}`
+          : undefined,
+      };
+      return base44.functions.invoke('deleteLicenseCascade', payload).then(r => r.data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['licenses']);
       queryClient.invalidateQueries(['licenses-all-consultor']);
-      toast.success('Licença removida com sucesso!');
+      queryClient.invalidateQueries(['licenseChecklist']);
+      toast.success('Licença removida com sucesso! Checklist e interações do CRM também foram limpos.');
+    },
+    onError: (error) => {
+      toast.error('Erro ao remover licença: ' + (error?.message || ''));
     },
   });
 
@@ -975,8 +989,8 @@ export default function Licenses() {
                           size="sm"
                           className="text-red-500 hover:text-red-700 hover:bg-red-50 px-2 sm:px-3"
                           onClick={() => {
-                            if (window.confirm('Deseja realmente excluir esta licença?')) {
-                              deleteMutation.mutate(license.id);
+                            if (window.confirm('Deseja realmente excluir esta licença? O checklist associado e as interações do CRM geradas por ele também serão removidas.')) {
+                              deleteMutation.mutate(license);
                             }
                           }}
                         >

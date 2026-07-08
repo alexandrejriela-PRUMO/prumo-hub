@@ -774,10 +774,45 @@ export default function LicenseChecklistPanel({ license, user }) {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.ProjectChecklist.delete(id),
+    mutationFn: async (id) => {
+      // Coleta os títulos dos itens antes de excluir, para limpar o CRM
+      const itemTitles = (checklist?.items || []).map(i => i.title);
+
+      // Exclui o checklist
+      await base44.entities.ProjectChecklist.delete(id);
+
+      // Limpa tarefas e interações do CRM geradas pelo checklist
+      if (itemTitles.length > 0 && license.property_id) {
+        try {
+          const crmList = await base44.entities.ClientCRM.filter({ consultor_email: consultorEmail });
+          const crmMatch = crmList.find(c => c.property_id === license.property_id)
+            || crmList.find(c => c.client_email === license.owner_email);
+          if (crmMatch) {
+            const freshList = await base44.entities.ClientCRM.filter({ id: crmMatch.id });
+            const freshCRM = freshList?.[0] || crmMatch;
+            const updatedTasks = (freshCRM.tasks || []).filter(task => {
+              if (!task.title || !task.title.startsWith('📋 ')) return true;
+              return !itemTitles.includes(task.title.substring(2));
+            });
+            const updatedInteractions = (freshCRM.interactions || []).filter(inter => {
+              if (!inter.title || !inter.title.startsWith('📋 ')) return true;
+              if (!inter.title.includes('— Checklist:')) return true;
+              const itemTitle = inter.title.split(' — Checklist:')[0].substring(2);
+              return !itemTitles.includes(itemTitle);
+            });
+            await base44.entities.ClientCRM.update(crmMatch.id, {
+              tasks: updatedTasks,
+              interactions: updatedInteractions,
+            });
+          }
+        } catch (e) {
+          console.warn('[Checklist] Erro ao limpar CRM (não crítico):', e.message);
+        }
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['licenseChecklist', license.id] });
-      toast.success('Checklist removido');
+      toast.success('Checklist removido. Interações do CRM também foram limpas.');
     },
   });
 

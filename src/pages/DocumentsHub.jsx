@@ -65,14 +65,23 @@ export default function DocumentsHub() {
     loadUser();
   }, []);
 
-  const { data: allDocuments = [], isLoading } = useQuery({
-    queryKey: ['unifiedDocuments', effectiveEmail, userType],
-    queryFn: () => base44.entities.UnifiedDocument.list('-upload_date', 1000),
-    enabled: !!user && !effectiveLoading
-  });
-
   // isConsultorFamily: apenas consultor ou equipe de CONSULTOR (não equipe de produtor)
   const isConsultorFamily = (userType === 'consultor' || (userType === 'equipe' && !isEquipeProdutor));
+
+  const { data: allDocuments = [], isLoading } = useQuery({
+    queryKey: ['unifiedDocuments', effectiveEmail, userType],
+    queryFn: async () => {
+      // Consultor family: busca via backend para bypass de RLS para equipe
+      if (isConsultorFamily && !isEquipeProdutor) {
+        const res = await base44.functions.invoke('listConsultorPropertyRecords', {
+          entity_name: 'UnifiedDocument', field_name: 'entity_id', email_field: 'uploaded_by'
+        });
+        return res.data?.records || [];
+      }
+      return base44.entities.UnifiedDocument.list('-upload_date', 1000);
+    },
+    enabled: !!user && !effectiveLoading
+  });
   const isClientConsultor = userType === 'client_consultor' || user?.user_type === 'client_consultor';
   const canEdit = !isClientConsultor;
 
@@ -122,19 +131,22 @@ export default function DocumentsHub() {
     }
   }, [effectiveProperties, selectedPropertyId, isConsultorFamily, isClientConsultor]);
 
+  const useBackendDoc = isConsultorFamily && !isEquipeProdutor;
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.UnifiedDocument.create({
-      ...data,
-      uploaded_by: user?.email
-    }),
+    mutationFn: (data) => useBackendDoc
+      ? base44.functions.invoke('managePropertyRecord', { action: 'create', entity_name: 'UnifiedDocument', data: { ...data, uploaded_by: user?.email } }).then(r => r.data)
+      : base44.entities.UnifiedDocument.create({ ...data, uploaded_by: user?.email }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['unifiedDocuments'] });
       setShowUpload(false);
-    }
+    },
+    onError: () => toast.error('Erro ao criar documento'),
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.UnifiedDocument.update(id, data),
+    mutationFn: ({ id, data }) => useBackendDoc
+      ? base44.functions.invoke('managePropertyRecord', { action: 'update', entity_name: 'UnifiedDocument', id, data }).then(r => r.data)
+      : base44.entities.UnifiedDocument.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['unifiedDocuments'] });
       setEditingDoc(null);
@@ -144,7 +156,9 @@ export default function DocumentsHub() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.UnifiedDocument.delete(id),
+    mutationFn: (id) => useBackendDoc
+      ? base44.functions.invoke('managePropertyRecord', { action: 'delete', entity_name: 'UnifiedDocument', id }).then(r => r.data)
+      : base44.entities.UnifiedDocument.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['unifiedDocuments'] });
       toast.success('Documento removido com sucesso!');

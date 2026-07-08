@@ -227,24 +227,28 @@ export default function Licenses() {
     }
   }, [allProperties]);
 
-  // Todas as licenças do consultor (para o infográfico — independente da propriedade selecionada)
-  const { data: allConsultorLicenses = [] } = useQuery({
+  // Todas as licenças do consultor (buscadas via backend para bypass de RLS para equipe)
+  const { data: allConsultorLicenses = [], isLoading: allLicensesLoading } = useQuery({
     queryKey: ['licenses-all-consultor', queryEmail],
     queryFn: async () => {
-      const results = await Promise.all(
-        properties.map(p => base44.entities.License.filter({ property_id: p.id }))
-      );
-      return results.flat();
+      const res = await base44.functions.invoke('listConsultorPropertyRecords', {
+        entity_name: 'License', field_name: 'property_id'
+      });
+      return res.data?.records || [];
     },
-    enabled: !!queryEmail && isConsultor && !isEquipeProdutor && properties.length > 0,
+    enabled: !!queryEmail && isConsultor && !isEquipeProdutor,
   });
 
-  const { data: licenses, isLoading } = useQuery({
+  // Licenças filtradas por propriedade selecionada (derivadas de allConsultorLicenses)
+  const consultorLicenses = isConsultor && !isEquipeProdutor
+    ? (consultorPropertyId
+        ? allConsultorLicenses.filter(l => l.property_id === consultorPropertyId)
+        : allConsultorLicenses)
+    : [];
+
+  const { data: clientLicenses = [], isLoading: clientLicensesLoading } = useQuery({
     queryKey: ['licenses', consultorPropertyId, queryEmail, isClientConsultor],
     queryFn: () => {
-      if (isConsultor && consultorPropertyId) {
-        return base44.entities.License.filter({ property_id: consultorPropertyId });
-      }
       if (isClientConsultor) {
         return Promise.all(
           clientConsultorProperties.map(p => base44.entities.License.filter({ property_id: p.id }))
@@ -253,41 +257,53 @@ export default function Licenses() {
       // Para produtor/equipe de produtor: usa effectiveEmail (email do dono principal)
       return base44.entities.License.filter({ owner_email: queryEmail });
     },
-    enabled: isConsultor ? !!consultorPropertyId : !!queryEmail,
+    enabled: !isConsultor || isEquipeProdutor ? !!queryEmail : false,
     initialData: [],
   });
 
+  const isLoading = isConsultor && !isEquipeProdutor ? allLicensesLoading : clientLicensesLoading;
+  const licenses = isConsultor && !isEquipeProdutor ? consultorLicenses : clientLicenses;
+
+  const useBackend = isConsultor && !isEquipeProdutor;
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.License.create(data),
+    mutationFn: (data) => useBackend
+      ? base44.functions.invoke('managePropertyRecord', { action: 'create', entity_name: 'License', data, email_field: 'owner_email' }).then(r => r.data)
+      : base44.entities.License.create(data),
     onSuccess: (createdLicense) => {
       queryClient.invalidateQueries(['licenses']);
+      queryClient.invalidateQueries(['licenses-all-consultor']);
       setDialogOpen(false);
       resetForm();
-      console.log('Licença criada com sucesso:', createdLicense);
       toast.success('Licença criada com sucesso!');
     },
     onError: (error) => {
       console.error('Erro na criação de licença:', error);
+      toast.error('Erro ao criar licença: ' + (error?.message || ''));
     }
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.License.update(id, data),
+    mutationFn: ({ id, data }) => useBackend
+      ? base44.functions.invoke('managePropertyRecord', { action: 'update', entity_name: 'License', id, data, email_field: 'owner_email' }).then(r => r.data)
+      : base44.entities.License.update(id, data),
     onSuccess: (_, { id, data }) => {
       queryClient.invalidateQueries(['licenses']);
-      // Atualiza selectedLicense em tempo real para o histórico aparecer sem sair da aba
+      queryClient.invalidateQueries(['licenses-all-consultor']);
       setSelectedLicense(prev => prev?.id === id ? { ...prev, ...data } : prev);
-      console.log('Licença atualizada com sucesso:', { id, data });
     },
     onError: (error) => {
       console.error('Erro na mutação de atualização:', error);
+      toast.error('Erro ao atualizar licença: ' + (error?.message || ''));
     }
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.License.delete(id),
+    mutationFn: (id) => useBackend
+      ? base44.functions.invoke('managePropertyRecord', { action: 'delete', entity_name: 'License', id }).then(r => r.data)
+      : base44.entities.License.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries(['licenses']);
+      queryClient.invalidateQueries(['licenses-all-consultor']);
       toast.success('Licença removida com sucesso!');
     },
   });

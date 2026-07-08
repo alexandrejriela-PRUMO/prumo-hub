@@ -19,6 +19,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { toast } from 'sonner';
 import ProcessHistory from '../components/history/ProcessHistory';
 import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
@@ -483,12 +484,21 @@ export default function Processes() {
 
   const properties = isClientConsultor ? clientConsultorProperties : propertiesRaw;
 
-  const { data: processes = [], isLoading } = useQuery({
+  // Consultor family: busca todos os processos via backend (bypass RLS para equipe)
+  const { data: allConsultorProcesses = [], isLoading: allProcessesLoading } = useQuery({
+    queryKey: ['processes-all-consultor', effectiveEmail, isConsultorFamily],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listConsultorPropertyRecords', {
+        entity_name: 'Process', field_name: 'property_id'
+      });
+      return res.data?.records || [];
+    },
+    enabled: !!effectiveEmail && isConsultorFamily,
+  });
+
+  const { data: clientProcesses = [], isLoading: clientProcessesLoading } = useQuery({
     queryKey: ['processes', effectiveEmail, consultorPropertyId, isClientConsultor, isConsultorFamily],
     queryFn: () => {
-      if (isConsultorFamily && consultorPropertyId) {
-        return base44.entities.Process.filter({ property_id: consultorPropertyId });
-      }
       if (isClientConsultor) {
         return Promise.all(
           properties.map(p => base44.entities.Process.filter({ property_id: p.id }))
@@ -497,34 +507,57 @@ export default function Processes() {
       // produtor e equipe de produtor: busca por client_email usando effectiveEmail
       return base44.entities.Process.filter({ client_email: effectiveEmail });
     },
-    enabled: isConsultorFamily ? !!consultorPropertyId : isClientConsultor ? properties.length > 0 : !!effectiveEmail,
+    enabled: isConsultorFamily ? false : isClientConsultor ? properties.length > 0 : !!effectiveEmail,
     initialData: []
   });
 
+  const processes = isConsultorFamily
+    ? (consultorPropertyId
+        ? allConsultorProcesses.filter(p => p.property_id === consultorPropertyId)
+        : allConsultorProcesses)
+    : clientProcesses;
+  const isLoading = isConsultorFamily ? allProcessesLoading : clientProcessesLoading;
+
+  const useBackendProc = isConsultorFamily;
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Process.create(data),
+    mutationFn: (data) => useBackendProc
+      ? base44.functions.invoke('managePropertyRecord', { action: 'create', entity_name: 'Process', data, email_field: 'client_email' }).then(r => r.data)
+      : base44.entities.Process.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['processes'] });
+      queryClient.invalidateQueries({ queryKey: ['processes-all-consultor'] });
       setShowDialog(false);
       resetForm();
-    }
+      toast.success('Processo criado com sucesso!');
+    },
+    onError: (error) => toast.error('Erro ao criar processo: ' + (error?.message || '')),
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Process.update(id, data),
+    mutationFn: ({ id, data }) => useBackendProc
+      ? base44.functions.invoke('managePropertyRecord', { action: 'update', entity_name: 'Process', id, data, email_field: 'client_email' }).then(r => r.data)
+      : base44.entities.Process.update(id, data),
     onSuccess: (_, { id, data }) => {
       queryClient.invalidateQueries({ queryKey: ['processes'] });
+      queryClient.invalidateQueries({ queryKey: ['processes-all-consultor'] });
       setSelectedProcess((prev) => prev?.id === id ? { ...prev, ...data } : prev);
       setShowDialog(false);
       resetForm();
-    }
+      toast.success('Processo atualizado com sucesso!');
+    },
+    onError: (error) => toast.error('Erro ao atualizar processo: ' + (error?.message || '')),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Process.delete(id),
+    mutationFn: (id) => useBackendProc
+      ? base44.functions.invoke('managePropertyRecord', { action: 'delete', entity_name: 'Process', id }).then(r => r.data)
+      : base44.entities.Process.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['processes'] });
-    }
+      queryClient.invalidateQueries({ queryKey: ['processes-all-consultor'] });
+      toast.success('Processo removido com sucesso!');
+    },
+    onError: (error) => toast.error('Erro ao remover processo: ' + (error?.message || '')),
   });
 
   const resetForm = () => {

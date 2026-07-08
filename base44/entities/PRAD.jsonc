@@ -683,9 +683,7 @@
           "data.owner_email": "{{user.email}}"
         },
         {
-          "data.property_id": {
-            "$in": "{{user.properties_ids}}"
-          }
+          "created_by_id": "{{user.id}}"
         },
         {
           "user_condition": {
@@ -700,9 +698,7 @@
           "data.owner_email": "{{user.email}}"
         },
         {
-          "data.property_id": {
-            "$in": "{{user.properties_ids}}"
-          }
+          "created_by_id": "{{user.id}}"
         },
         {
           "user_condition": {
@@ -717,9 +713,7 @@
           "data.owner_email": "{{user.email}}"
         },
         {
-          "data.property_id": {
-            "$in": "{{user.properties_ids}}"
-          }
+          "created_by_id": "{{user.id}}"
         },
         {
           "user_condition": {
@@ -732,6 +726,9 @@
       "$or": [
         {
           "data.owner_email": "{{user.email}}"
+        },
+        {
+          "created_by_id": "{{user.id}}"
         },
         {
           "user_condition": {

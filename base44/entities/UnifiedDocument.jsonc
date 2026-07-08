@@ -112,14 +112,6 @@
           "data.uploaded_by": "{{user.email}}"
         },
         {
-          "data.entity_id": {
-            "$in": [
-              "{{user.properties_ids}}",
-              "{{user.owned_property_ids}}"
-            ]
-          }
-        },
-        {
           "user_condition": {
             "role": "admin"
           }

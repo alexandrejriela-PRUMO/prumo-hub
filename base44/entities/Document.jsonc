@@ -114,13 +114,6 @@
           "data.owner_email": "{{user.email}}"
         },
         {
-          "data.property_id": {
-            "$in": [
-              "{{user.properties_ids}}"
-            ]
-          }
-        },
-        {
           "user_condition": {
             "role": "admin"
           }

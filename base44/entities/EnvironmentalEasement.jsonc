@@ -299,25 +299,27 @@
   ],
   "rls": {
     "create": {
-      "data.property_id": {
-        "$in": [
-          "{{user.properties_ids}}",
-          "{{user.owned_property_ids}}"
-        ]
-      }
+      "$or": [
+        {
+          "data.beneficiary_email": "{{user.email}}"
+        },
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
     },
     "read": {
       "$or": [
         {
-          "data.property_id": {
-            "$in": [
-              "{{user.properties_ids}}",
-              "{{user.owned_property_ids}}"
-            ]
-          }
+          "data.beneficiary_email": "{{user.email}}"
         },
         {
-          "data.beneficiary_email": "{{user.email}}"
+          "created_by_id": "{{user.id}}"
         },
         {
           "user_condition": {
@@ -329,12 +331,10 @@
     "update": {
       "$or": [
         {
-          "data.property_id": {
-            "$in": [
-              "{{user.properties_ids}}",
-              "{{user.owned_property_ids}}"
-            ]
-          }
+          "data.beneficiary_email": "{{user.email}}"
+        },
+        {
+          "created_by_id": "{{user.id}}"
         },
         {
           "user_condition": {
@@ -346,12 +346,10 @@
     "delete": {
       "$or": [
         {
-          "data.property_id": {
-            "$in": [
-              "{{user.properties_ids}}",
-              "{{user.owned_property_ids}}"
-            ]
-          }
+          "data.beneficiary_email": "{{user.email}}"
+        },
+        {
+          "created_by_id": "{{user.id}}"
         },
         {
           "user_condition": {

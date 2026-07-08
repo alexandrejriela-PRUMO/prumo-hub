@@ -77,7 +77,7 @@ export default function FinancialTransactions() {
   const accountMap  = useMemo(() => { const m={}; accounts.forEach(a=>{m[a.id]=a;}); return m; }, [accounts]);
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Expense.delete(id),
+    mutationFn: (id) => base44.functions.invoke('manageExpense', { action: 'delete', id }),
     onSuccess: () => { qc.invalidateQueries(['fin-data']); toast.success('Transação removida!'); },
   });
 

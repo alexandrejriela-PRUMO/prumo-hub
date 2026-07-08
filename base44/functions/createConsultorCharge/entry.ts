@@ -59,8 +59,21 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forma de pagamento inválida. Escolha PIX, Boleto ou Cartão.' }, { status: 400 });
     }
 
-    // Buscar subconta do consultor
-    const metas = await base44.entities.UserMetadata.filter({ user_email: user.email });
+    // Determinar o email efetivo do consultor (resolve membro de equipe → consultor principal)
+    let consultorEmail = user.email;
+
+    if (user.role !== 'admin') {
+      const memberships = await base44.asServiceRole.entities.TeamMember.filter({
+        member_email: user.email,
+        status: 'Ativo',
+      });
+      if (memberships.length > 0) {
+        consultorEmail = memberships[0].primary_user_email;
+      }
+    }
+
+    // Buscar subconta do consultor efetivo (não do membro da equipe)
+    const metas = await base44.asServiceRole.entities.UserMetadata.filter({ user_email: consultorEmail });
     if (!metas?.length || !metas[0].asaas_subaccount_id) {
       return Response.json({ error: 'Subconta Asaas não encontrada. Configure sua conta primeiro.' }, { status: 400 });
     }
@@ -119,8 +132,8 @@ Deno.serve(async (req) => {
     console.log(`[createConsultorCharge] PaymentLink criado: ${data.id} → ${checkoutUrl}`);
 
     try {
-      await base44.entities.ConsultorCharge.create({
-        consultor_email: user.email,
+      await base44.asServiceRole.entities.ConsultorCharge.create({
+        consultor_email: consultorEmail,
         client_email: client_email || '',
         client_name: client_name || '',
         property_id: property_id || null,

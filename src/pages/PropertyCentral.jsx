@@ -26,17 +26,18 @@ export default function PropertyCentral() {
 
   const { effectiveEmail, isEquipeProdutor, isConsultor: isConsultorEffective, isEquipe, loading: effectiveLoading } = useEffectiveUser();
 
-  // Fetch properties - Dinâmico baseado no tipo de usuário efetivo
+  // Fetch properties - Usa backend function para bypass de RLS (membros de equipe)
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
     queryKey: ['properties', effectiveEmail, isEquipeProdutor],
-    queryFn: () => {
+    queryFn: async () => {
       if (!effectiveEmail) return [];
-      // Equipe de produtor ou produtor: busca por owner_email (do dono principal)
+      // Equipe de produtor ou produtor: busca direto (RLS permite owner_email === user.email)
       if (isEquipeProdutor || (!isConsultorEffective && !isEquipe)) {
         return base44.entities.Property.filter({ owner_email: effectiveEmail }, '-created_date');
       }
-      // Consultor ou equipe de consultor: busca por consultor_email
-      return base44.entities.Property.filter({ consultor_email: effectiveEmail }, '-created_date');
+      // Consultor ou equipe de consultor: usa backend function (bypass RLS)
+      const res = await base44.functions.invoke('listConsultorClients', {});
+      return res.data?.properties || [];
     },
     enabled: !!effectiveEmail && !effectiveLoading,
   });

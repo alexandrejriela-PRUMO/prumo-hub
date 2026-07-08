@@ -61,7 +61,7 @@ function QuickAddClient({ consultorEmail, onCreated, onCancel }) {
   const handleCreate = async () => {
     if (!name) { toast.error('Informe o nome do cliente.'); return; }
     setLoading(true);
-    const prop = await base44.entities.Property.create({
+    const res = await base44.functions.invoke('createProperty', {
       owner_email: consultorEmail,
       property_name: `Cliente: ${name}`,
       is_client_only: true,
@@ -69,6 +69,7 @@ function QuickAddClient({ consultorEmail, onCreated, onCancel }) {
       client_name: name,
       client_contact: contact,
     });
+    const prop = res.data;
     setLoading(false);
     toast.success('Cliente cadastrado!');
     onCreated({ id: prop.id, client_name: name });
@@ -212,9 +213,9 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
           attachments: form.attachments || [],
         };
         // Saída da conta origem
-        await base44.entities.Expense.create({ ...base, transaction_type: 'despesa', account_id: fromAcc?.id || '', account_name: fromAcc?.name || '' });
+        await base44.functions.invoke('manageExpense', { action: 'create', data: { ...base, transaction_type: 'despesa', account_id: fromAcc?.id || '', account_name: fromAcc?.name || '' } });
         // Entrada na conta destino
-        await base44.entities.Expense.create({ ...base, transaction_type: 'receita', account_id: toAcc?.id || '', account_name: toAcc?.name || '' });
+        await base44.functions.invoke('manageExpense', { action: 'create', data: { ...base, transaction_type: 'receita', account_id: toAcc?.id || '', account_name: toAcc?.name || '' } });
         toast.success('Transferência registrada nas duas contas!');
         qc.invalidateQueries(['fin-data']);
         onClose();
@@ -250,7 +251,7 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
           installment_due_date: inst.due_date,
           installment_received_date: inst.received_date || null,
         }));
-        await Promise.all(records.map(r => base44.entities.Expense.create(r)));
+        await base44.functions.invoke('manageExpense', { action: 'bulkCreate', records });
         toast.success(`${count} parcelas registradas!`);
       } else {
         if (!form.amount || parseFloat(form.amount) <= 0) { toast.error('Informe o valor.'); setSaving(false); return; }
@@ -271,10 +272,10 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
           installment_received_date: null,
         };
         if (editing) {
-          await base44.entities.Expense.update(editing.id, payload);
+          await base44.functions.invoke('manageExpense', { action: 'update', id: editing.id, data: payload });
           toast.success('Transação atualizada!');
         } else {
-          await base44.entities.Expense.create(payload);
+          await base44.functions.invoke('manageExpense', { action: 'create', data: payload });
           toast.success('Transação registrada!');
         }
       }

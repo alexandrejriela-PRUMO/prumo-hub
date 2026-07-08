@@ -44,10 +44,11 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
 
   const { data: properties = [], isLoading: loadingProperties } = useQuery({
     queryKey: ['properties', effectiveEmail, isEquipe, isConsultor],
-    queryFn: () => {
-      // Consultor ou equipe de consultor: busca por consultor_email
+    queryFn: async () => {
+      // Consultor ou equipe de consultor: usa backend function (bypass RLS para membros)
       if (isConsultor || (isEquipe && !isEquipeProdutor)) {
-        return base44.entities.Property.filter({ consultor_email: effectiveEmail });
+        const res = await base44.functions.invoke('listConsultorClients', {});
+        return res.data?.properties || [];
       }
       // Produtor ou equipe de produtor: busca por owner_email
       return base44.entities.Property.filter({ owner_email: effectiveEmail });

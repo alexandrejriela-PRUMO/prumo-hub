@@ -40,16 +40,19 @@ export default function AccountsManager({ consultorEmail }) {
   const accounts = finData?.accounts || [];
 
   const createMutation = useMutation({
-    mutationFn: (d) => base44.entities.FinancialAccount.create(d),
+    mutationFn: (d) => base44.functions.invoke('manageFinancialAccount', { action: 'create', data: d }),
     onSuccess: () => { qc.invalidateQueries(['fin-data']); close(); toast.success('Conta criada!'); },
+    onError: (e) => toast.error('Erro ao criar conta: ' + (e?.message || '')),
   });
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.FinancialAccount.update(id, data),
+    mutationFn: ({ id, data }) => base44.functions.invoke('manageFinancialAccount', { action: 'update', id, data }),
     onSuccess: () => { qc.invalidateQueries(['fin-data']); close(); toast.success('Conta atualizada!'); },
+    onError: (e) => toast.error('Erro ao atualizar conta: ' + (e?.message || '')),
   });
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.FinancialAccount.delete(id),
+    mutationFn: (id) => base44.functions.invoke('manageFinancialAccount', { action: 'delete', id }),
     onSuccess: () => { qc.invalidateQueries(['fin-data']); toast.success('Conta removida!'); },
+    onError: (e) => toast.error('Erro ao remover conta: ' + (e?.message || '')),
   });
 
   const open = (acc = null) => {

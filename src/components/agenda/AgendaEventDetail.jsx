@@ -17,6 +17,7 @@ export default function AgendaEventDetail({ event, onClose, onEdit, onDelete }) 
   if (!event) return null;
 
   const isManual = event._source === 'agenda';
+  const isCRM = event._source === 'crm_task' || event._source === 'crm_interaction';
   const dateStr = event._date || event.start_datetime;
   const parsedDate = dateStr ? parseISO(dateStr.split('T')[0]) : null;
 
@@ -100,7 +101,7 @@ export default function AgendaEventDetail({ event, onClose, onEdit, onDelete }) 
           {/* CRM notice */}
           {!isManual && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-700">
-              📋 Importado automaticamente do CRM. Edite na seção Clientes para alterações.
+              📋 Tarefa originada no CRM. Você pode removê-la da agenda abaixo.
             </div>
           )}
         </div>
@@ -116,7 +117,12 @@ export default function AgendaEventDetail({ event, onClose, onEdit, onDelete }) 
               </Button>
             </>
           )}
-          <Button variant="ghost" size="sm" onClick={onClose} className={isManual ? '' : 'flex-1'}>
+          {isCRM && (
+            <Button variant="outline" size="sm" onClick={onDelete} className="flex-1 text-red-600 border-red-200 hover:bg-red-50">
+              <Trash2 className="w-4 h-4 mr-1" /> Remover da Agenda
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" onClick={onClose} className={isManual || isCRM ? '' : 'flex-1'}>
             Fechar
           </Button>
         </div>

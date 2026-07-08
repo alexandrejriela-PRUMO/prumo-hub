@@ -233,15 +233,7 @@ function AgendaContent() {
 
   const deleteEventMutation = useMutation({
     mutationFn: async (ev) => {
-      // Sync deletion to GCal first (silently)
-      if (ev.google_calendar_event_id) {
-        try {
-          await base44.functions.invoke('syncAgendaEventToGCal', { action: 'delete', event: ev });
-        } catch (syncErr) {
-          console.warn('[GCal] Delete sync failed (non-blocking):', syncErr.message);
-        }
-      }
-      await base44.entities.AgendaEvent.delete(ev.id);
+      await base44.functions.invoke('manageAgendaEvent', { action: 'delete', event_id: ev.id });
     },
     onMutate: async (ev) => {
       await qc.cancelQueries(['agendaEvents']);
@@ -258,10 +250,59 @@ function AgendaContent() {
     },
   });
 
+  const deleteCRMTaskMutation = useMutation({
+    mutationFn: async (ev) => {
+      // ev.id format: crm_task_{crmId}_{taskId} or crm_inter_{crmId}_{interId}
+      const parts = ev.id.split('_');
+      const crmId = parts[2];
+      const itemId = parts[3];
+
+      const crm = crmRecords.find(c => c.id === crmId);
+      if (!crm) throw new Error('Registro CRM não encontrado');
+
+      if (ev._source === 'crm_task') {
+        const updatedTasks = (crm.tasks || []).filter(t => t.id !== itemId);
+        await base44.functions.invoke('updateClientCRM', {
+          id: crmId,
+          data: { tasks: updatedTasks },
+        });
+      } else if (ev._source === 'crm_interaction') {
+        const updatedInteractions = (crm.interactions || []).map(i =>
+          i.id === itemId ? { ...i, next_action: null, next_action_date: null } : i
+        );
+        await base44.functions.invoke('updateClientCRM', {
+          id: crmId,
+          data: { interactions: updatedInteractions },
+        });
+      }
+    },
+    onMutate: async (ev) => {
+      await qc.cancelQueries(['agendaConsultorClients']);
+      const previousData = qc.getQueryData(['agendaConsultorClients']);
+      return { previousData };
+    },
+    onError: (err, vars, context) => {
+      if (context?.previousData) qc.setQueryData(['agendaConsultorClients'], context.previousData);
+      toast.error('Erro ao remover tarefa: ' + err.message);
+    },
+    onSuccess: () => {
+      toast.success('Tarefa removida da agenda!');
+      qc.invalidateQueries(['agendaConsultorClients']);
+    },
+  });
+
   const deleteEvent = (ev) => {
-    if (!confirm('Remover este evento?')) return;
+    const isCRM = ev._source === 'crm_task' || ev._source === 'crm_interaction';
+    const msg = isCRM
+      ? 'Remover esta tarefa da agenda? A tarefa será removida do CRM do cliente.'
+      : 'Remover este evento?';
+    if (!confirm(msg)) return;
     setDetailEvent(null);
-    deleteEventMutation.mutate(ev);
+    if (isCRM) {
+      deleteCRMTaskMutation.mutate(ev);
+    } else {
+      deleteEventMutation.mutate(ev);
+    }
   };
 
   // ── Handlers ──────────────────────────────────────────────────────────────

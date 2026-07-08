@@ -100,30 +100,33 @@ export default function AgendaEventModal({ event, initialDate, user, properties,
 
       let savedId = event?.id;
       if (event?.id) {
-        await base44.entities.AgendaEvent.update(event.id, payload);
-      } else {
-        // Create and find the newly created record to get its ID
-        await base44.entities.AgendaEvent.create(payload);
-        // Fetch the most recently created event for this consultor to get the ID
-        const recent = await base44.entities.AgendaEvent.filter(
-          { consultor_email: user.email },
-          '-created_date',
-          1
-        );
-        savedId = recent?.[0]?.id;
-      }
-
-      // Sync to Google Calendar (silently — don't block on failure)
-      try {
-        const action = event?.id ? 'update' : 'create';
-        const syncPayload = { ...payload, id: savedId, google_calendar_event_id: event?.google_calendar_event_id };
-        const syncRes = await base44.functions.invoke('syncAgendaEventToGCal', { action, event: syncPayload });
-        const gcalId = syncRes?.data?.google_calendar_event_id;
-        if (gcalId && savedId) {
-          await base44.entities.AgendaEvent.update(savedId, { google_calendar_event_id: gcalId });
+        const res = await base44.functions.invoke('manageAgendaEvent', { action: 'update', event_id: event.id, data: payload });
+        savedId = event.id;
+        // Sync to Google Calendar (silently — don't block on failure)
+        try {
+          const syncPayload = { ...payload, id: savedId, google_calendar_event_id: event?.google_calendar_event_id };
+          const syncRes = await base44.functions.invoke('syncAgendaEventToGCal', { action: 'update', event: syncPayload });
+          const gcalId = syncRes?.data?.google_calendar_event_id;
+          if (gcalId && gcalId !== event?.google_calendar_event_id) {
+            await base44.functions.invoke('manageAgendaEvent', { action: 'update', event_id: savedId, data: { google_calendar_event_id: gcalId } });
+          }
+        } catch (syncErr) {
+          console.warn('[GCal] Sync failed (non-blocking):', syncErr.message);
         }
-      } catch (syncErr) {
-        console.warn('[GCal] Sync failed (non-blocking):', syncErr.message);
+      } else {
+        const createRes = await base44.functions.invoke('manageAgendaEvent', { action: 'create', data: payload });
+        savedId = createRes?.data?.event?.id;
+        // Sync to Google Calendar (silently — don't block on failure)
+        try {
+          const syncPayload = { ...payload, id: savedId };
+          const syncRes = await base44.functions.invoke('syncAgendaEventToGCal', { action: 'create', event: syncPayload });
+          const gcalId = syncRes?.data?.google_calendar_event_id;
+          if (gcalId && savedId) {
+            await base44.functions.invoke('manageAgendaEvent', { action: 'update', event_id: savedId, data: { google_calendar_event_id: gcalId } });
+          }
+        } catch (syncErr) {
+          console.warn('[GCal] Sync failed (non-blocking):', syncErr.message);
+        }
       }
 
       toast.success(event ? 'Evento atualizado!' : 'Evento criado!');

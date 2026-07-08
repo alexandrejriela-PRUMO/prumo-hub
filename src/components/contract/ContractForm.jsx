@@ -71,17 +71,22 @@ export default function ContractForm({ user, templates = [], onSubmit, onFormCha
     }
   })();
 
-  // Propriedades do consultor
+  // Propriedades e clientes CRM do consultor (via backend function para bypass de RLS - membros de equipe)
   const { data: properties = [] } = useQuery({
     queryKey: ['properties-gen', user?.email],
-    queryFn: () => base44.entities.Property.filter({ consultor_email: user?.email }),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listConsultorClients', {});
+      return res.data?.properties || [];
+    },
     enabled: !!user?.email,
   });
 
-  // Clientes CRM
   const { data: crmClients = [] } = useQuery({
     queryKey: ['crm-clients-gen', user?.email],
-    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: user?.email }),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listConsultorClients', {});
+      return res.data?.crmList || [];
+    },
     enabled: !!user?.email,
   });
 

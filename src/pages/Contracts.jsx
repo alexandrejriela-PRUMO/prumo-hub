@@ -121,9 +121,14 @@ export default function Contracts() {
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
     queryKey: ['properties', effectiveEmail, isConsultor],
-    queryFn: () => isConsultor
-      ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
-      : base44.entities.Property.filter({ owner_email: effectiveEmail }),
+    queryFn: async () => {
+      if (isConsultor) {
+        // Usa backend function para bypass de RLS (membros de equipe)
+        const res = await base44.functions.invoke('listConsultorClients', {});
+        return res.data?.properties || [];
+      }
+      return base44.entities.Property.filter({ owner_email: effectiveEmail });
+    },
     enabled: !!effectiveEmail && !effectiveLoading,
   });
 

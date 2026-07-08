@@ -28,7 +28,7 @@ const urbanActivities = [
 ];
 
 export default function PropertyForm({ property, user, onSubmit, onCancel }) {
-  const isConsultor = user?.user_type === 'consultor';
+  const isConsultor = ['consultor', 'equipe', 'equipe_consultor', 'equipe_produtor'].includes(user?.user_type);
   const [existingClients, setExistingClients] = useState([]);
 
   const [clientNameSearch, setClientNameSearch] = useState('');
@@ -37,7 +37,8 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
   useEffect(() => {
     if (isConsultor && user?.email) {
       // Buscar clientes ATIVOS da entidade ClientCRM (equivalente a "Meus Clientes")
-      base44.entities.ClientCRM.filter({ consultor_email: user.email })
+      base44.functions.invoke('listConsultorClients', {})
+        .then(res => res.data?.crmList || [])
         .then(clients => {
           const map = new Map();
           const list = [];
@@ -198,8 +199,7 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
       const clientExists = existingClients.some(c => c.email === formData.client_email);
       if (!clientExists && formData.client_name) {
         try {
-          await base44.entities.ClientCRM.create({
-            consultor_email: user.email,
+          await base44.functions.invoke('createClientCRM', {
             client_name: formData.client_name,
             client_email: formData.client_email,
             client_phone: formData.client_contact || '',
@@ -213,7 +213,7 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
     
     const submitData = {
       ...formData,
-      owner_email: property?.owner_email || (isConsultor ? (formData.client_email || user?.email) : user?.email),
+      owner_email: property?.owner_email || (isConsultor ? (formData.client_email || undefined) : user?.email),
       total_hectares: !isUrban && formData.total_hectares ? parseFloat(formData.total_hectares) : undefined,
       app_hectares: !isUrban && formData.app_hectares ? parseFloat(formData.app_hectares) : undefined,
       legal_reserve_hectares: !isUrban && formData.legal_reserve_hectares ? parseFloat(formData.legal_reserve_hectares) : undefined,

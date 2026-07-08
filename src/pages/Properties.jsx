@@ -141,7 +141,12 @@ export default function Properties() {
 
   const { data: consultorProperties = [] } = useQuery({
     queryKey: ['properties-consultor', effectiveEmail],
-    queryFn: () => (effectiveEmail ? base44.entities.Property.filter({ consultor_email: effectiveEmail }) : Promise.resolve([])),
+    queryFn: async () => {
+      if (!effectiveEmail) return [];
+      // Usa backend function para bypass de RLS (membros de equipe)
+      const res = await base44.functions.invoke('listConsultorClients', {});
+      return res.data?.properties || [];
+    },
     enabled: !!effectiveEmail && (isConsultorType || isEquipe)
   });
 
@@ -155,17 +160,21 @@ export default function Properties() {
   const canCreate = (!isEquipe || memberRole === 'Administrador') && properties.length < maxProperties;
   const atPropertyLimit = !isEquipe && properties.length >= maxProperties && maxProperties < 9999;
 
+  // Consultor/equipe usam backend functions (bypass RLS para membros de equipe)
+  const useBackendFn = isConsultorType || isEquipe;
+
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Property.create({
-      ...data,
-      owner_email: data.owner_email || effectiveEmail,
-      // Consultor/equipe vincula ao consultor; produtor não tem consultor_email próprio
-      ...(isConsultorType || isEquipe ? { consultor_email: effectiveEmail } : {}),
-    }),
+    mutationFn: (data) => useBackendFn
+      ? base44.functions.invoke('createProperty', data)
+      : base44.entities.Property.create({
+          ...data,
+          owner_email: data.owner_email || effectiveEmail,
+        }),
     onSuccess: () => {
       queryClient.invalidateQueries(['properties-owner']);
       queryClient.invalidateQueries(['properties-consultor']);
       queryClient.invalidateQueries(['consultor-properties']);
+      queryClient.invalidateQueries(['consultor-crm-clients']);
       setFormDialogOpen(false);
       setEditingProperty(null);
       toast.success('Propriedade criada com sucesso!');
@@ -173,11 +182,14 @@ export default function Properties() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Property.update(id, data),
+    mutationFn: ({ id, data }) => useBackendFn
+      ? base44.functions.invoke('updateProperty', { id, data })
+      : base44.entities.Property.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries(['properties-owner']);
       queryClient.invalidateQueries(['properties-consultor']);
       queryClient.invalidateQueries(['consultor-properties']);
+      queryClient.invalidateQueries(['consultor-crm-clients']);
       setFormDialogOpen(false);
       setMapDialogOpen(false);
       setUsersDialogOpen(false);
@@ -188,11 +200,14 @@ export default function Properties() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Property.delete(id),
+    mutationFn: (id) => useBackendFn
+      ? base44.functions.invoke('deleteProperty', { id })
+      : base44.entities.Property.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries(['properties-owner']);
       queryClient.invalidateQueries(['properties-consultor']);
       queryClient.invalidateQueries(['consultor-properties']);
+      queryClient.invalidateQueries(['consultor-crm-clients']);
       toast.success('Propriedade removida com sucesso!');
     }
   });

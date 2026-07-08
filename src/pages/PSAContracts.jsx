@@ -50,7 +50,7 @@ export default function PSAContractsPage() {
 
   const { effectiveEmail, userType, isEquipeProdutor } = useEffectiveUser();
   // equipe de produtor busca como produtor (owner_email)
-  const isConsultor = (userType === 'consultor' || (userType === 'equipe' && !isEquipeProdutor));
+  const isConsultor = (userType === 'consultor' || userType === 'equipe_consultor' || (userType === 'equipe' && !isEquipeProdutor));
   const isClientConsultor = userType === 'client_consultor' || user?.user_type === 'client_consultor';
   const canEdit = !isClientConsultor;
 
@@ -88,7 +88,13 @@ export default function PSAContractsPage() {
 
   const { data: allContracts = [], isLoading } = useQuery({
     queryKey: ['psaContracts', effectiveEmail, Array.from(propertyIds).join(',')],
-    queryFn: () => base44.entities.PSAContract.list('-created_date', 1000),
+    queryFn: async () => {
+      if (isConsultor) {
+        const res = await base44.functions.invoke('listConsultorPropertyRecords', { entity_name: 'PSAContract', field_name: 'property_id' });
+        return res.data?.records || [];
+      }
+      return base44.entities.PSAContract.list('-created_date', 1000);
+    },
     enabled: !!effectiveEmail && effectiveProperties.length > 0,
     select: (data) => data.filter(c => propertyIds.has(c.property_id)),
   });

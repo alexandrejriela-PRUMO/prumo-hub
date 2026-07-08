@@ -20,6 +20,8 @@ const PAGE_ACCESS = {
 
   // Equipe: acesso do principal (Consultor/Produtor)
   equipe: 'inherit',
+  equipe_consultor: 'inherit',
+  equipe_produtor: 'inherit',
 
   // Consultor: acesso completo + gerenciamento
   consultor: '*',
@@ -39,6 +41,8 @@ const PERMISSIONS = {
     admin: false,
   },
   equipe: 'inherit',
+  equipe_consultor: 'inherit',
+  equipe_produtor: 'inherit',
   consultor: {
     view: true,
     download: true,
@@ -62,9 +66,11 @@ const PAYING_USERS = ['consultor', 'produtor'];
 
 // Quem pode convidar qual tipo
 const INVITE_RULES = {
-  consultor: ['equipe', 'client_consultor'],
-  produtor: ['equipe'],
+  consultor: ['equipe', 'equipe_consultor', 'equipe_produtor', 'client_consultor'],
+  produtor: ['equipe', 'equipe_produtor'],
   equipe: [],
+  equipe_consultor: [],
+  equipe_produtor: [],
   client_consultor: [],
 };
 
@@ -103,7 +109,7 @@ export function isClient(userType) {
 }
 
 export function isTeamMember(userType) {
-  return userType === 'equipe';
+  return userType === 'equipe' || userType === 'equipe_consultor' || userType === 'equipe_produtor';
 }
 
 export function isPrincipal(userType) {
@@ -118,7 +124,7 @@ export function getMenuItems(userType) {
   if (userType === 'client_consultor') {
     return 'client_consultor'; // Menu reduzido
   }
-  if (userType === 'equipe') {
+  if (userType === 'equipe' || userType === 'equipe_consultor' || userType === 'equipe_produtor') {
     return 'inherit'; // Herda do principal
   }
   if (userType === 'consultor') {

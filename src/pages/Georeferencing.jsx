@@ -70,7 +70,7 @@ export default function Georeferencing() {
 
   const { effectiveEmail, userType, isEquipeProdutor, memberRole } = useEffectiveUser();
   // equipe de produtor busca como produtor (owner_email)
-  const isConsultor = (userType === 'consultor' || (userType === 'equipe' && !isEquipeProdutor));
+  const isConsultor = (userType === 'consultor' || userType === 'equipe_consultor' || (userType === 'equipe' && !isEquipeProdutor));
   const isClientConsultor = userType === 'client_consultor' || user?.user_type === 'client_consultor';
   const canCreateGeo = !isConsultor && !isClientConsultor || (isConsultor && memberRole !== 'Advogado');
 

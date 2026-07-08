@@ -66,7 +66,7 @@ export default function DocumentsHub() {
   }, []);
 
   // isConsultorFamily: apenas consultor ou equipe de CONSULTOR (não equipe de produtor)
-  const isConsultorFamily = (userType === 'consultor' || (userType === 'equipe' && !isEquipeProdutor));
+  const isConsultorFamily = (userType === 'consultor' || userType === 'equipe_consultor' || (userType === 'equipe' && !isEquipeProdutor));
 
   const { data: allDocuments = [], isLoading } = useQuery({
     queryKey: ['unifiedDocuments', effectiveEmail, userType],

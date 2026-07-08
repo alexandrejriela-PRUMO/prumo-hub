@@ -242,7 +242,7 @@ export default function SubscriptionStatus() {
   const userType = user?.user_type;
 
   // Equipe e cliente do consultor: sem tela de assinatura
-  if (userType === 'equipe' || userType === 'client_consultor') {
+  if (userType === 'equipe' || userType === 'equipe_consultor' || userType === 'equipe_produtor' || userType === 'client_consultor') {
     return (
       <Card className="border-blue-200 bg-blue-50">
         <CardContent className="p-6 flex items-start gap-3">

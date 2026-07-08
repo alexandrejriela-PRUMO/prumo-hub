@@ -47,7 +47,7 @@ export default function EnvironmentalEasementsPage() {
   }, []);
 
   const { effectiveEmail, userType } = useEffectiveUser();
-  const isConsultor = userType === 'consultor' || userType === 'equipe';
+  const isConsultor = userType === 'consultor' || userType === 'equipe_consultor' || userType === 'equipe';
   const isClientConsultor = userType === 'client_consultor' || user?.user_type === 'client_consultor';
   const canEdit = !isClientConsultor;
 
@@ -84,7 +84,13 @@ export default function EnvironmentalEasementsPage() {
 
   const { data: allEasements = [], isLoading } = useQuery({
     queryKey: ['environmentalEasements', effectiveEmail, Array.from(propertyIds).join(',')],
-    queryFn: () => base44.entities.EnvironmentalEasement.list('-created_date', 1000),
+    queryFn: async () => {
+      if (isConsultor) {
+        const res = await base44.functions.invoke('listConsultorPropertyRecords', { entity_name: 'EnvironmentalEasement', field_name: 'property_id' });
+        return res.data?.records || [];
+      }
+      return base44.entities.EnvironmentalEasement.list('-created_date', 1000);
+    },
     enabled: !!effectiveEmail && effectiveProperties.length > 0,
     select: (data) => data.filter(e => propertyIds.size === 0 || propertyIds.has(e.property_id)),
   });

@@ -274,7 +274,7 @@ export default function PropertyMapView() {
 
   const { isEquipeProdutor } = useEffectiveUser();
   // equipe de produtor busca como produtor (owner_email)
-  const isConsultorFamily = (userType === 'consultor' || (userType === 'equipe' && !isEquipeProdutor));
+  const isConsultorFamily = (userType === 'consultor' || userType === 'equipe_consultor' || (userType === 'equipe' && !isEquipeProdutor));
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties', effectiveEmail, userType],
@@ -299,14 +299,26 @@ export default function PropertyMapView() {
 
   const { data: carData } = useQuery({
     queryKey: ['carManagement', selectedPropertyId],
-    queryFn: () => base44.entities.CARManagement.filter({ property_id: selectedPropertyId }),
+    queryFn: async () => {
+      if (isConsultorFamily) {
+        const res = await base44.functions.invoke('listConsultorPropertyRecords', { entity_name: 'CARManagement', field_name: 'property_id', email_field: 'consultor_email' });
+        return (res.data?.records || []).filter(r => r.property_id === selectedPropertyId);
+      }
+      return base44.entities.CARManagement.filter({ property_id: selectedPropertyId });
+    },
     enabled: !!selectedPropertyId,
     select: data => data[0],
   });
 
   const { data: carRecords = [], isSuccess: carRecordsLoaded } = useQuery({
     queryKey: ['carRecordsMap', selectedPropertyId],
-    queryFn: () => base44.entities.CARManagement.filter({ property_id: selectedPropertyId }),
+    queryFn: async () => {
+      if (isConsultorFamily) {
+        const res = await base44.functions.invoke('listConsultorPropertyRecords', { entity_name: 'CARManagement', field_name: 'property_id', email_field: 'consultor_email' });
+        return (res.data?.records || []).filter(r => r.property_id === selectedPropertyId);
+      }
+      return base44.entities.CARManagement.filter({ property_id: selectedPropertyId });
+    },
     enabled: !!selectedPropertyId,
   });
 

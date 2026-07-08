@@ -52,7 +52,7 @@ export default function Mappings() {
 
   const { effectiveEmail, userType, isEquipe, isEquipeProdutor, memberRole } = useEffectiveUser();
   // equipe de produtor busca como produtor (owner_email)
-  const isConsultor = (userType === 'consultor' || (userType === 'equipe' && !isEquipeProdutor));
+  const isConsultor = (userType === 'consultor' || userType === 'equipe_consultor' || (userType === 'equipe' && !isEquipeProdutor));
   const isClientConsultor = userType === 'client_consultor' || user?.user_type === 'client_consultor';
   const canEdit = !isEquipe && !isClientConsultor || (isEquipe && (memberRole === 'Administrador' || memberRole === 'Engenheiro'));
 
@@ -90,7 +90,13 @@ export default function Mappings() {
 
   const { data: mappings = [] } = useQuery({
     queryKey: ['mappings', selectedProperty?.id],
-    queryFn: () => base44.entities.Mapping.filter({ property_id: selectedProperty.id }, '-created_date'),
+    queryFn: async () => {
+      if (isConsultor) {
+        const res = await base44.functions.invoke('listConsultorPropertyRecords', { entity_name: 'Mapping', field_name: 'property_id' });
+        return (res.data?.records || []).filter(r => r.property_id === selectedProperty.id);
+      }
+      return base44.entities.Mapping.filter({ property_id: selectedProperty.id }, '-created_date');
+    },
     enabled: !!selectedProperty?.id,
   });
 

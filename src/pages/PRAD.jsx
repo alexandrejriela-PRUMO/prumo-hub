@@ -47,7 +47,7 @@ export default function PRAD() {
   }, []);
 
   // equipe de produtor busca como produtor (owner_email)
-  const isConsultorFamily = (userType === 'consultor' || (userType === 'equipe' && !isEquipeProdutor));
+  const isConsultorFamily = (userType === 'consultor' || userType === 'equipe_consultor' || (userType === 'equipe' && !isEquipeProdutor));
   const isClientConsultor = userType === 'client_consultor' || user?.user_type === 'client_consultor';
   const canCreatePRAD = !isConsultorFamily && !isClientConsultor || (isConsultorFamily && memberRole !== 'Advogado');
 
@@ -85,7 +85,13 @@ export default function PRAD() {
 
   const { data: prads = [] } = useQuery({
     queryKey: ['prad', selectedProperty?.id],
-    queryFn: () => base44.entities.PRAD.filter({ property_id: selectedProperty.id }, '-created_date'),
+    queryFn: async () => {
+      if (isConsultorFamily) {
+        const res = await base44.functions.invoke('listConsultorPropertyRecords', { entity_name: 'PRAD', field_name: 'property_id', email_field: 'owner_email' });
+        return (res.data?.records || []).filter(r => r.property_id === selectedProperty.id);
+      }
+      return base44.entities.PRAD.filter({ property_id: selectedProperty.id }, '-created_date');
+    },
     enabled: !!selectedProperty?.id,
   });
 

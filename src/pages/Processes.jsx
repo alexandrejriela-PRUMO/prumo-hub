@@ -452,7 +452,7 @@ export default function Processes() {
   }, []);
 
   // equipe de produtor usa fluxo de produtor (owner_email), não consultor
-  const isConsultorFamily = (userType === 'consultor' || (userType === 'equipe' && !isEquipeProdutor));
+  const isConsultorFamily = (userType === 'consultor' || userType === 'equipe_consultor' || (userType === 'equipe' && !isEquipeProdutor));
   const isClientConsultor = userType === 'client_consultor' || user?.user_type === 'client_consultor';
   const canCreateProcess = !isClientConsultor && (!isEquipe || memberRole === 'Administrador' || memberRole === 'Advogado');
 

@@ -41,7 +41,7 @@ export default function RegularityReport() {
   }, []);
 
   // equipe de produtor usa fluxo de produtor (owner_email), não consultor
-  const isConsultorFamily = userType === 'consultor' || (userType === 'equipe' && !isEquipeProdutor);
+  const isConsultorFamily = userType === 'consultor' || userType === 'equipe_consultor' || (userType === 'equipe' && !isEquipeProdutor);
   const isClientConsultor = userType === 'client_consultor' || user?.user_type === 'client_consultor';
 
   const { data: allPropertiesForClient = [] } = useQuery({
@@ -79,7 +79,11 @@ export default function RegularityReport() {
   const { data: licenses = [] } = useQuery({
     queryKey: ['licenses', user?.email, propertyIdsForLicenses.join(',')],
     queryFn: async () => {
-      if ((isConsultorFamily || isClientConsultor) && propertyIdsForLicenses.length > 0) {
+      if (isConsultorFamily) {
+        const res = await base44.functions.invoke('listConsultorPropertyRecords', { entity_name: 'License', field_name: 'property_id', email_field: 'owner_email' });
+        return res.data?.records || [];
+      }
+      if (isClientConsultor && propertyIdsForLicenses.length > 0) {
         const results = await Promise.all(
           propertyIdsForLicenses.map(pid => base44.entities.License.filter({ property_id: pid }))
         );
@@ -95,7 +99,14 @@ export default function RegularityReport() {
   const { data: documents = [] } = useQuery({
     queryKey: ['documents', user?.email, propertyIds.join(',')],
     queryFn: async () => {
-      if ((isConsultorFamily || isClientConsultor) && propertyIds.length > 0) {
+      if (isConsultorFamily) {
+        const [docsRes, unifiedRes] = await Promise.all([
+          base44.functions.invoke('listConsultorPropertyRecords', { entity_name: 'Document', field_name: 'property_id' }),
+          base44.functions.invoke('listConsultorPropertyRecords', { entity_name: 'UnifiedDocument', field_name: 'entity_id' }),
+        ]);
+        return [...(docsRes.data?.records || []), ...(unifiedRes.data?.records || [])];
+      }
+      if (isClientConsultor && propertyIds.length > 0) {
         const results = await Promise.all(
           propertyIds.map(pid => Promise.all([
             base44.entities.Document.filter({ property_id: pid }),
@@ -117,7 +128,11 @@ export default function RegularityReport() {
   const { data: georeferencing = [] } = useQuery({
     queryKey: ['georeferencing', user?.email, propertyIds.join(',')],
     queryFn: async () => {
-      if ((isConsultorFamily || isClientConsultor) && propertyIds.length > 0) {
+      if (isConsultorFamily) {
+        const res = await base44.functions.invoke('listConsultorPropertyRecords', { entity_name: 'Georeferencing', field_name: 'property_id', email_field: 'owner_email' });
+        return res.data?.records || [];
+      }
+      if (isClientConsultor && propertyIds.length > 0) {
         const results = await Promise.all(
           propertyIds.map(pid => base44.entities.Georeferencing.filter({ property_id: pid }))
         );
@@ -131,7 +146,11 @@ export default function RegularityReport() {
   const { data: environmentalAlerts = [] } = useQuery({
     queryKey: ['envAlerts', user?.email, propertyIds.join(',')],
     queryFn: async () => {
-      if ((isConsultorFamily || isClientConsultor) && propertyIds.length > 0) {
+      if (isConsultorFamily) {
+        const res = await base44.functions.invoke('listConsultorPropertyRecords', { entity_name: 'EnvironmentalAlert', field_name: 'property_id', email_field: 'responsible_email' });
+        return res.data?.records || [];
+      }
+      if (isClientConsultor && propertyIds.length > 0) {
         const results = await Promise.all(
           propertyIds.map(pid => base44.entities.EnvironmentalAlert.filter({ property_id: pid }))
         );
@@ -145,7 +164,11 @@ export default function RegularityReport() {
   const { data: processes = [] } = useQuery({
     queryKey: ['processes', user?.email, propertyIds.join(',')],
     queryFn: async () => {
-      if ((isConsultorFamily || isClientConsultor) && propertyIds.length > 0) {
+      if (isConsultorFamily) {
+        const res = await base44.functions.invoke('listConsultorPropertyRecords', { entity_name: 'Process', field_name: 'property_id', email_field: 'client_email' });
+        return res.data?.records || [];
+      }
+      if (isClientConsultor && propertyIds.length > 0) {
         const results = await Promise.all(
           propertyIds.map(pid => base44.entities.Process.filter({ property_id: pid }))
         );
@@ -159,7 +182,11 @@ export default function RegularityReport() {
   const { data: carManagements = [] } = useQuery({
     queryKey: ['carManagements', user?.email, propertyIds.join(',')],
     queryFn: async () => {
-      if ((isConsultorFamily || isClientConsultor) && propertyIds.length > 0) {
+      if (isConsultorFamily) {
+        const res = await base44.functions.invoke('listConsultorPropertyRecords', { entity_name: 'CARManagement', field_name: 'property_id', email_field: 'consultor_email' });
+        return res.data?.records || [];
+      }
+      if (isClientConsultor && propertyIds.length > 0) {
         const results = await Promise.all(
           propertyIds.map(pid => base44.entities.CARManagement.filter({ property_id: pid }))
         );
@@ -173,7 +200,11 @@ export default function RegularityReport() {
   const { data: prads = [] } = useQuery({
     queryKey: ['prads', user?.email, propertyIds.join(',')],
     queryFn: async () => {
-      if ((isConsultorFamily || isClientConsultor) && propertyIds.length > 0) {
+      if (isConsultorFamily) {
+        const res = await base44.functions.invoke('listConsultorPropertyRecords', { entity_name: 'PRAD', field_name: 'property_id', email_field: 'owner_email' });
+        return res.data?.records || [];
+      }
+      if (isClientConsultor && propertyIds.length > 0) {
         const results = await Promise.all(
           propertyIds.map(pid => base44.entities.PRAD.filter({ property_id: pid }))
         );

@@ -19,7 +19,7 @@ export default function ClimateMonitoring() {
   const queryClient = useQueryClient();
 
   const { effectiveEmail, userType, isLoading: loadingUser } = useEffectiveUser();
-  const isConsultor = userType === 'consultor' || userType === 'equipe';
+  const isConsultor = userType === 'consultor' || userType === 'equipe_consultor' || userType === 'equipe';
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties', effectiveEmail, userType],
@@ -41,7 +41,13 @@ export default function ClimateMonitoring() {
 
   const { data: climateData = [], refetch: refetchClimateData } = useQuery({
     queryKey: ['climateMonitoring', selectedProperty?.id],
-    queryFn: () => base44.entities.ClimateMonitoring.filter({ property_id: selectedProperty?.id }, '-created_date'),
+    queryFn: async () => {
+      if (isConsultor) {
+        const res = await base44.functions.invoke('listConsultorPropertyRecords', { entity_name: 'ClimateMonitoring', field_name: 'property_id' });
+        return (res.data?.records || []).filter(r => r.property_id === selectedProperty?.id);
+      }
+      return base44.entities.ClimateMonitoring.filter({ property_id: selectedProperty?.id }, '-created_date');
+    },
     enabled: !!selectedProperty?.id,
     staleTime: 0,
     refetchOnWindowFocus: true

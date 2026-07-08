@@ -114,7 +114,7 @@ export default function EnvironmentalAssets() {
   const [uploading, setUploading] = useState(false);
 
   const { effectiveEmail, userType, isLoading: loadingUser } = useEffectiveUser();
-  const isConsultorFamily = userType === 'consultor' || userType === 'equipe';
+  const isConsultorFamily = userType === 'consultor' || userType === 'equipe_consultor' || userType === 'equipe';
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties', effectiveEmail, userType],
@@ -131,6 +131,15 @@ export default function EnvironmentalAssets() {
   const { data: transactions = [], isLoading: loadingTx, refetch } = useQuery({
     queryKey: ['cra-transactions-v2', effectiveEmail],
     queryFn: async () => {
+      if (isConsultorFamily) {
+        const [sellsRes, buysRes] = await Promise.all([
+          base44.functions.invoke('listConsultorPropertyRecords', { entity_name: 'CRATransaction', field_name: 'property_id', email_field: 'seller_email' }),
+          base44.functions.invoke('listConsultorPropertyRecords', { entity_name: 'CRATransaction', field_name: 'property_id', email_field: 'buyer_email' }),
+        ]);
+        const all = [...(sellsRes.data?.records || []), ...(buysRes.data?.records || [])];
+        const seen = new Set();
+        return all.filter(t => { if (seen.has(t.id)) return false; seen.add(t.id); return true; });
+      }
       const [sells, buys] = await Promise.all([
         base44.entities.CRATransaction.filter({ seller_email: effectiveEmail }),
         base44.entities.CRATransaction.filter({ buyer_email: effectiveEmail }),

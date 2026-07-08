@@ -49,7 +49,7 @@ export default function ESGAgro() {
   }, []);
 
   const { effectiveEmail, userType } = useEffectiveUser();
-  const isConsultor = userType === 'consultor' || userType === 'equipe';
+  const isConsultor = userType === 'consultor' || userType === 'equipe_consultor' || userType === 'equipe';
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties', effectiveEmail, userType],
@@ -65,19 +65,37 @@ export default function ESGAgro() {
 
   const { data: greenLoans = [] } = useQuery({
     queryKey: ['greenLoans', effectiveEmail],
-    queryFn: () => base44.entities.GreenLoan.filter({ applicant_email: effectiveEmail }),
+    queryFn: async () => {
+      if (isConsultor) {
+        const res = await base44.functions.invoke('listConsultorPropertyRecords', { entity_name: 'GreenLoan', field_name: 'property_id', email_field: 'applicant_email' });
+        return res.data?.records || [];
+      }
+      return base44.entities.GreenLoan.filter({ applicant_email: effectiveEmail });
+    },
     enabled: !!effectiveEmail
   });
 
   const { data: taxIncentives = [] } = useQuery({
     queryKey: ['taxIncentives', effectiveEmail],
-    queryFn: () => base44.entities.TaxIncentive.filter({ applicant_email: effectiveEmail }),
+    queryFn: async () => {
+      if (isConsultor) {
+        const res = await base44.functions.invoke('listConsultorPropertyRecords', { entity_name: 'TaxIncentive', field_name: 'property_id', email_field: 'applicant_email' });
+        return res.data?.records || [];
+      }
+      return base44.entities.TaxIncentive.filter({ applicant_email: effectiveEmail });
+    },
     enabled: !!effectiveEmail
   });
 
   const { data: certifications = [] } = useQuery({
     queryKey: ['certifications', effectiveEmail],
-    queryFn: () => base44.entities.Certification.filter({ applicant_email: effectiveEmail }),
+    queryFn: async () => {
+      if (isConsultor) {
+        const res = await base44.functions.invoke('listConsultorPropertyRecords', { entity_name: 'Certification', field_name: 'property_id', email_field: 'applicant_email' });
+        return res.data?.records || [];
+      }
+      return base44.entities.Certification.filter({ applicant_email: effectiveEmail });
+    },
     enabled: !!effectiveEmail
   });
 

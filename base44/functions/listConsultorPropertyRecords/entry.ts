@@ -72,10 +72,15 @@ Deno.serve(async (req) => {
         records = await entity.filter({ [field_name]: { $in: propertyIds } });
       } catch {
         // Fallback: parallel queries per property
-        const byProperty = await Promise.all(
-          propertyIds.map(id => entity.filter({ [field_name]: id }))
-        );
-        records = byProperty.flat();
+        try {
+          const byProperty = await Promise.all(
+            propertyIds.map(id => entity.filter({ [field_name]: id }))
+          );
+          records = byProperty.flat();
+        } catch {
+          // Entity might not have this field — skip property query
+          records = [];
+        }
       }
     }
 

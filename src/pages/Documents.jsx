@@ -30,7 +30,7 @@ const documentTypes = ['CAR', 'CCIR'];
 
 export default function Documents() {
   const { user, effectiveEmail, userType, isEquipeProdutor } = useEffectiveUser();
-  const isConsultorFamily = (userType === 'consultor' || (userType === 'equipe' && !isEquipeProdutor));
+  const isConsultorFamily = (userType === 'consultor' || userType === 'equipe_consultor' || (userType === 'equipe' && !isEquipeProdutor));
   const [dialogOpen, setDialogOpen] = useState(false);
   const [versionDialogOpen, setVersionDialogOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState(null);

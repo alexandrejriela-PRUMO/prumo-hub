@@ -18,7 +18,7 @@ export default function BottomTabBar({ currentPageName, userType }) {
 
   const tabList = userType === 'client_consultor'
     ? tabs.filter(t => t.page !== 'Properties')
-    : userType === 'consultor' || userType === 'equipe'
+    : userType === 'consultor' || userType === 'equipe_consultor' || userType === 'equipe'
     ? [
         { name: 'Dashboard', page: 'Home', icon: LayoutDashboard, label: 'Início' },
         { name: 'ConsultorClients', page: 'ConsultorClients', icon: Users, label: 'Clientes' },

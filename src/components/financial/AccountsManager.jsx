@@ -29,14 +29,15 @@ export default function AccountsManager({ consultorEmail }) {
   const [form, setForm] = useState(EMPTY);
   const qc = useQueryClient();
 
-  const { data: accounts = [] } = useQuery({
+  const { data: finData } = useQuery({
     queryKey: ['fin-data', consultorEmail],
     queryFn: async () => {
       const res = await base44.functions.invoke('listConsultorFinancials', {});
-      return res.data?.accounts || [];
+      return res.data || {};
     },
     enabled: !!consultorEmail,
   });
+  const accounts = finData?.accounts || [];
 
   const createMutation = useMutation({
     mutationFn: (d) => base44.entities.FinancialAccount.create(d),

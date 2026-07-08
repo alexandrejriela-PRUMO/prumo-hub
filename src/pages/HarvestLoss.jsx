@@ -78,10 +78,13 @@ export default function HarvestLossPage() {
 
   const { data: properties = [] } = useQuery({
     queryKey: ['props-harvest', harvestEffectiveEmail, harvestUserType],
-    queryFn: () => {
+    queryFn: async () => {
       if (!harvestEffectiveEmail) return [];
-      const filter = isConsultor ? { consultor_email: harvestEffectiveEmail } : { owner_email: harvestEffectiveEmail };
-      return base44.entities.Property.filter(filter, 'client_name', 300);
+      if (isConsultor) {
+        const res = await base44.functions.invoke('listConsultorClients', {});
+        return res.data?.properties || [];
+      }
+      return base44.entities.Property.filter({ owner_email: harvestEffectiveEmail }, 'client_name', 300);
     },
     enabled: !!harvestEffectiveEmail && !harvestUserLoading,
   });

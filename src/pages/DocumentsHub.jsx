@@ -84,13 +84,14 @@ export default function DocumentsHub() {
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
     queryKey: ['properties', effectiveEmail, userType],
-    queryFn: () => {
+    queryFn: async () => {
       if (!effectiveEmail) return [];
       if (user?.role === 'admin') {
         return base44.entities.Property.list('-created_date', 1000);
       }
       if (isConsultorFamily && !isEquipeProdutor) {
-        return base44.entities.Property.filter({ consultor_email: effectiveEmail }, '-created_date', 100);
+        const res = await base44.functions.invoke('listConsultorClients', {});
+        return res.data?.properties || [];
       }
       return base44.entities.Property.filter({ owner_email: effectiveEmail }, '-created_date', 100);
     },

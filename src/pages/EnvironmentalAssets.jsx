@@ -118,9 +118,13 @@ export default function EnvironmentalAssets() {
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties', effectiveEmail, userType],
-    queryFn: () => isConsultorFamily
-      ? base44.entities.Property.filter({ consultor_email: effectiveEmail })
-      : base44.entities.Property.filter({ owner_email: effectiveEmail }),
+    queryFn: async () => {
+      if (isConsultorFamily) {
+        const res = await base44.functions.invoke('listConsultorClients', {});
+        return res.data?.properties || [];
+      }
+      return base44.entities.Property.filter({ owner_email: effectiveEmail });
+    },
     enabled: !!effectiveEmail
   });
 

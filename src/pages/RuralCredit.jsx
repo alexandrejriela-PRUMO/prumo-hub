@@ -68,10 +68,13 @@ export default function RuralCreditPage() {
 
   const { data: properties = [] } = useQuery({
     queryKey: ['props-credit', creditEffectiveEmail, creditUserType],
-    queryFn: () => {
+    queryFn: async () => {
       if (!creditEffectiveEmail) return [];
-      const filter = isConsultor ? { consultor_email: creditEffectiveEmail } : { owner_email: creditEffectiveEmail };
-      return base44.entities.Property.filter(filter, 'client_name', 300);
+      if (isConsultor) {
+        const res = await base44.functions.invoke('listConsultorClients', {});
+        return res.data?.properties || [];
+      }
+      return base44.entities.Property.filter({ owner_email: creditEffectiveEmail }, 'client_name', 300);
     },
     enabled: !!creditEffectiveEmail && !creditUserLoading,
   });

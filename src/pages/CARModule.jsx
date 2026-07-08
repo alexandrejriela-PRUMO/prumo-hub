@@ -138,7 +138,8 @@ export default function CARModule() {
     queryKey: ['properties', effectiveEmail, userType],
     queryFn: async () => {
       if (isConsultor) {
-        return base44.entities.Property.filter({ consultor_email: effectiveEmail });
+        const res = await base44.functions.invoke('listConsultorClients', {});
+        return res.data?.properties || [];
       }
       // Produtor: busca por owner_email OU por authorized_users (via owner_email)
       const byOwner = await base44.entities.Property.filter({ owner_email: effectiveEmail });

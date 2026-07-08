@@ -186,7 +186,10 @@ export default function Licenses() {
 
   const { data: properties = [], isLoading: propertiesLoading } = useQuery({
     queryKey: ['properties', queryEmail],
-    queryFn: () => base44.entities.Property.filter({ consultor_email: queryEmail }),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listConsultorClients', {});
+      return res.data?.properties || [];
+    },
     enabled: !!queryEmail && isConsultor && !isEquipeProdutor,
   });
 

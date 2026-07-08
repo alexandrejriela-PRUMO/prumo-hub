@@ -278,10 +278,11 @@ export default function PropertyMapView() {
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties', effectiveEmail, userType],
-    queryFn: () => {
+    queryFn: async () => {
       if (!effectiveEmail) return [];
       if (isConsultorFamily) {
-        return base44.entities.Property.filter({ consultor_email: effectiveEmail });
+        const res = await base44.functions.invoke('listConsultorClients', {});
+        return res.data?.properties || [];
       }
       return base44.entities.Property.filter({ owner_email: effectiveEmail });
     },

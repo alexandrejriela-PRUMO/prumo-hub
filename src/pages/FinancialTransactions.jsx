@@ -64,7 +64,10 @@ export default function FinancialTransactions() {
   });
   const { data: properties = [] } = useQuery({
     queryKey: ['fin-properties', user?.email],
-    queryFn: () => base44.entities.Property.filter({ consultor_email: user.email }),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listConsultorClients', {});
+      return res.data?.properties || [];
+    },
     enabled: !!user?.email,
   });
   const { data: accounts = [] } = useQuery({

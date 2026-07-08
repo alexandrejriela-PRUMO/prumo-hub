@@ -50,22 +50,18 @@ export default function FinancialDashboard() {
 
   useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);
 
-  const { data: charges = [] } = useQuery({
-    queryKey: ['fd-charges', user?.email],
-    queryFn: () => base44.entities.ConsultorCharge.filter({ consultor_email: user.email }, '-due_date', 1000),
+  // Busca consolidada via backend (bypassa RLS para membros de equipe)
+  const { data: finData } = useQuery({
+    queryKey: ['fin-data', user?.email],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listConsultorFinancials', {});
+      return res.data || {};
+    },
     enabled: !!user?.email,
   });
-  const { data: manualEntries = [] } = useQuery({
-    queryKey: ['fd-manual', user?.email],
-    queryFn: () => base44.entities.Expense.filter({ consultor_email: user.email }, '-date', 1000),
-    enabled: !!user?.email,
-  });
-
-  const { data: accounts = [] } = useQuery({
-    queryKey: ['fin-accounts', user?.email],
-    queryFn: () => base44.entities.FinancialAccount.filter({ consultor_email: user.email }, 'name', 100),
-    enabled: !!user?.email,
-  });
+  const charges = finData?.charges || [];
+  const manualEntries = finData?.expenses || [];
+  const accounts = finData?.accounts || [];
   const accountMap = useMemo(() => { const m={}; accounts.forEach(a=>{m[a.id]=a;}); return m; }, [accounts]);
 
   // Filter entries by account
@@ -220,7 +216,7 @@ export default function FinancialDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <AccountsManager consultorEmail={user?.email} />
+              <AccountsManager consultorEmail={finData?.consultorEmail || user?.email} />
             </CardContent>
           </Card>
         </TabsContent>

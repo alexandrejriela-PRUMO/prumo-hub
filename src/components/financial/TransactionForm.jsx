@@ -119,8 +119,11 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
   }, [open, editing, accounts]);
 
   const { data: properties = [], refetch: refetchProperties } = useQuery({
-    queryKey: ['txform-clients', consultorEmail],
-    queryFn: () => base44.entities.Property.filter({ consultor_email: consultorEmail }, 'client_name', 500),
+    queryKey: ['fin-properties', consultorEmail],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listConsultorClients', {});
+      return res.data?.properties || [];
+    },
     enabled: !!consultorEmail,
   });
 
@@ -213,7 +216,7 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
         // Entrada na conta destino
         await base44.entities.Expense.create({ ...base, transaction_type: 'receita', account_id: toAcc?.id || '', account_name: toAcc?.name || '' });
         toast.success('Transferência registrada nas duas contas!');
-        qc.invalidateQueries(['fin-manual']);
+        qc.invalidateQueries(['fin-data']);
         onClose();
         return;
       }
@@ -275,7 +278,7 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
           toast.success('Transação registrada!');
         }
       }
-      qc.invalidateQueries(['fin-manual']);
+      qc.invalidateQueries(['fin-data']);
       onClose();
     } catch (err) {
       toast.error('Erro ao salvar: ' + err.message);

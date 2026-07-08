@@ -30,22 +30,25 @@ export default function AccountsManager({ consultorEmail }) {
   const qc = useQueryClient();
 
   const { data: accounts = [] } = useQuery({
-    queryKey: ['fin-accounts', consultorEmail],
-    queryFn: () => base44.entities.FinancialAccount.filter({ consultor_email: consultorEmail }, 'name', 100),
+    queryKey: ['fin-data', consultorEmail],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listConsultorFinancials', {});
+      return res.data?.accounts || [];
+    },
     enabled: !!consultorEmail,
   });
 
   const createMutation = useMutation({
     mutationFn: (d) => base44.entities.FinancialAccount.create(d),
-    onSuccess: () => { qc.invalidateQueries(['fin-accounts']); close(); toast.success('Conta criada!'); },
+    onSuccess: () => { qc.invalidateQueries(['fin-data']); close(); toast.success('Conta criada!'); },
   });
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.FinancialAccount.update(id, data),
-    onSuccess: () => { qc.invalidateQueries(['fin-accounts']); close(); toast.success('Conta atualizada!'); },
+    onSuccess: () => { qc.invalidateQueries(['fin-data']); close(); toast.success('Conta atualizada!'); },
   });
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.FinancialAccount.delete(id),
-    onSuccess: () => { qc.invalidateQueries(['fin-accounts']); toast.success('Conta removida!'); },
+    onSuccess: () => { qc.invalidateQueries(['fin-data']); toast.success('Conta removida!'); },
   });
 
   const open = (acc = null) => {

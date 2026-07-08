@@ -52,16 +52,18 @@ export default function FinancialTransactions() {
 
   useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);
 
-  const { data: consultorCharges = [] } = useQuery({
-    queryKey: ['fin-charges', user?.email],
-    queryFn: () => base44.entities.ConsultorCharge.filter({ consultor_email: user.email }, '-created_date', 200),
+  // Busca consolidada via backend (bypassa RLS para membros de equipe)
+  const { data: finData } = useQuery({
+    queryKey: ['fin-data', user?.email],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listConsultorFinancials', {});
+      return res.data || {};
+    },
     enabled: !!user?.email,
   });
-  const { data: manualEntries = [] } = useQuery({
-    queryKey: ['fin-manual', user?.email],
-    queryFn: () => base44.entities.Expense.filter({ consultor_email: user.email }, '-date', 500),
-    enabled: !!user?.email,
-  });
+  const consultorCharges = finData?.charges || [];
+  const manualEntries = finData?.expenses || [];
+  const accounts = finData?.accounts || [];
   const { data: properties = [] } = useQuery({
     queryKey: ['fin-properties', user?.email],
     queryFn: async () => {
@@ -70,18 +72,13 @@ export default function FinancialTransactions() {
     },
     enabled: !!user?.email,
   });
-  const { data: accounts = [] } = useQuery({
-    queryKey: ['fin-accounts', user?.email],
-    queryFn: () => base44.entities.FinancialAccount.filter({ consultor_email: user.email }, 'name', 100),
-    enabled: !!user?.email,
-  });
 
   const propertyMap = useMemo(() => { const m={}; properties.forEach(p=>{m[p.id]=p;}); return m; }, [properties]);
   const accountMap  = useMemo(() => { const m={}; accounts.forEach(a=>{m[a.id]=a;}); return m; }, [accounts]);
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Expense.delete(id),
-    onSuccess: () => { qc.invalidateQueries(['fin-manual']); toast.success('Transação removida!'); },
+    onSuccess: () => { qc.invalidateQueries(['fin-data']); toast.success('Transação removida!'); },
   });
 
   const handleOpen = (entry = null) => {
@@ -406,7 +403,7 @@ export default function FinancialTransactions() {
         open={showForm}
         onClose={() => { setShowForm(false); setEditing(null); }}
         editing={editing}
-        consultorEmail={user?.email}
+        consultorEmail={finData?.consultorEmail || user?.email}
         accounts={accounts}
         isDirtyGuard={true}
       />

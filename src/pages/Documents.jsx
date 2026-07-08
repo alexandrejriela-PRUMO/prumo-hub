@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,11 +24,12 @@ import { format, parseISO } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import VersionHistory from '../components/documents/VersionHistory';
+import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 const documentTypes = ['CAR', 'CCIR'];
 
 export default function Documents() {
-  const [user, setUser] = useState(null);
+  const { user, effectiveEmail } = useEffectiveUser();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [versionDialogOpen, setVersionDialogOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState(null);
@@ -47,29 +48,17 @@ export default function Documents() {
 
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      } catch (e) {
-        console.log('User not logged in');
-      }
-    };
-    loadUser();
-  }, []);
-
   const { data: documents, isLoading } = useQuery({
-    queryKey: ['documents', user?.email],
-    queryFn: () => base44.entities.Document.filter({ owner_email: user.email }),
-    enabled: !!user?.email,
+    queryKey: ['documents', effectiveEmail],
+    queryFn: () => base44.entities.Document.filter({ owner_email: effectiveEmail }),
+    enabled: !!effectiveEmail,
     initialData: [],
   });
 
   const { data: properties = [] } = useQuery({
-    queryKey: ['properties', user?.email],
-    queryFn: () => base44.entities.Property.filter({ owner_email: user.email }),
-    enabled: !!user?.email
+    queryKey: ['properties', effectiveEmail],
+    queryFn: () => base44.entities.Property.filter({ owner_email: effectiveEmail }),
+    enabled: !!effectiveEmail
   });
 
   const createMutation = useMutation({

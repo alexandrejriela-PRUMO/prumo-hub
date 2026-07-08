@@ -81,10 +81,13 @@ export default function Contracts() {
   const queryClient = useQueryClient();
   const isConsultor = isConsultorHook || isEquipe;
 
-  // Buscar clientes do CRM do consultor
+  // Buscar clientes do CRM do consultor (via backend function para funcionar também para equipe)
   const { data: crmClients = [] } = useQuery({
     queryKey: ['crm-clients-list', effectiveEmail],
-    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: effectiveEmail }),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listConsultorClients', {});
+      return res.data?.crmList || [];
+    },
     enabled: !!effectiveEmail && isConsultor,
   });
 
@@ -124,26 +127,15 @@ export default function Contracts() {
     enabled: !!effectiveEmail && !effectiveLoading,
   });
 
-  // For CRM data to auto-fill client info
-  const { data: crmList = [] } = useQuery({
-    queryKey: ['crm-all', effectiveEmail],
-    queryFn: async () => {
-      if (!properties.length) return [];
-      const results = await Promise.all(
-        properties.map(p => base44.entities.ClientCRM.filter({ property_id: p.id }))
-      );
-      return results.flat();
-    },
-    enabled: !!user?.email && properties.length > 0,
-  });
+  // Dados do CRM para auto-preencher informações do cliente (derivado de crmClients)
+  const crmList = crmClients;
 
   const { data: contracts = [], isLoading } = useQuery({
     queryKey: ['contracts', effectiveEmail, selectedPropertyId, properties.map(p => p.id).join(',')],
     queryFn: async () => {
       if (isConsultor) {
-        return selectedPropertyId
-          ? base44.entities.ClientContract.filter({ consultor_email: effectiveEmail, property_id: selectedPropertyId })
-          : base44.entities.ClientContract.filter({ consultor_email: effectiveEmail });
+        const res = await base44.functions.invoke('listClientContracts', selectedPropertyId ? { propertyId: selectedPropertyId } : {});
+        return res.data?.contracts || [];
       }
       // Para produtor: busca por property_id de cada propriedade dele
       if (!properties.length) return [];
@@ -160,7 +152,10 @@ export default function Contracts() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.ClientContract.create(data),
+    mutationFn: async (data) => {
+      const res = await base44.functions.invoke('createClientContract', data);
+      return res.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['contracts']);
       setDialogOpen(false);
@@ -169,7 +164,10 @@ export default function Contracts() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.ClientContract.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      const res = await base44.functions.invoke('updateClientContract', { id, data });
+      return res.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['contracts']);
       setDialogOpen(false);
@@ -178,7 +176,10 @@ export default function Contracts() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.ClientContract.delete(id),
+    mutationFn: async (id) => {
+      const res = await base44.functions.invoke('deleteClientContract', { id });
+      return res.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['contracts']);
       toast.success('Contrato removido.');

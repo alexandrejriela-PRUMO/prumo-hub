@@ -330,9 +330,9 @@ export default function LandingConsultor({ onLogin, standalone = false }) {
               <span className="sm:hidden">Consultores</span>
             </div>
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-4 sm:mb-6">
-               O escritório de consultoria ambiental<br />
+               A evolução tecnológica que sua<br />
                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-400">
-                 do futuro, hoje.
+                 consultoria ambiental esperava.
                </span>
             </h1>
             <p className="text-sm sm:text-lg text-amber-100/80 mb-6 sm:mb-8 leading-relaxed">

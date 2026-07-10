@@ -14,8 +14,8 @@ export default function LandingShell({ children, accent = 'emerald' }) {
     <div className="min-h-screen bg-white font-sans">
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-b border-gray-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
-          <a href="/" className="flex-shrink-0 text-sm font-semibold text-gray-900 hover:text-gray-700 transition-colors px-2 py-1">
-            <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696695a3a998559f4c16429b/9e64158f0_PRUMO1.png" alt="PRUMO Hub" className="h-8 sm:h-9 w-auto" />
+          <a href="/landing" className={`flex-shrink-0 text-sm font-bold ${accentClass.text} hover:text-gray-900 transition-colors px-2 py-1`}>
+            Início
           </a>
 
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
@@ -56,7 +56,7 @@ export default function LandingShell({ children, accent = 'emerald' }) {
       {children}
 
       <a
-        href="https://wa.me/5555999480489"
+        href="https://wa.me/5555999480467"
         target="_blank"
         rel="noopener noreferrer"
         className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-3 py-2 sm:px-4 sm:py-3 rounded-full shadow-xl transition-all hover:scale-105"

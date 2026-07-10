@@ -149,7 +149,7 @@ export default function LandingPage() {
 
             {/* Trust indicators */}
             <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-6 sm:mt-8">
-              {['Plano a partir de R$ 297', 'Sem fidelidade', 'Suporte dedicado'].map(item => (
+              {['Sem fidelidade', 'Suporte dedicado', 'IA Rute 24h'].map(item => (
                 <div key={item} className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-400">
                   <CheckCircle2 className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-amber-400" />
                   {item}

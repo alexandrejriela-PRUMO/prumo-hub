@@ -19,8 +19,8 @@ function useScrollFade(threshold = 0.12) {
   return [ref, visible];
 }
 
-export default function LandingPage() {
-  const [perfil, setPerfil] = useState(null); // null | 'produtor' | 'consultor'
+export default function LandingPage({ initialProfile = null }) {
+  const [perfil, setPerfil] = useState(initialProfile); // null | 'produtor' | 'consultor'
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [heroRef, heroVisible] = useScrollFade(0.01);
   const [cardRef, cardVisible] = useScrollFade(0.1);

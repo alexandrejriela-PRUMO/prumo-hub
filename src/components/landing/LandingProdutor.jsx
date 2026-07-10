@@ -279,7 +279,7 @@ function PlanCheckoutButtons() {
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
           {loading ? 'Redirecionando...' : 'Contratar agora →'}
         </button>
-        <a href="https://wa.me/5555999480489" target="_blank" rel="noopener noreferrer" className="flex-1 py-3 rounded-xl font-semibold text-sm bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors text-center">
+        <a href="https://wa.me/5555999480467" target="_blank" rel="noopener noreferrer" className="flex-1 py-3 rounded-xl font-semibold text-sm bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors text-center">
           Quero ser Cliente Fundador
         </a>
       </div>

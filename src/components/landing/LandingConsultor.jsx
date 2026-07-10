@@ -151,7 +151,7 @@ const planos = [
     badge: '🔥 Oferta de Lançamento',
     badgeColor: 'bg-red-500',
     highlight: true,
-    checkoutUrl: 'https://wa.me/5555999480489',
+    checkoutUrl: 'https://wa.me/5555999480467',
     items: [
       'Até 3 usuários (consultor + equipe)',
       'Até 200 propriedades/clientes',

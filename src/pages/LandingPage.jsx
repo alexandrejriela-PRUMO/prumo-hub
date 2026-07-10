@@ -162,7 +162,7 @@ export default function LandingPage() {
 
       {/* Floating WhatsApp Button */}
       <a
-        href="https://wa.me/5555999480489"
+        href="https://wa.me/5555999480467"
         target="_blank"
         rel="noopener noreferrer"
         className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-3 py-2 sm:px-4 sm:py-3 rounded-full shadow-xl transition-all hover:scale-105"

@@ -36,11 +36,6 @@ export default function LandingPage() {
             Início
           </button>
 
-          <div className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
-            <a href="#sobre" className="hover:text-amber-700 transition-colors">Sobre</a>
-            <a href="#diferenciais" className="hover:text-amber-700 transition-colors">Diferenciais</a>
-          </div>
-
           <div className="hidden md:flex items-center gap-3">
             <a href="/Parceiros" className="text-sm font-semibold text-amber-700 border border-amber-700 px-4 py-2 rounded-xl hover:bg-amber-50 transition-colors">
               Seja Parceiro
@@ -57,8 +52,6 @@ export default function LandingPage() {
 
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-t border-amber-100 px-4 py-4 space-y-3">
-            <a href="#sobre" className="block text-sm text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>Sobre</a>
-            <a href="#diferenciais" className="block text-sm text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>Diferenciais</a>
             <a href="/Parceiros" className="block w-full text-center text-sm font-semibold text-amber-700 border border-amber-700 px-5 py-3 rounded-xl hover:bg-amber-50 transition-colors">
               Seja Parceiro
             </a>
@@ -98,10 +91,10 @@ export default function LandingPage() {
               <span className="sm:hidden">Consultores</span>
             </div>
             <h1 className="text-2xl sm:text-6xl font-black text-white leading-snug mb-2 sm:mb-3 px-2">
-              O escritório de consultoria ambiental<br className="hidden sm:block" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-400">
-                do futuro, hoje.
-              </span>
+               A evolução tecnológica que sua<br className="hidden sm:block" />
+               <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-400">
+                 consultoria ambiental esperava.
+               </span>
             </h1>
             <p className="text-xs sm:text-lg text-slate-300 max-w-2xl mx-auto px-3 mb-3 sm:mb-5">
               Centralize <strong className="text-white">CRM, contratos, financeiro, licenças, processos jurídicos e gestão de equipe</strong> em uma única plataforma inteligente. Mais clientes, menos burocracia, zero planilhas.

@@ -156,9 +156,11 @@ export default function Properties() {
   const isLoading = effectiveLoading || !effectiveEmail;
 
   // Limite de propriedades por plano
+  // Membros de equipe (isEquipe) não têm seu próprio max_properties (é 0) — usam o limite do consultor.
   const maxProperties = userMeta?.max_properties ?? 9999;
-  const canCreate = (!isEquipe || memberRole === 'Administrador') && properties.length < maxProperties;
-  const atPropertyLimit = !isEquipe && properties.length >= maxProperties && maxProperties < 9999;
+  const effectiveMaxProperties = isEquipe ? 9999 : maxProperties;
+  const canCreate = (!isEquipe || memberRole === 'Administrador') && properties.length < effectiveMaxProperties;
+  const atPropertyLimit = !isEquipe && properties.length >= effectiveMaxProperties && effectiveMaxProperties < 9999;
 
   // Consultor/equipe usam backend functions (bypass RLS para membros de equipe)
   const useBackendFn = isConsultorType || isEquipe;

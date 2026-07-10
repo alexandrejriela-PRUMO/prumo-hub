@@ -164,7 +164,6 @@ const planos = [
       'Portal do cliente (visualizar e baixar documentos)',
       'Relatórios de gestão para clientes',
       'Tutorial Online e Grupo de Atendimento Personalizado',
-      'Fidelidade de 12 meses',
     ],
   },
 ];
@@ -457,7 +456,7 @@ export default function LandingConsultor({ onLogin, standalone = false }) {
 
 
           <p className="text-center text-xs text-gray-400 mt-6">
-             * Oferta de lançamento por tempo limitado. Fidelidade de 12 meses. Aceitamos cartão de crédito, PIX e boleto bancário.
+             * Oferta de lançamento por tempo limitado. Sem fidelidade. Aceitamos cartão de crédito, PIX e boleto bancário.
            </p>
         </div>
       </section>

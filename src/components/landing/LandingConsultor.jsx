@@ -315,7 +315,7 @@ function PlanCheckoutButtons() {
   );
 }
 
-export default function LandingConsultor({ onLogin }) {
+export default function LandingConsultor({ onLogin, standalone = false }) {
   return (
     <div className="pt-16">
       <section className="py-12 sm:py-20 bg-gradient-to-br from-amber-950 via-amber-900 to-orange-900 relative overflow-hidden">

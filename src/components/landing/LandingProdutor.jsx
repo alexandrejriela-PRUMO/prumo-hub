@@ -287,7 +287,7 @@ function PlanCheckoutButtons() {
   );
 }
 
-export default function LandingProdutor({ onLogin }) {
+export default function LandingProdutor({ onLogin, standalone = false }) {
   return (
     <div className="pt-16">
       {/* HERO */}

@@ -148,7 +148,7 @@ const planos = [
     original_price: 497,
     desc: 'Até 3 usuários • Até 200 propriedades/clientes. Plano mais completo.',
     color: 'border-amber-400',
-    badge: '🔥 Oferta de Lançamento',
+    badge: '🔥 Oferta por tempo limitado',
     badgeColor: 'bg-red-500',
     highlight: true,
     checkoutUrl: 'https://wa.me/5555999480467',
@@ -340,7 +340,7 @@ export default function LandingConsultor({ onLogin, standalone = false }) {
             </p>
             <div className="inline-flex items-center gap-2 bg-red-500/20 border border-red-400/40 text-red-300 text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-full mb-6 animate-pulse">
               <Zap className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Oferta de lançamento por tempo limitado</span>
+              <span className="hidden sm:inline">Oferta por tempo limitado</span>
               <span className="sm:hidden">Oferta limitada</span>
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
@@ -413,7 +413,7 @@ export default function LandingConsultor({ onLogin, standalone = false }) {
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Escolha o plano ideal</h2>
             <div className="inline-flex items-center gap-2 bg-red-100 border border-red-300 text-red-700 text-sm font-bold px-5 py-2.5 rounded-full mb-6">
               <Zap className="w-4 h-4" />
-              Oferta de lançamento — R$ 297/mês por tempo limitado
+              Oferta por tempo limitado — R$ 297/mês
             </div>
           </div>
           <div className="grid md:grid-cols-1 max-w-lg mx-auto gap-6 items-start">
@@ -456,7 +456,7 @@ export default function LandingConsultor({ onLogin, standalone = false }) {
 
 
           <p className="text-center text-xs text-gray-400 mt-6">
-             * Oferta de lançamento por tempo limitado. Sem fidelidade. Aceitamos cartão de crédito, PIX e boleto bancário.
+             * Oferta por tempo limitado. Sem fidelidade. Aceitamos cartão de crédito, PIX e boleto bancário.
            </p>
         </div>
       </section>
@@ -512,7 +512,7 @@ export default function LandingConsultor({ onLogin, standalone = false }) {
       <section className="py-16 bg-gradient-to-br from-amber-900 to-orange-900">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">Pronto para levar seu escritório ao próximo nível?</h2>
-          <p className="text-amber-200 mb-2">Aproveite a oferta de lançamento: <strong className="text-white">R$ 297/mês</strong> por tempo limitado.</p>
+          <p className="text-amber-200 mb-2">Aproveite a oferta por tempo limitado: <strong className="text-white">R$ 297/mês</strong>.</p>
           <p className="text-amber-300 text-sm mb-8">Depois volta para R$ 497/mês. Não perca!</p>
           <a href="#planos" className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold text-lg px-10 py-4 rounded-2xl shadow-xl transition-all hover:scale-105">
             Contratar agora <ArrowRight className="w-5 h-5" />

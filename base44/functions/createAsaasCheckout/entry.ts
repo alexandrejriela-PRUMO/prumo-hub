@@ -10,7 +10,7 @@ const PLAN_CONFIG = {
   consultor_enterprise: {
     name: 'PRUMO Hub - Consultor',
     description: 'Plano Enterprise: CRM, contratos, financeiro e gestao de clientes.',
-    value: 497,
+    value: 297,
     externalRef: 'consultor_enterprise',
   },
 };

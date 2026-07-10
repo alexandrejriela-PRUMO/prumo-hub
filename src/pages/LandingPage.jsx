@@ -91,9 +91,9 @@ export default function LandingPage() {
               <span className="sm:hidden">Consultores</span>
             </div>
             <h1 className="text-2xl sm:text-6xl font-black text-white leading-snug mb-2 sm:mb-3 px-2">
-               O escritório de consultoria ambiental<br className="hidden sm:block" />
+               Gestão Ambiental<br className="hidden sm:block" />
                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-400">
-                 do futuro, hoje.
+                 Inteligente.
                </span>
             </h1>
             <p className="text-xs sm:text-lg text-slate-300 max-w-2xl mx-auto px-3 mb-3 sm:mb-5">

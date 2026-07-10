@@ -15,6 +15,8 @@ const AcceptInvite = lazy(() => import('./pages/AcceptInvite'));
 const TermsOfUsePage = lazy(() => import('./pages/TermsOfUsePage'));
 const SaasContractPage = lazy(() => import('./pages/SaasContractPage'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
+const LandingConsultorPage = lazy(() => import('./pages/LandingConsultorPage'));
+const LandingProdutorPage = lazy(() => import('./pages/LandingProdutorPage'));
 const AccessBlocked = lazy(() => import('./pages/AccessBlocked'));
 const Parceiros = lazy(() => import('./pages/Parceiros'));
 const CompraConfirmada = lazy(() => import('./pages/CompraConfirmada'));
@@ -278,6 +280,8 @@ function AppContent() {
       <Routes>
         <Route path="/landing" element={<Suspense fallback={<LoadingSpinner />}><LandingPage /></Suspense>} />
         <Route path="/LandingPage" element={<Suspense fallback={<LoadingSpinner />}><LandingPage /></Suspense>} />
+        <Route path="/consultor" element={<Suspense fallback={<LoadingSpinner />}><LandingConsultorPage /></Suspense>} />
+        <Route path="/produtor" element={<Suspense fallback={<LoadingSpinner />}><LandingProdutorPage /></Suspense>} />
         <Route path="/Parceiros" element={<Suspense fallback={<LoadingSpinner />}><Parceiros /></Suspense>} />
         <Route path="/CompraConfirmada" element={<Suspense fallback={<LoadingSpinner />}><CompraConfirmada /></Suspense>} />
         <Route path="/ConfirmPresence/:token" element={<Suspense fallback={<LoadingSpinner />}><ConfirmPresence /></Suspense>} />

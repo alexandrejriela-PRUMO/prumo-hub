@@ -74,8 +74,9 @@ const diferenciais = [
   {
     icon: ScrollText,
     title: 'Gerador de Contratos e Orçamentos',
-    desc: 'Crie contratos e orçamentos profissionais em minutos, com modelos personalizados e assinatura digital integrada (Clicksign).',
+    desc: 'Crie contratos e orçamentos profissionais em minutos, com modelos personalizados. Assinatura digital integrada em construção.',
     color: 'from-blue-500 to-cyan-600',
+    comingSoon: true,
   },
   {
     icon: FileCheck,
@@ -101,7 +102,7 @@ const diferenciais = [
   {
     icon: BarChart3,
     title: 'Controle Financeiro Completo',
-    desc: 'Painel financeiro com receitas, despesas, cobranças via Nexano, conciliação bancária e relatórios de resultado.',
+    desc: 'Painel financeiro com receitas, despesas, cobranças via Asaas, conciliação bancária e relatórios de resultado.',
     color: 'from-green-500 to-lime-600',
     comingSoon: true,
   },
@@ -143,11 +144,12 @@ const diferenciais = [
 const planos = [
   {
     name: 'Enterprise',
-    price: 497,
+    price: 297,
+    original_price: 497,
     desc: 'Até 3 usuários • Até 200 propriedades/clientes. Plano mais completo.',
     color: 'border-amber-400',
-    badge: 'Mais Popular',
-    badgeColor: 'bg-amber-500',
+    badge: '🔥 Oferta de Lançamento',
+    badgeColor: 'bg-red-500',
     highlight: true,
     checkoutUrl: 'https://wa.me/5555999480489',
     items: [
@@ -161,7 +163,7 @@ const planos = [
       'Notificação para consultor, equipe e clientes',
       'Portal do cliente (visualizar e baixar documentos)',
       'Relatórios de gestão para clientes',
-      'Autoatendimento + Webinars + Treinamentos personalizados',
+      'Tutorial Online e Grupo de Atendimento Personalizado',
       'Fidelidade de 12 meses',
     ],
   },
@@ -329,14 +331,19 @@ export default function LandingConsultor({ onLogin }) {
               <span className="sm:hidden">Consultores</span>
             </div>
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-4 sm:mb-6">
-              Seu escritório de consultoria<br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-400">
-                em outro nível.
-              </span>
+               O escritório de consultoria ambiental<br />
+               <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-400">
+                 do futuro, hoje.
+               </span>
             </h1>
             <p className="text-sm sm:text-lg text-amber-100/80 mb-6 sm:mb-8 leading-relaxed">
-              O PRUMO Hub unifica <strong className="text-white">CRM, contratos, financeiro, NF-e, gestão de equipe</strong> para você atender mais clientes com menos burocracia.
+               Centralize <strong className="text-white">CRM, contratos, financeiro, licenças, processos jurídicos e gestão de equipe</strong> em uma única plataforma inteligente. Mais clientes, menos burocracia, zero planilhas.
             </p>
+            <div className="inline-flex items-center gap-2 bg-red-500/20 border border-red-400/40 text-red-300 text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-full mb-6 animate-pulse">
+              <Zap className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Oferta de lançamento por tempo limitado</span>
+              <span className="sm:hidden">Oferta limitada</span>
+            </div>
             <div className="flex flex-col sm:flex-row gap-4">
               <a href="#planos" className="flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold px-8 py-4 rounded-2xl shadow-xl transition-all hover:scale-105">
                 Contratar agora <ArrowRight className="w-5 h-5" />
@@ -405,6 +412,10 @@ export default function LandingConsultor({ onLogin }) {
               Planos para Consultores
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Escolha o plano ideal</h2>
+            <div className="inline-flex items-center gap-2 bg-red-100 border border-red-300 text-red-700 text-sm font-bold px-5 py-2.5 rounded-full mb-6">
+              <Zap className="w-4 h-4" />
+              Oferta de lançamento — R$ 297/mês por tempo limitado
+            </div>
           </div>
           <div className="grid md:grid-cols-1 max-w-lg mx-auto gap-6 items-start">
             {planos.map((plan) => {
@@ -419,11 +430,17 @@ export default function LandingConsultor({ onLogin }) {
                     </div>
                   )}
                   <h3 className="text-lg font-bold text-gray-900 mb-1">{plan.name}</h3>
-                  <p className="text-sm text-gray-500 mb-4">{plan.desc}</p>
-                  <div className="flex items-end gap-1 mb-4">
-                    <span className="text-3xl font-extrabold text-gray-900">R$ {plan.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                    <span className="text-gray-400 text-sm mb-1">/mês</span>
-                  </div>
+                   <p className="text-sm text-gray-500 mb-4">{plan.desc}</p>
+                   <div className="flex items-end gap-2 mb-1">
+                     {plan.original_price && (
+                       <span className="text-lg font-bold text-gray-400 line-through mb-1.5">R$ {plan.original_price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                     )}
+                     <span className="text-4xl font-extrabold text-amber-600">R$ {plan.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                     <span className="text-gray-400 text-sm mb-1.5">/mês</span>
+                   </div>
+                   {plan.original_price && (
+                     <p className="text-xs font-bold text-red-600 mb-4">Economize R$ {(plan.original_price - plan.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês durante a oferta!</p>
+                   )}
                   <ul className="space-y-2.5 flex-1 mb-6">
                     {plan.items.map((item) => (
                       <li key={item} className="flex items-start gap-2 text-sm text-gray-700">
@@ -440,8 +457,8 @@ export default function LandingConsultor({ onLogin }) {
 
 
           <p className="text-center text-xs text-gray-400 mt-6">
-            * Fidelidade de 12 meses. Aceitamos cartão de crédito, PIX e boleto bancário.
-          </p>
+             * Oferta de lançamento por tempo limitado. Fidelidade de 12 meses. Aceitamos cartão de crédito, PIX e boleto bancário.
+           </p>
         </div>
       </section>
 
@@ -496,7 +513,8 @@ export default function LandingConsultor({ onLogin }) {
       <section className="py-16 bg-gradient-to-br from-amber-900 to-orange-900">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">Pronto para levar seu escritório ao próximo nível?</h2>
-          <p className="text-amber-200 mb-8">Fale com nosso time e veja como o PRUMO Hub pode transformar sua consultoria.</p>
+          <p className="text-amber-200 mb-2">Aproveite a oferta de lançamento: <strong className="text-white">R$ 297/mês</strong> por tempo limitado.</p>
+          <p className="text-amber-300 text-sm mb-8">Depois volta para R$ 497/mês. Não perca!</p>
           <a href="#planos" className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-bold text-lg px-10 py-4 rounded-2xl shadow-xl transition-all hover:scale-105">
             Contratar agora <ArrowRight className="w-5 h-5" />
           </a>

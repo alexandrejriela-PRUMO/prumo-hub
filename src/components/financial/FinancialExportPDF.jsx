@@ -4,18 +4,50 @@ import { ptBR } from 'date-fns/locale';
 const fmt = (v) => (v ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const fmtDate = (d) => { try { return d ? format(parseISO(d), 'dd/MM/yyyy') : '—'; } catch { return d || '—'; } };
 
-export function exportFinancialPDF({ sorted, totalReceitas, totalDespesas, resultado, filterMonth, userName }) {
+const RESSARC_COLORS = {
+  'A Solicitar':           { bg: '#f3f4f6', color: '#374151' },
+  'Solicitado ao Cliente': { bg: '#fef3c7', color: '#92400e' },
+  'Recebido':              { bg: '#d1fae5', color: '#065f46' },
+  'Não será ressarcido':   { bg: '#fee2e2', color: '#991b1b' },
+};
+
+export function exportFinancialPDF({ sorted, totalReceitas, totalDespesas, resultado, filterMonth, userName, filterClientName, filterPropertyName }) {
   const periodLabel = filterMonth
     ? format(parseISO(filterMonth + '-01'), 'MMMM/yyyy', { locale: ptBR })
     : 'Todos os períodos';
 
   const now = format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+  const isIndividualized = !!(filterClientName || filterPropertyName);
 
   // Group by type for summary
   const receitas = sorted.filter(t => t.type === 'receita');
   const despesas = sorted.filter(t => t.type === 'despesa');
   const receitasPagas = receitas.filter(t => t.status === 'Pago');
   const receitasPendentes = receitas.filter(t => t.status === 'Pendente');
+
+  // Ressarcimento — só relevante no relatório individualizado por cliente/propriedade
+  const despesasRessarciveis = despesas.filter(t => t.isRessarcivel);
+  const ressarcimentoPendente = despesasRessarciveis.filter(t => t.ressarcimentoStatus === 'A Solicitar' || t.ressarcimentoStatus === 'Solicitado ao Cliente');
+  const ressarcimentoRecebido = despesasRessarciveis.filter(t => t.ressarcimentoStatus === 'Recebido');
+  const totalRessarcPendente = ressarcimentoPendente.reduce((s, t) => s + t.amount, 0);
+  const totalRessarcRecebido = ressarcimentoRecebido.reduce((s, t) => s + t.amount, 0);
+
+  const despesasRows = despesas.map((t, i) => {
+    const bg = i % 2 === 0 ? '#f9fafb' : '#ffffff';
+    const rc = t.isRessarcivel ? (RESSARC_COLORS[t.ressarcimentoStatus] || RESSARC_COLORS['A Solicitar']) : null;
+    return `
+      <tr style="background:${bg};">
+        <td style="padding:7px 10px; font-size:12px; color:#111827; font-weight:500; max-width:220px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">${t.description || '—'}</td>
+        <td style="padding:7px 10px; font-size:11px; color:#374151;">${t.source || t.raw?.category || '—'}</td>
+        <td style="padding:7px 10px; font-size:11px; color:#374151; white-space:nowrap;">${fmtDate(t.date)}</td>
+        <td style="padding:7px 10px; font-size:12px; text-align:right; font-weight:700; color:#dc2626; white-space:nowrap;">${fmt(t.amount)}</td>
+        <td style="padding:7px 10px; font-size:11px; text-align:center;">
+          ${t.isRessarcivel
+            ? `<span style="padding:2px 8px; border-radius:20px; font-size:10px; font-weight:600; background:${rc.bg}; color:${rc.color};">${t.ressarcimentoStatus || 'A Solicitar'}</span>`
+            : '<span style="color:#9ca3af; font-size:11px;">—</span>'}
+        </td>
+      </tr>`;
+  }).join('');
 
   const rows = sorted.map((t, i) => {
     const isReceita = t.type === 'receita';
@@ -65,8 +97,9 @@ export function exportFinancialPDF({ sorted, totalReceitas, totalDespesas, resul
     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
       <div>
         <div style="font-size:10px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:#6ee7b7; margin-bottom:8px;">PRUMO HUB</div>
-        <h1 style="font-size:26px; font-weight:800; letter-spacing:-0.5px;">Relatório Financeiro</h1>
+        <h1 style="font-size:26px; font-weight:800; letter-spacing:-0.5px;">Relatório Financeiro${isIndividualized ? ' Individualizado' : ''}</h1>
         <p style="font-size:14px; color:#a7f3d0; margin-top:4px; text-transform:capitalize;">${periodLabel}</p>
+        ${isIndividualized ? `<p style="font-size:13px; color:#fff; margin-top:6px; font-weight:600;">${[filterClientName ? `Cliente: ${filterClientName}` : null, filterPropertyName ? `Propriedade/Empreendimento: ${filterPropertyName}` : null].filter(Boolean).join(' · ')}</p>` : ''}
       </div>
       <div style="text-align:right; font-size:11px; color:#a7f3d0; line-height:1.7;">
         <div>Gerado em: ${now}</div>
@@ -111,6 +144,26 @@ export function exportFinancialPDF({ sorted, totalReceitas, totalDespesas, resul
     </div>
   </div>
 
+  ${isIndividualized ? `
+  <!-- RESSARCIMENTO SUMMARY -->
+  <div style="padding:0 40px 24px;">
+    <h2 style="font-size:14px; font-weight:700; color:#064e3b; margin-bottom:12px; padding-bottom:8px; border-bottom:2px solid #d1fae5; letter-spacing:0.5px; text-transform:uppercase;">
+      Resumo de Ressarcimento
+    </h2>
+    <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px;">
+      <div style="background:#fffbeb; border-radius:12px; border:1px solid #fde68a; padding:16px 20px;">
+        <div style="font-size:10px; color:#92400e; text-transform:uppercase; font-weight:600; letter-spacing:1px; margin-bottom:6px;">Ressarcíveis Pendentes</div>
+        <div style="font-size:22px; font-weight:800; color:#b45309;">${fmt(totalRessarcPendente)}</div>
+        <div style="font-size:10px; color:#92400e; margin-top:4px;">${ressarcimentoPendente.length} despesa${ressarcimentoPendente.length !== 1 ? 's' : ''} aguardando solicitação/recebimento</div>
+      </div>
+      <div style="background:#f0fdf4; border-radius:12px; border:1px solid #bbf7d0; padding:16px 20px;">
+        <div style="font-size:10px; color:#065f46; text-transform:uppercase; font-weight:600; letter-spacing:1px; margin-bottom:6px;">Já Ressarcidas</div>
+        <div style="font-size:22px; font-weight:800; color:#059669;">${fmt(totalRessarcRecebido)}</div>
+        <div style="font-size:10px; color:#065f46; margin-top:4px;">${ressarcimentoRecebido.length} despesa${ressarcimentoRecebido.length !== 1 ? 's' : ''} recebida${ressarcimentoRecebido.length !== 1 ? 's' : ''} do cliente</div>
+      </div>
+    </div>
+  </div>` : ''}
+
   <!-- TABLE -->
   <div style="padding:0 40px 40px;">
     <h2 style="font-size:14px; font-weight:700; color:#064e3b; margin-bottom:12px; padding-bottom:8px; border-bottom:2px solid #d1fae5; letter-spacing:0.5px; text-transform:uppercase;">
@@ -143,6 +196,26 @@ export function exportFinancialPDF({ sorted, totalReceitas, totalDespesas, resul
       </tfoot>
     </table>
   </div>
+
+  ${isIndividualized && despesas.length > 0 ? `
+  <!-- DESPESAS / RESSARCIMENTO DETAIL -->
+  <div style="padding:0 40px 40px;">
+    <h2 style="font-size:14px; font-weight:700; color:#064e3b; margin-bottom:12px; padding-bottom:8px; border-bottom:2px solid #d1fae5; letter-spacing:0.5px; text-transform:uppercase;">
+      Despesas — Detalhamento e Ressarcimento
+    </h2>
+    <table style="width:100%; border-collapse:collapse; font-size:12px;">
+      <thead>
+        <tr style="background:#064e3b; color:#fff;">
+          <th style="padding:10px; text-align:left; font-weight:600; font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">Descrição</th>
+          <th style="padding:10px; text-align:left; font-weight:600; font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">Categoria</th>
+          <th style="padding:10px; text-align:left; font-weight:600; font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">Data</th>
+          <th style="padding:10px; text-align:right; font-weight:600; font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">Valor</th>
+          <th style="padding:10px; text-align:center; font-weight:600; font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">Ressarcimento</th>
+        </tr>
+      </thead>
+      <tbody>${despesasRows}</tbody>
+    </table>
+  </div>` : ''}
 
   <!-- FOOTER -->
   <div style="background:#f9fafb; border-top:1px solid #e5e7eb; padding:16px 40px; display:flex; justify-content:space-between; align-items:center;">

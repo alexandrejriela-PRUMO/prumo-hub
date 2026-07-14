@@ -137,6 +137,20 @@
     },
     "notes": {
       "type": "string"
+    },
+    "is_ressarcivel": {
+      "type": "boolean",
+      "default": false
+    },
+    "ressarcimento_status": {
+      "type": "string",
+      "enum": [
+        "A Solicitar",
+        "Solicitado ao Cliente",
+        "Recebido",
+        "Não será ressarcido"
+      ],
+      "default": "A Solicitar"
     }
   },
   "required": [

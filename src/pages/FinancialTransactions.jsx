@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import {
   TrendingUp, TrendingDown, ArrowLeftRight, Download, Search,
-  ChevronUp, ChevronDown, Plus, Pencil, Trash2, Banknote, Paperclip, FileText, MoveRight
+  ChevronUp, ChevronDown, Plus, Pencil, Trash2, Banknote, Paperclip, FileText, MoveRight, Repeat
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
@@ -21,6 +21,14 @@ const STATUS_BADGES = {
   'Pendente': 'bg-amber-100 text-amber-700',
   'Vencido':  'bg-red-100 text-red-700',
   'Cancelado':'bg-gray-100 text-gray-500',
+};
+
+const RESSARC_STATUS_OPTIONS = ['A Solicitar', 'Solicitado ao Cliente', 'Recebido', 'Não será ressarcido'];
+const RESSARC_BADGES = {
+  'A Solicitar':           'bg-gray-100 text-gray-600',
+  'Solicitado ao Cliente': 'bg-amber-100 text-amber-700',
+  'Recebido':              'bg-emerald-100 text-emerald-700',
+  'Não será ressarcido':   'bg-red-100 text-red-500',
 };
 
 function normalizeStatus(s) {
@@ -43,6 +51,8 @@ export default function FinancialTransactions() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterAccount,setFilterAccount]= useState('');
   const [filterProperty,setFilterProperty]= useState('');
+  const [filterRessarcStatus, setFilterRessarcStatus] = useState('');
+  const [onlyRessarcivel, setOnlyRessarcivel] = useState(false);
   const [search,       setSearch]       = useState('');
   const [sortField,    setSortField]    = useState('date');
   const [sortDir,      setSortDir]      = useState('desc');
@@ -107,6 +117,8 @@ export default function FinancialTransactions() {
         accountId: null,
         propertyId: c.property_id || null,
         propertyName: c.property_id ? (propertyMap[c.property_id]?.property_name || null) : null,
+        isRessarcivel: false,
+        ressarcimentoStatus: null,
         editable: false,
         raw: c,
         isInstallment: false,
@@ -137,6 +149,8 @@ export default function FinancialTransactions() {
         accountId: e.account_id || null,
         propertyId: e.property_id || null,
         propertyName: e.property_name || null,
+        isRessarcivel: !!e.is_ressarcivel,
+        ressarcimentoStatus: e.ressarcimento_status || null,
         editable: true,
         raw: e,
         isInstallment,
@@ -176,9 +190,11 @@ export default function FinancialTransactions() {
     const matchStatus  = !filterStatus  || t.status===filterStatus;
     const matchAccount = !filterAccount || t.accountId===filterAccount;
     const matchProperty = !filterProperty || t.propertyId===filterProperty;
+    const matchRessarcStatus = !filterRessarcStatus || t.ressarcimentoStatus===filterRessarcStatus;
+    const matchOnlyRessarc = !onlyRessarcivel || t.isRessarcivel===true;
     const matchSearch = !search || t.description?.toLowerCase().includes(search.toLowerCase()) || t.client?.toLowerCase().includes(search.toLowerCase());
-    return matchMonth&&matchType&&matchClient&&matchStatus&&matchAccount&&matchProperty&&matchSearch;
-  }), [allTransactions,filterMonth,filterType,filterClient,filterStatus,filterAccount,filterProperty,search]);
+    return matchMonth&&matchType&&matchClient&&matchStatus&&matchAccount&&matchProperty&&matchRessarcStatus&&matchOnlyRessarc&&matchSearch;
+  }), [allTransactions,filterMonth,filterType,filterClient,filterStatus,filterAccount,filterProperty,filterRessarcStatus,onlyRessarcivel,search]);
 
   const sorted = useMemo(()=>[...filtered].sort((a,b)=>{
     let va=a[sortField],vb=b[sortField];
@@ -240,7 +256,12 @@ export default function FinancialTransactions() {
   };
 
   const handleExportPDF = () => {
-    exportFinancialPDF({ sorted, totalReceitas, totalDespesas, resultado, filterMonth, userName: user?.full_name });
+    const filterPropertyName = filterProperty ? (propertyOptions.find(p => p.id === filterProperty)?.name || null) : null;
+    exportFinancialPDF({
+      sorted, totalReceitas, totalDespesas, resultado, filterMonth, userName: user?.full_name,
+      filterClientName: filterClient || null,
+      filterPropertyName,
+    });
   };
 
   return (
@@ -305,12 +326,26 @@ export default function FinancialTransactions() {
             <Select value={filterProperty || '__all__'} onValueChange={v => setFilterProperty(v === '__all__' ? '' : v)}><SelectTrigger className="w-52"><SelectValue placeholder="Todas"/></SelectTrigger>
               <SelectContent><SelectItem value="__all__">Todas</SelectItem>{propertyOptions.map(p=><SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
             </Select></div>
+          <div><Label className="text-xs">Status Ressarcimento</Label>
+            <Select value={filterRessarcStatus || '__all__'} onValueChange={v => setFilterRessarcStatus(v === '__all__' ? '' : v)}><SelectTrigger className="w-48"><SelectValue placeholder="Todos"/></SelectTrigger>
+              <SelectContent><SelectItem value="__all__">Todos</SelectItem>{RESSARC_STATUS_OPTIONS.map(s=><SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            </Select></div>
+          <div className="flex flex-col gap-1">
+            <Label className="text-xs">&nbsp;</Label>
+            <Button
+              variant="outline" size="sm"
+              onClick={()=>setOnlyRessarcivel(v=>!v)}
+              className={`h-9 gap-1.5 ${onlyRessarcivel ? 'bg-emerald-50 border-emerald-400 text-emerald-700' : ''}`}
+            >
+              <Repeat className="w-3.5 h-3.5"/>Apenas ressarcíveis
+            </Button>
+          </div>
           <div className="flex-1 min-w-40"><Label className="text-xs">Buscar</Label>
             <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"/>
               <Input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Descrição ou cliente..." className="pl-9"/>
             </div></div>
-          {(filterType||filterClient||filterStatus||filterAccount||filterProperty||search) && (
-            <Button variant="outline" size="sm" onClick={()=>{setFilterType('');setFilterClient('');setFilterStatus('');setFilterAccount('');setFilterProperty('');setSearch('');}}>Limpar</Button>
+          {(filterType||filterClient||filterStatus||filterAccount||filterProperty||filterRessarcStatus||onlyRessarcivel||search) && (
+            <Button variant="outline" size="sm" onClick={()=>{setFilterType('');setFilterClient('');setFilterStatus('');setFilterAccount('');setFilterProperty('');setFilterRessarcStatus('');setOnlyRessarcivel(false);setSearch('');}}>Limpar</Button>
           )}
         </div>
         <p className="text-xs text-gray-400 mt-2">{sorted.length} transaç{sorted.length!==1?'ões':'ão'} encontrada{sorted.length!==1?'s':''}</p>
@@ -330,12 +365,13 @@ export default function FinancialTransactions() {
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={()=>toggleSort('date')}>Data <SortIcon field="date" sortField={sortField} sortDir={sortDir}/></th>
                 <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={()=>toggleSort('amount')}>Valor <SortIcon field="amount" sortField={sortField} sortDir={sortDir}/></th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Ressarcível</th>
                 <th className="px-4 py-3 w-16"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {sorted.length===0?(
-                <tr><td colSpan={9} className="text-center py-12 text-gray-400">
+                <tr><td colSpan={10} className="text-center py-12 text-gray-400">
                   <ArrowLeftRight className="w-10 h-10 mx-auto mb-2 opacity-20"/>
                   <p>Nenhuma transação encontrada.</p>
                   <Button className="mt-3 bg-emerald-600 hover:bg-emerald-700" size="sm" onClick={()=>handleOpen()}><Plus className="w-3.5 h-3.5 mr-1"/>Adicionar</Button>
@@ -365,6 +401,13 @@ export default function FinancialTransactions() {
                   </td>
                   <td className="px-4 py-3"><Badge className={`${STATUS_BADGES[t.status]||'bg-gray-100 text-gray-500'} border-0 text-xs`}>{t.status}</Badge></td>
                   <td className="px-4 py-3">
+                    {t.isRessarcivel ? (
+                      <Badge className={`${RESSARC_BADGES[t.ressarcimentoStatus]||'bg-gray-100 text-gray-500'} border-0 text-xs gap-1 inline-flex items-center`}>
+                        <Repeat className="w-3 h-3"/>{t.ressarcimentoStatus || 'A Solicitar'}
+                      </Badge>
+                    ) : <span className="text-gray-300 text-xs">—</span>}
+                  </td>
+                  <td className="px-4 py-3">
                     <div className="flex gap-1 items-center">
                       {t.raw?.attachments?.length > 0 && (
                         <span title={`${t.raw.attachments.length} anexo(s)`} className="flex items-center gap-0.5 text-xs text-blue-500">
@@ -391,7 +434,7 @@ export default function FinancialTransactions() {
                       <span className={`text-sm font-bold ${resultado>=0?'text-blue-700':'text-orange-600'}`}>{fmt(resultado)}</span>
                     </div>
                   </td>
-                  <td/><td/>
+                  <td/><td/><td/>
                 </tr>
               </tfoot>
             )}

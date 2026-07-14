@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 const EXPENSE_CATEGORIES = ['Aluguel / Escritório','Salários / Pró-labore','Marketing / Publicidade','Tecnologia / Software','Deslocamento / Combustível','Equipamentos','Impostos / Taxas','Serviços de Terceiros','Materiais de Escritório','Treinamento / Cursos','Outros'];
 const INCOME_CATEGORIES  = ['Cobrança de Cliente (Manual)','Outros Serviços Prestados','Outros'];
 const PAYMENT_METHODS    = ['Boleto','PIX','Cartão de Crédito','Cartão de Débito','Transferência','Dinheiro','Outro'];
+const RESSARCIMENTO_STATUS = ['A Solicitar','Solicitado ao Cliente','Recebido','Não será ressarcido'];
 
 const EMPTY_BASE = {
   transaction_type: 'receita', description: '', date: '',
@@ -33,6 +34,9 @@ const EMPTY_BASE = {
   // transferência
   transfer_from_account_id: '',
   transfer_to_account_id: '',
+  // ressarcimento (despesa)
+  is_ressarcivel: false,
+  ressarcimento_status: 'A Solicitar',
 };
 
 function buildInstallments(total, count, firstDate, defaultAccountId, defaultAccountName, defaultMethod) {
@@ -414,9 +418,11 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
 
           {/* Campos de Receita/Despesa — ocultos em modo transferência */}
           {/* Client selector */}
-          {isReceita && !isTransferencia && (
+          {!isTransferencia && (
             <div>
-              <Label className="flex items-center gap-1">Cliente <span className="text-red-500">*</span></Label>
+              <Label className="flex items-center gap-1">
+                Cliente {isReceita ? <span className="text-red-500">*</span> : <span className="text-xs text-gray-400 font-normal">(opcional)</span>}
+              </Label>
               {selectedClient ? (
                 <div className="flex items-center gap-2 mt-1 p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl">
                   <div className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
@@ -462,7 +468,7 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
           )}
 
           {/* Propriedade / Empreendimento — aparece após selecionar cliente */}
-          {isReceita && !isTransferencia && form.client_property_id && clientProperties.length > 0 && (
+          {!isTransferencia && form.client_property_id && clientProperties.length > 0 && (
             <div>
               <Label>Propriedade / Empreendimento <span className="text-xs text-gray-400 font-normal">(opcional)</span></Label>
               <Select value={form.property_id || ''} onValueChange={v => {
@@ -499,6 +505,27 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
               <Input type="date" value={form.date} onChange={e => setF('date', e.target.value)} />
             </div>
           </div>}
+
+          {/* Ressarcível — apenas para despesa */}
+          {!isReceita && !isTransferencia && (
+            <div className="border border-gray-200 rounded-xl p-4 space-y-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={!!form.is_ressarcivel}
+                  onChange={e => setF('is_ressarcivel', e.target.checked)}
+                  className="rounded" />
+                <span className="text-sm font-semibold text-gray-700">Despesa Ressarcível</span>
+              </label>
+              {form.is_ressarcivel && (
+                <div>
+                  <Label>Status do Ressarcimento</Label>
+                  <Select value={form.ressarcimento_status} onValueChange={v => setF('ressarcimento_status', v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{RESSARCIMENTO_STATUS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Payment type toggle — only for receita and new records */}
           {isReceita && !editing && !isTransferencia && (

@@ -89,6 +89,21 @@
       "type": "number",
       "description": "N\u00famero da vers\u00e3o atual",
       "default": 1
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "financeiro",
+        "licenca",
+        "contrato"
+      ],
+      "default": "manual",
+      "description": "Origem do documento \u2014 criado manualmente ou espelhado automaticamente de outro m\u00f3dulo"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "ID do registro de origem no m\u00f3dulo que gerou o espelhamento (expense_id, license_id etc.)"
     }
   },
   "required": [

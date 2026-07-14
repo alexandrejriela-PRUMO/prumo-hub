@@ -12,6 +12,7 @@ import {
   Image as ImageIcon, Plus, Search, UserPlus, Loader2, Layers, Calendar, ArrowLeftRight, Repeat
 } from 'lucide-react';
 import SupabaseFileUpload from '@/components/storage/SupabaseFileUpload';
+import { DOCUMENT_TYPES } from '@/components/documents/documentConstants';
 import { format, addMonths, addDays, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -79,6 +80,11 @@ const EMPTY_BASE = {
   recorrencia_frequencia: 'mensal',
   recorrencia_total_parcelas: 2,
   recorrencia_data_fim: '',
+  // espelhamento de comprovantes no módulo de Documentos
+  espelhar_documentos: false,
+  documento_tipo_espelho: 'Comprovante de Pagamento',
+  documento_property_id: '',
+  documento_validade: '',
 };
 
 function buildInstallments(total, count, firstDate, defaultAccountId, defaultAccountName, defaultMethod) {
@@ -395,12 +401,29 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
           installment_due_date: null,
           installment_received_date: null,
         };
+        let expenseId = editing?.id || null;
         if (editing) {
           await base44.functions.invoke('manageExpense', { action: 'update', id: editing.id, data: payload });
           toast.success('Transação atualizada!');
         } else {
-          await base44.functions.invoke('manageExpense', { action: 'create', data: payload });
+          const createRes = await base44.functions.invoke('manageExpense', { action: 'create', data: payload });
+          expenseId = createRes.data?.id || null;
           toast.success('Transação registrada!');
+        }
+
+        if (!editing && form.espelhar_documentos && expenseId && form.attachments.length > 0) {
+          for (const att of form.attachments) {
+            await base44.functions.invoke('createFinancialDocument', {
+              expense_id: expenseId,
+              file_url: att.url,
+              document_type: form.documento_tipo_espelho,
+              property_id: form.documento_property_id || form.property_id || '',
+              document_name: att.name,
+              expiry_date: form.documento_validade || null,
+            });
+          }
+          toast.success(`${form.attachments.length} comprovante(s) espelhado(s) em Documentos!`);
+          qc.invalidateQueries(['documents']);
         }
       }
       qc.invalidateQueries(['fin-data']);
@@ -889,6 +912,53 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
                   label="Anexar comprovante"
                 />
               </div>
+
+              {/* Espelhamento no módulo de Documentos — apenas para lançamentos novos com comprovante anexado */}
+              {!editing && form.attachments.length > 0 && (
+                <div className="border border-gray-200 rounded-xl p-4 space-y-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={!!form.espelhar_documentos}
+                      onChange={e => {
+                        const checked = e.target.checked;
+                        setForm(p => ({
+                          ...p,
+                          espelhar_documentos: checked,
+                          documento_property_id: checked ? (p.documento_property_id || p.property_id || '') : p.documento_property_id,
+                        }));
+                      }}
+                      className="rounded" />
+                    <span className="text-sm font-semibold text-gray-700">Espelhar no módulo de Documentos</span>
+                  </label>
+                  {form.espelhar_documentos && (
+                    <div className="space-y-3">
+                      <div>
+                        <Label className="text-xs">Tipo de Documento</Label>
+                        <Select value={form.documento_tipo_espelho} onValueChange={v => setF('documento_tipo_espelho', v)}>
+                          <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                          <SelectContent>{DOCUMENT_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Propriedade Vinculada <span className="text-gray-400 font-normal">(opcional)</span></Label>
+                        <Select value={form.documento_property_id || ''} onValueChange={v => setF('documento_property_id', v || '')}>
+                          <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Sem propriedade específica" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={null}>Sem propriedade específica</SelectItem>
+                            {properties.filter(p => !p.is_client_only).map(p => <SelectItem key={p.id} value={p.id}>{p.property_name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Data de Validade <span className="text-gray-400 font-normal">(opcional)</span></Label>
+                        <Input type="date" value={form.documento_validade} onChange={e => setF('documento_validade', e.target.value)} />
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        {form.attachments.length === 1 ? 'O comprovante anexado' : `Os ${form.attachments.length} comprovantes anexados`} será{form.attachments.length === 1 ? '' : 'ão'} copiado{form.attachments.length === 1 ? '' : 's'} para o módulo de Documentos ao salvar.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div><Label>Observações</Label><Input value={form.notes} onChange={e => setF('notes', e.target.value)} placeholder="Notas adicionais"/></div>
             </>

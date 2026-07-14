@@ -153,6 +153,19 @@
       "format": "date",
       "description": "Data limite para geração de lançamentos recorrentes"
     },
+    "espelhar_documentos": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se os comprovantes anexados devem ser espelhados no módulo de Documentos"
+    },
+    "document_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "IDs dos Documents criados como espelho dos comprovantes desta despesa"
+    },
     "attachments": {
       "type": "array",
       "items": {

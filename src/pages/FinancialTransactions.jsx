@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import {
   TrendingUp, TrendingDown, ArrowLeftRight, Download, Search,
-  ChevronUp, ChevronDown, Plus, Pencil, Trash2, Banknote, Paperclip, FileText, MoveRight, Repeat, Layers
+  ChevronUp, ChevronDown, Plus, Pencil, Trash2, Banknote, Paperclip, FileText, MoveRight, Repeat, Layers, FileCheck
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
@@ -181,6 +181,7 @@ export default function FinancialTransactions() {
         recorrenciaParcelaAtual: e.recorrencia_parcela_atual || null,
         recorrenciaTotalParcelas: e.recorrencia_total_parcelas || null,
         recorrenciaGrupoId: e.recorrencia_grupo_id || null,
+        documentIds: e.document_ids || [],
         editable: true,
         raw: e,
         isInstallment,
@@ -460,6 +461,16 @@ export default function FinancialTransactions() {
                         <span title={`${t.raw.attachments.length} anexo(s)`} className="flex items-center gap-0.5 text-xs text-blue-500">
                           <Paperclip className="w-3 h-3"/>{t.raw.attachments.length}
                         </span>
+                      )}
+                      {t.documentIds?.length > 0 && (
+                        <button
+                          type="button"
+                          title="Ver comprovante espelhado no módulo de Documentos"
+                          onClick={() => window.open(t.raw?.attachments?.[0]?.url, '_blank', 'noopener,noreferrer')}
+                          className="flex items-center gap-0.5 text-xs text-emerald-600 hover:text-emerald-800 hover:underline"
+                        >
+                          <FileCheck className="w-3 h-3"/>No Docs
+                        </button>
                       )}
                       {t.editable && <>
                         <button onClick={()=>handleOpen(t.raw)} className="p-1 hover:bg-gray-100 rounded"><Pencil className="w-3.5 h-3.5 text-gray-400"/></button>

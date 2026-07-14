@@ -165,6 +165,15 @@ const equipeNavItems = [
     ]
   },
   {
+    name: 'Controle Financeiro',
+    icon: Wallet,
+    children: [
+      { name: 'Painel Financeiro', page: 'FinancialDashboard', icon: BarChart3 },
+      { name: 'Transações Consolidadas', page: 'FinancialTransactions', icon: ReceiptText },
+      { name: 'Gateway de Cobrança', page: 'ConsultantPayments', icon: Wallet },
+    ]
+  },
+  {
     name: 'Central da Propriedade',
     icon: Building,
     children: [
@@ -197,15 +206,6 @@ const equipeNavItems = [
       { name: 'Cotas de Reserva Ambiental', page: 'EnvironmentalAssets', icon: Leaf },
       { name: 'Servidão Ambiental', page: 'EnvironmentalEasements', icon: Shield },
       { name: 'ESG para o Agro', page: 'ESGAgro', icon: TrendingUp },
-    ]
-  },
-  {
-    name: 'Controle Financeiro',
-    icon: Wallet,
-    children: [
-      { name: 'Painel Financeiro', page: 'FinancialDashboard', icon: BarChart3 },
-      { name: 'Transações Consolidadas', page: 'FinancialTransactions', icon: ReceiptText },
-      { name: 'Gateway de Cobrança', page: 'ConsultantPayments', icon: Wallet },
     ]
   },
   {

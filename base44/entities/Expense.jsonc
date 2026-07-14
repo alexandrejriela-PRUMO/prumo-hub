@@ -117,6 +117,42 @@
       "type": "string",
       "format": "date"
     },
+    "recorrencia_tipo": {
+      "type": "string",
+      "enum": [
+        "unica",
+        "parcelada",
+        "recorrente"
+      ],
+      "default": "unica"
+    },
+    "recorrencia_frequencia": {
+      "type": "string",
+      "enum": [
+        "semanal",
+        "quinzenal",
+        "mensal",
+        "bimestral",
+        "trimestral",
+        "semestral",
+        "anual"
+      ]
+    },
+    "recorrencia_total_parcelas": {
+      "type": "number"
+    },
+    "recorrencia_parcela_atual": {
+      "type": "number"
+    },
+    "recorrencia_grupo_id": {
+      "type": "string",
+      "description": "ID compartilhado entre todos os lançamentos gerados a partir do mesmo parcelamento/recorrência"
+    },
+    "recorrencia_data_fim": {
+      "type": "string",
+      "format": "date",
+      "description": "Data limite para geração de lançamentos recorrentes"
+    },
     "attachments": {
       "type": "array",
       "items": {

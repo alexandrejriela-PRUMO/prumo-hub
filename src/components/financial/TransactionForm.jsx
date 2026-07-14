@@ -9,16 +9,53 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import {
   TrendingUp, TrendingDown, X, FileText,
-  Image as ImageIcon, Plus, Search, UserPlus, Loader2, Layers, Calendar, ArrowLeftRight
+  Image as ImageIcon, Plus, Search, UserPlus, Loader2, Layers, Calendar, ArrowLeftRight, Repeat
 } from 'lucide-react';
 import SupabaseFileUpload from '@/components/storage/SupabaseFileUpload';
-import { format, addMonths, parseISO } from 'date-fns';
+import { format, addMonths, addDays, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 
 const EXPENSE_CATEGORIES = ['Aluguel / Escritório','Salários / Pró-labore','Marketing / Publicidade','Tecnologia / Software','Deslocamento / Combustível','Equipamentos','Impostos / Taxas','Serviços de Terceiros','Materiais de Escritório','Treinamento / Cursos','Outros'];
 const INCOME_CATEGORIES  = ['Cobrança de Cliente (Manual)','Outros Serviços Prestados','Outros'];
 const PAYMENT_METHODS    = ['Boleto','PIX','Cartão de Crédito','Cartão de Débito','Transferência','Dinheiro','Outro'];
 const RESSARCIMENTO_STATUS = ['A Solicitar','Solicitado ao Cliente','Recebido','Não será ressarcido'];
+
+const FREQUENCIAS = [
+  { value: 'semanal',    label: 'Semanal' },
+  { value: 'quinzenal',  label: 'Quinzenal' },
+  { value: 'mensal',     label: 'Mensal' },
+  { value: 'bimestral',  label: 'Bimestral' },
+  { value: 'trimestral', label: 'Trimestral' },
+  { value: 'semestral',  label: 'Semestral' },
+  { value: 'anual',      label: 'Anual' },
+];
+const FREQ_MESES = { mensal: 1, bimestral: 2, trimestral: 3, semestral: 6, anual: 12 };
+// Nº de ocorrências que cobrem no mínimo 12 meses, usado quando não há data de encerramento
+const FREQ_OCORRENCIAS_MIN_12_MESES = { semanal: 52, quinzenal: 26, mensal: 12, bimestral: 6, trimestral: 4, semestral: 2, anual: 1 };
+const MAX_OCORRENCIAS_RECORRENTES = 260;
+
+function addFrequencia(date, frequencia, n) {
+  if (frequencia === 'semanal') return addDays(date, 7 * n);
+  if (frequencia === 'quinzenal') return addDays(date, 15 * n);
+  return addMonths(date, (FREQ_MESES[frequencia] || 1) * n);
+}
+
+function buildRecorrenciaDates(startDateStr, frequencia, endDateStr) {
+  const start = parseISO(startDateStr);
+  const dates = [];
+  if (endDateStr) {
+    const end = parseISO(endDateStr);
+    for (let i = 0; i < MAX_OCORRENCIAS_RECORRENTES; i++) {
+      const d = addFrequencia(start, frequencia, i);
+      if (d > end) break;
+      dates.push(d);
+    }
+  } else {
+    const count = FREQ_OCORRENCIAS_MIN_12_MESES[frequencia] || 12;
+    for (let i = 0; i < count; i++) dates.push(addFrequencia(start, frequencia, i));
+  }
+  return dates;
+}
 
 const EMPTY_BASE = {
   transaction_type: 'receita', description: '', date: '',
@@ -37,6 +74,11 @@ const EMPTY_BASE = {
   // ressarcimento (despesa)
   is_ressarcivel: false,
   ressarcimento_status: 'A Solicitar',
+  // recorrência (despesa)
+  recorrencia_tipo: 'unica', // 'unica' | 'parcelada' | 'recorrente'
+  recorrencia_frequencia: 'mensal',
+  recorrencia_total_parcelas: 2,
+  recorrencia_data_fim: '',
 };
 
 function buildInstallments(total, count, firstDate, defaultAccountId, defaultAccountName, defaultMethod) {
@@ -107,6 +149,9 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
   const isReceita = form.transaction_type === 'receita';
   const isTransferencia = form.transaction_type === 'transferencia';
   const isParcelado = form.payment_type === 'parcelado' && isReceita;
+  // Recorrência (parcelamento/recorrência de despesa) só se aplica a lançamentos novos
+  const isDespesaParcelada = !isReceita && !isTransferencia && !editing && form.recorrencia_tipo === 'parcelada';
+  const isDespesaRecorrente = !isReceita && !isTransferencia && !editing && form.recorrencia_tipo === 'recorrente';
 
   useEffect(() => {
     if (open) {
@@ -257,6 +302,81 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
         }));
         await base44.functions.invoke('manageExpense', { action: 'bulkCreate', records });
         toast.success(`${count} parcelas registradas!`);
+      } else if (isDespesaParcelada) {
+        if (!form.amount || parseFloat(form.amount) <= 0) { toast.error('Informe o valor total.'); setSaving(false); return; }
+        const count = parseInt(form.recorrencia_total_parcelas) || 2;
+        const totalAmount = parseFloat(form.amount) || 0;
+        const perParcela = count > 0 ? parseFloat((totalAmount / count).toFixed(2)) : 0;
+        const groupId = crypto.randomUUID();
+        const baseDate = parseISO(form.date);
+        const records = Array.from({ length: count }, (_, i) => {
+          const dateStr = format(addMonths(baseDate, i), 'yyyy-MM-dd');
+          return {
+            consultor_email: consultorEmail,
+            transaction_type: 'despesa',
+            description: `${form.description} (${i + 1}/${count})`,
+            amount: perParcela,
+            date: dateStr,
+            competencia: dateStr.substring(0, 7),
+            category: form.category,
+            account_id: form.account_id || '',
+            account_name: form.account_name || '',
+            client_name: clientName,
+            client_property_id: form.client_property_id || '',
+            property_id: form.property_id || '',
+            property_name: form.property_name || '',
+            is_stripe: false,
+            status: i === 0 ? form.status : 'Pendente',
+            payment_method: form.payment_method,
+            notes: form.notes || '',
+            attachments: i === 0 ? (form.attachments || []) : [],
+            is_ressarcivel: form.is_ressarcivel,
+            ressarcimento_status: form.ressarcimento_status,
+            recorrencia_tipo: 'parcelada',
+            recorrencia_total_parcelas: count,
+            recorrencia_parcela_atual: i + 1,
+            recorrencia_grupo_id: groupId,
+          };
+        });
+        await base44.functions.invoke('manageExpense', { action: 'bulkCreate', records });
+        toast.success(`${count} parcelas registradas!`);
+      } else if (isDespesaRecorrente) {
+        if (!form.amount || parseFloat(form.amount) <= 0) { toast.error('Informe o valor.'); setSaving(false); return; }
+        const frequencia = form.recorrencia_frequencia || 'mensal';
+        const dates = buildRecorrenciaDates(form.date, frequencia, form.recorrencia_data_fim || null);
+        const groupId = crypto.randomUUID();
+        const valor = parseFloat(form.amount) || 0;
+        const records = dates.map((d, i) => {
+          const dateStr = format(d, 'yyyy-MM-dd');
+          return {
+            consultor_email: consultorEmail,
+            transaction_type: 'despesa',
+            description: form.description,
+            amount: valor,
+            date: dateStr,
+            competencia: dateStr.substring(0, 7),
+            category: form.category,
+            account_id: form.account_id || '',
+            account_name: form.account_name || '',
+            client_name: clientName,
+            client_property_id: form.client_property_id || '',
+            property_id: form.property_id || '',
+            property_name: form.property_name || '',
+            is_stripe: false,
+            status: i === 0 ? form.status : 'Pendente',
+            payment_method: form.payment_method,
+            notes: form.notes || '',
+            attachments: i === 0 ? (form.attachments || []) : [],
+            is_ressarcivel: form.is_ressarcivel,
+            ressarcimento_status: form.ressarcimento_status,
+            recorrencia_tipo: 'recorrente',
+            recorrencia_frequencia: frequencia,
+            recorrencia_data_fim: form.recorrencia_data_fim || null,
+            recorrencia_grupo_id: groupId,
+          };
+        });
+        await base44.functions.invoke('manageExpense', { action: 'bulkCreate', records });
+        toast.success(`${dates.length} lançamentos recorrentes registrados!`);
       } else {
         if (!form.amount || parseFloat(form.amount) <= 0) { toast.error('Informe o valor.'); setSaving(false); return; }
         const payload = {
@@ -501,7 +621,7 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
               </Select>
             </div>
             <div>
-              <Label>{isParcelado ? 'Data da 1ª Parcela' : 'Data *'}</Label>
+              <Label>{isParcelado || isDespesaParcelada ? 'Data da 1ª Parcela' : isDespesaRecorrente ? 'Data da 1ª Ocorrência' : 'Data *'}</Label>
               <Input type="date" value={form.date} onChange={e => setF('date', e.target.value)} />
             </div>
           </div>}
@@ -524,6 +644,59 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
                   </Select>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Tipo de Lançamento — apenas para despesa nova */}
+          {!isReceita && !isTransferencia && !editing && (
+            <div>
+              <Label className="mb-2 block">Tipo de Lançamento</Label>
+              <div className="flex gap-2">
+                <button onClick={() => setF('recorrencia_tipo', 'unica')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium border-2 transition-all ${form.recorrencia_tipo === 'unica' ? 'bg-blue-50 border-blue-400 text-blue-700' : 'bg-white border-gray-200 text-gray-500'}`}>
+                  Único
+                </button>
+                <button onClick={() => setF('recorrencia_tipo', 'parcelada')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium border-2 transition-all ${isDespesaParcelada ? 'bg-amber-50 border-amber-400 text-amber-700' : 'bg-white border-gray-200 text-gray-500'}`}>
+                  <Layers className="w-4 h-4" />Parcelado
+                </button>
+                <button onClick={() => setF('recorrencia_tipo', 'recorrente')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium border-2 transition-all ${isDespesaRecorrente ? 'bg-purple-50 border-purple-400 text-purple-700' : 'bg-white border-gray-200 text-gray-500'}`}>
+                  <Repeat className="w-4 h-4" />Recorrente
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Parcelado (despesa) config */}
+          {isDespesaParcelada && (
+            <div className="border border-amber-200 bg-amber-50/40 rounded-xl p-4 space-y-2">
+              <Label className="text-xs">Número de Parcelas</Label>
+              <Input type="number" min={2} max={60} value={form.recorrencia_total_parcelas}
+                onChange={e => setF('recorrencia_total_parcelas', parseInt(e.target.value) || 2)} />
+              <p className="text-xs text-amber-800">
+                Serão criados {parseInt(form.recorrencia_total_parcelas) || 2} lançamentos mensais, a partir da data informada, dividindo o valor total igualmente entre eles.
+              </p>
+            </div>
+          )}
+
+          {/* Recorrente (despesa) config */}
+          {isDespesaRecorrente && (
+            <div className="border border-purple-200 bg-purple-50/40 rounded-xl p-4 space-y-3">
+              <div>
+                <Label className="text-xs">Frequência</Label>
+                <Select value={form.recorrencia_frequencia} onValueChange={v => setF('recorrencia_frequencia', v)}>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>{FREQUENCIAS.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Data de Encerramento <span className="text-gray-400 font-normal">(opcional — sem data, gera no mínimo 12 meses)</span></Label>
+                <Input type="date" value={form.recorrencia_data_fim} onChange={e => setF('recorrencia_data_fim', e.target.value)} />
+              </div>
+              <p className="text-xs text-purple-800">
+                Serão criados lançamentos com o mesmo valor e descrição, repetidos conforme a frequência escolhida, a partir da data informada.
+              </p>
             </div>
           )}
 
@@ -657,7 +830,7 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
           {!isParcelado && !isTransferencia && (
             <>
               <div className="grid grid-cols-2 gap-4">
-                <div><Label>Valor (R$) *</Label><Input type="number" step="0.01" value={form.amount} onChange={e => setF('amount', e.target.value)} placeholder="0,00" /></div>
+                <div><Label>{isDespesaParcelada ? 'Valor Total (R$) *' : 'Valor (R$) *'}</Label><Input type="number" step="0.01" value={form.amount} onChange={e => setF('amount', e.target.value)} placeholder="0,00" /></div>
                 <div>
                   <Label>Status</Label>
                   <Select value={form.status} onValueChange={v => setF('status', v)}>
@@ -729,7 +902,7 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="outline" onClick={handleClose}>Cancelar</Button>
             <Button className={`${isTransferencia ? 'bg-blue-600 hover:bg-blue-700' : 'bg-emerald-600 hover:bg-emerald-700'}`} onClick={handleSubmit} disabled={saving}>
-              {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-1"/>Salvando...</> : isTransferencia ? 'Registrar Transferência' : isParcelado ? `Registrar ${form.num_installments} Parcelas` : 'Salvar'}
+              {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-1"/>Salvando...</> : isTransferencia ? 'Registrar Transferência' : isParcelado ? `Registrar ${form.num_installments} Parcelas` : isDespesaParcelada ? `Registrar ${parseInt(form.recorrencia_total_parcelas) || 2} Parcelas` : isDespesaRecorrente ? 'Registrar Recorrência' : 'Salvar'}
             </Button>
           </div>
         </div>

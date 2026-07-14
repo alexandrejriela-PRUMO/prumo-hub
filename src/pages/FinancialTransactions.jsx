@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import {
   TrendingUp, TrendingDown, ArrowLeftRight, Download, Search,
-  ChevronUp, ChevronDown, Plus, Pencil, Trash2, Banknote, Paperclip, FileText, MoveRight, Repeat
+  ChevronUp, ChevronDown, Plus, Pencil, Trash2, Banknote, Paperclip, FileText, MoveRight, Repeat, Layers
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
@@ -30,6 +30,12 @@ const RESSARC_BADGES = {
   'Recebido':              'bg-emerald-100 text-emerald-700',
   'Não será ressarcido':   'bg-red-100 text-red-500',
 };
+
+const RECORRENCIA_TIPO_OPTIONS = [
+  { value: 'unica',      label: 'Único' },
+  { value: 'parcelada',  label: 'Parcelado' },
+  { value: 'recorrente', label: 'Recorrente' },
+];
 
 function normalizeStatus(s) {
   if (!s) return 'Pendente';
@@ -53,6 +59,7 @@ export default function FinancialTransactions() {
   const [filterProperty,setFilterProperty]= useState('');
   const [filterRessarcStatus, setFilterRessarcStatus] = useState('');
   const [onlyRessarcivel, setOnlyRessarcivel] = useState(false);
+  const [filterRecorrenciaTipo, setFilterRecorrenciaTipo] = useState('');
   const [search,       setSearch]       = useState('');
   const [sortField,    setSortField]    = useState('date');
   const [sortDir,      setSortDir]      = useState('desc');
@@ -91,9 +98,24 @@ export default function FinancialTransactions() {
     onSuccess: () => { qc.invalidateQueries(['fin-data']); toast.success('Transação removida!'); },
   });
 
+  const deleteGroupMutation = useMutation({
+    mutationFn: (groupId) => base44.functions.invoke('manageExpense', { action: 'deleteGroup', groupId }),
+    onSuccess: () => { qc.invalidateQueries(['fin-data']); toast.success('Lançamentos do grupo removidos!'); },
+  });
+
   const handleOpen = (entry = null) => {
     setEditing(entry || null);
     setShowForm(true);
+  };
+
+  const handleDelete = (t) => {
+    if (t.recorrenciaGrupoId) {
+      const deleteAll = confirm('Este lançamento faz parte de um grupo de parcelas/recorrência.\n\nOK = excluir TODOS os lançamentos do grupo\nCancelar = escolher excluir apenas este lançamento');
+      if (deleteAll) { deleteGroupMutation.mutate(t.recorrenciaGrupoId); return; }
+      if (confirm('Excluir apenas este lançamento?')) deleteMutation.mutate(t.raw.id);
+      return;
+    }
+    if (confirm('Remover?')) deleteMutation.mutate(t.raw.id);
   };
 
   const allTransactions = useMemo(() => {
@@ -119,6 +141,10 @@ export default function FinancialTransactions() {
         propertyName: c.property_id ? (propertyMap[c.property_id]?.property_name || null) : null,
         isRessarcivel: false,
         ressarcimentoStatus: null,
+        recorrenciaTipo: 'unica',
+        recorrenciaParcelaAtual: null,
+        recorrenciaTotalParcelas: null,
+        recorrenciaGrupoId: null,
         editable: false,
         raw: c,
         isInstallment: false,
@@ -151,6 +177,10 @@ export default function FinancialTransactions() {
         propertyName: e.property_name || null,
         isRessarcivel: !!e.is_ressarcivel,
         ressarcimentoStatus: e.ressarcimento_status || null,
+        recorrenciaTipo: e.recorrencia_tipo || 'unica',
+        recorrenciaParcelaAtual: e.recorrencia_parcela_atual || null,
+        recorrenciaTotalParcelas: e.recorrencia_total_parcelas || null,
+        recorrenciaGrupoId: e.recorrencia_grupo_id || null,
         editable: true,
         raw: e,
         isInstallment,
@@ -192,9 +222,10 @@ export default function FinancialTransactions() {
     const matchProperty = !filterProperty || t.propertyId===filterProperty;
     const matchRessarcStatus = !filterRessarcStatus || t.ressarcimentoStatus===filterRessarcStatus;
     const matchOnlyRessarc = !onlyRessarcivel || t.isRessarcivel===true;
+    const matchRecorrenciaTipo = !filterRecorrenciaTipo || t.recorrenciaTipo===filterRecorrenciaTipo;
     const matchSearch = !search || t.description?.toLowerCase().includes(search.toLowerCase()) || t.client?.toLowerCase().includes(search.toLowerCase());
-    return matchMonth&&matchType&&matchClient&&matchStatus&&matchAccount&&matchProperty&&matchRessarcStatus&&matchOnlyRessarc&&matchSearch;
-  }), [allTransactions,filterMonth,filterType,filterClient,filterStatus,filterAccount,filterProperty,filterRessarcStatus,onlyRessarcivel,search]);
+    return matchMonth&&matchType&&matchClient&&matchStatus&&matchAccount&&matchProperty&&matchRessarcStatus&&matchOnlyRessarc&&matchRecorrenciaTipo&&matchSearch;
+  }), [allTransactions,filterMonth,filterType,filterClient,filterStatus,filterAccount,filterProperty,filterRessarcStatus,onlyRessarcivel,filterRecorrenciaTipo,search]);
 
   const sorted = useMemo(()=>[...filtered].sort((a,b)=>{
     let va=a[sortField],vb=b[sortField];
@@ -330,6 +361,10 @@ export default function FinancialTransactions() {
             <Select value={filterRessarcStatus || '__all__'} onValueChange={v => setFilterRessarcStatus(v === '__all__' ? '' : v)}><SelectTrigger className="w-48"><SelectValue placeholder="Todos"/></SelectTrigger>
               <SelectContent><SelectItem value="__all__">Todos</SelectItem>{RESSARC_STATUS_OPTIONS.map(s=><SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
             </Select></div>
+          <div><Label className="text-xs">Tipo de Lançamento</Label>
+            <Select value={filterRecorrenciaTipo || '__all__'} onValueChange={v => setFilterRecorrenciaTipo(v === '__all__' ? '' : v)}><SelectTrigger className="w-40"><SelectValue placeholder="Todos"/></SelectTrigger>
+              <SelectContent><SelectItem value="__all__">Todos</SelectItem>{RECORRENCIA_TIPO_OPTIONS.map(o=><SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+            </Select></div>
           <div className="flex flex-col gap-1">
             <Label className="text-xs">&nbsp;</Label>
             <Button
@@ -344,8 +379,8 @@ export default function FinancialTransactions() {
             <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"/>
               <Input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Descrição ou cliente..." className="pl-9"/>
             </div></div>
-          {(filterType||filterClient||filterStatus||filterAccount||filterProperty||filterRessarcStatus||onlyRessarcivel||search) && (
-            <Button variant="outline" size="sm" onClick={()=>{setFilterType('');setFilterClient('');setFilterStatus('');setFilterAccount('');setFilterProperty('');setFilterRessarcStatus('');setOnlyRessarcivel(false);setSearch('');}}>Limpar</Button>
+          {(filterType||filterClient||filterStatus||filterAccount||filterProperty||filterRessarcStatus||onlyRessarcivel||filterRecorrenciaTipo||search) && (
+            <Button variant="outline" size="sm" onClick={()=>{setFilterType('');setFilterClient('');setFilterStatus('');setFilterAccount('');setFilterProperty('');setFilterRessarcStatus('');setOnlyRessarcivel(false);setFilterRecorrenciaTipo('');setSearch('');}}>Limpar</Button>
           )}
         </div>
         <p className="text-xs text-gray-400 mt-2">{sorted.length} transaç{sorted.length!==1?'ões':'ão'} encontrada{sorted.length!==1?'s':''}</p>
@@ -366,12 +401,13 @@ export default function FinancialTransactions() {
                 <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={()=>toggleSort('amount')}>Valor <SortIcon field="amount" sortField={sortField} sortDir={sortDir}/></th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Ressarcível</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Recorrência</th>
                 <th className="px-4 py-3 w-16"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {sorted.length===0?(
-                <tr><td colSpan={10} className="text-center py-12 text-gray-400">
+                <tr><td colSpan={11} className="text-center py-12 text-gray-400">
                   <ArrowLeftRight className="w-10 h-10 mx-auto mb-2 opacity-20"/>
                   <p>Nenhuma transação encontrada.</p>
                   <Button className="mt-3 bg-emerald-600 hover:bg-emerald-700" size="sm" onClick={()=>handleOpen()}><Plus className="w-3.5 h-3.5 mr-1"/>Adicionar</Button>
@@ -408,6 +444,17 @@ export default function FinancialTransactions() {
                     ) : <span className="text-gray-300 text-xs">—</span>}
                   </td>
                   <td className="px-4 py-3">
+                    {t.recorrenciaTipo === 'parcelada' ? (
+                      <Badge className="bg-amber-100 text-amber-700 border-0 text-xs gap-1 inline-flex items-center">
+                        <Layers className="w-3 h-3"/>{t.recorrenciaParcelaAtual}/{t.recorrenciaTotalParcelas}
+                      </Badge>
+                    ) : t.recorrenciaTipo === 'recorrente' ? (
+                      <Badge className="bg-purple-100 text-purple-700 border-0 text-xs gap-1 inline-flex items-center">
+                        <Repeat className="w-3 h-3"/>Recorrente
+                      </Badge>
+                    ) : <span className="text-gray-300 text-xs">—</span>}
+                  </td>
+                  <td className="px-4 py-3">
                     <div className="flex gap-1 items-center">
                       {t.raw?.attachments?.length > 0 && (
                         <span title={`${t.raw.attachments.length} anexo(s)`} className="flex items-center gap-0.5 text-xs text-blue-500">
@@ -416,7 +463,7 @@ export default function FinancialTransactions() {
                       )}
                       {t.editable && <>
                         <button onClick={()=>handleOpen(t.raw)} className="p-1 hover:bg-gray-100 rounded"><Pencil className="w-3.5 h-3.5 text-gray-400"/></button>
-                        <button onClick={()=>{if(confirm('Remover?'))deleteMutation.mutate(t.raw.id);}} className="p-1 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5 text-red-400"/></button>
+                        <button onClick={()=>handleDelete(t)} className="p-1 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5 text-red-400"/></button>
                       </>}
                     </div>
                   </td>
@@ -434,7 +481,7 @@ export default function FinancialTransactions() {
                       <span className={`text-sm font-bold ${resultado>=0?'text-blue-700':'text-orange-600'}`}>{fmt(resultado)}</span>
                     </div>
                   </td>
-                  <td/><td/><td/>
+                  <td/><td/><td/><td/>
                 </tr>
               </tfoot>
             )}

@@ -11,6 +11,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
  *   - update: atualiza um Expense existente
  *   - delete: exclui um Expense
  *   - bulkCreate: cria múltiplos Expenses (para parcelamentos)
+ *   - deleteGroup: exclui todos os Expenses de um recorrencia_grupo_id (parcelamento/recorrência)
  */
 Deno.serve(async (req) => {
   try {
@@ -19,7 +20,7 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
-    const { action, data, id, records } = body;
+    const { action, data, id, records, groupId } = body;
 
     // Determinar o email efetivo do consultor
     let consultorEmail = user.email;
@@ -61,7 +62,16 @@ Deno.serve(async (req) => {
       return Response.json({ success: true });
     }
 
-    return Response.json({ error: 'Ação inválida. Use: create, update, delete, bulkCreate' }, { status: 400 });
+    if (action === 'deleteGroup') {
+      const group = await base44.asServiceRole.entities.Expense.filter({
+        recorrencia_grupo_id: groupId,
+        consultor_email: consultorEmail,
+      });
+      await Promise.all(group.map(e => base44.asServiceRole.entities.Expense.delete(e.id)));
+      return Response.json({ success: true, count: group.length });
+    }
+
+    return Response.json({ error: 'Ação inválida. Use: create, update, delete, bulkCreate, deleteGroup' }, { status: 400 });
   } catch (error) {
     console.error('[manageExpense] Erro:', error.message);
     return Response.json({ error: error.message }, { status: 500 });

@@ -12,9 +12,11 @@ import {
   TreeDeciduous,
   PanelLeft,
   X,
+  AlertCircle,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import RuteAvatar from '../components/RuteAvatar';
 import ConversationSidebar from '../components/rute/ConversationSidebar';
 import { Building2, TreePine, Wallet, BarChart3, ClipboardList } from 'lucide-react';
@@ -38,7 +40,12 @@ export default function ChatRute() {
   const [loading, setLoading] = useState(false);
   const [listLoading, setListLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [error, setError] = useState(null);
   const scrollRef = useRef(null);
+  // Store full conversation object for addMessage (SDK requires it)
+  const conversationRef = useRef(null);
+  // Track loading timeout
+  const loadingTimeoutRef = useRef(null);
 
   const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
@@ -51,7 +58,6 @@ export default function ChatRute() {
     setListLoading(true);
     try {
       const list = await base44.agents.listConversations({ agent_name: AGENT_NAME });
-      // Ordenar por última atualização (mais recente primeiro)
       const sorted = (list || []).filter(c => !c.metadata?.deleted).sort((a, b) => {
         const da = new Date(a.updated_date || a.created_date || 0).getTime();
         const db = new Date(b.updated_date || b.created_date || 0).getTime();
@@ -74,6 +80,20 @@ export default function ChatRute() {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  // Clear loading after timeout (fallback if subscription misses)
+  const startLoadingTimeout = useCallback(() => {
+    if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
+    loadingTimeoutRef.current = setTimeout(() => {
+      setLoading(false);
+    }, 60000); // 60s fallback
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
+    };
+  }, []);
+
   // Subscribe to active conversation updates
   useEffect(() => {
     if (!activeConversationId) {
@@ -82,10 +102,10 @@ export default function ChatRute() {
     }
     const unsubscribe = base44.agents.subscribeToConversation(activeConversationId, (data) => {
       setMessages(data.messages || []);
-      // Stop loading when we get assistant response
       const lastMsg = data.messages?.[data.messages.length - 1];
       if (lastMsg && lastMsg.role === 'assistant' && lastMsg.content) {
         setLoading(false);
+        if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
       }
     });
     return () => {
@@ -95,48 +115,51 @@ export default function ChatRute() {
 
   const handleNewConversation = useCallback(async (firstMessage) => {
     setLoading(true);
+    setError(null);
+    startLoadingTimeout();
     try {
       const title = firstMessage.length > 45 ? firstMessage.substring(0, 45) + '...' : firstMessage;
       const conv = await base44.agents.createConversation({
         agent_name: AGENT_NAME,
         metadata: { name: title, description: title },
       });
-      await base44.agents.addMessage(conv, { role: 'user', content: firstMessage });
+      conversationRef.current = conv;
       setActiveConversationId(conv.id);
       setSidebarOpen(false);
-      // Refresh conversation list
+      // Add message after setting active conversation (subscription will be ready)
+      await base44.agents.addMessage(conv, { role: 'user', content: firstMessage });
       loadConversations();
     } catch (err) {
       console.error('[ChatRute] Erro ao criar conversa:', err);
+      setError('Não foi possível iniciar a conversa. Tente novamente.');
+      toast.error('Erro ao iniciar conversa com a RUTE.');
       setLoading(false);
+      if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
     }
-  }, [loadConversations]);
+  }, [loadConversations, startLoadingTimeout]);
 
   const handleSelectConversation = useCallback(async (convId) => {
     setSidebarOpen(false);
     if (convId === activeConversationId) return;
     setActiveConversationId(convId);
-    setLoading(true);
+    setLoading(false);
+    setError(null);
     try {
       const conv = await base44.agents.getConversation(convId);
+      conversationRef.current = conv;
       setMessages(conv.messages || []);
-      // Check if last message is from user (agent still responding)
-      const lastMsg = conv.messages?.[conv.messages.length - 1];
-      if (lastMsg && lastMsg.role === 'assistant' && lastMsg.content) {
-        setLoading(false);
-      }
     } catch (err) {
       console.error('[ChatRute] Erro ao carregar conversa:', err);
-      setLoading(false);
+      setError('Não foi possível carregar esta conversa.');
     }
   }, [activeConversationId]);
 
   const handleDeleteConversation = useCallback(async (convId) => {
-    // SDK não expõe delete direto; removemos do estado local
     setConversations(prev => prev.filter(c => c.id !== convId));
     if (convId === activeConversationId) {
       setActiveConversationId(null);
       setMessages([]);
+      conversationRef.current = null;
     }
   }, [activeConversationId]);
 
@@ -153,15 +176,21 @@ export default function ChatRute() {
     }
 
     setLoading(true);
+    setError(null);
+    startLoadingTimeout();
     try {
-      const conv = { id: activeConversationId };
+      // SDK requires the full conversation object
+      const conv = conversationRef.current || { id: activeConversationId };
       await base44.agents.addMessage(conv, { role: 'user', content: userMessage });
-      loadConversations(); // refresh list ordering
+      loadConversations();
     } catch (err) {
       console.error('[ChatRute] Erro ao enviar mensagem:', err);
+      setError('Não foi possível enviar a mensagem. Tente novamente.');
+      toast.error('Erro ao enviar mensagem.');
       setLoading(false);
+      if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
     }
-  }, [input, loading, activeConversationId, handleNewConversation, loadConversations]);
+  }, [input, loading, activeConversationId, handleNewConversation, loadConversations, startLoadingTimeout]);
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -183,6 +212,7 @@ export default function ChatRute() {
           onNew={() => {
             setActiveConversationId(null);
             setMessages([]);
+            conversationRef.current = null;
             setSidebarOpen(false);
           }}
           onDelete={handleDeleteConversation}
@@ -222,6 +252,7 @@ export default function ChatRute() {
                   onNew={() => {
                     setActiveConversationId(null);
                     setMessages([]);
+                    conversationRef.current = null;
                     setSidebarOpen(false);
                   }}
                   onDelete={handleDeleteConversation}
@@ -255,6 +286,20 @@ export default function ChatRute() {
         {/* Chat Card */}
         <Card className="flex-1 border-emerald-100 overflow-hidden flex flex-col">
           <ScrollArea ref={scrollRef} className="flex-1 p-6">
+            {error && (
+              <div className="mb-4 flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700">
+                <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium">{error}</p>
+                  <button
+                    onClick={() => setError(null)}
+                    className="text-xs text-red-600 hover:underline mt-1"
+                  >
+                    Fechar
+                  </button>
+                </div>
+              </div>
+            )}
             {isEmptyConversation ? (
               <div className="h-full flex flex-col items-center justify-center text-center">
                 <div className="mb-6">

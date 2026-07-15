@@ -6,23 +6,24 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Send, 
-  Leaf, 
   User,
   Loader2,
   Sparkles,
   TreeDeciduous,
-  Droplets,
-  FileText
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
 import RuteAvatar from '../components/RuteAvatar';
+import { PRUMO_HUB_MODULES_KNOWLEDGE } from '@/lib/ruteKnowledge';
+import { Building2, TreePine, Wallet, BarChart3, ClipboardList } from 'lucide-react';
 
 const suggestedQuestions = [
+  { text: "Como cadastro uma nova propriedade?", icon: Building2 },
+  { text: "Como funciona a Gestão do CAR?", icon: TreePine },
+  { text: "Como emito uma cobrança para meu cliente?", icon: Wallet },
+  { text: "O que é o Termômetro de Regularidade?", icon: BarChart3 },
+  { text: "Como uso o CRM Prumo?", icon: ClipboardList },
   { text: "O que é APP e qual sua importância?", icon: TreeDeciduous },
-  { text: "Como funciona a Reserva Legal?", icon: Leaf },
-  { text: "Quais os tipos de licença ambiental?", icon: FileText },
-  { text: "O que é outorga de água?", icon: Droplets },
 ];
 
 export default function ChatRute() {
@@ -46,21 +47,29 @@ export default function ChatRute() {
     setLoading(true);
 
     const response = await base44.integrations.Core.InvokeLLM({
-      prompt: `Você é a RUTE, assistente virtual especialista em engenharia rural e ambiental da empresa Santa Rute Engenharia Rural. 
-      
-Sua função é auxiliar clientes com dúvidas sobre:
-- Licenciamento ambiental (LP, LI, LO, LAU)
-- Cadastro Ambiental Rural (CAR)
-- Reserva Legal e APP (Área de Preservação Permanente)
-- Georreferenciamento de imóveis rurais
-- Outorga de recursos hídricos
-- Regularização fundiária
-- Legislação ambiental
-- Boas práticas agrícolas e ambientais
+      prompt: `Você é a RUTE, assistente virtual da plataforma PRUMO HUB, desenvolvida pela Santa Rute Engenharia Rural.
 
-Seja sempre educada, prestativa e técnica, mas use linguagem acessível. Se não souber algo específico, indique que o cliente deve entrar em contato com a equipe técnica.
+Você tem DUAS funções principais:
 
-Pergunta do cliente: ${userMessage}`,
+1. **Especialista em engenharia rural e ambiental**: auxilia com dúvidas sobre licenciamento ambiental (LP, LI, LO, LAU), Cadastro Ambiental Rural (CAR), Reserva Legal e APP, georreferenciamento, outorga de recursos hídricos, regularização fundiária, legislação ambiental e boas práticas agrícolas.
+
+2. **Especialista no uso do PRUMO HUB**: ajuda os usuários a entender e navegar pelos módulos da plataforma, explicando como usar cada funcionalidade, onde encontrar cada recurso no menu e dicas práticas de uso.
+
+Abaixo está o conhecimento completo sobre os módulos do PRUMO HUB. Use-o para responder perguntas sobre como usar a plataforma.
+
+${PRUMO_HUB_MODULES_KNOWLEDGE}
+
+---
+
+Diretrizes de comportamento:
+- Seja sempre educada, prestativa e técnica, mas use linguagem acessível.
+- Quando explicar um módulo da plataforma, indique em qual seção do menu ele se encontra.
+- Use formatação markdown (negrito, listas, títulos) para organizar respostas longas.
+- Se o usuário perguntar sobre algo que não está coberto pela plataforma ou pelo seu conhecimento ambiental, seja transparente e sugira entrar em contato com o suporte técnico.
+- Para dúvidas ambientais técnicas, você pode buscar informações atualizadas na internet.
+- Para dúvidas sobre o funcionamento da plataforma, use exclusivamente o conhecimento fornecido acima.
+
+Pergunta do usuário: ${userMessage}`,
       add_context_from_internet: true,
     });
 
@@ -85,7 +94,7 @@ Pergunta do cliente: ${userMessage}`,
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">RUTE - Assistente Virtual</h1>
-            <p className="text-gray-500">Especialista em Engenharia Rural e Ambiental</p>
+            <p className="text-gray-500">Especialista ambiental e no uso do PRUMO HUB</p>
           </div>
         </div>
       </div>
@@ -100,8 +109,7 @@ Pergunta do cliente: ${userMessage}`,
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Olá! Sou a RUTE 👋</h3>
               <p className="text-gray-500 max-w-md mb-8">
-                Sua assistente virtual especializada em questões ambientais e rurais. 
-                Como posso ajudar você hoje?
+                Posso tirar suas dúvidas sobre questões ambientais e rurais, e também ajudar você a usar os módulos do PRUMO HUB. Como posso ajudar?
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-lg">
                 {suggestedQuestions.map((q, idx) => (

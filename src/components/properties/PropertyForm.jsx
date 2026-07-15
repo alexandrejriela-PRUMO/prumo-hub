@@ -147,6 +147,7 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
   const removeOwner = (idx) => setOwnersList(ownersList.filter((_, i) => i !== idx));
 
   const [activityInput, setActivityInput] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   // Dados extras rurais
   const parseRuralExtra = () => {
@@ -193,7 +194,9 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+    if (submitting) return;
+    setSubmitting(true);
+    try {
     // Validação: se é consultor e o cliente não existe no CRM, cria automaticamente
     if (isConsultor && !property && formData.client_email) {
       const clientExists = existingClients.some(c => c.email === formData.client_email);
@@ -230,6 +233,10 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
       ...(isConsultor && !property ? { consultor_email: user.email } : {}),
     };
     onSubmit(submitData);
+    } catch (err) {
+      setSubmitting(false);
+      throw err;
+    }
   };
 
   return (
@@ -842,9 +849,9 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
       )}
 
       <div className="flex gap-3 justify-end pt-4 border-t">
-        <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
-        <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
-          {property ? 'Atualizar' : 'Criar'} Propriedade
+        <Button type="button" variant="outline" onClick={onCancel} disabled={submitting}>Cancelar</Button>
+        <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700" disabled={submitting}>
+          {submitting ? 'Salvando...' : `${property ? 'Atualizar' : 'Criar'} Propriedade`}
         </Button>
       </div>
     </form>

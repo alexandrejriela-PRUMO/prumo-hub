@@ -30,6 +30,7 @@ const urbanActivities = [
 export default function PropertyForm({ property, user, onSubmit, onCancel }) {
   const isConsultor = ['consultor', 'equipe', 'equipe_consultor', 'equipe_produtor'].includes(user?.user_type);
   const [existingClients, setExistingClients] = useState([]);
+  const [clientsLoaded, setClientsLoaded] = useState(false);
 
   const [clientNameSearch, setClientNameSearch] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -52,8 +53,9 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
           });
           map.forEach(v => list.push(v));
           setExistingClients(list);
+          setClientsLoaded(true);
         })
-        .catch(() => {});
+        .catch(() => setClientsLoaded(true));
     }
   }, [isConsultor, user?.email]);
 
@@ -803,7 +805,7 @@ export default function PropertyForm({ property, user, onSubmit, onCancel }) {
                 placeholder="Digite para buscar cliente cadastrado no CRM..."
                 required={!property}
                 autoComplete="off"
-                className={formData.client_email && existingClients.find(c => c.email === formData.client_email) ? 'border-emerald-500 bg-emerald-50/30' : formData.client_name && !existingClients.find(c => c.email === formData.client_email) ? 'border-red-300 bg-red-50/20' : ''}
+                className={formData.client_email && existingClients.find(c => c.email === formData.client_email) ? 'border-emerald-500 bg-emerald-50/30' : clientsLoaded && formData.client_name && !existingClients.find(c => c.email === formData.client_email) ? 'border-red-300 bg-red-50/20' : ''}
               />
               {showSuggestions && filteredSuggestions.length > 0 && (
                 <div className="absolute z-50 w-full mt-1 bg-white border border-emerald-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">

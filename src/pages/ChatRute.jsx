@@ -41,6 +41,7 @@ export default function ChatRute() {
   const [listLoading, setListLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [error, setError] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
   const scrollRef = useRef(null);
   // Store full conversation object for addMessage (SDK requires it)
   const conversationRef = useRef(null);
@@ -53,23 +54,34 @@ export default function ChatRute() {
     }
   }, []);
 
-  // Load conversation list on mount
+  // Load current user + conversation list on mount
   const loadConversations = useCallback(async () => {
     setListLoading(true);
     try {
+      let userId = currentUserId;
+      if (!userId) {
+        const user = await base44.auth.me();
+        if (user) {
+          userId = user.id;
+          setCurrentUserId(user.id);
+        }
+      }
       const list = await base44.agents.listConversations({ agent_name: AGENT_NAME });
-      const sorted = (list || []).filter(c => !c.metadata?.deleted).sort((a, b) => {
-        const da = new Date(a.updated_date || a.created_date || 0).getTime();
-        const db = new Date(b.updated_date || b.created_date || 0).getTime();
-        return db - da;
-      });
+      // Filter to only the current user's conversations (security isolation)
+      const sorted = (list || [])
+        .filter(c => !c.metadata?.deleted && (!userId || c.created_by_id === userId))
+        .sort((a, b) => {
+          const da = new Date(a.updated_date || a.created_date || 0).getTime();
+          const db = new Date(b.updated_date || b.created_date || 0).getTime();
+          return db - da;
+        });
       setConversations(sorted);
     } catch (err) {
       console.error('[ChatRute] Erro ao carregar conversas:', err);
     } finally {
       setListLoading(false);
     }
-  }, []);
+  }, [currentUserId]);
 
   useEffect(() => {
     loadConversations();

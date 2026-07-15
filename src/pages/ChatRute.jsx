@@ -1,20 +1,22 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  Send, 
+import {
+  Send,
   User,
   Loader2,
   Sparkles,
   TreeDeciduous,
+  PanelLeft,
+  X,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
 import RuteAvatar from '../components/RuteAvatar';
-import { PRUMO_HUB_MODULES_KNOWLEDGE } from '@/lib/ruteKnowledge';
+import ConversationSidebar from '../components/rute/ConversationSidebar';
 import { Building2, TreePine, Wallet, BarChart3, ClipboardList } from 'lucide-react';
 
 const suggestedQuestions = [
@@ -26,56 +28,140 @@ const suggestedQuestions = [
   { text: "O que é APP e qual sua importância?", icon: TreeDeciduous },
 ];
 
+const AGENT_NAME = 'rute_assistant';
+
 export default function ChatRute() {
+  const [conversations, setConversations] = useState([]);
+  const [activeConversationId, setActiveConversationId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [listLoading, setListLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const scrollRef = useRef(null);
 
-  useEffect(() => {
+  const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, []);
 
-  const sendMessage = async (messageText) => {
+  // Load conversation list on mount
+  const loadConversations = useCallback(async () => {
+    setListLoading(true);
+    try {
+      const list = await base44.agents.listConversations({ agent_name: AGENT_NAME });
+      // Ordenar por última atualização (mais recente primeiro)
+      const sorted = (list || []).filter(c => !c.metadata?.deleted).sort((a, b) => {
+        const da = new Date(a.updated_date || a.created_date || 0).getTime();
+        const db = new Date(b.updated_date || b.created_date || 0).getTime();
+        return db - da;
+      });
+      setConversations(sorted);
+    } catch (err) {
+      console.error('[ChatRute] Erro ao carregar conversas:', err);
+    } finally {
+      setListLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
+
+  // Auto-scroll on messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
+
+  // Subscribe to active conversation updates
+  useEffect(() => {
+    if (!activeConversationId) {
+      setMessages([]);
+      return;
+    }
+    const unsubscribe = base44.agents.subscribeToConversation(activeConversationId, (data) => {
+      setMessages(data.messages || []);
+      // Stop loading when we get assistant response
+      const lastMsg = data.messages?.[data.messages.length - 1];
+      if (lastMsg && lastMsg.role === 'assistant' && lastMsg.content) {
+        setLoading(false);
+      }
+    });
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
+  }, [activeConversationId]);
+
+  const handleNewConversation = useCallback(async (firstMessage) => {
+    setLoading(true);
+    try {
+      const title = firstMessage.length > 45 ? firstMessage.substring(0, 45) + '...' : firstMessage;
+      const conv = await base44.agents.createConversation({
+        agent_name: AGENT_NAME,
+        metadata: { name: title, description: title },
+      });
+      await base44.agents.addMessage(conv, { role: 'user', content: firstMessage });
+      setActiveConversationId(conv.id);
+      setSidebarOpen(false);
+      // Refresh conversation list
+      loadConversations();
+    } catch (err) {
+      console.error('[ChatRute] Erro ao criar conversa:', err);
+      setLoading(false);
+    }
+  }, [loadConversations]);
+
+  const handleSelectConversation = useCallback(async (convId) => {
+    setSidebarOpen(false);
+    if (convId === activeConversationId) return;
+    setActiveConversationId(convId);
+    setLoading(true);
+    try {
+      const conv = await base44.agents.getConversation(convId);
+      setMessages(conv.messages || []);
+      // Check if last message is from user (agent still responding)
+      const lastMsg = conv.messages?.[conv.messages.length - 1];
+      if (lastMsg && lastMsg.role === 'assistant' && lastMsg.content) {
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error('[ChatRute] Erro ao carregar conversa:', err);
+      setLoading(false);
+    }
+  }, [activeConversationId]);
+
+  const handleDeleteConversation = useCallback(async (convId) => {
+    // SDK não expõe delete direto; removemos do estado local
+    setConversations(prev => prev.filter(c => c.id !== convId));
+    if (convId === activeConversationId) {
+      setActiveConversationId(null);
+      setMessages([]);
+    }
+  }, [activeConversationId]);
+
+  const sendMessage = useCallback(async (messageText) => {
     const userMessage = messageText || input;
     if (!userMessage.trim() || loading) return;
 
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+
+    // If no active conversation, create one with the first message
+    if (!activeConversationId) {
+      handleNewConversation(userMessage);
+      return;
+    }
+
     setLoading(true);
-
-    const response = await base44.integrations.Core.InvokeLLM({
-      prompt: `Você é a RUTE, assistente virtual da plataforma PRUMO HUB, desenvolvida pela Santa Rute Engenharia Rural.
-
-Você tem DUAS funções principais:
-
-1. **Especialista em engenharia rural e ambiental**: auxilia com dúvidas sobre licenciamento ambiental (LP, LI, LO, LAU), Cadastro Ambiental Rural (CAR), Reserva Legal e APP, georreferenciamento, outorga de recursos hídricos, regularização fundiária, legislação ambiental e boas práticas agrícolas.
-
-2. **Especialista no uso do PRUMO HUB**: ajuda os usuários a entender e navegar pelos módulos da plataforma, explicando como usar cada funcionalidade, onde encontrar cada recurso no menu e dicas práticas de uso.
-
-Abaixo está o conhecimento completo sobre os módulos do PRUMO HUB. Use-o para responder perguntas sobre como usar a plataforma.
-
-${PRUMO_HUB_MODULES_KNOWLEDGE}
-
----
-
-Diretrizes de comportamento:
-- Seja sempre educada, prestativa e técnica, mas use linguagem acessível.
-- Quando explicar um módulo da plataforma, indique em qual seção do menu ele se encontra.
-- Use formatação markdown (negrito, listas, títulos) para organizar respostas longas.
-- Se o usuário perguntar sobre algo que não está coberto pela plataforma ou pelo seu conhecimento ambiental, seja transparente e sugira entrar em contato com o suporte técnico.
-- Para dúvidas ambientais técnicas, você pode buscar informações atualizadas na internet.
-- Para dúvidas sobre o funcionamento da plataforma, use exclusivamente o conhecimento fornecido acima.
-
-Pergunta do usuário: ${userMessage}`,
-      add_context_from_internet: true,
-    });
-
-    setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-    setLoading(false);
-  };
+    try {
+      const conv = { id: activeConversationId };
+      await base44.agents.addMessage(conv, { role: 'user', content: userMessage });
+      loadConversations(); // refresh list ordering
+    } catch (err) {
+      console.error('[ChatRute] Erro ao enviar mensagem:', err);
+      setLoading(false);
+    }
+  }, [input, loading, activeConversationId, handleNewConversation, loadConversations]);
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -84,120 +170,188 @@ Pergunta do usuário: ${userMessage}`,
     }
   };
 
+  const isEmptyConversation = messages.length === 0 && !activeConversationId;
+
   return (
-    <div className="max-w-4xl mx-auto h-[calc(100vh-8rem)] flex flex-col">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
-            <Sparkles className="w-8 h-8 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">RUTE - Assistente Virtual</h1>
-            <p className="text-gray-500">Especialista ambiental e no uso do PRUMO HUB</p>
-          </div>
-        </div>
+    <div className="max-w-6xl mx-auto h-[calc(100vh-8rem)] flex gap-4">
+      {/* Sidebar - Desktop */}
+      <div className="hidden lg:block w-64 flex-shrink-0">
+        <ConversationSidebar
+          conversations={conversations}
+          activeConversationId={activeConversationId}
+          onSelect={handleSelectConversation}
+          onNew={() => {
+            setActiveConversationId(null);
+            setMessages([]);
+            setSidebarOpen(false);
+          }}
+          onDelete={handleDeleteConversation}
+          loading={listLoading}
+        />
       </div>
 
-      {/* Chat Area */}
-      <Card className="flex-1 border-emerald-100 overflow-hidden flex flex-col">
-        <ScrollArea ref={scrollRef} className="flex-1 p-6">
-          {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center">
-              <div className="mb-6">
-                <RuteAvatar size="md" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Olá! Sou a RUTE 👋</h3>
-              <p className="text-gray-500 max-w-md mb-8">
-                Posso tirar suas dúvidas sobre questões ambientais e rurais, e também ajudar você a usar os módulos do PRUMO HUB. Como posso ajudar?
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-lg">
-                {suggestedQuestions.map((q, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => sendMessage(q.text)}
-                    className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 hover:bg-emerald-50 border border-gray-100 hover:border-emerald-200 transition-all text-left group"
-                  >
-                    <q.icon className="w-5 h-5 text-emerald-600 group-hover:scale-110 transition-transform" />
-                    <span className="text-sm text-gray-700">{q.text}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <AnimatePresence>
-                {messages.map((message, idx) => (
-                  <motion.div
-                    key={idx}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    {message.role === 'assistant' && (
-                       <RuteAvatar size="sm" />
-                     )}
-                    <div
-                      className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                        message.role === 'user'
-                          ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 text-white'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {message.role === 'user' ? (
-                        <p>{message.content}</p>
-                      ) : (
-                        <ReactMarkdown className="prose prose-sm max-w-none prose-emerald">
-                          {message.content}
-                        </ReactMarkdown>
-                      )}
-                    </div>
-                    {message.role === 'user' && (
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center flex-shrink-0">
-                        <User className="w-4 h-4 text-white" />
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-              {loading && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex gap-3"
-                >
-                  <RuteAvatar size="sm" />
-                  <div className="bg-gray-100 rounded-2xl px-4 py-3 flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
-                    <span className="text-gray-500 text-sm">RUTE está digitando...</span>
-                  </div>
-                </motion.div>
-              )}
-            </div>
-          )}
-        </ScrollArea>
-
-        {/* Input Area */}
-        <div className="p-4 border-t border-gray-100">
-          <div className="flex gap-3">
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Digite sua pergunta..."
-              className="flex-1 border-emerald-200 focus:border-emerald-400"
-              disabled={loading}
+      {/* Sidebar - Mobile drawer */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="lg:hidden fixed inset-0 bg-black/50 z-40"
+              onClick={() => setSidebarOpen(false)}
             />
-            <Button
-              onClick={() => sendMessage()}
-              disabled={loading || !input.trim()}
-              className="bg-emerald-600 hover:bg-emerald-700 px-6"
+            <motion.div
+              initial={{ x: -320 }}
+              animate={{ x: 0 }}
+              exit={{ x: -320 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="lg:hidden fixed top-0 left-0 h-full w-72 z-50 p-2"
             >
-              <Send className="w-5 h-5" />
-            </Button>
+              <div className="relative h-full">
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  className="absolute -top-1 -right-1 z-10 p-1.5 rounded-lg bg-emerald-900 text-white shadow-lg"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <ConversationSidebar
+                  conversations={conversations}
+                  activeConversationId={activeConversationId}
+                  onSelect={handleSelectConversation}
+                  onNew={() => {
+                    setActiveConversationId(null);
+                    setMessages([]);
+                    setSidebarOpen(false);
+                  }}
+                  onDelete={handleDeleteConversation}
+                  loading={listLoading}
+                />
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header */}
+        <div className="mb-4 flex items-center gap-3">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden p-2 rounded-xl hover:bg-emerald-50 transition-colors"
+          >
+            <PanelLeft className="w-5 h-5 text-emerald-700" />
+          </button>
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20 flex-shrink-0">
+            <Sparkles className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">RUTE - Assistente Virtual</h1>
+            <p className="text-sm text-gray-500">Especialista ambiental e no uso do PRUMO HUB</p>
           </div>
         </div>
-      </Card>
+
+        {/* Chat Card */}
+        <Card className="flex-1 border-emerald-100 overflow-hidden flex flex-col">
+          <ScrollArea ref={scrollRef} className="flex-1 p-6">
+            {isEmptyConversation ? (
+              <div className="h-full flex flex-col items-center justify-center text-center">
+                <div className="mb-6">
+                  <RuteAvatar size="md" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Olá! Sou a RUTE 👋</h3>
+                <p className="text-gray-500 max-w-md mb-8">
+                  Posso tirar suas dúvidas sobre questões ambientais e rurais, e também ajudar você a usar os módulos do PRUMO HUB. Como posso ajudar?
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-lg">
+                  {suggestedQuestions.map((q, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => sendMessage(q.text)}
+                      className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 hover:bg-emerald-50 border border-gray-100 hover:border-emerald-200 transition-all text-left group"
+                    >
+                      <q.icon className="w-5 h-5 text-emerald-600 group-hover:scale-110 transition-transform" />
+                      <span className="text-sm text-gray-700">{q.text}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <AnimatePresence>
+                  {messages.map((message, idx) => (
+                    <motion.div
+                      key={message.id || idx}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      {message.role === 'assistant' && (
+                        <RuteAvatar size="sm" />
+                      )}
+                      <div
+                        className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                          message.role === 'user'
+                            ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 text-white'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        {message.role === 'user' ? (
+                          <p>{message.content}</p>
+                        ) : (
+                          <ReactMarkdown className="prose prose-sm max-w-none prose-emerald">
+                            {message.content}
+                          </ReactMarkdown>
+                        )}
+                      </div>
+                      {message.role === 'user' && (
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center flex-shrink-0">
+                          <User className="w-4 h-4 text-white" />
+                        </div>
+                      )}
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+                {loading && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex gap-3"
+                  >
+                    <RuteAvatar size="sm" />
+                    <div className="bg-gray-100 rounded-2xl px-4 py-3 flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+                      <span className="text-gray-500 text-sm">RUTE está digitando...</span>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            )}
+          </ScrollArea>
+
+          {/* Input Area */}
+          <div className="p-4 border-t border-gray-100">
+            <div className="flex gap-3">
+              <Input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Digite sua pergunta..."
+                className="flex-1 border-emerald-200 focus:border-emerald-400"
+                disabled={loading}
+              />
+              <Button
+                onClick={() => sendMessage()}
+                disabled={loading || !input.trim()}
+                className="bg-emerald-600 hover:bg-emerald-700 px-6"
+              >
+                <Send className="w-5 h-5" />
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

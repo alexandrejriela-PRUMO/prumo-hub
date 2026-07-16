@@ -46,6 +46,7 @@ export default function ReceiptGenerator() {
   const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
 
   const [clientSearch, setClientSearch] = useState('');
   const [showClientSuggestions, setShowClientSuggestions] = useState(false);
@@ -266,8 +267,9 @@ export default function ReceiptGenerator() {
     }
   };
 
-  const handleSendWhatsApp = () => {
+  const handleSendWhatsApp = async () => {
     if (!formData.client_name) { toast.error('Selecione o cliente primeiro.'); return; }
+    if (!receiptId) { toast.error('Salve o recibo antes de enviar.'); return; }
     let phone = clientPhone;
     if (!phone) {
       phone = window.prompt('WhatsApp do cliente (com DDD):', '') || '';
@@ -275,11 +277,16 @@ export default function ReceiptGenerator() {
     }
     const digits = phone.replace(/\D/g, '');
     const phoneWithCountry = digits.startsWith('55') ? digits : `55${digits}`;
-    const fmt = (v) => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-    let msg = `Olá ${formData.client_name}, segue o recibo${receiptNumber ? ` Nº ${receiptNumber}` : ''} referente a "${formData.title}", no valor de R$ ${fmt(totalAmount)}.`;
-    if (pdfUrl) msg += `\n\n${pdfUrl}`;
-    const url = `https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(msg)}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
+    setSendingWhatsApp(true);
+    try {
+      await base44.functions.invoke('sendReceiptWhatsApp', { receipt_id: receiptId, phone: phoneWithCountry });
+      qc.invalidateQueries({ queryKey: ['fin-data'] });
+      toast.success('Recibo enviado por WhatsApp!');
+    } catch (err) {
+      toast.error('Erro ao enviar WhatsApp: ' + err.message);
+    } finally {
+      setSendingWhatsApp(false);
+    }
   };
 
   if (!user) {
@@ -535,8 +542,8 @@ export default function ReceiptGenerator() {
               <Button onClick={handleSendEmail} variant="outline" className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-50" disabled={sendingEmail}>
                 <Mail className="w-4 h-4" /> Enviar por Email
               </Button>
-              <Button onClick={handleSendWhatsApp} variant="outline" className="gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50">
-                <MessageCircle className="w-4 h-4" /> Enviar por WhatsApp
+              <Button onClick={handleSendWhatsApp} variant="outline" className="gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50" disabled={sendingWhatsApp}>
+                <MessageCircle className="w-4 h-4" /> {sendingWhatsApp ? 'Enviando...' : 'Enviar por WhatsApp'}
               </Button>
             </div>
           </div>

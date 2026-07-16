@@ -166,6 +166,10 @@
       "default": [],
       "description": "IDs dos Documents criados como espelho dos comprovantes desta despesa"
     },
+    "receipt_id": {
+      "type": "string",
+      "description": "ID do Receipt (recibo) gerado a partir desta transação, se houver"
+    },
     "attachments": {
       "type": "array",
       "items": {

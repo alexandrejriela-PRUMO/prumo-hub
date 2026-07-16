@@ -64,6 +64,7 @@ const AdminPanel = React.lazy(() => import('./pages/AdminPanel'));
 const ChecklistTemplates = React.lazy(() => import('./pages/ChecklistTemplates'));
 const LicenseChecklist = React.lazy(() => import('./pages/LicenseChecklist'));
 const BudgetGenerator = React.lazy(() => import('./pages/BudgetGenerator'));
+const ReceiptGenerator = React.lazy(() => import('./pages/ReceiptGenerator'));
 const ContractGenerator = React.lazy(() => import('./pages/ContractGenerator'));
 const LandingPage = React.lazy(() => import('./pages/LandingPage'));
 
@@ -127,6 +128,7 @@ export const PAGES = {
     "ChecklistTemplates": ChecklistTemplates,
     "LicenseChecklist": LicenseChecklist,
     "BudgetGenerator": BudgetGenerator,
+    "ReceiptGenerator": ReceiptGenerator,
     "ContractGenerator": ContractGenerator,
     "LandingPage": LandingPage,
 }

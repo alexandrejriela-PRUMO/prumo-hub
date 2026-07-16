@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
@@ -9,12 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import {
   TrendingUp, TrendingDown, ArrowLeftRight, Download, Search,
-  ChevronUp, ChevronDown, Plus, Pencil, Trash2, Banknote, Paperclip, FileText, MoveRight, Repeat, Layers, FileCheck
+  ChevronUp, ChevronDown, Plus, Pencil, Trash2, Banknote, Paperclip, FileText, MoveRight, Repeat, Layers, FileCheck, Receipt as ReceiptIcon
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import TransactionForm from '../components/financial/TransactionForm';
 import { exportFinancialPDF } from '../components/financial/FinancialExportPDF';
+import { createPageUrl } from '../utils';
 
 const STATUS_BADGES = {
   'Pago':     'bg-emerald-100 text-emerald-700',
@@ -66,6 +68,7 @@ export default function FinancialTransactions() {
   const [showForm,     setShowForm]     = useState(false);
   const [editing,      setEditing]      = useState(null);
   const qc = useQueryClient();
+  const navigate = useNavigate();
 
   useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);
 
@@ -182,6 +185,7 @@ export default function FinancialTransactions() {
         recorrenciaTotalParcelas: e.recorrencia_total_parcelas || null,
         recorrenciaGrupoId: e.recorrencia_grupo_id || null,
         documentIds: e.document_ids || [],
+        receiptId: e.receipt_id || null,
         editable: true,
         raw: e,
         isInstallment,
@@ -470,6 +474,17 @@ export default function FinancialTransactions() {
                           className="flex items-center gap-0.5 text-xs text-emerald-600 hover:text-emerald-800 hover:underline"
                         >
                           <FileCheck className="w-3 h-3"/>No Docs
+                        </button>
+                      )}
+                      {t.type === 'receita' && t.receiptId && (
+                        <button
+                          type="button"
+                          title="Ver recibo vinculado"
+                          onClick={() => navigate(createPageUrl('ReceiptGenerator'), { state: { receiptId: t.receiptId } })}
+                        >
+                          <Badge className="bg-blue-100 text-blue-700 border-0 text-xs gap-1 inline-flex items-center hover:bg-blue-200 cursor-pointer">
+                            <ReceiptIcon className="w-3 h-3"/>Recibo
+                          </Badge>
                         </button>
                       )}
                       {t.editable && <>

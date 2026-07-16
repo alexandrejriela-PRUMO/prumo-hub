@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -9,12 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import {
   TrendingUp, TrendingDown, X, FileText,
-  Image as ImageIcon, Plus, Search, UserPlus, Loader2, Layers, Calendar, ArrowLeftRight, Repeat
+  Image as ImageIcon, Plus, Search, UserPlus, Loader2, Layers, Calendar, ArrowLeftRight, Repeat, Receipt as ReceiptIcon
 } from 'lucide-react';
 import SupabaseFileUpload from '@/components/storage/SupabaseFileUpload';
 import { DOCUMENT_TYPES } from '@/components/documents/documentConstants';
 import { format, addMonths, addDays, parseISO } from 'date-fns';
 import { toast } from 'sonner';
+import { createPageUrl } from '../../utils';
 
 const EXPENSE_CATEGORIES = ['Aluguel / Escritório','Salários / Pró-labore','Marketing / Publicidade','Tecnologia / Software','Deslocamento / Combustível','Equipamentos','Impostos / Taxas','Serviços de Terceiros','Materiais de Escritório','Treinamento / Cursos','Outros'];
 const INCOME_CATEGORIES  = ['Cobrança de Cliente (Manual)','Outros Serviços Prestados','Outros'];
@@ -151,6 +153,7 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
   const [uploadingFile, setUploadingFile] = useState(false);
   const [saving, setSaving] = useState(false);
   const qc = useQueryClient();
+  const navigate = useNavigate();
 
   const isReceita = form.transaction_type === 'receita';
   const isTransferencia = form.transaction_type === 'transferencia';
@@ -437,6 +440,24 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
 
   const selectedClient = properties.find(p => p.id === form.client_property_id);
   const categories = isReceita ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+
+  const handleGenerateReceipt = () => {
+    if (!selectedClient) { toast.error('Selecione um cliente antes de gerar o recibo.'); return; }
+    navigate(createPageUrl('ReceiptGenerator'), {
+      state: {
+        fromTransaction: {
+          expense_id: editing?.id || null,
+          client_name: selectedClient.client_name || form.client_name || '',
+          property_id: form.property_id || '',
+          property_name: form.property_name || '',
+          amount: form.amount,
+          description: form.description,
+          payment_method: form.payment_method,
+          payment_date: form.date,
+        },
+      },
+    });
+  };
 
   const handleClose = () => {
     const isEmpty = !form.description && !form.amount && !form.date;
@@ -971,6 +992,11 @@ export default function TransactionForm({ open, onClose, editing, consultorEmail
 
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="outline" onClick={handleClose}>Cancelar</Button>
+            {isReceita && !isTransferencia && (
+              <Button variant="outline" className="gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50" onClick={handleGenerateReceipt}>
+                <ReceiptIcon className="w-4 h-4" /> Gerar Recibo
+              </Button>
+            )}
             <Button className={`${isTransferencia ? 'bg-blue-600 hover:bg-blue-700' : 'bg-emerald-600 hover:bg-emerald-700'}`} onClick={handleSubmit} disabled={saving}>
               {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-1"/>Salvando...</> : isTransferencia ? 'Registrar Transferência' : isParcelado ? `Registrar ${form.num_installments} Parcelas` : isDespesaParcelada ? `Registrar ${parseInt(form.recorrencia_total_parcelas) || 2} Parcelas` : isDespesaRecorrente ? 'Registrar Recorrência' : 'Salvar'}
             </Button>

@@ -84,6 +84,7 @@ const consultorNavItems = [
     children: [
       { name: 'Painel Financeiro', page: 'FinancialDashboard', icon: BarChart3 },
       { name: 'Transações Consolidadas', page: 'FinancialTransactions', icon: ReceiptText },
+      { name: 'Gerador de Recibos', page: 'ReceiptGenerator', icon: ReceiptText },
       { name: 'Gateway de Cobrança', page: 'ConsultantPayments', icon: Wallet },
       { name: 'Config. de Pagamento', page: 'PaymentSettings', icon: CreditCard, badge: 'Em breve' },
       { name: 'Notas Fiscais (NF-e)', page: 'NFeManagement', icon: ReceiptText, badge: 'Em breve' },
@@ -170,6 +171,7 @@ const equipeNavItems = [
     children: [
       { name: 'Painel Financeiro', page: 'FinancialDashboard', icon: BarChart3 },
       { name: 'Transações Consolidadas', page: 'FinancialTransactions', icon: ReceiptText },
+      { name: 'Gerador de Recibos', page: 'ReceiptGenerator', icon: ReceiptText },
       { name: 'Gateway de Cobrança', page: 'ConsultantPayments', icon: Wallet },
     ]
   },
@@ -438,6 +440,7 @@ export default function Layout({ children, currentPageName }) {
     'Reports': 'reports', 'ChatRute': 'ai_chat',
     'FinancialDashboard': 'financial', 'FinancialTransactions': 'financial',
     'PaymentSettings': 'financial', 'NFeManagement': 'financial',
+    'ReceiptGenerator': 'financial',
   }), []);
 
   const getModuleKey = useCallback((pageName) => pageName ? pageToModule[pageName] || null : null, [pageToModule]);

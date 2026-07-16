@@ -3,7 +3,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.39';
 const CONNECTOR_ID = '6a162a2643253d1b5412e449';
 
 async function getAccessToken(base44) {
-  const conn = await base44.connectors.getCurrentAppUserConnection(CONNECTOR_ID);
+  const conn = await base44.asServiceRole.connectors.getCurrentAppUserConnection(CONNECTOR_ID);
   return conn?.accessToken || null;
 }
 

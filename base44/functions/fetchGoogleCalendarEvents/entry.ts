@@ -18,11 +18,9 @@ Deno.serve(async (req) => {
 
     let accessToken;
 
-    // asServiceRole.connectors.getCurrentAppUserConnection requires
-    // createClientFromRequest so the runtime knows which user to look up
     for (const id of CONNECTOR_IDS) {
       try {
-        const conn = await base44.connectors.getCurrentAppUserConnection(id);
+        const conn = await base44.asServiceRole.connectors.getCurrentAppUserConnection(id);
         if (conn?.accessToken) {
           accessToken = conn.accessToken;
           console.log('[GCal] connection found on connector:', id);

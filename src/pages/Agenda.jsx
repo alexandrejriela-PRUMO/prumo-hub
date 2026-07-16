@@ -113,9 +113,17 @@ function AgendaContent() {
 
   const handleGcalConnect = async () => {
     setGcalConnecting(true);
+    // Open popup synchronously to avoid browser popup blocker
+    const popup = window.open('about:blank', '_blank', 'width=600,height=700');
     try {
       const url = await base44.connectors.connectAppUser(GCAL_CONNECTOR_ID);
-      const popup = window.open(url, '_blank', 'width=600,height=700');
+      if (popup) {
+        popup.location.href = url;
+      } else {
+        // Popup was blocked — redirect in same window
+        window.location.href = url;
+        return;
+      }
       const timer = setInterval(async () => {
         if (!popup || popup.closed) {
           clearInterval(timer);
@@ -129,6 +137,7 @@ function AgendaContent() {
       // Timeout de segurança: encerra o polling após 3 minutos
       setTimeout(() => { clearInterval(timer); setGcalConnecting(false); }, 180000);
     } catch (error) {
+      if (popup) popup.close();
       setGcalConnecting(false);
       toast.error('Erro ao iniciar conexão: ' + error.message);
     }

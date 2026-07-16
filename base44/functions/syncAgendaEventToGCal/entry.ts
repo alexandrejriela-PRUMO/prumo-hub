@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.39';
 
 const CONNECTOR_ID = '6a162a2643253d1b5412e449';
 

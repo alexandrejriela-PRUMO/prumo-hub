@@ -9,6 +9,24 @@
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
+// ─── Retry com backoff exponencial para chamadas sujeitas a rate limit ───────
+async function withRetry(fn, retries = 4, baseDelayMs = 800) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      const isRateLimit = /rate limit/i.test(e.message || '') || e.status === 429;
+      if (!isRateLimit || attempt === retries) throw e;
+      const delay = baseDelayMs * Math.pow(2, attempt);
+      console.warn(`[Expiry] Rate limit atingido, tentativa ${attempt + 1}/${retries + 1}, aguardando ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+}
+
+// ─── Pequeno delay para espaçar picos de requisições em loops pesados ────────
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -44,9 +62,9 @@ Deno.serve(async (req) => {
       if (!consultorEmail) return [];
       if (teamCache[consultorEmail]) return teamCache[consultorEmail];
       try {
-        const team = await base44.asServiceRole.entities.TeamMember.filter({
+        const team = await withRetry(() => base44.asServiceRole.entities.TeamMember.filter({
           consultor_email: consultorEmail, status: 'Ativo'
-        });
+        }));
         const emails = team.map(m => m.member_email).filter(Boolean);
         teamCache[consultorEmail] = emails;
         return emails;
@@ -57,7 +75,7 @@ Deno.serve(async (req) => {
       if (!email) return null;
       if (userDataCache[email]) return userDataCache[email];
       try {
-        const users = await base44.asServiceRole.entities.User.filter({ email });
+        const users = await withRetry(() => base44.asServiceRole.entities.User.filter({ email }));
         userDataCache[email] = users[0] || { user_type: 'produtor' };
         return userDataCache[email];
       } catch (e) { return { user_type: 'produtor' }; }
@@ -77,9 +95,9 @@ Deno.serve(async (req) => {
       const cacheKey = `${email}:${eventType}`;
       if (notifPrefsCache[cacheKey] !== undefined) return notifPrefsCache[cacheKey];
       try {
-        const prefs = await base44.asServiceRole.entities.NotificationPreference.filter({
+        const prefs = await withRetry(() => base44.asServiceRole.entities.NotificationPreference.filter({
           user_email: email, event_type: eventType
-        });
+        }));
         const pref = prefs[0];
         let days = defaultDays;
         if (pref?.days_before) {
@@ -107,7 +125,7 @@ Deno.serve(async (req) => {
       const cacheKey = `${propertyId}:${eventKey}`;
       if (propViewersCache[cacheKey] !== undefined) return propViewersCache[cacheKey];
       try {
-        const props = await base44.asServiceRole.entities.Property.filter({ id: propertyId });
+        const props = await withRetry(() => base44.asServiceRole.entities.Property.filter({ id: propertyId }));
         const prop = props[0];
         if (!prop?.authorized_users) { propViewersCache[cacheKey] = []; return []; }
         let users = prop.authorized_users;
@@ -128,20 +146,20 @@ Deno.serve(async (req) => {
     const createNotif = async (userEmail, title, message, eventType, severity, link) => {
       if (!userEmail) return;
       try {
-        const recent = await base44.asServiceRole.entities.InAppNotification.filter(
+        const recent = await withRetry(() => base44.asServiceRole.entities.InAppNotification.filter(
           { user_email: userEmail }, '-created_date', 200
-        );
+        ));
         const alreadySentToday = recent.some(n =>
           n.title === title &&
           n.metadata?.checked_date === todayStr
         );
         if (alreadySentToday) return;
 
-        await base44.asServiceRole.entities.InAppNotification.create({
+        await withRetry(() => base44.asServiceRole.entities.InAppNotification.create({
           user_email: userEmail, title, message, event_type: eventType,
           severity, read: false, link,
           metadata: { type: 'expiry_check', checked_at: today.toISOString(), checked_date: todayStr }
-        });
+        }));
         totalPush++;
       } catch (e) {
         console.error('[Expiry] Erro ao criar push para', userEmail, ':', e.message);
@@ -225,7 +243,7 @@ Deno.serve(async (req) => {
       if (!propertyId) return null;
       if (propDataCache[propertyId] !== undefined) return propDataCache[propertyId];
       try {
-        const props = await base44.asServiceRole.entities.Property.filter({ id: propertyId });
+        const props = await withRetry(() => base44.asServiceRole.entities.Property.filter({ id: propertyId }));
         propDataCache[propertyId] = props[0]?.property_name || props[0]?.name || null;
         return propDataCache[propertyId];
       } catch (e) { return null; }
@@ -257,7 +275,7 @@ Deno.serve(async (req) => {
       if (!propertyId) return null;
       if (propConsultorCache[propertyId] !== undefined) return propConsultorCache[propertyId];
       try {
-        const props = await base44.asServiceRole.entities.Property.filter({ id: propertyId });
+        const props = await withRetry(() => base44.asServiceRole.entities.Property.filter({ id: propertyId }));
         propConsultorCache[propertyId] = props[0]?.consultor_email || null;
         return propConsultorCache[propertyId];
       } catch (e) { return null; }
@@ -274,8 +292,10 @@ Deno.serve(async (req) => {
     };
 
     // ─── LICENSES ────────────────────────────────────────────────────────
-    const licenses = await base44.asServiceRole.entities.License.list();
-    for (const lic of licenses) {
+    const licenses = await withRetry(() => base44.asServiceRole.entities.License.list());
+    for (let licIdx = 0; licIdx < licenses.length; licIdx++) {
+      const lic = licenses[licIdx];
+      if (licIdx > 0 && licIdx % 10 === 0) await sleep(75);
       if (!lic.expiry_date || !lic.owner_email || lic.status === 'Vencida') continue;
       const days = getDays(lic.expiry_date);
       if (days === null) continue;
@@ -388,8 +408,10 @@ Deno.serve(async (req) => {
     }
 
     // ─── DOCUMENTS (expiry_date opcional) ────────────────────────────────
-    const documents = await base44.asServiceRole.entities.Document.list();
-    for (const doc of documents) {
+    const documents = await withRetry(() => base44.asServiceRole.entities.Document.list());
+    for (let docIdx = 0; docIdx < documents.length; docIdx++) {
+      const doc = documents[docIdx];
+      if (docIdx > 0 && docIdx % 10 === 0) await sleep(75);
       if (!doc.expiry_date || !doc.owner_email) continue;
       const days = getDays(doc.expiry_date);
       if (days === null || days < 0) continue;
@@ -416,7 +438,7 @@ Deno.serve(async (req) => {
     }
 
     // ─── PROCESSES ───────────────────────────────────────────────────────
-    const processes = await base44.asServiceRole.entities.Process.list();
+    const processes = await withRetry(() => base44.asServiceRole.entities.Process.list());
     for (const proc of processes) {
       if (!proc.client_email || proc.status === 'Finalizado' || proc.status === 'Arquivado') continue;
       const consultorEmail = await getConsultor(proc.property_id);
@@ -448,12 +470,12 @@ Deno.serve(async (req) => {
     }
 
     // ─── PRAD DEADLINES ──────────────────────────────────────────────────
-    const prads = await base44.asServiceRole.entities.PRAD.list();
+    const prads = await withRetry(() => base44.asServiceRole.entities.PRAD.list());
     for (const prad of prads) {
       if (!prad.owner_email || prad.status === 'Concluído') continue;
       if (prad.property_id) {
         try {
-          await base44.asServiceRole.entities.Property.get(prad.property_id);
+          await withRetry(() => base44.asServiceRole.entities.Property.get(prad.property_id));
         } catch (e) {
           console.warn(`[Expiry] PRAD "${prad.project_name}" ignorado — propriedade ${prad.property_id} não encontrada.`);
           continue;
@@ -485,7 +507,7 @@ Deno.serve(async (req) => {
     }
 
     // ─── CLIENT CONTRACTS (vencimento) ───────────────────────────────────
-    const contracts = await base44.asServiceRole.entities.ClientContract.list();
+    const contracts = await withRetry(() => base44.asServiceRole.entities.ClientContract.list());
     for (const contract of contracts) {
       if (!contract.end_date || contract.status === 'Cancelado' || contract.status === 'Encerrado') continue;
       const days = getDays(contract.end_date);
@@ -528,7 +550,7 @@ Deno.serve(async (req) => {
     }
 
     // ─── CARBON CREDITS ──────────────────────────────────────────────────
-    const carbonCredits = await base44.asServiceRole.entities.CarbonCredit.list();
+    const carbonCredits = await withRetry(() => base44.asServiceRole.entities.CarbonCredit.list());
     for (const cc of carbonCredits) {
       const endDate = cc.end_date || cc.expiry_date || cc.validity_end;
       if (!endDate || !cc.owner_email) continue;
@@ -545,7 +567,7 @@ Deno.serve(async (req) => {
     }
 
     // ─── PSA CONTRACTS ───────────────────────────────────────────────────
-    const psaContracts = await base44.asServiceRole.entities.PSAContract.list();
+    const psaContracts = await withRetry(() => base44.asServiceRole.entities.PSAContract.list());
     for (const c of psaContracts) {
       const endDate = c.end_date || c.expiry_date || c.validity_end;
       if (!endDate || !c.owner_email) continue;
@@ -562,7 +584,7 @@ Deno.serve(async (req) => {
     }
 
     // ─── ENVIRONMENTAL EASEMENTS ─────────────────────────────────────────
-    const easements = await base44.asServiceRole.entities.EnvironmentalEasement.list();
+    const easements = await withRetry(() => base44.asServiceRole.entities.EnvironmentalEasement.list());
     for (const e of easements) {
       const endDate = e.end_date || e.expiry_date || e.validity_end;
       if (!endDate || !e.owner_email) continue;
@@ -579,7 +601,7 @@ Deno.serve(async (req) => {
     }
 
     // ─── INVOICES ────────────────────────────────────────────────────────
-    const invoices = await base44.asServiceRole.entities.Invoice.list();
+    const invoices = await withRetry(() => base44.asServiceRole.entities.Invoice.list());
     for (const inv of invoices) {
       if (inv.status === 'Pago' || inv.status === 'Cancelado') continue;
       const days = getDays(inv.due_date);
@@ -605,7 +627,7 @@ Deno.serve(async (req) => {
     }
 
     // ─── CRM TASKS ───────────────────────────────────────────────────────
-    const crmList = await base44.asServiceRole.entities.ClientCRM.list();
+    const crmList = await withRetry(() => base44.asServiceRole.entities.ClientCRM.list());
     for (const crm of crmList) {
       if (!crm.consultor_email) continue;
       const tasks = crm.tasks || [];
@@ -667,7 +689,7 @@ Deno.serve(async (req) => {
 
       if (crmChanged) {
         try {
-          await base44.asServiceRole.entities.ClientCRM.update(crm.id, { tasks: updatedTasks });
+          await withRetry(() => base44.asServiceRole.entities.ClientCRM.update(crm.id, { tasks: updatedTasks }));
         } catch (e) {
           console.warn(`[Expiry] Erro ao atualizar overdue no CRM ${crm.id}:`, e.message);
         }
@@ -675,7 +697,7 @@ Deno.serve(async (req) => {
     }
 
     // ─── GEOREFERENCIAMENTO IRREGULAR ────────────────────────────────────
-    const geos = await base44.asServiceRole.entities.Georeferencing.list();
+    const geos = await withRetry(() => base44.asServiceRole.entities.Georeferencing.list());
     for (const geo of geos) {
       if (!geo.owner_email || geo.status !== 'Irregular') continue;
       const consultorEmail = await getConsultor(geo.property_id);

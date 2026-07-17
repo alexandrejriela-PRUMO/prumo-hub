@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { PenLine, CheckCircle, Clock, AlertCircle, Settings, Eye } from 'lucide-react';
+import { PenLine, CheckCircle, Clock, AlertCircle, MessageCircle, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -23,9 +21,6 @@ export default function ClicksignContractButton({ contract, user }) {
   const [open, setOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [selectedDocIndex, setSelectedDocIndex] = useState(0);
-  const [apiKeyInput, setApiKeyInput] = useState('');
-  const [savingKey, setSavingKey] = useState(false);
-  const queryClient = useQueryClient();
 
   const { data: signatures = [], refetch } = useQuery({
     queryKey: ['signatures', contract.id],
@@ -45,17 +40,14 @@ export default function ClicksignContractButton({ contract, user }) {
   const StatusIcon = cfg?.icon || Clock;
 
   const pdfs = (contract.documents || []).filter(d => d.url && d.name?.toLowerCase().includes('.pdf'));
-  const hasApiKey = !!user?.clicksign_api_key;
 
-  const handleSaveKey = async () => {
-    if (!apiKeyInput.trim()) return;
-    setSavingKey(true);
-    await base44.functions.invoke('clicksignConsultor', { action: 'save_api_key', api_key: apiKeyInput.trim() });
-    setSavingKey(false);
-    toast.success('API Key salva com sucesso!');
-    queryClient.invalidateQueries(['user']);
-    // Force reload user
-    window.location.reload();
+  // Pergunta o canal de notificação (WhatsApp ou email) e, se WhatsApp, o telefone do signatário.
+  const askDeliveryChannel = (signerLabel) => {
+    const useWhatsapp = window.confirm(`Notificar "${signerLabel}" por WhatsApp?\n\nOK = WhatsApp · Cancelar = E-mail`);
+    if (!useWhatsapp) return { delivery_channel: 'email', phone: null };
+    const phone = window.prompt(`Telefone de WhatsApp de "${signerLabel}" (com DDI, ex: 5555999999999):`);
+    if (!phone?.trim()) return { delivery_channel: 'email', phone: null };
+    return { delivery_channel: 'whatsapp', phone: phone.trim() };
   };
 
   const handleSend = async () => {
@@ -64,14 +56,17 @@ export default function ClicksignContractButton({ contract, user }) {
       return;
     }
     setSending(true);
+
+    const consultorLabel = user.full_name || user.email;
     const signers = [
-      { name: user.full_name || user.email, email: user.email, sign_as: 'sign' },
+      { name: consultorLabel, email: user.email, sign_as: 'sign', ...askDeliveryChannel(consultorLabel) },
     ];
     if (contract.client_email) {
-      signers.push({ name: contract.client_name || contract.client_email, email: contract.client_email, sign_as: 'sign' });
+      const clientLabel = contract.client_name || contract.client_email;
+      signers.push({ name: clientLabel, email: contract.client_email, sign_as: 'sign', ...askDeliveryChannel(clientLabel) });
     }
 
-    const res = await base44.functions.invoke('clicksignConsultor', {
+    const res = await base44.functions.invoke('clicksignEnvelope', {
       action: 'send_contract',
       contract_id: contract.id,
       document_url: pdfs[selectedDocIndex].url,
@@ -81,7 +76,7 @@ export default function ClicksignContractButton({ contract, user }) {
 
     setSending(false);
     if (res.data?.success) {
-      toast.success('Contrato enviado! Os signatários receberão um e-mail da Clicksign.');
+      toast.success('Contrato enviado para assinatura digital!');
       refetch();
     } else {
       toast.error(res.data?.error || 'Erro ao enviar para assinatura.');
@@ -112,32 +107,8 @@ export default function ClicksignContractButton({ contract, user }) {
             </DialogTitle>
           </DialogHeader>
 
-          {/* Configure API Key */}
-          {!hasApiKey && (
-            <div className="space-y-3">
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
-                Configure sua <strong>API Key pessoal da Clicksign</strong> para enviar contratos para assinatura digital. Sua chave é independente da conta da plataforma.
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Sua API Key da Clicksign</Label>
-                <Input
-                  type="password"
-                  placeholder="Cole aqui sua access_token da Clicksign"
-                  value={apiKeyInput}
-                  onChange={e => setApiKeyInput(e.target.value)}
-                  className="h-9 text-sm"
-                />
-                <p className="text-xs text-gray-500">Encontre em: app.clicksign.com → Configurações → API</p>
-              </div>
-              <Button className="w-full bg-violet-600 hover:bg-violet-700" onClick={handleSaveKey} disabled={savingKey || !apiKeyInput}>
-                <Settings className="w-4 h-4 mr-2" />
-                {savingKey ? 'Salvando...' : 'Salvar API Key'}
-              </Button>
-            </div>
-          )}
-
           {/* Latest signature status */}
-          {hasApiKey && latest && (
+          {latest && (
             <div className="space-y-3">
               <div className={`flex items-center gap-2 p-3 rounded-lg border ${cfg?.color}`}>
                 <StatusIcon className="w-4 h-4 flex-shrink-0" />
@@ -152,7 +123,10 @@ export default function ClicksignContractButton({ contract, user }) {
                   <div key={i} className="flex items-center justify-between p-2.5 bg-gray-50 rounded-lg border border-gray-200 text-sm">
                     <div>
                       <p className="font-medium text-gray-800">{s.name}</p>
-                      <p className="text-xs text-gray-500">{s.email}</p>
+                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                        {s.delivery_channel === 'whatsapp' ? <MessageCircle className="w-3 h-3" /> : <Mail className="w-3 h-3" />}
+                        {s.delivery_channel === 'whatsapp' ? s.phone : s.email}
+                      </p>
                     </div>
                     <Badge variant="outline" className={`text-xs ${s.status === 'Assinado' ? 'border-green-400 text-green-700' : 'border-amber-400 text-amber-700'}`}>
                       {s.status}
@@ -171,7 +145,7 @@ export default function ClicksignContractButton({ contract, user }) {
           )}
 
           {/* Send for first time */}
-          {hasApiKey && !latest && (
+          {!latest && (
             <div className="space-y-4">
               {pdfs.length === 0 ? (
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">

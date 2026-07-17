@@ -64,6 +64,16 @@
           "signed_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "phone": {
+            "type": "string",
+            "description": "Telefone do signatário (usado se delivery_channel for whatsapp)"
+          },
+          "delivery_channel": {
+            "type": "string",
+            "enum": ["email", "whatsapp"],
+            "default": "email",
+            "description": "Canal usado para notificar o signatário"
           }
         }
       },

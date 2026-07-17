@@ -103,11 +103,10 @@ function buildContractHtml(contractData) {
 }
 
 export default function ContractEditorWYSIWYG({ 
-  contractData, 
-  templates = [], 
-  onSave, 
-  onSendToSign,
-  onSaveTemplate 
+  contractData,
+  templates = [],
+  onSave,
+  onSaveTemplate
 }) {
   const [documentHtml, setDocumentHtml] = useState(() => contractData?.document_html || buildContractHtml(contractData));
   const [selectedTemplate, setSelectedTemplate] = useState(contractData?.template_id || '');

@@ -54,26 +54,6 @@ export default function ContractGenerator() {
     }
   });
 
-  const sendToSignMutation = useMutation({
-    mutationFn: async (data) => {
-      const response = await base44.functions.invoke('setupClicksignContract', {
-        contract_data: contractData,
-        document_html: data.documentHtml,
-        signers: contractData.signers
-      });
-      return response;
-    },
-    onSuccess: (response) => {
-      if (response.data?.clicksign_key) {
-        toast.success('Contrato enviado para assinatura!');
-        setTimeout(() => window.location.href = '/Contracts', 2000);
-      }
-    },
-    onError: (error) => {
-      toast.error('Erro ao enviar para assinatura: ' + error.message);
-    }
-  });
-
   const saveTemplateMutation = useMutation({
     mutationFn: (templateData) => 
       base44.entities.ContractTemplate.create({
@@ -144,11 +124,6 @@ export default function ContractGenerator() {
       documents,
     };
     saveContractMutation.mutate(fullData);
-    setIsDirty(false);
-  };
-
-  const handleSendToSign = async (editorData) => {
-    sendToSignMutation.mutate(editorData);
     setIsDirty(false);
   };
 
@@ -249,7 +224,6 @@ export default function ContractGenerator() {
             contractData={contractData}
             templates={templates}
             onSave={handleSaveDocument}
-            onSendToSign={handleSendToSign}
             onSaveTemplate={(data) => saveTemplateMutation.mutate(data)}
           />
         )}
@@ -357,12 +331,12 @@ export default function ContractGenerator() {
           </div>
         )}
 
-        {(saveContractMutation.isPending || sendToSignMutation.isPending || saveTemplateMutation.isPending) && (
+        {(saveContractMutation.isPending || saveTemplateMutation.isPending) && (
           <div className="fixed inset-0 bg-black/20 flex items-center justify-center">
             <Card className="p-6">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-                <p>{sendToSignMutation.isPending ? 'Enviando para assinatura...' : saveTemplateMutation.isPending ? 'Salvando modelo...' : 'Salvando contrato...'}</p>
+                <p>{saveTemplateMutation.isPending ? 'Salvando modelo...' : 'Salvando contrato...'}</p>
               </div>
             </Card>
           </div>

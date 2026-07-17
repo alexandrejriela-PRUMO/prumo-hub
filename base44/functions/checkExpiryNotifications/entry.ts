@@ -226,7 +226,7 @@ Deno.serve(async (req) => {
       }
       if (prefs.whatsapp && prefs.phone) {
         try {
-          await fetch('https://prumohub.app.n8n.cloud/webhook/prumo-whatsapp', {
+          await fetch('https://n8n-2ud7.srv1837546.hstgr.cloud/webhook/prumo-whatsapp', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ phone: prefs.phone, message: `${title}: ${message}` })

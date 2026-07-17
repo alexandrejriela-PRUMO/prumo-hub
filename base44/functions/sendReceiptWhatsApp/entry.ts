@@ -271,7 +271,7 @@ Deno.serve(async (req) => {
     const fmt = (v) => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
     const message = `Olá ${receipt.client_name || ''}, segue o recibo${receipt.receipt_number ? ` Nº ${receipt.receipt_number}` : ''} referente a "${receipt.title || 'Honorários'}", no valor de R$ ${fmt(receipt.total_amount)}.`;
 
-    const waResponse = await fetch('https://prumohub.app.n8n.cloud/webhook/prumo-whatsapp', {
+    const waResponse = await fetch('https://n8n-2ud7.srv1837546.hstgr.cloud/webhook/prumo-whatsapp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

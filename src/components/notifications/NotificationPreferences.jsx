@@ -20,7 +20,6 @@ const REALTIME_EVENTS = [
   { key: 'atualizacao_processo', label: 'Atualização em Processo', icon: '⚖️' },
   { key: 'novo_requerimento', label: 'Novo Requerimento', icon: '💬' },
   { key: 'resposta_requerimento', label: 'Resposta a Requerimento', icon: '💬' },
-  { key: 'nova_fatura', label: 'Nova Fatura Gerada', icon: '💳' },
   { key: 'task_overdue', label: 'Tarefa de CRM Vencida', icon: '🔴' },
   { key: 'atualizacao_cliente_crm', label: 'Interação no CRM', icon: '👥' },
   { key: 'novo_contrato', label: 'Novo Contrato', icon: '📝' },

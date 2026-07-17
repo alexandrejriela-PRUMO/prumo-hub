@@ -52,6 +52,22 @@ async function pushNotif(base44, { user_email, title, message, event_type, sever
   }
 }
 
+// ─── Busca preferência de WhatsApp para um evento ─────────────────────────────
+async function getWhatsappPref(base44, email) {
+  try {
+    const prefs = await base44.asServiceRole.entities.NotificationPreference.filter({
+      user_email: email, event_type: 'task_overdue'
+    });
+    const pref = prefs[0];
+    return {
+      enabled: pref ? (pref.sms_enabled === true) : false,
+      phone: pref?.phone_number || null,
+    };
+  } catch {
+    return { enabled: false, phone: null };
+  }
+}
+
 // ─── Envia email ──────────────────────────────────────────────────────────────
 async function sendEmail(base44, to, subject, body) {
   if (!to) return;
@@ -257,6 +273,24 @@ Deno.serve(async (req) => {
                 link: '/ConsultorClients',
                 metadata: { crm_id: crm.id, task_id: task.id }
               });
+
+              const waPref = await getWhatsappPref(base44, responsible);
+              if (waPref.enabled && waPref.phone) {
+                try {
+                  await fetch('https://prumohub.app.n8n.cloud/webhook/prumo-whatsapp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      phone: waPref.phone,
+                      message: `⚠️ Tarefa Vencida: A tarefa "${task.title}" do cliente "${crm.client_name}" está VENCIDA desde ${task.due_date}.`
+                    })
+                  });
+                  console.log(`[CRM Overdue] WhatsApp enviado para ${waPref.phone}`);
+                } catch (e) {
+                  console.error('[CRM Overdue] Erro ao enviar WhatsApp:', e.message);
+                }
+              }
+
               notified++;
             }
           }

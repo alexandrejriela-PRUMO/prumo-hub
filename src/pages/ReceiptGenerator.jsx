@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { ChevronLeft, Plus, Trash2, Search, Mail, MessageCircle, Save, FileCheck } from 'lucide-react';
+import { ChevronLeft, Plus, Trash2, Search, Mail, MessageCircle, Save, FileCheck, FileEdit, User, DollarSign, Clock } from 'lucide-react';
 import { createPageUrl } from '../utils';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
 import { useNavigationGuard } from '../hooks/useNavigationGuard';
@@ -40,6 +40,8 @@ export default function ReceiptGenerator() {
   const location = useLocation();
   const qc = useQueryClient();
 
+  const [step, setStep] = useState('form'); // form, history
+  const [historyTab, setHistoryTab] = useState('receipts'); // receipts, whatsapp
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [receiptId, setReceiptId] = useState(null);
   const [receiptNumber, setReceiptNumber] = useState(null);
@@ -110,6 +112,25 @@ export default function ReceiptGenerator() {
     queryKey: ['crm-clients-receipt', effectiveEmail],
     queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: effectiveEmail }),
     enabled: !!effectiveEmail,
+  });
+
+  const { data: consultorReceipts } = useQuery({
+    queryKey: ['listConsultorReceipts', effectiveEmail],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listConsultorReceipts', {});
+      return res.data;
+    },
+    enabled: !!effectiveEmail,
+  });
+  const receipts = consultorReceipts?.receipts || [];
+
+  const deleteReceiptMutation = useMutation({
+    mutationFn: (id) => base44.entities.Receipt.delete(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['listConsultorReceipts'] });
+      toast.success('Recibo deletado');
+    },
+    onError: (error) => toast.error('Erro ao deletar: ' + error.message),
   });
 
   const { data: properties = [] } = useQuery({
@@ -245,6 +266,7 @@ export default function ReceiptGenerator() {
       }
       qc.invalidateQueries({ queryKey: ['fin-data'] });
       qc.invalidateQueries({ queryKey: ['fin-data-receipt'] });
+      qc.invalidateQueries({ queryKey: ['listConsultorReceipts'] });
       setIsDirty(false);
       toast.success(targetStatus === 'Emitido' ? 'Recibo emitido com sucesso!' : 'Rascunho salvo!');
     } catch (err) {
@@ -262,6 +284,7 @@ export default function ReceiptGenerator() {
       await base44.functions.invoke('sendReceiptEmail', { receipt_id: receiptId });
       setStatus('Enviado');
       qc.invalidateQueries({ queryKey: ['fin-data'] });
+      qc.invalidateQueries({ queryKey: ['listConsultorReceipts'] });
       toast.success('Recibo enviado por e-mail!');
     } catch (err) {
       toast.error('Erro ao enviar e-mail: ' + err.message);
@@ -283,6 +306,7 @@ export default function ReceiptGenerator() {
     try {
       await base44.functions.invoke('sendReceiptWhatsApp', { receipt_id: receiptId, phone: phoneWithCountry, message });
       qc.invalidateQueries({ queryKey: ['fin-data'] });
+      qc.invalidateQueries({ queryKey: ['listConsultorReceipts'] });
       toast.success('Recibo enviado por WhatsApp!');
       setShowWhatsAppDialog(false);
     } catch (err) {
@@ -290,6 +314,53 @@ export default function ReceiptGenerator() {
     } finally {
       setSendingWhatsApp(false);
     }
+  };
+
+  // Abre o editor com um recibo do histórico
+  const handleOpenReceipt = (r) => {
+    setReceiptId(r.id);
+    setReceiptNumber(r.receipt_number);
+    setPdfUrl(r.pdf_url || '');
+    setStatus(r.status || 'Rascunho');
+    setFormData({
+      title: r.title || 'Recibo de Honorários',
+      client_name: r.client_name || '',
+      client_email: r.client_email || '',
+      client_cpf_cnpj: r.client_cpf_cnpj || '',
+      property_id: r.property_id || '',
+      property_name: r.property_name || '',
+      expense_id: r.expense_id || '',
+      services: r.services || [],
+      payment_method: r.payment_method || 'PIX',
+      payment_date: r.payment_date || format(new Date(), 'yyyy-MM-dd'),
+      notes: r.notes || '',
+      espelhar_documentos: !!r.espelhar_documentos,
+    });
+    setLinkExpense(!!r.expense_id);
+    setClientSearch(r.client_name || '');
+    setIsDirty(false);
+    setStep('form');
+  };
+
+  const handleNewReceipt = () => {
+    setFormData(EMPTY_FORM);
+    setReceiptId(null);
+    setReceiptNumber(null);
+    setPdfUrl('');
+    setStatus('Rascunho');
+    setClientSearch('');
+    setClientPhone('');
+    setLinkExpense(false);
+    setIsDirty(false);
+    setStep('form');
+  };
+
+  const goToHistory = () => {
+    if (isDirty) {
+      const confirmed = window.confirm('Você tem alterações não salvas. Deseja sair sem salvar?');
+      if (!confirmed) return;
+    }
+    setStep('history');
   };
 
   if (!user) {
@@ -317,14 +388,25 @@ export default function ReceiptGenerator() {
             <ChevronLeft className="w-4 h-4" /> Voltar
           </Button>
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-emerald-900 mb-1 flex items-center gap-2 flex-wrap">
-              Gerador de Recibos
-              {receiptNumber && <Badge className={`text-xs border-0 ${statusColor}`}>{receiptNumber} · {status}</Badge>}
-            </h1>
-            <p className="text-gray-600">Emita recibos de honorários vinculados ao módulo financeiro</p>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <h1 className="text-3xl font-bold text-emerald-900 mb-1 flex items-center gap-2 flex-wrap">
+                  Gerador de Recibos
+                  {step === 'form' && receiptNumber && <Badge className={`text-xs border-0 ${statusColor}`}>{receiptNumber} · {status}</Badge>}
+                </h1>
+                <p className="text-gray-600">Emita recibos de honorários vinculados ao módulo financeiro</p>
+              </div>
+              {step === 'form' && (
+                <Button onClick={goToHistory} variant="outline" className="gap-2">
+                  Ver Histórico ({receipts.length})
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
+        {step === 'form' && (
+        <>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           {/* FORMULÁRIO */}
           <div className="space-y-6">
@@ -606,6 +688,147 @@ export default function ReceiptGenerator() {
               <MessageCircle className="w-5 h-5" /> Histórico de WhatsApp
             </h2>
             <WhatsAppSendHistory consultorEmail={effectiveEmail} docType="receipt" docId={receiptId} />
+          </div>
+        )}
+        </>
+        )}
+
+        {step === 'history' && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-bold text-emerald-900">Histórico de Recibos</h2>
+              </div>
+              <Button onClick={handleNewReceipt} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
+                <Plus className="w-4 h-4" /> Novo Recibo
+              </Button>
+            </div>
+
+            {/* Abas */}
+            <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl w-fit">
+              <button
+                onClick={() => setHistoryTab('receipts')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  historyTab === 'receipts'
+                    ? 'bg-white text-emerald-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <FileCheck className="w-4 h-4" />
+                Recibos ({receipts.length})
+              </button>
+              <button
+                onClick={() => setHistoryTab('whatsapp')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  historyTab === 'whatsapp'
+                    ? 'bg-white text-emerald-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <MessageCircle className="w-4 h-4" />
+                WhatsApp Enviados
+              </button>
+            </div>
+
+            {historyTab === 'whatsapp' && (
+              <WhatsAppSendHistory consultorEmail={effectiveEmail} docType="receipt" />
+            )}
+
+            {historyTab === 'receipts' && (
+            <div>
+            {receipts.length === 0 ? (
+              <div className="text-center py-20 bg-white rounded-xl border border-dashed border-gray-200">
+                <FileCheck className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+                <p className="text-gray-500 font-medium">Nenhum recibo salvo ainda</p>
+                <p className="text-gray-400 text-sm mt-1">Crie seu primeiro recibo clicando em "Novo Recibo"</p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {receipts.map(r => {
+                  const rStatusColor = r.status === 'Enviado'
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : r.status === 'Emitido'
+                    ? 'bg-blue-100 text-blue-800'
+                    : 'bg-gray-100 text-gray-600';
+
+                  const createdAt = r.created_date
+                    ? new Date(r.created_date).toLocaleDateString('pt-BR')
+                    : '—';
+
+                  return (
+                    <Card key={r.id} className="hover:shadow-md transition-shadow border-gray-100">
+                      <CardContent className="p-0">
+                        <div className="flex items-stretch">
+                          {/* Barra lateral colorida */}
+                          <div className="w-1.5 rounded-l-lg bg-emerald-600 flex-shrink-0" />
+                          <div className="flex-1 p-5">
+                            <div className="flex items-start justify-between gap-4 flex-wrap">
+                              {/* Info principal */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                  <span className="text-xs font-mono font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+                                    {r.receipt_number}
+                                  </span>
+                                  <Badge className={`text-xs border-0 ${rStatusColor}`}>{r.status || 'Rascunho'}</Badge>
+                                </div>
+                                <h3 className="font-bold text-gray-900 text-base leading-snug truncate">
+                                  {r.title || 'Recibo de Honorários'}
+                                </h3>
+                                <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-500">
+                                  <span className="flex items-center gap-1.5">
+                                    <User className="w-3.5 h-3.5 text-gray-400" />
+                                    {r.client_name || '—'}
+                                  </span>
+                                  <span className="flex items-center gap-1.5">
+                                    <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
+                                    <strong className="text-emerald-700">
+                                      R$ {(r.total_amount ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    </strong>
+                                  </span>
+                                  <span className="flex items-center gap-1.5">
+                                    <Clock className="w-3.5 h-3.5 text-gray-400" />
+                                    {createdAt}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Ações */}
+                              <div className="flex gap-2 flex-shrink-0 items-center">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="gap-1.5 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                                  onClick={() => handleOpenReceipt(r)}
+                                  title="Abrir no Editor"
+                                >
+                                  <FileEdit className="w-3.5 h-3.5" /> Editar
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (window.confirm('Deseja deletar este recibo?')) {
+                                      deleteReceiptMutation.mutate(r.id);
+                                    }
+                                  }}
+                                  title="Deletar"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+            </div>
+            )}
           </div>
         )}
       </div>

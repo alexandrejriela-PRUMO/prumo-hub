@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { PenLine, CheckCircle, Clock, AlertCircle, MessageCircle, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import SendWhatsAppDialog from '@/components/shared/SendWhatsAppDialog';
 
 const STATUS_CFG = {
   'Aguardando Assinaturas': { color: 'bg-amber-100 text-amber-700 border-amber-300', icon: Clock },
@@ -41,46 +42,115 @@ export default function ClicksignContractButton({ contract, user }) {
 
   const pdfs = (contract.documents || []).filter(d => d.url && d.name?.toLowerCase().includes('.pdf'));
 
-  // Pergunta o canal de notificação (WhatsApp ou email) e, se WhatsApp, o telefone do signatário.
-  const askDeliveryChannel = (signerLabel) => {
-    const useWhatsapp = window.confirm(`Notificar "${signerLabel}" por WhatsApp?\n\nOK = WhatsApp · Cancelar = E-mail`);
-    if (!useWhatsapp) return { delivery_channel: 'email', phone: null };
-    const phone = window.prompt(`Telefone de WhatsApp de "${signerLabel}" (com DDI, ex: 5555999999999):`);
-    if (!phone?.trim()) return { delivery_channel: 'email', phone: null };
-    return { delivery_channel: 'whatsapp', phone: phone.trim() };
+  // Telefone do cliente (para sugerir no dialog de WhatsApp, se cadastrado no CRM)
+  const consultorEmail = contract.consultor_email || user.email;
+  const { data: crmClients = [] } = useQuery({
+    queryKey: ['crm-clients-clicksign', consultorEmail],
+    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: consultorEmail }),
+    enabled: !!consultorEmail,
+  });
+  const clientPhone = useMemo(() => {
+    const match = crmClients.find(c =>
+      (contract.client_email && c.client_email === contract.client_email) ||
+      (contract.client_name && c.client_name === contract.client_name)
+    );
+    return match?.client_phone || '';
+  }, [crmClients, contract.client_email, contract.client_name]);
+
+  // ─── Fluxo de coleta de canal de notificação por signatário ────────────────
+  // Substitui window.confirm/window.prompt (bloqueados no iframe de preview do
+  // Base44) por dois dialogs sequenciais: escolha de canal, depois telefone.
+  const [channelQueue, setChannelQueue] = useState([]);       // signatários ainda sem canal definido
+  const [resolvedSigners, setResolvedSigners] = useState([]); // signatários já com canal/telefone definidos
+  const [channelChoiceOpen, setChannelChoiceOpen] = useState(false);
+  const [phoneDialogOpen, setPhoneDialogOpen] = useState(false);
+
+  const currentSigner = channelQueue[0] || null;
+
+  const sendToClicksign = async (signers) => {
+    setSending(true);
+    try {
+      const res = await base44.functions.invoke('clicksignEnvelope', {
+        action: 'send_contract',
+        contract_id: contract.id,
+        document_url: pdfs[selectedDocIndex].url,
+        document_filename: pdfs[selectedDocIndex].name,
+        signers,
+      });
+      if (res.data?.success) {
+        toast.success('Contrato enviado para assinatura digital!');
+        refetch();
+      } else {
+        toast.error(res.data?.error || 'Erro ao enviar para assinatura.');
+      }
+    } catch (error) {
+      toast.error('Erro ao enviar para assinatura: ' + (error?.message || 'Erro desconhecido'));
+    } finally {
+      setSending(false);
+    }
   };
 
-  const handleSend = async () => {
+  const resolveCurrentSigner = (channelData) => {
+    const signer = channelQueue[0];
+    const nextResolved = [...resolvedSigners, { ...signer, ...channelData }];
+    const nextQueue = channelQueue.slice(1);
+    setResolvedSigners(nextResolved);
+    setChannelQueue(nextQueue);
+    if (nextQueue.length > 0) {
+      setChannelChoiceOpen(true);
+    } else {
+      sendToClicksign(nextResolved);
+    }
+  };
+
+  const handleChooseEmail = () => {
+    setChannelChoiceOpen(false);
+    resolveCurrentSigner({ delivery_channel: 'email', phone: null });
+  };
+
+  const handleChooseWhatsapp = () => {
+    setChannelChoiceOpen(false);
+    setPhoneDialogOpen(true);
+  };
+
+  // Fechar sem escolher (X, ESC, clique fora) equivale ao antigo "Cancelar" do
+  // confirm() — assume e-mail, mesmo comportamento de antes.
+  const handleChannelChoiceOpenChange = (val) => {
+    setChannelChoiceOpen(val);
+    if (!val && channelQueue.length > 0) {
+      resolveCurrentSigner({ delivery_channel: 'email', phone: null });
+    }
+  };
+
+  const handlePhoneConfirm = (phone) => {
+    setPhoneDialogOpen(false);
+    resolveCurrentSigner({ delivery_channel: 'whatsapp', phone });
+  };
+
+  // Fechar sem confirmar o telefone (X, ESC, Cancelar) também assume e-mail.
+  const handlePhoneOpenChange = (val) => {
+    setPhoneDialogOpen(val);
+    if (!val && channelQueue.length > 0) {
+      resolveCurrentSigner({ delivery_channel: 'email', phone: null });
+    }
+  };
+
+  const handleSend = () => {
     if (!pdfs.length) {
       toast.error('Nenhum PDF encontrado nos documentos do contrato.');
       return;
     }
-    setSending(true);
-
     const consultorLabel = user.full_name || user.email;
     const signers = [
-      { name: consultorLabel, email: user.email, sign_as: 'sign', ...askDeliveryChannel(consultorLabel) },
+      { name: consultorLabel, email: user.email, sign_as: 'sign' },
     ];
     if (contract.client_email) {
       const clientLabel = contract.client_name || contract.client_email;
-      signers.push({ name: clientLabel, email: contract.client_email, sign_as: 'sign', ...askDeliveryChannel(clientLabel) });
+      signers.push({ name: clientLabel, email: contract.client_email, sign_as: 'sign' });
     }
-
-    const res = await base44.functions.invoke('clicksignEnvelope', {
-      action: 'send_contract',
-      contract_id: contract.id,
-      document_url: pdfs[selectedDocIndex].url,
-      document_filename: pdfs[selectedDocIndex].name,
-      signers,
-    });
-
-    setSending(false);
-    if (res.data?.success) {
-      toast.success('Contrato enviado para assinatura digital!');
-      refetch();
-    } else {
-      toast.error(res.data?.error || 'Erro ao enviar para assinatura.');
-    }
+    setResolvedSigners([]);
+    setChannelQueue(signers);
+    setChannelChoiceOpen(true);
   };
 
   return (
@@ -193,6 +263,41 @@ export default function ClicksignContractButton({ contract, user }) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Escolha de canal de notificação de assinatura por signatário */}
+      <Dialog open={channelChoiceOpen} onOpenChange={handleChannelChoiceOpenChange}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-violet-800">
+              <PenLine className="w-5 h-5 text-violet-600" />
+              Notificação de Assinatura
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-600">
+            Como notificar <strong>{currentSigner?.name}</strong> sobre a solicitação de assinatura digital?
+            Isso é diferente do envio de cópia simples do contrato — aqui é a própria Clicksign quem envia a notificação oficial.
+          </p>
+          <div className="flex gap-2 pt-2">
+            <Button variant="outline" className="flex-1 gap-2" onClick={handleChooseEmail}>
+              <Mail className="w-4 h-4" /> E-mail
+            </Button>
+            <Button className="flex-1 gap-2 bg-violet-600 hover:bg-violet-700" onClick={handleChooseWhatsapp}>
+              <MessageCircle className="w-4 h-4" /> WhatsApp
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Telefone para notificação de assinatura via WhatsApp */}
+      <SendWhatsAppDialog
+        open={phoneDialogOpen}
+        onOpenChange={handlePhoneOpenChange}
+        title="Notificação de Assinatura via WhatsApp"
+        defaultPhone={currentSigner?.email === contract.client_email ? clientPhone : ''}
+        showMessage={false}
+        confirmLabel="Confirmar"
+        onConfirm={(phone) => handlePhoneConfirm(phone)}
+      />
     </>
   );
 }

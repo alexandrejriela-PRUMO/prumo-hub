@@ -7,17 +7,30 @@ import { Label } from '@/components/ui/label';
 import { MessageCircle, Loader2 } from 'lucide-react';
 
 /**
- * SendWhatsAppDialog — modal reutilizável para Recibo, Orçamento e Cópia de Contrato.
- * Substitui o antigo window.prompt() (que falha dentro do iframe de preview do Base44).
+ * SendWhatsAppDialog — modal reutilizável para Recibo, Orçamento, Cópia de Contrato e
+ * notificação de assinatura digital (Clicksign). Substitui o antigo window.prompt()
+ * (que falha dentro do iframe de preview do Base44).
  *
  * Props:
  * - open, onOpenChange: controle de visibilidade
+ * - title: título do dialog (default "Enviar por WhatsApp")
  * - defaultPhone: telefone pré-preenchido (vindo do ClientCRM, se encontrado)
  * - defaultMessage: mensagem padrão sugerida, editável pelo usuário
+ * - showMessage: exibe o campo de mensagem (default true). Desative quando não houver
+ *   mensagem customizável a enviar (ex: notificação de assinatura, que usa o template
+ *   próprio da Clicksign).
+ * - confirmLabel: texto do botão de confirmação (default "Enviar")
  * - isSending: estado de carregamento (desabilita o formulário)
- * - onConfirm(phone, message): chamado ao clicar em "Enviar"
+ * - onConfirm(phone, message): chamado ao clicar em confirmar
  */
-export default function SendWhatsAppDialog({ open, onOpenChange, defaultPhone = '', defaultMessage = '', isSending = false, onConfirm }) {
+export default function SendWhatsAppDialog({
+  open, onOpenChange,
+  title = 'Enviar por WhatsApp',
+  defaultPhone = '', defaultMessage = '',
+  showMessage = true,
+  confirmLabel = 'Enviar',
+  isSending = false, onConfirm
+}) {
   const [phone, setPhone] = useState(defaultPhone);
   const [message, setMessage] = useState(defaultMessage);
 
@@ -39,7 +52,7 @@ export default function SendWhatsAppDialog({ open, onOpenChange, defaultPhone = 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MessageCircle className="w-5 h-5 text-emerald-600" />
-            Enviar por WhatsApp
+            {title}
           </DialogTitle>
         </DialogHeader>
 
@@ -60,16 +73,18 @@ export default function SendWhatsAppDialog({ open, onOpenChange, defaultPhone = 
             )}
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="wa-message">Mensagem</Label>
-            <Textarea
-              id="wa-message"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              rows={5}
-              disabled={isSending}
-            />
-          </div>
+          {showMessage && (
+            <div className="space-y-1.5">
+              <Label htmlFor="wa-message">Mensagem</Label>
+              <Textarea
+                id="wa-message"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                rows={5}
+                disabled={isSending}
+              />
+            </div>
+          )}
         </div>
 
         <DialogFooter>
@@ -82,7 +97,7 @@ export default function SendWhatsAppDialog({ open, onOpenChange, defaultPhone = 
             className="bg-emerald-600 hover:bg-emerald-700 gap-2"
           >
             {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageCircle className="w-4 h-4" />}
-            {isSending ? 'Enviando...' : 'Enviar'}
+            {isSending ? 'Enviando...' : confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

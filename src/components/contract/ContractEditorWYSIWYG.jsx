@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Download, Save, Mail, MessageCircle, Copy, ZoomIn, ZoomOut, Image as ImageIcon, RefreshCw } from 'lucide-react';
 import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import html2pdf from 'html2pdf.js';
 import { Document, Packer, Paragraph, TextRun, convertInchesToTwip } from 'docx';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
@@ -54,7 +54,7 @@ function buildContractHtml(contractData) {
   const nomeContratadaAssinatura = contratadoParty.name || 'Contratada';
 
   return '<div style="font-family: Calibri, Arial, sans-serif; line-height: 1.8; color: #333;">'
-    + '<div style="text-align: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 3px solid #1B4332;">'
+    + '<div style="text-align: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 3px solid #1B4332; page-break-inside:avoid;">'
     + '<h1 style="color: #1B4332; margin: 0; font-size: 28px; font-weight: bold;">CONTRATO DE ' + tipoContrato + '</h1>'
     + '<p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">Data: ' + dataHoje + '</p>'
     + '</div>'
@@ -89,13 +89,13 @@ function buildContractHtml(contractData) {
     + '<h2 style="color: #1B4332; font-size: 16px; margin-top: 0;">6. TERMOS E CONDIÇÕES</h2>'
     + '<p>' + notas + '</p>'
     + '</div>'
-    + '<div style="margin-top: 60px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">'
-    + '<div style="text-align: center;">'
+    + '<div style="margin-top: 60px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; page-break-inside:avoid;">'
+    + '<div style="text-align: center; page-break-inside:avoid;">'
     + '<div style="border-top: 1px solid #000; padding-top: 20px; margin-bottom: 5px;"></div>'
     + '<p style="margin: 0; font-size: 13px;"><strong>' + nomeContratanteAssinatura + '</strong></p>'
     + '<p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">Data: ___/___/_______</p>'
     + '</div>'
-    + '<div style="text-align: center;">'
+    + '<div style="text-align: center; page-break-inside:avoid;">'
     + '<div style="border-top: 1px solid #000; padding-top: 20px; margin-bottom: 5px;"></div>'
     + '<p style="margin: 0; font-size: 13px;"><strong>' + nomeContratadaAssinatura + '</strong></p>'
     + '<p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">Data: ___/___/_______</p>'
@@ -164,33 +164,40 @@ export default function ContractEditorWYSIWYG({
 
 
 
-  const buildPdfFromHtml = async (htmlContent) => {
+  // Gera o PDF a partir de HTML "solto" (fora da tela), respeitando quebras de
+  // página via CSS (page-break-inside:avoid) — evita cortar logo/assinaturas ao meio.
+  const generatePdfBlob = async (htmlContent, filename = 'documento.pdf') => {
     const container = document.createElement('div');
-    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;padding:40px;background:#fff;font-family:Calibri,Arial,sans-serif;line-height:1.8;color:#333;';
     container.innerHTML = htmlContent;
+    container.style.width = '186mm'; // 210mm (A4) - 12mm margem direita - 12mm margem esquerda
     document.body.appendChild(container);
-    const canvas = await html2canvas(container, { scale: 2, backgroundColor: '#fff', useCORS: true });
-    document.body.removeChild(container);
-
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const imgWidth = 210;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    let heightLeft = imgHeight;
-    let position = 0;
-    while (heightLeft >= 0) {
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= 297;
-      position -= 297;
-      if (heightLeft > 0) pdf.addPage();
+    try {
+      const opt = {
+        margin: [10, 12, 10, 12], // mm: topo, direita, baixo, esquerda
+        filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] },
+      };
+      return await html2pdf().set(opt).from(container).outputPdf('blob');
+    } finally {
+      document.body.removeChild(container);
     }
-    return pdf;
   };
 
   const exportPDF = async () => {
     try {
-      const pdf = await buildPdfFromHtml(generateCompleteHTML());
-      pdf.save(`contrato-${Date.now()}.pdf`);
+      const fileName = `contrato-${Date.now()}.pdf`;
+      const blob = await generatePdfBlob(generateCompleteHTML(), fileName);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
       toast.success('PDF exportado com sucesso!');
     } catch (error) {
       toast.error('Erro ao exportar PDF');
@@ -276,11 +283,10 @@ export default function ContractEditorWYSIWYG({
     setIsSendingEmail(true);
     try {
       toast.info('Gerando PDF...');
-      const pdf = await buildPdfFromHtml(generateCompleteHTML());
-      const blob = pdf.output('blob');
       const fileName = `contrato-${contractData?.id || contractData?.client_name?.replace(/\s+/g,'-') || Date.now()}.pdf`;
-      const file = new File([blob], fileName, { type: 'application/pdf' });
-      
+      const pdfBlob = await generatePdfBlob(generateCompleteHTML(), fileName);
+      const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
       toast.info('Enviando arquivo...');
       const uploadResult = await base44.integrations.Core.UploadFile({ file });
       const file_url = uploadResult?.file_url;
@@ -349,10 +355,9 @@ export default function ContractEditorWYSIWYG({
     setIsSendingWhatsApp(true);
     try {
       toast.info('Gerando PDF...');
-      const pdf = await buildPdfFromHtml(generateCompleteHTML());
-      const blob = pdf.output('blob');
       const fileName = `contrato-${contractData.id}.pdf`;
-      const file = new File([blob], fileName, { type: 'application/pdf' });
+      const pdfBlob = await generatePdfBlob(generateCompleteHTML(), fileName);
+      const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
       toast.info('Enviando arquivo...');
       const uploadResult = await base44.integrations.Core.UploadFile({ file });
@@ -425,7 +430,7 @@ export default function ContractEditorWYSIWYG({
     let finalHTML = documentHtml;
     
     if (logoBase64) {
-      const logoHTML = `<img src="${logoBase64}" style="max-height: 80px; margin-bottom: 20px;" alt="Logo Empresa">`;
+      const logoHTML = `<div style="page-break-inside:avoid;"><img src="${logoBase64}" style="max-height: 80px; margin-bottom: 20px;" alt="Logo Empresa"></div>`;
       finalHTML = logoHTML + finalHTML;
     }
 
@@ -607,9 +612,9 @@ export default function ContractEditorWYSIWYG({
             toast.info('Gerando PDF...');
             let pdfUrl = null;
             try {
-              const pdf = await buildPdfFromHtml(generateCompleteHTML());
-              const blob = pdf.output('blob');
-              const file = new File([blob], `contrato-${Date.now()}.pdf`, { type: 'application/pdf' });
+              const fileName = `contrato-${Date.now()}.pdf`;
+              const pdfBlob = await generatePdfBlob(generateCompleteHTML(), fileName);
+              const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
               const result = await base44.integrations.Core.UploadFile({ file });
               pdfUrl = result.file_url;
             } catch (e) {

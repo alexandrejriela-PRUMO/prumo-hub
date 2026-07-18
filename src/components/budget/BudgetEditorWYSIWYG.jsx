@@ -3,8 +3,7 @@ import ReactQuill from 'react-quill';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Download, Mail, MessageCircle, Image as ImageIcon, RefreshCw } from 'lucide-react';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import html2pdf from 'html2pdf.js';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
@@ -48,7 +47,7 @@ function buildBudgetHtml(budgetData, consultorData) {
         const subtotalSvc = hrs * rate;
         const bg = idx % 2 === 0 ? '#f9fafb' : '#ffffff';
         return `
-        <tr style="background:${bg}; border-bottom:1px solid #e5e7eb;">
+        <tr style="background:${bg}; border-bottom:1px solid #e5e7eb; page-break-inside:avoid;">
           <td style="padding:12px 14px; font-size:13px; color:#111827;">
             <strong style="display:block; margin-bottom:2px;">${s.name || 'Serviço'}</strong>
             ${s.description ? `<span style="font-size:12px; color:#6b7280; line-height:1.5;">${s.description}</span>` : ''}
@@ -67,13 +66,13 @@ function buildBudgetHtml(budgetData, consultorData) {
   fees.forEach(f => { if (parseFloat(f.amount) > 0) extraLines.push({ label: f.name, value: parseFloat(f.amount) }); });
 
   const extraRows = extraLines.map(ex => `
-    <tr style="background:#fffbeb; border-bottom:1px solid #fde68a;">
+    <tr style="background:#fffbeb; border-bottom:1px solid #fde68a; page-break-inside:avoid;">
       <td colspan="3" style="padding:10px 14px; font-size:13px; color:#92400e;">${ex.label}</td>
       <td style="text-align:right; padding:10px 14px; font-size:13px; font-weight:600; color:#92400e; white-space:nowrap;">R$ ${fmt(ex.value)}</td>
     </tr>`).join('');
 
   const discountRow = discount > 0 ? `
-    <tr style="background:#fef2f2; border-bottom:1px solid #fecaca;">
+    <tr style="background:#fef2f2; border-bottom:1px solid #fecaca; page-break-inside:avoid;">
       <td colspan="3" style="padding:10px 14px; font-size:13px; color:#dc2626; font-weight:600;">Desconto (${discount}%)</td>
       <td style="text-align:right; padding:10px 14px; font-size:13px; font-weight:700; color:#dc2626; white-space:nowrap;">- R$ ${fmt(discountValue)}</td>
     </tr>` : '';
@@ -81,7 +80,7 @@ function buildBudgetHtml(budgetData, consultorData) {
   return `<div style="font-family: 'Segoe UI', Calibri, Arial, sans-serif; color:#1f2937; max-width:794px; margin:0 auto; line-height:1.6;">
 
   <!-- CABEÇALHO -->
-  <div style="background:linear-gradient(135deg,#064e3b 0%,#1B4332 100%); color:#fff; padding:36px 40px 28px; margin-bottom:0;">
+  <div style="background:linear-gradient(135deg,#064e3b 0%,#1B4332 100%); color:#fff; padding:36px 40px 28px; margin-bottom:0; page-break-inside:avoid;">
     <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
       <div>
         <p style="margin:0 0 4px 0; font-size:11px; letter-spacing:3px; text-transform:uppercase; color:#6ee7b7; font-weight:600;">PRUMO HUB</p>
@@ -136,7 +135,7 @@ function buildBudgetHtml(budgetData, consultorData) {
 
   <!-- TOTALIZADOR -->
   <div style="display:flex; justify-content:flex-end; margin-bottom:32px;">
-    <div style="min-width:280px; background:#f9fafb; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden;">
+    <div style="min-width:280px; background:#f9fafb; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; page-break-inside:avoid;">
       <div style="padding:12px 20px; display:flex; justify-content:space-between; border-bottom:1px solid #e5e7eb;">
         <span style="font-size:13px; color:#6b7280;">Subtotal dos Serviços</span>
         <span style="font-size:13px; font-weight:600; color:#374151;">R$ ${fmt(servicesTotal)}</span>
@@ -171,7 +170,7 @@ function buildBudgetHtml(budgetData, consultorData) {
   </div>
 
   <!-- ASSINATURAS -->
-  <table style="width:100%; border-collapse:collapse; margin-top:20px;">
+  <table style="width:100%; border-collapse:collapse; margin-top:20px; page-break-inside:avoid;">
     <tr>
       <td style="width:48%; text-align:center; padding:0 16px 0 0;">
         <div style="border-top:2px solid #1B4332; padding-top:14px;">
@@ -268,7 +267,7 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
     let finalHTML = htmlContent;
     
     if (logoBase64) {
-      const logoHTML = `<img src="${logoBase64}" style="max-height: 80px; margin-bottom: 20px;" alt="Logo Empresa">`;
+      const logoHTML = `<div style="page-break-inside:avoid;"><img src="${logoBase64}" style="max-height: 80px; margin-bottom: 20px;" alt="Logo Empresa"></div>`;
       // Inserir logo no início do documento
       finalHTML = logoHTML + finalHTML;
     }
@@ -276,37 +275,47 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
     return finalHTML;
   };
 
+  // Gera o PDF a partir de HTML "solto" (fora da tela), respeitando quebras de
+  // página via CSS (page-break-inside:avoid) — evita cortar logo/tabelas ao meio.
+  const generatePdfBlob = async (htmlContent, filename = 'documento.pdf') => {
+    const container = document.createElement('div');
+    container.innerHTML = htmlContent;
+    container.style.width = '186mm'; // 210mm (A4) - 12mm margem direita - 12mm margem esquerda
+    document.body.appendChild(container);
+    try {
+      const opt = {
+        margin: [10, 12, 10, 12], // mm: topo, direita, baixo, esquerda
+        filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] },
+      };
+      return await html2pdf().set(opt).from(container).outputPdf('blob');
+    } finally {
+      document.body.removeChild(container);
+    }
+  };
+
   // Exportar para PDF usando o HTML completo
-   const exportPDF = async () => {
-     try {
-       const element = previewRef.current;
-       if (!element) return;
-
-       const canvas = await html2canvas(element, {
-         scale: 2,
-         backgroundColor: '#fff',
-         logging: false,
-         useCORS: true,
-       });
-
-       const imgData = canvas.toDataURL('image/png');
-       const pdf = new jsPDF({
-         orientation: 'portrait',
-         unit: 'mm',
-         format: 'a4',
-       });
-
-       const imgWidth = 210;
-       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-       pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-
-       pdf.save(`orcamento-${budgetData.budget_number || 'novo'}.pdf`);
-       toast.success('PDF gerado com sucesso!');
-     } catch (error) {
-       toast.error('Erro ao gerar PDF');
-       console.error(error);
-     }
-   };
+  const exportPDF = async () => {
+    try {
+      const fileName = `orcamento-${budgetData.budget_number || 'novo'}.pdf`;
+      const blob = await generatePdfBlob(generateCompleteHTML(), fileName);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('PDF gerado com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao gerar PDF');
+      console.error(error);
+    }
+  };
 
    const exportDocx = async () => {
      try {
@@ -372,42 +381,13 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
         return;
       }
 
-      // 2. Gerar PDF a partir do preview
+      // 2. Gerar PDF (respeitando quebras de página) e subir para o servidor
       toast.info('Gerando PDF...');
-      const element = previewRef.current;
-      let pdfUrl = null;
-
-      if (element) {
-        const canvas = await html2canvas(element, {
-          scale: 2,
-          backgroundColor: '#fff',
-          logging: false,
-          useCORS: true,
-        });
-
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-        const imgWidth = 210;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-        // Se o conteúdo tiver mais de uma página, adicionar páginas
-        let heightLeft = imgHeight;
-        let position = 0;
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= 297;
-        while (heightLeft > 0) {
-          position = heightLeft - imgHeight;
-          pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-          heightLeft -= 297;
-        }
-
-        // 3. Upload do PDF
-        const pdfBlob = pdf.output('blob');
-        const pdfFile = new File([pdfBlob], `orcamento-${budgetData.budget_number || budgetId}.pdf`, { type: 'application/pdf' });
-        const uploadRes = await base44.integrations.Core.UploadFile({ file: pdfFile });
-        pdfUrl = uploadRes?.file_url || null;
-      }
+      const fileName = `orcamento-${budgetData.budget_number || budgetId}.pdf`;
+      const pdfBlob = await generatePdfBlob(generateCompleteHTML(), fileName);
+      const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+      const uploadRes = await base44.integrations.Core.UploadFile({ file: pdfFile });
+      const pdfUrl = uploadRes?.file_url || null;
 
       // 4. Enviar email com link do PDF
       toast.info('Enviando e-mail...');
@@ -448,31 +428,11 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
       }
 
       toast.info('Gerando PDF...');
-      const element = previewRef.current;
-      let pdfUrl = null;
-      let fileName = `orcamento-${budgetData.budget_number || budgetId}.pdf`;
-
-      if (element) {
-        const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#fff', logging: false, useCORS: true });
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-        const imgWidth = 210;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        let heightLeft = imgHeight;
-        let position = 0;
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= 297;
-        while (heightLeft > 0) {
-          position = heightLeft - imgHeight;
-          pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-          heightLeft -= 297;
-        }
-        const pdfBlob = pdf.output('blob');
-        const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
-        const uploadRes = await base44.integrations.Core.UploadFile({ file: pdfFile });
-        pdfUrl = uploadRes?.file_url || null;
-      }
+      const fileName = `orcamento-${budgetData.budget_number || budgetId}.pdf`;
+      const pdfBlob = await generatePdfBlob(generateCompleteHTML(), fileName);
+      const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+      const uploadRes = await base44.integrations.Core.UploadFile({ file: pdfFile });
+      const pdfUrl = uploadRes?.file_url || null;
 
       if (!pdfUrl) {
         toast.error('Não foi possível gerar o PDF.');

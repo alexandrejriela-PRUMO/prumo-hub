@@ -345,6 +345,10 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
   };
 
    const exportDocx = async () => {
+     if (!budgetData?.id) {
+       toast.warning('Salve o orçamento antes de baixar em Word, para garantir que o arquivo reflita a versão salva.');
+       return;
+     }
      try {
        const htmlContent = generateCompleteHTML();
        const textContent = htmlContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();

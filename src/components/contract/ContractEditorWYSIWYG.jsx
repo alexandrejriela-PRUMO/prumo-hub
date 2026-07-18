@@ -208,6 +208,10 @@ export default function ContractEditorWYSIWYG({
   };
 
   const exportDocx = async () => {
+    if (!contractData?.id) {
+      toast.warning('Salve o contrato antes de baixar em Word, para garantir que o arquivo reflita a versão salva.');
+      return;
+    }
     try {
       const htmlContent = generateCompleteHTML();
       

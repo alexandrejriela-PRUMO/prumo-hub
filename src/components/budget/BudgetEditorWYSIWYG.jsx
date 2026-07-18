@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactQuill from 'react-quill';
 import { Button } from '@/components/ui/button';
-import { Download, Mail, Image as ImageIcon, RefreshCw } from 'lucide-react';
+import { Download, Mail, MessageCircle, Image as ImageIcon, RefreshCw } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
@@ -208,6 +208,7 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
   const [loadingLogo, setLoadingLogo] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
   const fileInputRef = useRef(null);
   const previewRef = useRef(null);
 
@@ -413,6 +414,75 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
     }
   };
 
+  const handleSendWhatsApp = async () => {
+    let phone = window.prompt('WhatsApp do cliente (com DDD):', '') || '';
+    if (!phone) return;
+    const digits = phone.replace(/\D/g, '');
+    const phoneWithCountry = digits.startsWith('55') ? digits : `55${digits}`;
+
+    setIsSendingWhatsApp(true);
+    try {
+      toast.info('Salvando orçamento...');
+      const saved = await onSave({
+        documentHtml: generateCompleteHTML(),
+        rawHtml: htmlContent,
+        returnSaved: true,
+      });
+      const budgetId = saved?.id;
+      if (!budgetId) {
+        toast.error('Não foi possível salvar o orçamento. Tente salvar manualmente primeiro.');
+        return;
+      }
+
+      toast.info('Gerando PDF...');
+      const element = previewRef.current;
+      let pdfUrl = null;
+      let fileName = `orcamento-${budgetData.budget_number || budgetId}.pdf`;
+
+      if (element) {
+        const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#fff', logging: false, useCORS: true });
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const imgWidth = 210;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= 297;
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= 297;
+        }
+        const pdfBlob = pdf.output('blob');
+        const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+        const uploadRes = await base44.integrations.Core.UploadFile({ file: pdfFile });
+        pdfUrl = uploadRes?.file_url || null;
+      }
+
+      if (!pdfUrl) {
+        toast.error('Não foi possível gerar o PDF.');
+        return;
+      }
+
+      toast.info('Enviando WhatsApp...');
+      await base44.functions.invoke('sendBudgetWhatsApp', {
+        budget_id: budgetId,
+        phone: phoneWithCountry,
+        pdf_url: pdfUrl,
+        file_name: fileName,
+      });
+
+      toast.success('Orçamento enviado por WhatsApp!');
+    } catch (error) {
+      console.error('Erro ao enviar WhatsApp:', error);
+      toast.error('Erro ao enviar WhatsApp: ' + (error.message || 'Erro desconhecido'));
+    } finally {
+      setIsSendingWhatsApp(false);
+    }
+  };
+
   const resetDocument = () => {
     setHtmlContent(buildBudgetHtml(budgetData, consultorData));
     toast.success('Documento regenerado com os dados do formulário');
@@ -506,6 +576,9 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
           </Button>
           <Button onClick={() => setShowEmailModal(true)} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
             <Mail className="w-4 h-4" /> Enviar por E-mail
+          </Button>
+          <Button onClick={handleSendWhatsApp} variant="outline" className="gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50" disabled={isSendingWhatsApp}>
+            <MessageCircle className="w-4 h-4" /> {isSendingWhatsApp ? 'Enviando...' : 'Enviar por WhatsApp'}
           </Button>
         </div>
       </div>

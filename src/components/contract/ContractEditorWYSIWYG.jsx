@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Download, Save, Mail, Copy, ZoomIn, ZoomOut, Image as ImageIcon, RefreshCw } from 'lucide-react';
+import { Download, Save, Mail, MessageCircle, Copy, ZoomIn, ZoomOut, Image as ImageIcon, RefreshCw } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { Document, Packer, Paragraph, TextRun, convertInchesToTwip } from 'docx';
@@ -117,6 +117,7 @@ export default function ContractEditorWYSIWYG({
   const [loadingLogo, setLoadingLogo] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
   const fileInputRef = useRef(null);
 
   // Inject quill CSS dynamically to avoid duplicate React instance from direct CSS import
@@ -318,6 +319,50 @@ export default function ContractEditorWYSIWYG({
       toast.error('Erro ao enviar e-mail: ' + (error?.message || 'Erro desconhecido'));
     } finally {
       setIsSendingEmail(false);
+    }
+  };
+
+  const handleSendContractWhatsApp = async () => {
+    if (!contractData?.id) {
+      toast.error('Salve o contrato antes de enviar por WhatsApp.');
+      return;
+    }
+
+    let phone = window.prompt('WhatsApp do cliente (com DDD):', '') || '';
+    if (!phone) return;
+    const digits = phone.replace(/\D/g, '');
+    const phoneWithCountry = digits.startsWith('55') ? digits : `55${digits}`;
+
+    setIsSendingWhatsApp(true);
+    try {
+      toast.info('Gerando PDF...');
+      const pdf = await buildPdfFromHtml(generateCompleteHTML());
+      const blob = pdf.output('blob');
+      const fileName = `contrato-${contractData.id}.pdf`;
+      const file = new File([blob], fileName, { type: 'application/pdf' });
+
+      toast.info('Enviando arquivo...');
+      const uploadResult = await base44.integrations.Core.UploadFile({ file });
+      const pdfUrl = uploadResult?.file_url;
+
+      if (!pdfUrl) {
+        throw new Error('Falha ao enviar arquivo para servidor');
+      }
+
+      toast.info('Enviando WhatsApp...');
+      await base44.functions.invoke('sendContractWhatsApp', {
+        contract_id: contractData.id,
+        phone: phoneWithCountry,
+        pdf_url: pdfUrl,
+        file_name: fileName,
+      });
+
+      toast.success('Cópia do contrato enviada por WhatsApp!');
+    } catch (error) {
+      console.error('Erro ao enviar WhatsApp:', error);
+      toast.error('Erro ao enviar WhatsApp: ' + (error?.message || 'Erro desconhecido'));
+    } finally {
+      setIsSendingWhatsApp(false);
     }
   };
 
@@ -552,6 +597,9 @@ export default function ContractEditorWYSIWYG({
          >
            <Mail className="w-4 h-4" /> Enviar por E-mail
          </Button>
+        <Button onClick={handleSendContractWhatsApp} variant="outline" className="gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50" disabled={isSendingWhatsApp}>
+          <MessageCircle className="w-4 h-4" /> {isSendingWhatsApp ? 'Enviando...' : 'Enviar Cópia por WhatsApp'}
+        </Button>
       </div>
 
       <SendEmailModal

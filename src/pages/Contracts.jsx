@@ -459,6 +459,7 @@ export default function Contracts() {
                   {isConsultor && (
                     <div className="pt-1">
                       <ClicksignContractButton contract={contract} user={user} />
+                      <p className="text-[10px] text-gray-400 mt-1 leading-tight">Assinatura digital — não confunda com o envio de cópia por WhatsApp</p>
                     </div>
                   )}
                 </CardContent>
@@ -858,7 +859,10 @@ export default function Contracts() {
                   <Edit3 className="w-4 h-4 mr-2" />Editar
                 </Button>
                 {isConsultor && (
-                  <ClicksignContractButton contract={viewingContract} user={user} />
+                  <div className="flex flex-col items-start gap-1">
+                    <ClicksignContractButton contract={viewingContract} user={user} />
+                    <p className="text-[10px] text-gray-400 leading-tight">Assinatura digital — não confunda com o envio de cópia por WhatsApp</p>
+                  </div>
                 )}
               </div>
             </div>

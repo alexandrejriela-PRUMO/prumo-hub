@@ -228,18 +228,29 @@ function buildReceiptPDF(receipt) {
   return doc.output('arraybuffer');
 }
 
-Deno.serve(async (req) => {
+// ─── Log de envio (não deve derrubar a resposta principal em caso de falha) ─────────
+async function logWhatsAppSend(base44, data) {
   try {
-    const base44 = createClientFromRequest(req);
+    await base44.asServiceRole.entities.WhatsAppSendLog.create(data);
+  } catch (e) {
+    console.error('[sendReceiptWhatsApp] Erro ao gravar WhatsAppSendLog:', e.message);
+  }
+}
+
+Deno.serve(async (req) => {
+  let base44, receipt_id, phone, consultorEmail, receipt, sendMessage, fileName;
+  try {
+    base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { receipt_id, phone } = await req.json();
+    let customMessage;
+    ({ receipt_id, phone, message: customMessage } = await req.json());
     if (!receipt_id) return Response.json({ error: 'receipt_id é obrigatório' }, { status: 400 });
     if (!phone) return Response.json({ error: 'phone é obrigatório' }, { status: 400 });
 
     // Determinar o email efetivo do consultor (mesma lógica de sendReceiptEmail)
-    let consultorEmail = user.email;
+    consultorEmail = user.email;
     if (user.role !== 'admin') {
       const memberships = await base44.asServiceRole.entities.TeamMember.filter({
         member_email: user.email, status: 'Ativo',
@@ -248,7 +259,7 @@ Deno.serve(async (req) => {
     }
 
     const receipts = await base44.asServiceRole.entities.Receipt.filter({ id: receipt_id });
-    const receipt = receipts[0];
+    receipt = receipts[0];
     if (!receipt) return Response.json({ error: 'Recibo não encontrado' }, { status: 404 });
     if (receipt.consultor_email !== consultorEmail && user.role !== 'admin') {
       return Response.json({ error: 'Sem permissão para este recibo' }, { status: 403 });
@@ -260,7 +271,7 @@ Deno.serve(async (req) => {
 
     // 2) Upload pro R2
     const safeNumber = (receipt.receipt_number || receipt_id).replace(/[^a-zA-Z0-9_\-]/g, '_');
-    const fileName = `Recibo_${safeNumber}.pdf`;
+    fileName = `Recibo_${safeNumber}.pdf`;
     const filePath = `recibos/${consultorEmail}/${Date.now()}_${fileName}`;
     await uploadToR2(filePath, pdfBytes, 'application/pdf');
 
@@ -269,7 +280,8 @@ Deno.serve(async (req) => {
 
     // 4) Montar mensagem e disparar via n8n → Z-API
     const fmt = (v) => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-    const message = `Olá ${receipt.client_name || ''}, segue o recibo${receipt.receipt_number ? ` Nº ${receipt.receipt_number}` : ''} referente a "${receipt.title || 'Honorários'}", no valor de R$ ${fmt(receipt.total_amount)}.`;
+    const defaultMessage = `Olá ${receipt.client_name || ''}, segue o recibo${receipt.receipt_number ? ` Nº ${receipt.receipt_number}` : ''} referente a "${receipt.title || 'Honorários'}", no valor de R$ ${fmt(receipt.total_amount)}.`;
+    sendMessage = customMessage || defaultMessage;
 
     const waResponse = await fetch('https://n8n-2ud7.srv1837546.hstgr.cloud/webhook/prumo-whatsapp', {
       method: 'POST',
@@ -278,7 +290,7 @@ Deno.serve(async (req) => {
         phone,
         document_url: signedUrl,
         file_name: fileName,
-        message,
+        message: sendMessage,
       }),
     });
     if (!waResponse.ok) {
@@ -292,9 +304,37 @@ Deno.serve(async (req) => {
       sent_at: new Date().toISOString(),
     });
 
+    await logWhatsAppSend(base44, {
+      doc_type: 'receipt',
+      doc_id: receipt_id,
+      doc_number: receipt.receipt_number || '',
+      consultor_email: consultorEmail,
+      client_name: receipt.client_name || '',
+      to_phone: phone,
+      message: sendMessage,
+      file_name: fileName,
+      sent_at: new Date().toISOString(),
+      status: 'sent',
+    });
+
     return Response.json({ success: true, sent_to: phone });
   } catch (error) {
     console.error('[sendReceiptWhatsApp] Erro:', error.message);
+    if (base44 && receipt_id && phone && consultorEmail) {
+      await logWhatsAppSend(base44, {
+        doc_type: 'receipt',
+        doc_id: receipt_id,
+        doc_number: receipt?.receipt_number || '',
+        consultor_email: consultorEmail,
+        client_name: receipt?.client_name || '',
+        to_phone: phone,
+        message: sendMessage || '',
+        file_name: fileName || '',
+        sent_at: new Date().toISOString(),
+        status: 'error',
+        error_message: error.message,
+      });
+    }
     return Response.json({ success: false, error: error.message }, { status: 500 });
   }
 });

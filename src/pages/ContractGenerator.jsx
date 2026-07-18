@@ -7,7 +7,8 @@ import { toast } from 'sonner';
 import ContractForm from '@/components/contract/ContractForm';
 import ContractEditorWYSIWYG from '@/components/contract/ContractEditorWYSIWYG';
 import ContractEmailHistory from '@/components/contract/ContractEmailHistory';
-import { ChevronLeft, Download, Copy, Trash2, FileText, Mail, Plus } from 'lucide-react';
+import WhatsAppSendHistory from '@/components/shared/WhatsAppSendHistory';
+import { ChevronLeft, Download, Copy, Trash2, FileText, Mail, MessageCircle, Plus } from 'lucide-react';
 import { useNavigationGuard } from '../hooks/useNavigationGuard';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
 import jsPDF from 'jspdf';
@@ -263,10 +264,25 @@ export default function ContractGenerator() {
                 <Mail className="w-4 h-4" />
                 E-mails Enviados
               </button>
+              <button
+                onClick={() => setHistoryTab('whatsapp')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  historyTab === 'whatsapp'
+                    ? 'bg-white text-emerald-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <MessageCircle className="w-4 h-4" />
+                WhatsApp Enviados
+              </button>
             </div>
 
             {historyTab === 'emails' && (
               <ContractEmailHistory consultorEmail={effectiveEmail} />
+            )}
+
+            {historyTab === 'whatsapp' && (
+              <WhatsAppSendHistory consultorEmail={effectiveEmail} docType="contract" />
             )}
 
             {historyTab === 'contracts' && (

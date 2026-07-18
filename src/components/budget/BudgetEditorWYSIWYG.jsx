@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import ReactQuill from 'react-quill';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Download, Mail, MessageCircle, Image as ImageIcon, RefreshCw } from 'lucide-react';
 import html2canvas from 'html2canvas';
@@ -8,6 +9,7 @@ import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import SendEmailModal from '@/components/shared/SendEmailModal';
+import SendWhatsAppDialog from '@/components/shared/SendWhatsAppDialog';
 
 function buildBudgetHtml(budgetData, consultorData) {
   const b = budgetData || {};
@@ -209,8 +211,24 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
+  const [showWhatsAppDialog, setShowWhatsAppDialog] = useState(false);
+  const [pendingWhatsAppSend, setPendingWhatsAppSend] = useState(null);
   const fileInputRef = useRef(null);
   const previewRef = useRef(null);
+
+  const { data: crmClients = [] } = useQuery({
+    queryKey: ['crm-clients-budget', consultorData?.email],
+    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: consultorData?.email }),
+    enabled: !!consultorData?.email,
+  });
+
+  const clientPhone = useMemo(() => {
+    const match = crmClients.find(c =>
+      (budgetData?.client_email && c.client_email === budgetData.client_email) ||
+      (budgetData?.client_name && c.client_name === budgetData.client_name)
+    );
+    return match?.client_phone || '';
+  }, [crmClients, budgetData?.client_email, budgetData?.client_name]);
 
   useEffect(() => {
     // Load quill CSS dynamically
@@ -415,11 +433,6 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
   };
 
   const handleSendWhatsApp = async () => {
-    let phone = window.prompt('WhatsApp do cliente (com DDD):', '') || '';
-    if (!phone) return;
-    const digits = phone.replace(/\D/g, '');
-    const phoneWithCountry = digits.startsWith('55') ? digits : `55${digits}`;
-
     setIsSendingWhatsApp(true);
     try {
       toast.info('Salvando orçamento...');
@@ -466,15 +479,34 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
         return;
       }
 
+      setPendingWhatsAppSend({ budgetId, pdfUrl, fileName });
+      setShowWhatsAppDialog(true);
+    } catch (error) {
+      console.error('Erro ao gerar PDF para WhatsApp:', error);
+      toast.error('Erro ao preparar envio: ' + (error.message || 'Erro desconhecido'));
+    } finally {
+      setIsSendingWhatsApp(false);
+    }
+  };
+
+  const handleConfirmWhatsApp = async (phone, message) => {
+    if (!pendingWhatsAppSend) return;
+    const digits = phone.replace(/\D/g, '');
+    const phoneWithCountry = digits.startsWith('55') ? digits : `55${digits}`;
+
+    setIsSendingWhatsApp(true);
+    try {
       toast.info('Enviando WhatsApp...');
       await base44.functions.invoke('sendBudgetWhatsApp', {
-        budget_id: budgetId,
+        budget_id: pendingWhatsAppSend.budgetId,
         phone: phoneWithCountry,
-        pdf_url: pdfUrl,
-        file_name: fileName,
+        pdf_url: pendingWhatsAppSend.pdfUrl,
+        file_name: pendingWhatsAppSend.fileName,
+        message,
       });
 
       toast.success('Orçamento enviado por WhatsApp!');
+      setShowWhatsAppDialog(false);
     } catch (error) {
       console.error('Erro ao enviar WhatsApp:', error);
       toast.error('Erro ao enviar WhatsApp: ' + (error.message || 'Erro desconhecido'));
@@ -592,6 +624,15 @@ export default function BudgetEditorWYSIWYG({ budgetData = {}, consultorData = n
         defaultSubject={`Orçamento ${budgetData?.budget_number || ''} - ${budgetData?.title || 'Serviços'}`}
         defaultMessage={`Prezado(a) ${budgetData?.client_name || 'Cliente'},\n\nSegue em anexo o orçamento referente aos serviços solicitados.\n\nQualquer dúvida, estou à disposição.\n\nAtenciosamente,\n${consultorData?.full_name || ''}`}
         documentLabel={`Orçamento Nº ${budgetData?.budget_number || ''}`}
+      />
+
+      <SendWhatsAppDialog
+        open={showWhatsAppDialog}
+        onOpenChange={setShowWhatsAppDialog}
+        defaultPhone={clientPhone}
+        defaultMessage={`Olá ${budgetData?.client_name || 'Cliente'}, segue o orçamento${budgetData?.budget_number ? ` Nº ${budgetData.budget_number}` : ''} referente aos serviços solicitados. Qualquer dúvida, estou à disposição.`}
+        isSending={isSendingWhatsApp}
+        onConfirm={handleConfirmWhatsApp}
       />
 
       {/* CSS para Quill e Preview */}

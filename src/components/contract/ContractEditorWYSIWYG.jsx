@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useRef, useMemo, Suspense, lazy } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,6 +10,7 @@ import { Document, Packer, Paragraph, TextRun, convertInchesToTwip } from 'docx'
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import SendEmailModal from '@/components/shared/SendEmailModal';
+import SendWhatsAppDialog from '@/components/shared/SendWhatsAppDialog';
 
 const ReactQuill = lazy(() => import('react-quill'));
 
@@ -118,7 +120,23 @@ export default function ContractEditorWYSIWYG({
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
+  const [showWhatsAppDialog, setShowWhatsAppDialog] = useState(false);
+  const [pendingWhatsAppSend, setPendingWhatsAppSend] = useState(null);
   const fileInputRef = useRef(null);
+
+  const { data: crmClients = [] } = useQuery({
+    queryKey: ['crm-clients-contract', contractData?.consultor_email],
+    queryFn: () => base44.entities.ClientCRM.filter({ consultor_email: contractData?.consultor_email }),
+    enabled: !!contractData?.consultor_email,
+  });
+
+  const clientPhone = useMemo(() => {
+    const match = crmClients.find(c =>
+      (contractData?.client_email && c.client_email === contractData.client_email) ||
+      (contractData?.client_name && c.client_name === contractData.client_name)
+    );
+    return match?.client_phone || '';
+  }, [crmClients, contractData?.client_email, contractData?.client_name]);
 
   // Inject quill CSS dynamically to avoid duplicate React instance from direct CSS import
   useEffect(() => {
@@ -328,11 +346,6 @@ export default function ContractEditorWYSIWYG({
       return;
     }
 
-    let phone = window.prompt('WhatsApp do cliente (com DDD):', '') || '';
-    if (!phone) return;
-    const digits = phone.replace(/\D/g, '');
-    const phoneWithCountry = digits.startsWith('55') ? digits : `55${digits}`;
-
     setIsSendingWhatsApp(true);
     try {
       toast.info('Gerando PDF...');
@@ -349,15 +362,34 @@ export default function ContractEditorWYSIWYG({
         throw new Error('Falha ao enviar arquivo para servidor');
       }
 
+      setPendingWhatsAppSend({ pdfUrl, fileName });
+      setShowWhatsAppDialog(true);
+    } catch (error) {
+      console.error('Erro ao gerar PDF para WhatsApp:', error);
+      toast.error('Erro ao preparar envio: ' + (error?.message || 'Erro desconhecido'));
+    } finally {
+      setIsSendingWhatsApp(false);
+    }
+  };
+
+  const handleConfirmContractWhatsApp = async (phone, message) => {
+    if (!pendingWhatsAppSend) return;
+    const digits = phone.replace(/\D/g, '');
+    const phoneWithCountry = digits.startsWith('55') ? digits : `55${digits}`;
+
+    setIsSendingWhatsApp(true);
+    try {
       toast.info('Enviando WhatsApp...');
       await base44.functions.invoke('sendContractWhatsApp', {
         contract_id: contractData.id,
         phone: phoneWithCountry,
-        pdf_url: pdfUrl,
-        file_name: fileName,
+        pdf_url: pendingWhatsAppSend.pdfUrl,
+        file_name: pendingWhatsAppSend.fileName,
+        message,
       });
 
       toast.success('Cópia do contrato enviada por WhatsApp!');
+      setShowWhatsAppDialog(false);
     } catch (error) {
       console.error('Erro ao enviar WhatsApp:', error);
       toast.error('Erro ao enviar WhatsApp: ' + (error?.message || 'Erro desconhecido'));
@@ -611,6 +643,15 @@ export default function ContractEditorWYSIWYG({
         defaultSubject={`Contrato - ${contractData?.contract_type || 'Serviços'} | ${contractData?.client_name || ''}`}
         defaultMessage={`Prezado(a) ${contractData?.client_name || 'Cliente'},\n\nSegue em anexo o contrato para sua apreciação.\n\nQualquer dúvida, estou à disposição.\n\nAtenciosamente.`}
         documentLabel={`${contractData?.contract_type || 'Contrato'} — ${contractData?.client_name || ''}`}
+      />
+
+      <SendWhatsAppDialog
+        open={showWhatsAppDialog}
+        onOpenChange={setShowWhatsAppDialog}
+        defaultPhone={clientPhone}
+        defaultMessage={`Olá ${contractData?.client_name || 'Cliente'}, segue a cópia do contrato referente ao serviço de "${contractData?.contract_type || 'consultoria'}". Qualquer dúvida, estou à disposição.`}
+        isSending={isSendingWhatsApp}
+        onConfirm={handleConfirmContractWhatsApp}
       />
     </div>
   );

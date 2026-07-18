@@ -14,6 +14,8 @@ import { ChevronLeft, Plus, Trash2, Search, Mail, MessageCircle, Save, FileCheck
 import { createPageUrl } from '../utils';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
 import { useNavigationGuard } from '../hooks/useNavigationGuard';
+import SendWhatsAppDialog from '@/components/shared/SendWhatsAppDialog';
+import WhatsAppSendHistory from '@/components/shared/WhatsAppSendHistory';
 
 const PAYMENT_METHODS = ['PIX', 'Transferência', 'Dinheiro', 'Cartão', 'Boleto', 'Outro'];
 
@@ -47,6 +49,7 @@ export default function ReceiptGenerator() {
   const [saving, setSaving] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
+  const [showWhatsAppDialog, setShowWhatsAppDialog] = useState(false);
 
   const [clientSearch, setClientSearch] = useState('');
   const [showClientSuggestions, setShowClientSuggestions] = useState(false);
@@ -267,21 +270,21 @@ export default function ReceiptGenerator() {
     }
   };
 
-  const handleSendWhatsApp = async () => {
+  const handleSendWhatsApp = () => {
     if (!formData.client_name) { toast.error('Selecione o cliente primeiro.'); return; }
     if (!receiptId) { toast.error('Salve o recibo antes de enviar.'); return; }
-    let phone = clientPhone;
-    if (!phone) {
-      phone = window.prompt('WhatsApp do cliente (com DDD):', '') || '';
-      if (!phone) return;
-    }
+    setShowWhatsAppDialog(true);
+  };
+
+  const handleConfirmWhatsApp = async (phone, message) => {
     const digits = phone.replace(/\D/g, '');
     const phoneWithCountry = digits.startsWith('55') ? digits : `55${digits}`;
     setSendingWhatsApp(true);
     try {
-      await base44.functions.invoke('sendReceiptWhatsApp', { receipt_id: receiptId, phone: phoneWithCountry });
+      await base44.functions.invoke('sendReceiptWhatsApp', { receipt_id: receiptId, phone: phoneWithCountry, message });
       qc.invalidateQueries({ queryKey: ['fin-data'] });
       toast.success('Recibo enviado por WhatsApp!');
+      setShowWhatsAppDialog(false);
     } catch (err) {
       toast.error('Erro ao enviar WhatsApp: ' + err.message);
     } finally {
@@ -596,7 +599,25 @@ export default function ReceiptGenerator() {
             </Card>
           </div>
         </div>
+
+        {receiptId && (
+          <div className="mt-8">
+            <h2 className="text-lg font-bold text-emerald-900 mb-4 flex items-center gap-2">
+              <MessageCircle className="w-5 h-5" /> Histórico de WhatsApp
+            </h2>
+            <WhatsAppSendHistory consultorEmail={effectiveEmail} docType="receipt" docId={receiptId} />
+          </div>
+        )}
       </div>
+
+      <SendWhatsAppDialog
+        open={showWhatsAppDialog}
+        onOpenChange={setShowWhatsAppDialog}
+        defaultPhone={clientPhone}
+        defaultMessage={`Olá ${formData.client_name || ''}, segue o recibo${receiptNumber ? ` Nº ${receiptNumber}` : ''} referente a "${formData.title || 'Honorários'}", no valor de R$ ${totalAmount.toFixed(2)}.`}
+        isSending={sendingWhatsApp}
+        onConfirm={handleConfirmWhatsApp}
+      />
     </div>
   );
 }

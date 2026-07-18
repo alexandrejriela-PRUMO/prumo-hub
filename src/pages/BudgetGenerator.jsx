@@ -7,8 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import BudgetForm from '@/components/budget/BudgetForm';
 import BudgetEditorWYSIWYG from '@/components/budget/BudgetEditorWYSIWYG';
-import { ChevronLeft, Download, FileEdit, Trash2, Clock, User, DollarSign, FileText, Plus, Mail } from 'lucide-react';
+import { ChevronLeft, Download, FileEdit, Trash2, Clock, User, DollarSign, FileText, Plus, Mail, MessageCircle } from 'lucide-react';
 import BudgetEmailHistory from '@/components/budget/BudgetEmailHistory';
+import WhatsAppSendHistory from '@/components/shared/WhatsAppSendHistory';
 
 import { useNavigationGuard } from '../hooks/useNavigationGuard';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
@@ -296,10 +297,25 @@ export default function BudgetGenerator() {
                 <Mail className="w-4 h-4" />
                 E-mails Enviados
               </button>
+              <button
+                onClick={() => setHistoryTab('whatsapp')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  historyTab === 'whatsapp'
+                    ? 'bg-white text-emerald-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <MessageCircle className="w-4 h-4" />
+                WhatsApp Enviados
+              </button>
             </div>
 
             {historyTab === 'emails' && (
               <BudgetEmailHistory consultorEmail={effectiveEmail} />
+            )}
+
+            {historyTab === 'whatsapp' && (
+              <WhatsAppSendHistory consultorEmail={effectiveEmail} docType="budget" />
             )}
 
             {historyTab === 'budgets' && (

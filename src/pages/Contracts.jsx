@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   ClipboardList, Plus, Calendar, DollarSign, Users, FileText, AlertTriangle,
   CheckCircle, Clock, XCircle, Edit3, Trash2, Upload, Download, Eye, Building2,
-  ChevronLeft
+  ChevronLeft, MessageCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -22,6 +22,7 @@ import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
 import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
 import ClicksignContractButton from '../components/contracts/ClicksignContractButton';
+import SendWhatsAppDialog from '@/components/shared/SendWhatsAppDialog';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 const STATUS_CONFIG = {
@@ -134,6 +135,58 @@ export default function Contracts() {
 
   // Dados do CRM para auto-preencher informações do cliente (derivado de crmClients)
   const crmList = crmClients;
+
+  // ─── Envio de cópia simples do contrato por WhatsApp (sem assinatura) ────────
+  const [whatsAppTarget, setWhatsAppTarget] = React.useState(null);
+  const [sendingContractWhatsApp, setSendingContractWhatsApp] = React.useState(false);
+
+  const getContractPdfs = (contract) =>
+    (contract?.documents || []).filter(d => d.url && d.name?.toLowerCase().includes('.pdf'));
+
+  const whatsAppPhone = React.useMemo(() => {
+    if (!whatsAppTarget) return '';
+    const match = crmClients.find(c =>
+      (whatsAppTarget.client_email && c.client_email === whatsAppTarget.client_email) ||
+      (whatsAppTarget.client_name && c.client_name === whatsAppTarget.client_name)
+    );
+    return match?.client_phone || '';
+  }, [crmClients, whatsAppTarget]);
+
+  const handleOpenContractWhatsApp = (contract) => {
+    if (getContractPdfs(contract).length === 0) {
+      toast.error('Nenhum PDF encontrado nos documentos do contrato. Anexe um PDF antes de enviar.');
+      return;
+    }
+    setWhatsAppTarget(contract);
+  };
+
+  const handleConfirmContractWhatsApp = async (phone, message) => {
+    if (!whatsAppTarget) return;
+    const pdf = getContractPdfs(whatsAppTarget)[0];
+    if (!pdf) {
+      toast.error('Nenhum PDF encontrado nos documentos do contrato.');
+      return;
+    }
+    const digits = phone.replace(/\D/g, '');
+    const phoneWithCountry = digits.startsWith('55') ? digits : `55${digits}`;
+
+    setSendingContractWhatsApp(true);
+    try {
+      await base44.functions.invoke('sendContractWhatsApp', {
+        contract_id: whatsAppTarget.id,
+        phone: phoneWithCountry,
+        pdf_url: pdf.url,
+        file_name: pdf.name,
+        message,
+      });
+      toast.success('Cópia do contrato enviada por WhatsApp!');
+      setWhatsAppTarget(null);
+    } catch (error) {
+      toast.error('Erro ao enviar WhatsApp: ' + (error?.message || 'Erro desconhecido'));
+    } finally {
+      setSendingContractWhatsApp(false);
+    }
+  };
 
   const { data: contracts = [], isLoading } = useQuery({
     queryKey: ['contracts', effectiveEmail, selectedPropertyId, properties.map(p => p.id).join(',')],
@@ -458,7 +511,19 @@ export default function Contracts() {
                   </div>
                   {isConsultor && (
                     <div className="pt-1">
-                      <ClicksignContractButton contract={contract} user={user} />
+                      <div className="flex flex-wrap gap-2">
+                        <ClicksignContractButton contract={contract} user={user} />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                          onClick={() => handleOpenContractWhatsApp(contract)}
+                          disabled={getContractPdfs(contract).length === 0}
+                          title={getContractPdfs(contract).length === 0 ? 'Anexe um PDF ao contrato primeiro' : undefined}
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" /> Enviar Cópia por WhatsApp
+                        </Button>
+                      </div>
                       <p className="text-[10px] text-gray-400 mt-1 leading-tight">Assinatura digital — não confunda com o envio de cópia por WhatsApp</p>
                     </div>
                   )}
@@ -860,7 +925,19 @@ export default function Contracts() {
                 </Button>
                 {isConsultor && (
                   <div className="flex flex-col items-start gap-1">
-                    <ClicksignContractButton contract={viewingContract} user={user} />
+                    <div className="flex flex-wrap gap-2">
+                      <ClicksignContractButton contract={viewingContract} user={user} />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                        onClick={() => handleOpenContractWhatsApp(viewingContract)}
+                        disabled={getContractPdfs(viewingContract).length === 0}
+                        title={getContractPdfs(viewingContract).length === 0 ? 'Anexe um PDF ao contrato primeiro' : undefined}
+                      >
+                        <MessageCircle className="w-3.5 h-3.5" /> Enviar Cópia por WhatsApp
+                      </Button>
+                    </div>
                     <p className="text-[10px] text-gray-400 leading-tight">Assinatura digital — não confunda com o envio de cópia por WhatsApp</p>
                   </div>
                 )}
@@ -869,6 +946,16 @@ export default function Contracts() {
           </DialogContent>
         </Dialog>
       )}
+
+      <SendWhatsAppDialog
+        open={!!whatsAppTarget}
+        onOpenChange={(v) => { if (!v) setWhatsAppTarget(null); }}
+        title="Enviar Cópia por WhatsApp"
+        defaultPhone={whatsAppPhone}
+        defaultMessage={`Olá ${whatsAppTarget?.client_name || 'Cliente'}, segue a cópia do contrato referente ao serviço de "${whatsAppTarget?.contract_type || 'consultoria'}". Qualquer dúvida, estou à disposição.`}
+        isSending={sendingContractWhatsApp}
+        onConfirm={handleConfirmContractWhatsApp}
+      />
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Download, Save, Mail, MessageCircle, Copy, ZoomIn, ZoomOut, Image as ImageIcon, RefreshCw } from 'lucide-react';
+import { Download, Save, Mail, MessageCircle, Copy, ZoomIn, ZoomOut, Image as ImageIcon, RefreshCw, Star } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import html2pdf from 'html2pdf.js';
 import { Document, Packer, Paragraph, TextRun, convertInchesToTwip } from 'docx';
@@ -107,6 +107,7 @@ function buildContractHtml(contractData) {
 export default function ContractEditorWYSIWYG({ 
   contractData,
   templates = [],
+  user = null,
   onSave,
   onSaveTemplate
 }) {
@@ -115,8 +116,10 @@ export default function ContractEditorWYSIWYG({
   const [templateName, setTemplateName] = useState('');
   const [showTemplateForm, setShowTemplateForm] = useState(false);
   const [zoom, setZoom] = useState(100);
-  const [logoBase64, setLogoBase64] = useState('');
+  // Se o consultor já tem uma logo padrão salva, carrega automaticamente (pode ser trocada pontualmente sem afetar o padrão)
+  const [logoBase64, setLogoBase64] = useState(() => user?.logo_url || '');
   const [loadingLogo, setLoadingLogo] = useState(false);
+  const [savingDefaultLogo, setSavingDefaultLogo] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
@@ -426,6 +429,31 @@ export default function ContractEditorWYSIWYG({
     }
   };
 
+  // Salva a logo atual como padrão do usuário, para não precisar reenviar nas próximas vezes
+  const handleSetDefaultLogo = async () => {
+    if (!logoBase64) { toast.error('Carregue uma logo primeiro.'); return; }
+    setSavingDefaultLogo(true);
+    try {
+      let logoUrl = logoBase64;
+      if (logoBase64.startsWith('data:')) {
+        // Ainda é só base64 local — faz upload antes de salvar como padrão
+        const blob = await (await fetch(logoBase64)).blob();
+        const file = new File([blob], 'logo.png', { type: blob.type || 'image/png' });
+        const uploadRes = await base44.integrations.Core.UploadFile({ file });
+        logoUrl = uploadRes?.file_url;
+        if (!logoUrl) throw new Error('Falha ao enviar logo para o servidor');
+        setLogoBase64(logoUrl);
+      }
+      await base44.auth.updateMe({ logo_url: logoUrl });
+      toast.success('Logo definida como padrão! Será carregada automaticamente nas próximas vezes.');
+    } catch (error) {
+      toast.error('Erro ao salvar logo padrão: ' + (error?.message || 'Erro desconhecido'));
+      console.error(error);
+    } finally {
+      setSavingDefaultLogo(false);
+    }
+  };
+
   const generateCompleteHTML = () => {
     let finalHTML = documentHtml;
     
@@ -502,6 +530,19 @@ export default function ContractEditorWYSIWYG({
             onChange={handleLogoUpload}
             className="hidden"
           />
+          {logoBase64 && (
+            <Button
+              onClick={handleSetDefaultLogo}
+              disabled={savingDefaultLogo}
+              size="sm"
+              variant="outline"
+              className="gap-2"
+              title="Salvar esta logo como padrão para os próximos documentos"
+            >
+              <Star className="w-4 h-4" />
+              {savingDefaultLogo ? 'Salvando...' : 'Usar como logo padrão'}
+            </Button>
+          )}
 
           <Button
             size="sm"

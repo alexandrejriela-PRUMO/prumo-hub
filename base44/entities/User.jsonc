@@ -28,6 +28,10 @@
       "type": "string",
       "format": "date-time",
       "description": "Data e hora em que o usu\u00e1rio aceitou os termos"
+    },
+    "logo_url": {
+      "type": "string",
+      "description": "URL da logo padr\u00e3o usada em or\u00e7amentos, contratos e recibos"
     }
   },
   "required": [

@@ -121,8 +121,30 @@ async function generatePresignedGetUrl(filePath, expiresIn = 3600) {
   return `https://${host}${canonicalUri}?${canonicalQueryString}&X-Amz-Signature=${signature}`;
 }
 
+// ─── Busca a logo do consultor e converte para data URI (base64) ────────────────────
+async function fetchLogoAsDataUri(url) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const buffer = await res.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+    }
+    const base64 = btoa(binary);
+    const contentType = res.headers.get('content-type') || '';
+    const format = contentType.includes('png') ? 'PNG' : (contentType.includes('jpeg') || contentType.includes('jpg')) ? 'JPEG' : 'PNG';
+    return { dataUri: `data:image/${format.toLowerCase()};base64,${base64}`, format };
+  } catch (e) {
+    console.warn('[sendReceiptWhatsApp] Erro ao buscar logo:', e.message);
+    return null;
+  }
+}
+
 // ─── Geração do PDF do recibo (jsPDF) ────────────────────────────────────────────────
-function buildReceiptPDF(receipt) {
+function buildReceiptPDF(receipt, logoData) {
   const doc = new jsPDF({ compress: false });
   doc.setFont('Helvetica');
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -136,6 +158,24 @@ function buildReceiptPDF(receipt) {
     const dt = new Date(d.length === 10 ? d + 'T00:00:00' : d);
     return isNaN(dt) ? '-' : dt.toLocaleDateString('pt-BR');
   };
+
+  // Logo do consultor (se configurada) — altura máxima de 20mm, sem distorcer proporção
+  if (logoData) {
+    try {
+      const props = doc.getImageProperties(logoData.dataUri);
+      const ratio = props.width / props.height;
+      let logoHeight = 20;
+      let logoWidth = logoHeight * ratio;
+      if (logoWidth > contentWidth) {
+        logoWidth = contentWidth;
+        logoHeight = logoWidth / ratio;
+      }
+      doc.addImage(logoData.dataUri, logoData.format, margin, y, logoWidth, logoHeight);
+      y += logoHeight + 6;
+    } catch (e) {
+      console.warn('[sendReceiptWhatsApp] Erro ao inserir logo no PDF:', e.message);
+    }
+  }
 
   // Header
   doc.setFontSize(16);
@@ -265,8 +305,20 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Sem permissão para este recibo' }, { status: 403 });
     }
 
+    // Buscar logo do consultor (dono do recibo, não necessariamente o usuário logado)
+    let logoData = null;
+    try {
+      // Usa receipt.consultor_email (dono real do recibo), não o email resolvido do
+      // requisitante, já que admins podem enviar em nome de qualquer consultor.
+      const consultorUsers = await base44.asServiceRole.entities.User.filter({ email: receipt.consultor_email });
+      const logoUrl = consultorUsers[0]?.logo_url;
+      if (logoUrl) logoData = await fetchLogoAsDataUri(logoUrl);
+    } catch (e) {
+      console.warn('[sendReceiptWhatsApp] Erro ao buscar logo do consultor:', e.message);
+    }
+
     // 1) Gerar PDF
-    const pdfBuffer = buildReceiptPDF(receipt);
+    const pdfBuffer = buildReceiptPDF(receipt, logoData);
     const pdfBytes = new Uint8Array(pdfBuffer);
 
     // 2) Upload pro R2

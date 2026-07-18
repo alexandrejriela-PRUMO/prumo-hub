@@ -224,6 +224,7 @@ export default function ContractGenerator() {
           <ContractEditorWYSIWYG
             contractData={contractData}
             templates={templates}
+            user={user}
             onSave={handleSaveDocument}
             onSaveTemplate={(data) => saveTemplateMutation.mutate(data)}
           />

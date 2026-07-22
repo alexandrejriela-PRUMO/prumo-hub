@@ -20,7 +20,8 @@ import {
   Bell,
   Plus,
   Edit2,
-  Trash2
+  Trash2,
+  Sparkles
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -63,6 +64,17 @@ export default function PRADDetails({ prad }) {
 
       {/* Identificação */}
       <TabsContent value="identification" className="space-y-4">
+        {prad.ai_analysis && (
+          <div className="rounded-xl overflow-hidden border border-purple-200">
+            <div className="flex items-center gap-2 px-4 py-3 bg-purple-600">
+              <Sparkles className="w-4 h-4 text-white flex-shrink-0" />
+              <span className="text-xs font-bold text-white uppercase tracking-wide">Análise Técnica Ambiental (IA)</span>
+            </div>
+            <div className="p-4 bg-purple-50">
+              <p className="text-xs text-purple-900 leading-relaxed">{prad.ai_analysis}</p>
+            </div>
+          </div>
+        )}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

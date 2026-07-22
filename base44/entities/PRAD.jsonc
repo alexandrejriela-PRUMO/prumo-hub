@@ -669,6 +669,10 @@
     "notes": {
       "type": "string",
       "description": "Observa\u00e7\u00f5es gerais"
+    },
+    "ai_analysis": {
+      "type": "string",
+      "description": "An\u00e1lise t\u00e9cnica adicional gerada por IA a partir do documento enviado"
     }
   },
   "required": [

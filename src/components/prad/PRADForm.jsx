@@ -6,10 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sparkles, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import PRADSmartUpload from './PRADSmartUpload';
 
 export default function PRADForm({ prad, propertyId, userEmail, onClose }) {
   const queryClient = useQueryClient();
+  const [showSmartUpload, setShowSmartUpload] = useState(false);
+  const [aiFilled, setAiFilled] = useState(false);
   const [formData, setFormData] = useState({
     project_name: prad?.project_name || '',
     degradation_type: prad?.area_identification?.degradation_type || '',
@@ -20,7 +24,27 @@ export default function PRADForm({ prad, propertyId, userEmail, onClose }) {
     main_objective: prad?.recovery_objective?.main_objective || '',
     impact_level: prad?.environmental_diagnosis?.impact_level || '',
     status: prad?.status || 'Planejamento',
+    ai_analysis: prad?.ai_analysis || '',
   });
+
+  const handleSmartUploadData = (extracted) => {
+    setFormData(prev => {
+      const merged = { ...prev };
+      Object.entries(extracted).forEach(([key, value]) => {
+        if (key.startsWith('_')) return;
+        if (value !== null && value !== undefined && value !== '' && (merged[key] === null || merged[key] === undefined || merged[key] === '')) {
+          merged[key] = value;
+        }
+      });
+      // ai_analysis é sempre gerado pela IA — atualiza mesmo se já houver um valor anterior da própria IA
+      if (extracted.ai_analysis) {
+        merged.ai_analysis = extracted.ai_analysis;
+      }
+      return merged;
+    });
+    setAiFilled(true);
+    setShowSmartUpload(false);
+  };
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.PRAD.create(data),
@@ -61,6 +85,7 @@ export default function PRADForm({ prad, propertyId, userEmail, onClose }) {
         impact_level: formData.impact_level,
       },
       status: formData.status,
+      ai_analysis: formData.ai_analysis,
     };
 
     if (prad) {
@@ -70,8 +95,49 @@ export default function PRADForm({ prad, propertyId, userEmail, onClose }) {
     }
   };
 
+  if (showSmartUpload) {
+    return (
+      <PRADSmartUpload
+        onDataExtracted={handleSmartUploadData}
+        onClose={() => setShowSmartUpload(false)}
+      />
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Botão de Smart Upload com IA */}
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-2 border-purple-300 text-purple-700 hover:bg-purple-50"
+          onClick={() => setShowSmartUpload(true)}
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          Preencher com IA (Smart Upload)
+        </Button>
+      </div>
+
+      {aiFilled && (
+        <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-800">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          <span>Dados extraídos pela IA — revise os campos abaixo antes de salvar</span>
+        </div>
+      )}
+
+      {/* AI Analysis banner */}
+      {formData.ai_analysis && (
+        <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="w-4 h-4 text-purple-600" />
+            <p className="text-xs font-semibold text-purple-800">Análise Técnica IA</p>
+          </div>
+          <p className="text-xs text-purple-900 leading-relaxed">{formData.ai_analysis}</p>
+        </div>
+      )}
+
       <div className="grid md:grid-cols-2 gap-4">
         <div className="md:col-span-2">
           <Label>Nome do Projeto *</Label>

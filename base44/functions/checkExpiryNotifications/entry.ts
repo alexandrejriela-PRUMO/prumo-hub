@@ -609,33 +609,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ─── INVOICES ────────────────────────────────────────────────────────
-    const invoices = await withRetry(() => base44.asServiceRole.entities.Invoice.list());
-    for (const inv of invoices) {
-      if (inv.status === 'Pago' || inv.status === 'Cancelado') continue;
-      const days = getDays(inv.due_date);
-      if (days === null) continue;
-      const val = inv.amount ? `R$ ${Number(inv.amount).toLocaleString('pt-BR')}` : '';
-      const invDate = formatDatePtBR(inv.due_date);
-      if (days <= 0) {
-        await createNotif(inv.client_email, 'Fatura Vencida',
-          `Fatura ${val} está VENCIDA${invDate ? ` (vencimento: ${invDate})` : ''}.`, 'fatura_vencendo', 'error', '/Invoices');
-        await sendEmail(inv.client_email,
-          `[PRUMO Hub] ⛔ Fatura Vencida: ${val}`,
-          `<p>Olá,</p><p>Sua fatura de <strong>${val}</strong>${invDate ? ` (vencimento: ${invDate})` : ''} está <strong>vencida</strong>. Regularize o quanto antes.</p><p>Equipe PRUMO Hub</p>`
-        );
-      } else if ([1, 3, 7].includes(days)) {
-        await createNotif(inv.client_email, `Fatura Vencendo em ${days} dia${days > 1 ? 's' : ''}`,
-          `Fatura ${val} vence em ${days} dia${days > 1 ? 's' : ''}${invDate ? ` (${invDate})` : ''}.`, 'fatura_vencendo', 'warning', '/Invoices');
-        if (days === 1) {
-          await sendEmail(inv.client_email,
-            `[PRUMO Hub] ⚠️ Fatura vence amanhã: ${val}`,
-            `<p>Olá,</p><p>Sua fatura de <strong>${val}</strong> vence <strong>amanhã</strong>. Efetue o pagamento para evitar bloqueio de acesso.</p><p>Equipe PRUMO Hub</p>`
-          );
-        }
-      }
-    }
-
     // ─── CRM TASKS ───────────────────────────────────────────────────────
     const crmList = await withRetry(() => base44.asServiceRole.entities.ClientCRM.list());
     for (const crm of crmList) {

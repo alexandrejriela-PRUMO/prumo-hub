@@ -74,6 +74,31 @@ Deno.serve(async (req) => {
       return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut) + '...';
     }
 
+    // Monta o texto do WhatsApp com a mesma estrutura do email (urgentes + por categoria),
+    // reaproveitando as mesmas variáveis usadas para montar o corpo HTML do email.
+    function buildWhatsAppDigestText(modeTitle, totalCount, urgentes, grouped, categoryLabels, severityEmoji) {
+      let text = `*PRUMO Hub — ${modeTitle}*\n${totalCount} notificação${totalCount > 1 ? 'ões' : ''} pendente${totalCount > 1 ? 's' : ''}\n`;
+
+      if (urgentes && urgentes.length > 0) {
+        text += `\n🔴 *${urgentes.length} Alerta${urgentes.length > 1 ? 's' : ''} Urgente${urgentes.length > 1 ? 's' : ''}*\n`;
+        urgentes.forEach(n => {
+          text += `• *${n.title}* — ${smartTruncate(n.message, 200)}\n`;
+        });
+      }
+
+      for (const [cat, catNotifs] of Object.entries(grouped || {})) {
+        const label = categoryLabels?.[cat] || cat;
+        text += `\n${label} (${catNotifs.length})\n`;
+        catNotifs.forEach(n => {
+          text += `${severityEmoji?.[n.severity] || '⚪'} *${n.title}*\n`;
+          if (n.message) text += `   ${smartTruncate(n.message, 200)}\n`;
+        });
+      }
+
+      text += `\nAcesse o app para mais detalhes: https://hub.prumo.site`;
+      return text;
+    }
+
     let emailsSent = 0;
     let whatsappsSent = 0;
     const periodLabel = mode === 'weekly' ? 'semanal' : 'diário';
@@ -182,7 +207,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      // WhatsApp: apenas o total resumido, sem repetir cada notificação individual
+      // WhatsApp: mesma estrutura detalhada do email (urgentes + por categoria)
       // Só dispara com opt-in explícito na preferência dedicada 'resumo_diario'
       if (digestWhatsappEnabled) {
         try {
@@ -191,7 +216,7 @@ Deno.serve(async (req) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               phone: digestPref.phone_number,
-              message: `PRUMO Hub: você tem ${totalCount} notificaç${totalCount > 1 ? 'ões' : 'ão'} pendente${totalCount > 1 ? 's' : ''}. Acesse o app para ver os detalhes.`
+              message: buildWhatsAppDigestText(modeTitle, totalCount, urgentes, grouped, CATEGORY_LABELS, SEVERITY_EMOJI)
             })
           });
           whatsappsSent++;

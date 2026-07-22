@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sparkles, CheckCircle2 } from 'lucide-react';
+import { Sparkles, CheckCircle2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import PRADSmartUpload from './PRADSmartUpload';
 
@@ -25,11 +25,15 @@ export default function PRADForm({ prad, propertyId, userEmail, onClose }) {
     impact_level: prad?.environmental_diagnosis?.impact_level || '',
     status: prad?.status || 'Planejamento',
     ai_analysis: prad?.ai_analysis || '',
+    uploaded_pdf_url: prad?.documents?.find(d => d.name === 'PDF Original (Smart Upload)')?.url || '',
   });
 
   const handleSmartUploadData = (extracted) => {
     setFormData(prev => {
       const merged = { ...prev };
+      if (extracted._file_url) {
+        merged.uploaded_pdf_url = extracted._file_url;
+      }
       Object.entries(extracted).forEach(([key, value]) => {
         if (key.startsWith('_')) return;
         if (value !== null && value !== undefined && value !== '' && (merged[key] === null || merged[key] === undefined || merged[key] === '')) {
@@ -86,6 +90,16 @@ export default function PRADForm({ prad, propertyId, userEmail, onClose }) {
       },
       status: formData.status,
       ai_analysis: formData.ai_analysis,
+      documents: [
+        ...(prad?.documents || []).filter(d => d.name !== 'PDF Original (Smart Upload)'),
+        ...(formData.uploaded_pdf_url ? [{
+          name: 'PDF Original (Smart Upload)',
+          type: 'PRAD Completo',
+          url: formData.uploaded_pdf_url,
+          upload_date: new Date().toISOString(),
+          uploaded_by: userEmail,
+        }] : []),
+      ],
     };
 
     if (prad) {
@@ -127,6 +141,17 @@ export default function PRADForm({ prad, propertyId, userEmail, onClose }) {
         </div>
       )}
 
+      {formData.uploaded_pdf_url && (
+        <a
+          href={formData.uploaded_pdf_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm text-blue-600 underline flex items-center gap-1"
+        >
+          <FileText className="w-3.5 h-3.5" /> Ver/baixar PDF original enviado
+        </a>
+      )}
+
       {/* AI Analysis banner */}
       {formData.ai_analysis && (
         <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl">
@@ -134,7 +159,12 @@ export default function PRADForm({ prad, propertyId, userEmail, onClose }) {
             <Sparkles className="w-4 h-4 text-purple-600" />
             <p className="text-xs font-semibold text-purple-800">Análise Técnica IA</p>
           </div>
-          <p className="text-xs text-purple-900 leading-relaxed">{formData.ai_analysis}</p>
+          <Textarea
+            value={formData.ai_analysis}
+            onChange={(e) => setFormData({ ...formData, ai_analysis: e.target.value })}
+            className="text-xs text-purple-900 leading-relaxed bg-white/50 border-purple-200"
+            rows={4}
+          />
         </div>
       )}
 

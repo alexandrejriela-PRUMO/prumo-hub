@@ -89,11 +89,6 @@ Deno.serve(async (req) => {
       return name;
     }
 
-    function truncateMsg(str, max = 120) {
-      if (!str || str.length <= max) return str;
-      return `${str.slice(0, max - 3)}...`;
-    }
-
     function buildCtx(data, fields, extra) {
       extra = extra || {};
       const fmtDate = (d) => { if (!d) return null; const dt = new Date(d.length === 10 ? d + 'T00:00:00' : d); return isNaN(dt) ? null : dt.toLocaleDateString('pt-BR'); };
@@ -314,17 +309,17 @@ Deno.serve(async (req) => {
       }
 
       // Bloco de contexto comum (HTML + texto) — cliente, propriedade, número, fase, datas, status
-      const fmtDate = (d) => d ? new Date(d).toLocaleDateString('pt-BR') : null;
-      const ctxItems = [];
-      if (ownerName) ctxItems.push(`<li><strong>Cliente:</strong> ${ownerName}</li>`);
-      if (propertyName) ctxItems.push(`<li><strong>Propriedade:</strong> ${propertyName}</li>`);
-      ctxItems.push(`<li><strong>Tipo:</strong> ${data.license_type}</li>`);
-      if (data.license_number) ctxItems.push(`<li><strong>Número:</strong> ${data.license_number}</li>`);
-      if (data.elaboration_stage) ctxItems.push(`<li><strong>Fase:</strong> ${data.elaboration_stage}</li>`);
-      const di = fmtDate(data.issue_date); if (di) ctxItems.push(`<li><strong>Data de Emissão:</strong> ${di}</li>`);
-      const dv = fmtDate(data.expiry_date); if (dv) ctxItems.push(`<li><strong>Data de Validade:</strong> ${dv}</li>`);
-      if (data.status) ctxItems.push(`<li><strong>Status:</strong> ${data.status}</li>`);
-      const ctxHtml = `<ul>${ctxItems.join('')}</ul>`;
+      // Usa o mesmo helper buildCtx() das demais entidades para garantir que a mensagem
+      // em texto puro (n.message, exibida no resumo diário) também traga cliente/propriedade/data.
+      const ctx = buildCtx(data, [
+        ['license_type', 'Tipo'],
+        ['license_number', 'Número'],
+        ['elaboration_stage', 'Fase'],
+        ['issue_date', 'Data de Emissão', 'date'],
+        ['expiry_date', 'Data de Validade', 'date'],
+        ['status', 'Status'],
+      ], { clientName: ownerName, propertyName });
+      const ctxHtml = ctx.html;
 
       const teamEmails = await getTeamEmails(consultorEmail);
       // Inclui o client_consultor se existir
@@ -333,7 +328,7 @@ Deno.serve(async (req) => {
       const recipients = await filterByPlan(candidates, consultorEmail);
 
       if (event.type === 'create') {
-        const msgCreate = truncateMsg(`Licença ${data.license_type}${data.license_number ? ` nº ${data.license_number}` : ''} registrada${ownerName ? ` — Cliente: ${ownerName}` : ''}.`);
+        const msgCreate = `Licença ${data.license_type}${data.license_number ? ` nº ${data.license_number}` : ''} registrada.${ctx.text}`;
         for (const r of recipients) {
           const label = r === consultorEmail ? 'Nova Licença - Cliente' : r === clientConsultorEmail ? 'Nova Licença em sua Propriedade' : 'Nova Licença Cadastrada';
           addNotif(notifications, r, label, msgCreate, 'nova_licenca', 'info', `/Licenses?id=${data.id}`);
@@ -358,7 +353,7 @@ Deno.serve(async (req) => {
         const oldU = old_data?.updates || [], newU = data?.updates || [];
         if (newU.length > oldU.length) {
           const latest = newU[newU.length - 1];
-          const andamentoMsg = truncateMsg(`Andamento na licença ${data.license_type}${data.license_number ? ` nº ${data.license_number}` : ''}${ownerName ? ` — Cliente: ${ownerName}` : ''}: ${latest.description || 'Nova movimentação registrada'}`);
+          const andamentoMsg = `Andamento na licença ${data.license_type}${data.license_number ? ` nº ${data.license_number}` : ''}: ${latest.description || 'Nova movimentação registrada'}${ctx.text}`;
           for (const r of recipients) {
             const label = r === consultorEmail ? 'Andamento em Licença - Cliente' : r === clientConsultorEmail ? 'Novo Andamento em Licença da sua Propriedade' : 'Novo Andamento em Licença';
             addNotif(notifications, r, label, andamentoMsg, 'atualizacao_licenca', 'info', `/Licenses?id=${data.id}`);
@@ -390,7 +385,7 @@ Deno.serve(async (req) => {
         }
         if (old_data?.status && old_data.status !== data.status) {
           const sev = data.status === 'Vencida' ? 'error' : 'warning';
-          const statusMsg = truncateMsg(`Licença ${data.license_type}: ${old_data.status} → ${data.status}${ownerName ? ` — Cliente: ${ownerName}` : ''}`);
+          const statusMsg = `Licença ${data.license_type}: ${old_data.status} → ${data.status}${ctx.text}`;
           for (const r of recipients) {
             const label = r === consultorEmail ? 'Status de Licença Alterado - Cliente' : 'Status de Licença Alterado';
             addNotif(notifications, r, label, statusMsg, 'licenca_vencida', sev, `/Licenses?id=${data.id}`);

@@ -58,6 +58,12 @@ Deno.serve(async (req) => {
       return Math.ceil((new Date(dateStr) - today) / (1000 * 60 * 60 * 24));
     };
 
+    const formatDatePtBR = (dateStr) => {
+      if (!dateStr) return null;
+      const dt = new Date(dateStr.length === 10 ? dateStr + 'T00:00:00' : dateStr);
+      return isNaN(dt) ? null : dt.toLocaleDateString('pt-BR');
+    };
+
     const getTeamEmails = async (consultorEmail) => {
       if (!consultorEmail) return [];
       if (teamCache[consultorEmail]) return teamCache[consultorEmail];
@@ -556,12 +562,13 @@ Deno.serve(async (req) => {
       if (!endDate || !cc.owner_email) continue;
       const days = getDays(endDate);
       if (days === null) continue;
+      const ccDate = formatDatePtBR(endDate);
       if (days <= 0) {
         await createNotif(cc.owner_email, 'Crédito de Carbono Vencido',
-          `"${cc.project_name || 'sem nome'}" – prazo encerrado.`, 'outro', 'error', '/CarbonCredits');
+          `"${cc.project_name || 'sem nome'}" – prazo encerrado${ccDate ? ` em ${ccDate}` : ''}.`, 'outro', 'error', '/CarbonCredits');
       } else if ([1, 7, 30].includes(days)) {
         await createNotif(cc.owner_email, `Crédito de Carbono Vencendo em ${days} dia${days > 1 ? 's' : ''}`,
-          `"${cc.project_name || 'sem nome'}" vence em ${days} dia${days > 1 ? 's' : ''}.`,
+          `"${cc.project_name || 'sem nome'}" vence em ${days} dia${days > 1 ? 's' : ''}${ccDate ? ` (${ccDate})` : ''}.`,
           'outro', days <= 7 ? 'error' : 'warning', '/CarbonCredits');
       }
     }
@@ -573,12 +580,13 @@ Deno.serve(async (req) => {
       if (!endDate || !c.owner_email) continue;
       const days = getDays(endDate);
       if (days === null) continue;
+      const psaDate = formatDatePtBR(endDate);
       if (days <= 0) {
         await createNotif(c.owner_email, 'Contrato PSA Vencido',
-          `"${c.contract_name || 'sem nome'}" – prazo encerrado.`, 'outro', 'error', '/PSAContracts');
+          `"${c.contract_name || 'sem nome'}" – prazo encerrado${psaDate ? ` em ${psaDate}` : ''}.`, 'outro', 'error', '/PSAContracts');
       } else if ([1, 7, 30].includes(days)) {
         await createNotif(c.owner_email, `Contrato PSA Vencendo em ${days} dia${days > 1 ? 's' : ''}`,
-          `"${c.contract_name || 'sem nome'}" vence em ${days} dia${days > 1 ? 's' : ''}.`,
+          `"${c.contract_name || 'sem nome'}" vence em ${days} dia${days > 1 ? 's' : ''}${psaDate ? ` (${psaDate})` : ''}.`,
           'outro', days <= 7 ? 'error' : 'warning', '/PSAContracts');
       }
     }
@@ -590,12 +598,13 @@ Deno.serve(async (req) => {
       if (!endDate || !e.owner_email) continue;
       const days = getDays(endDate);
       if (days === null) continue;
+      const easementDate = formatDatePtBR(endDate);
       if (days <= 0) {
         await createNotif(e.owner_email, 'Servidão Ambiental Vencida',
-          'Servidão ambiental – prazo encerrado.', 'outro', 'error', '/EnvironmentalEasements');
+          `Servidão ambiental – prazo encerrado${easementDate ? ` em ${easementDate}` : ''}.`, 'outro', 'error', '/EnvironmentalEasements');
       } else if ([1, 7, 30].includes(days)) {
         await createNotif(e.owner_email, `Servidão Ambiental Vencendo em ${days} dia${days > 1 ? 's' : ''}`,
-          `Servidão ambiental vence em ${days} dia${days > 1 ? 's' : ''}.`,
+          `Servidão ambiental vence em ${days} dia${days > 1 ? 's' : ''}${easementDate ? ` (${easementDate})` : ''}.`,
           'outro', days <= 7 ? 'error' : 'warning', '/EnvironmentalEasements');
       }
     }
@@ -607,16 +616,17 @@ Deno.serve(async (req) => {
       const days = getDays(inv.due_date);
       if (days === null) continue;
       const val = inv.amount ? `R$ ${Number(inv.amount).toLocaleString('pt-BR')}` : '';
+      const invDate = formatDatePtBR(inv.due_date);
       if (days <= 0) {
         await createNotif(inv.client_email, 'Fatura Vencida',
-          `Fatura ${val} está VENCIDA.`, 'fatura_vencendo', 'error', '/Invoices');
+          `Fatura ${val} está VENCIDA${invDate ? ` (vencimento: ${invDate})` : ''}.`, 'fatura_vencendo', 'error', '/Invoices');
         await sendEmail(inv.client_email,
           `[PRUMO Hub] ⛔ Fatura Vencida: ${val}`,
-          `<p>Olá,</p><p>Sua fatura de <strong>${val}</strong> está <strong>vencida</strong>. Regularize o quanto antes.</p><p>Equipe PRUMO Hub</p>`
+          `<p>Olá,</p><p>Sua fatura de <strong>${val}</strong>${invDate ? ` (vencimento: ${invDate})` : ''} está <strong>vencida</strong>. Regularize o quanto antes.</p><p>Equipe PRUMO Hub</p>`
         );
       } else if ([1, 3, 7].includes(days)) {
         await createNotif(inv.client_email, `Fatura Vencendo em ${days} dia${days > 1 ? 's' : ''}`,
-          `Fatura ${val} vence em ${days} dia${days > 1 ? 's' : ''}.`, 'fatura_vencendo', 'warning', '/Invoices');
+          `Fatura ${val} vence em ${days} dia${days > 1 ? 's' : ''}${invDate ? ` (${invDate})` : ''}.`, 'fatura_vencendo', 'warning', '/Invoices');
         if (days === 1) {
           await sendEmail(inv.client_email,
             `[PRUMO Hub] ⚠️ Fatura vence amanhã: ${val}`,

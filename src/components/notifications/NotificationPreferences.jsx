@@ -74,9 +74,19 @@ const SCHEDULED_EVENTS = [
   },
 ];
 
+const DIGEST_EVENTS = [
+  {
+    key: 'resumo_diario',
+    label: 'Resumo Diário de Notificações',
+    icon: '📊',
+    hint: 'Consolida as notificações não lidas em um único envio (diário ou semanal, conforme o agendamento). O WhatsApp deste resumo só é enviado se você ativar explicitamente aqui — é independente das preferências de WhatsApp dos outros eventos.',
+  },
+];
+
 const ALL_EVENT_KEYS = [
   ...REALTIME_EVENTS.map(e => e.key),
   ...SCHEDULED_EVENTS.map(e => e.key),
+  ...DIGEST_EVENTS.map(e => e.key),
 ];
 
 export default function NotificationPreferences({ userEmail }) {
@@ -293,6 +303,31 @@ export default function NotificationPreferences({ userEmail }) {
                 <span className="text-xl">{event.icon}</span>
                 <p className="font-medium text-gray-900">{event.label}</p>
               </div>
+              <ChannelToggles eventKey={event.key} />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="w-5 h-5 text-emerald-600" />Resumo Diário/Semanal
+          </CardTitle>
+          <p className="text-sm text-gray-500 mt-1">Consolida as notificações não lidas em um único envio agendado.</p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {DIGEST_EVENTS.map(event => (
+            <div key={event.key} className="border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-xl">{event.icon}</span>
+                <p className="font-medium text-gray-900">{event.label}</p>
+              </div>
+              {event.hint && (
+                <div className="flex items-start gap-2 p-3 mb-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <Info className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-amber-800">{event.hint}</p>
+                </div>
+              )}
               <ChannelToggles eventKey={event.key} />
             </div>
           ))}

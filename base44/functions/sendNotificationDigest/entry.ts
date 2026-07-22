@@ -67,6 +67,13 @@ Deno.serve(async (req) => {
 
     const SEVERITY_EMOJI = { error: '🔴', warning: '🟡', success: '🟢', info: '⚪' };
 
+    function smartTruncate(text: string, maxLen: number) {
+      if (!text || text.length <= maxLen) return text || '';
+      const cut = text.slice(0, maxLen);
+      const lastSpace = cut.lastIndexOf(' ');
+      return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut) + '...';
+    }
+
     let emailsSent = 0;
     let whatsappsSent = 0;
     const periodLabel = mode === 'weekly' ? 'semanal' : 'diário';
@@ -74,17 +81,18 @@ Deno.serve(async (req) => {
     for (const [userEmail, notifs] of Object.entries(byUser)) {
       // Verifica preferências do usuário
       let prefs = {};
-      let userPrefsList = [];
       try {
         const userPrefs = await base44.asServiceRole.entities.NotificationPreference.filter({ user_email: userEmail });
-        userPrefsList = userPrefs;
         userPrefs.forEach(p => { prefs[p.event_type] = p; });
       } catch (e) { /* sem preferências = usa padrão (enviar) */ }
 
-      // Verifica se o usuário quer receber digest por email
-      // Usa a pref 'outro' como fallback global; se não existir, envia
-      const globalPref = prefs['todos'] || prefs['outro'];
-      if (globalPref && globalPref.email_enabled === false) continue;
+      // Verifica se o usuário quer receber o resumo por email/whatsapp
+      // usando a preferência dedicada 'resumo_diario' (não a de eventos gerais)
+      const digestPref = prefs['resumo_diario'];
+      const digestEmailEnabled = !digestPref || digestPref.email_enabled !== false;
+      const digestWhatsappEnabled = !!(digestPref && digestPref.sms_enabled === true && digestPref.phone_number);
+
+      if (!digestEmailEnabled && !digestWhatsappEnabled) continue;
 
       // Agrupa por categoria
       const grouped = {};
@@ -107,7 +115,7 @@ Deno.serve(async (req) => {
           <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin-bottom:20px;">
             <h3 style="margin:0 0 10px;color:#dc2626;font-size:15px;">🔴 ${urgentes.length} Alerta${urgentes.length > 1 ? 's' : ''} Urgente${urgentes.length > 1 ? 's' : ''}</h3>
             <ul style="margin:0;padding-left:20px;">
-              ${urgentes.map(n => `<li style="margin-bottom:4px;color:#7f1d1d;font-size:13px;"><strong>${n.title}</strong> — ${n.message?.substring(0, 100) || ''}</li>`).join('')}
+              ${urgentes.map(n => `<li style="margin-bottom:4px;color:#7f1d1d;font-size:13px;"><strong>${n.title}</strong> — ${smartTruncate(n.message, 280)}</li>`).join('')}
             </ul>
           </div>
         `;
@@ -123,7 +131,7 @@ Deno.serve(async (req) => {
               ${catNotifs.slice(0, 5).map(n => `
                 <li style="margin-bottom:4px;font-size:12px;color:#374151;">
                   ${SEVERITY_EMOJI[n.severity] || '⚪'} <strong>${n.title}</strong>
-                  ${n.message ? `<br><span style="color:#6b7280;font-size:11px;">${n.message.substring(0, 100)}${n.message.length > 100 ? '...' : ''}</span>` : ''}
+                  ${n.message ? `<br><span style="color:#6b7280;font-size:11px;">${smartTruncate(n.message, 280)}</span>` : ''}
                 </li>
               `).join('')}
               ${catNotifs.length > 5 ? `<li style="font-size:11px;color:#6b7280;">+ ${catNotifs.length - 5} mais...</li>` : ''}
@@ -159,33 +167,35 @@ Deno.serve(async (req) => {
         </div>
       `;
 
-      try {
-        await base44.asServiceRole.integrations.Core.SendEmail({
-          from_name: 'PRUMO Hub',
-          to: userEmail,
-          subject: `[PRUMO Hub] ${modeTitle} — ${totalCount} notificação${totalCount > 1 ? 'ões' : ''} pendente${totalCount > 1 ? 's' : ''}`,
-          body: emailBody
-        });
-        emailsSent++;
-        console.log(`[Digest] Email ${periodLabel} → ${userEmail} (${totalCount} notifs)`);
-      } catch (e) {
-        console.error(`[Digest] Erro ao enviar para ${userEmail}:`, e.message);
+      if (digestEmailEnabled) {
+        try {
+          await base44.asServiceRole.integrations.Core.SendEmail({
+            from_name: 'PRUMO Hub',
+            to: userEmail,
+            subject: `[PRUMO Hub] ${modeTitle} — ${totalCount} notificação${totalCount > 1 ? 'ões' : ''} pendente${totalCount > 1 ? 's' : ''}`,
+            body: emailBody
+          });
+          emailsSent++;
+          console.log(`[Digest] Email ${periodLabel} → ${userEmail} (${totalCount} notifs)`);
+        } catch (e) {
+          console.error(`[Digest] Erro ao enviar para ${userEmail}:`, e.message);
+        }
       }
 
       // WhatsApp: apenas o total resumido, sem repetir cada notificação individual
-      const whatsappPref = userPrefsList.find(p => p.sms_enabled === true && p.phone_number);
-      if (whatsappPref) {
+      // Só dispara com opt-in explícito na preferência dedicada 'resumo_diario'
+      if (digestWhatsappEnabled) {
         try {
           await fetch('https://n8n-2ud7.srv1837546.hstgr.cloud/webhook/prumo-whatsapp', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              phone: whatsappPref.phone_number,
+              phone: digestPref.phone_number,
               message: `PRUMO Hub: você tem ${totalCount} notificaç${totalCount > 1 ? 'ões' : 'ão'} pendente${totalCount > 1 ? 's' : ''}. Acesse o app para ver os detalhes.`
             })
           });
           whatsappsSent++;
-          console.log(`[Digest] WhatsApp ${periodLabel} → ${whatsappPref.phone_number}`);
+          console.log(`[Digest] WhatsApp ${periodLabel} → ${digestPref.phone_number}`);
         } catch (e) {
           console.error(`[Digest] Erro ao enviar WhatsApp para ${userEmail}:`, e.message);
         }

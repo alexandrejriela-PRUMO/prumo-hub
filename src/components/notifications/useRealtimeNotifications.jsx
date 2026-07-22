@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
+import { toast } from 'sonner';
 
 export function useRealtimeNotifications(userEmail) {
   const [notifications, setNotifications] = useState([]);
@@ -102,16 +103,22 @@ export function useRealtimeNotifications(userEmail) {
   }, [load]);
 
   const deleteNotification = useCallback(async (id) => {
+    console.log('[Notif] Tentando excluir:', {
+      id,
+      notifUserEmail: notifications.find(n => n.id === id)?.user_email,
+      loggedInEmail: userEmail,
+    });
     deletedIds.current.add(id);
     setNotifications(prev => prev.filter(n => n.id !== id));
     try {
       await base44.entities.InAppNotification.delete(id);
     } catch (error) {
       console.error('[Notif] Erro ao deletar notificação:', error);
+      toast.error(`Erro ao excluir notificação: ${error.message || 'erro desconhecido'}`);
       deletedIds.current.delete(id);
       load();
     }
-  }, [load]);
+  }, [load, notifications, userEmail]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 

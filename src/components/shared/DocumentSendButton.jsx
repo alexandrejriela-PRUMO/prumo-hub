@@ -29,6 +29,33 @@ import SendWhatsAppDialog from '@/components/shared/SendWhatsAppDialog';
  *   se disponível no contexto de quem renderiza o botão
  * - size / variant: repassados ao Button, para se adequar ao layout de cada tela
  */
+// Resolve um caminho de armazenamento (ex: "documents/abc123.pdf") em uma URL
+// assinada de verdade, mesma lógica usada internamente por SupabaseFileLink.jsx.
+// URLs já absolutas (http/https) são retornadas como estão.
+async function resolveFileUrl(filePath) {
+  if (!filePath) return null;
+  if (filePath.startsWith('http://') || filePath.startsWith('https://')) return filePath;
+
+  const R2_FOLDERS = ['car/', 'documents/', 'licenses/', 'uploads/', 'mappings/', 'prad/', 'contracts/', 'budgets/', 'georef/', 'climate/', 'processes/', 'alerts/'];
+  const isAlreadyR2 = R2_FOLDERS.some(f => filePath.startsWith(f));
+
+  let validatedPath = filePath;
+  if (!isAlreadyR2) {
+    try {
+      const validateRes = await base44.functions.invoke('validateAndMigrateStorageToR2', { filePath });
+      validatedPath = validateRes?.data?.filePath || filePath;
+    } catch (err) {
+      console.warn('[DocumentSendButton] Erro ao validar/migrar:', err.message);
+    }
+  }
+
+  const res = await base44.functions.invoke('getFileSignedUrl', { filePath: validatedPath, expiresIn: 3600 });
+  if (res?.data?.error) throw new Error(res.data.error);
+  const url = res?.data?.signedUrl;
+  if (!url) throw new Error('Não foi possível gerar o link do arquivo.');
+  return url;
+}
+
 export default function DocumentSendButton({
   fileUrl, fileName, defaultPhone = '', defaultEmail = '', defaultMessage = '',
   docType = 'document', docId,
@@ -51,8 +78,15 @@ export default function DocumentSendButton({
   const handleSendWhatsApp = async (phone, message) => {
     setIsSendingWhatsApp(true);
     try {
+      let resolvedUrl;
+      try {
+        resolvedUrl = await resolveFileUrl(fileUrl);
+      } catch (err) {
+        toast.error('Erro ao preparar o arquivo para envio: ' + (err.message || 'erro desconhecido'));
+        return;
+      }
       await base44.functions.invoke('sendGenericDocument', {
-        channel: 'whatsapp', phone, file_url: fileUrl, file_name: fileName, message,
+        channel: 'whatsapp', phone, file_url: resolvedUrl, file_name: fileName, message,
         doc_type: docType, doc_id: docId,
       });
       toast.success('Documento enviado por WhatsApp!');
@@ -68,8 +102,15 @@ export default function DocumentSendButton({
     if (!email.trim()) return;
     setIsSendingEmail(true);
     try {
+      let resolvedUrl;
+      try {
+        resolvedUrl = await resolveFileUrl(fileUrl);
+      } catch (err) {
+        toast.error('Erro ao preparar o arquivo para envio: ' + (err.message || 'erro desconhecido'));
+        return;
+      }
       await base44.functions.invoke('sendGenericDocument', {
-        channel: 'email', email: email.trim(), file_url: fileUrl, file_name: fileName,
+        channel: 'email', email: email.trim(), file_url: resolvedUrl, file_name: fileName,
         message: emailMessage, doc_type: docType, doc_id: docId,
       });
       toast.success('Documento enviado por email!');

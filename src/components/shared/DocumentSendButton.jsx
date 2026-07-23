@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -6,6 +6,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Send, MessageCircle, Mail, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
@@ -31,8 +32,16 @@ export default function DocumentSendButton({
   const [showWhatsApp, setShowWhatsApp] = useState(false);
   const [showEmail, setShowEmail] = useState(false);
   const [email, setEmail] = useState(defaultEmail);
+  const [emailMessage, setEmailMessage] = useState(defaultMessage);
   const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+
+  useEffect(() => {
+    if (showEmail) {
+      setEmail(defaultEmail);
+      setEmailMessage(defaultMessage || `Segue o documento: ${fileName || ''}`);
+    }
+  }, [showEmail, defaultEmail, defaultMessage, fileName]);
 
   const handleSendWhatsApp = async (phone, message) => {
     setIsSendingWhatsApp(true);
@@ -55,7 +64,7 @@ export default function DocumentSendButton({
     try {
       await base44.functions.invoke('sendGenericDocument', {
         channel: 'email', email: email.trim(), file_url: fileUrl, file_name: fileName,
-        message: defaultMessage,
+        message: emailMessage,
       });
       toast.success('Documento enviado por email!');
       setShowEmail(false);
@@ -100,16 +109,28 @@ export default function DocumentSendButton({
               <Mail className="w-5 h-5 text-blue-600" /> Enviar por Email
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-1.5 py-2">
-            <Label htmlFor="doc-email">Email do destinatário</Label>
-            <Input
-              id="doc-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="cliente@email.com"
-              disabled={isSendingEmail}
-            />
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="doc-email">Email do destinatário</Label>
+              <Input
+                id="doc-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="cliente@email.com"
+                disabled={isSendingEmail}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="doc-email-message">Mensagem</Label>
+              <Textarea
+                id="doc-email-message"
+                value={emailMessage}
+                onChange={(e) => setEmailMessage(e.target.value)}
+                rows={4}
+                disabled={isSendingEmail}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEmail(false)} disabled={isSendingEmail}>

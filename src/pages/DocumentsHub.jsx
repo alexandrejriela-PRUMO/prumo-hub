@@ -29,6 +29,7 @@ import DocumentUpload from '../components/documents/DocumentUpload';
 import DocumentViewer from '../components/documents/DocumentViewer';
 import DocumentEditModal from '../components/documents/DocumentEditModal';
 import SupabaseFileLink from '../components/storage/SupabaseFileLink';
+import DocumentSendButton from '@/components/shared/DocumentSendButton';
 import ConsultorPropertySelector from '../components/consultor/ConsultorPropertySelector';
 import { MODULES, MODULE_COLORS } from '../components/documents/documentConstants';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
@@ -586,6 +587,14 @@ export default function DocumentsHub() {
                                 Ver
                               </Button>
                               <SupabaseFileLink filePath={doc.file_url} label="" asLink={false} />
+                              <DocumentSendButton
+                                fileUrl={doc.file_url}
+                                fileName={doc.document_name || doc.document_type}
+                                defaultEmail={effectiveProperties.find(p => p.id === selectedPropertyId)?.owner_email}
+                                defaultMessage={`Segue o documento: ${doc.document_name || doc.document_type}`}
+                                size="sm"
+                                variant="outline"
+                              />
                               {canEdit && (
                                 <Button variant="outline" size="sm" onClick={() => setEditingDoc(doc)} className="text-blue-600 hover:text-blue-700">
                                   <Pencil className="w-4 h-4" />

@@ -54,7 +54,8 @@ import {
               Smartphone,
               ChevronLeft,
               AlertCircle,
-              Trash2
+              Trash2,
+              MessageSquare
                     } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffectiveUserPermissions } from '@/hooks/useEffectiveUserPermissions';
@@ -70,6 +71,7 @@ const consultorNavItems = [
       { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
       { name: 'Agenda', page: 'Agenda', icon: CalendarDays },
       { name: 'CRM Prumo', page: 'CRMBoard', icon: ClipboardList },
+      { name: 'Central de Mensagens', page: 'CommunicationCenter', icon: MessageSquare },
       { name: 'Meus Clientes', page: 'ConsultorClients', icon: Users },
       { name: 'Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
       { name: 'Meus Contratos', page: 'Contracts', icon: ScrollText },
@@ -111,8 +113,9 @@ const produtorNavItems = [
       { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
     ]
   },
-  { 
-    name: 'Agricultura de Precisão', 
+  { name: 'Central de Mensagens', page: 'CommunicationCenter', icon: MessageSquare },
+  {
+    name: 'Agricultura de Precisão',
     icon: Sparkles,
     children: [
       { name: 'Mapeamentos', page: 'Mappings', icon: Map },
@@ -120,8 +123,8 @@ const produtorNavItems = [
       { name: 'Análise de Commodities', page: 'CommodityAnalysis', icon: BarChart3 },
     ]
   },
-  { 
-    name: 'Ativos Ambientais', 
+  {
+    name: 'Ativos Ambientais',
     icon: TrendingUp,
     children: [
       { name: 'Créditos de Carbono', page: 'CarbonCredits', icon: Leaf },
@@ -158,6 +161,7 @@ const equipeNavItems = [
       { name: 'Dashboard', page: 'Home', icon: LayoutDashboard },
       { name: 'Agenda', page: 'Agenda', icon: CalendarDays },
       { name: 'CRM Prumo', page: 'CRMBoard', icon: ClipboardList },
+      { name: 'Central de Mensagens', page: 'CommunicationCenter', icon: MessageSquare },
       { name: 'Meus Clientes', page: 'ConsultorClients', icon: Users },
       { name: 'Propriedades e Empreendimentos', page: 'Properties', icon: Building2 },
       { name: 'Meus Contratos', page: 'Contracts', icon: ScrollText },
@@ -241,16 +245,17 @@ const clientConsultorNavItems = [
       { name: 'Georreferenciamento', page: 'Georeferencing', icon: MapPin },
     ]
   },
-  { 
-    name: 'Agricultura de Precisão', 
+  { name: 'Central de Mensagens', page: 'CommunicationCenter', icon: MessageSquare },
+  {
+    name: 'Agricultura de Precisão',
     icon: Sparkles,
     children: [
       { name: 'Mapeamentos', page: 'Mappings', icon: Map },
       { name: 'Monitoramento Climático', page: 'ClimateMonitoring', icon: Cloud },
     ]
   },
-  { 
-    name: 'Ativos Ambientais', 
+  {
+    name: 'Ativos Ambientais',
     icon: TrendingUp,
     children: [
       { name: 'Créditos de Carbono', page: 'CarbonCredits', icon: Leaf },

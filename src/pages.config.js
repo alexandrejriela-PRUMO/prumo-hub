@@ -20,6 +20,7 @@ const ChatRute = React.lazy(() => import('./pages/ChatRute'));
 const ClientConsultorPortal = React.lazy(() => import('./pages/ClientConsultorPortal'));
 const ClimateMonitoring = React.lazy(() => import('./pages/ClimateMonitoring'));
 const CommodityAnalysis = React.lazy(() => import('./pages/CommodityAnalysis'));
+const CommunicationCenter = React.lazy(() => import('./pages/CommunicationCenter'));
 const ConsolidatedReports = React.lazy(() => import('./pages/ConsolidatedReports'));
 const ConsultorClients = React.lazy(() => import('./pages/ConsultorClients'));
 const Contracts = React.lazy(() => import('./pages/Contracts'));
@@ -84,6 +85,7 @@ export const PAGES = {
     "ClientConsultorPortal": ClientConsultorPortal,
     "ClimateMonitoring": ClimateMonitoring,
     "CommodityAnalysis": CommodityAnalysis,
+    "CommunicationCenter": CommunicationCenter,
     "ConsolidatedReports": ConsolidatedReports,
     "ConsultorClients": ConsultorClients,
     "Contracts": Contracts,

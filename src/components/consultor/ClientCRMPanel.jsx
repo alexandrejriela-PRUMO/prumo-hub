@@ -147,10 +147,27 @@ export default function ClientCRMPanel({ property, onClose }) {
   // ── Interações ───────────────────────────────────────────────────────────
   const addInteraction = () => {
     if (!newInteraction.title) { toast.error('Informe o título da interação.'); return; }
+    const targetInteraction = editingInteraction
+      ? { ...editingInteraction, ...newInteraction }
+      : { id: Date.now().toString(), date: new Date().toISOString(), ...newInteraction, created_by: crmConsultorEmail, confirmation_token: newInteraction.request_confirmation?(Date.now().toString(36)+Math.random().toString(36).slice(2,10)):null, confirmation_status: newInteraction.request_confirmation?'pending':null };
     const interactions = editingInteraction
-      ? (activeCRM?.interactions || []).map(i => i.id === editingInteraction.id ? { ...i, ...newInteraction } : i)
-      : [...(activeCRM?.interactions || []), { id: Date.now().toString(), date: new Date().toISOString(), ...newInteraction, created_by: crmConsultorEmail, confirmation_token: newInteraction.request_confirmation?(Date.now().toString(36)+Math.random().toString(36).slice(2,10)):null, confirmation_status: newInteraction.request_confirmation?'pending':null }];
-    updateCRM.mutate({ interactions });
+      ? (activeCRM?.interactions || []).map(i => i.id === editingInteraction.id ? targetInteraction : i)
+      : [...(activeCRM?.interactions || []), targetInteraction];
+    updateCRM.mutate({ interactions }, {
+      onSuccess: async () => {
+        if (targetInteraction.request_confirmation && targetInteraction.confirmation_token) {
+          try {
+            await base44.functions.invoke('sendMeetingConfirmationRequest', {
+              crm_id: activeCRM.id,
+              token: targetInteraction.confirmation_token,
+            });
+            toast.success('Solicitação de confirmação enviada ao cliente!');
+          } catch (err) {
+            toast.error('Interação salva, mas houve erro ao enviar a confirmação: ' + err.message);
+          }
+        }
+      },
+    });
     if (!editingInteraction && newInteraction.responsible_email) notifyAssignment(newInteraction.responsible_email, newInteraction.responsible_name, 'interaction', newInteraction.title);
     setNewInteraction({ type: 'Ligação', title: '', description: '', next_action: '', next_action_date: '', responsible_email: '', responsible_name: '', meeting_datetime: '', request_confirmation: false, confirmation_channel: 'whatsapp' });
     setShowInteractionForm(false); setEditingInteraction(null);

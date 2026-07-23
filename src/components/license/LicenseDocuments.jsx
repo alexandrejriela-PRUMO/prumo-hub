@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { FileText, Trash2, ExternalLink, Plus } from 'lucide-react';
 import R2FileUpload from '@/components/storage/SupabaseFileUpload';
 import R2FileLink from '@/components/storage/SupabaseFileLink';
+import DocumentSendButton from '@/components/shared/DocumentSendButton';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -154,6 +155,14 @@ export default function LicenseDocuments({ license, onUpdate }) {
                 <div className="flex items-center gap-2">
                   <R2FileLink filePath={doc.url} label="" asLink={true} mode="view" />
                   <R2FileLink filePath={doc.url} label="" asLink={false} mode="download" />
+                  <DocumentSendButton
+                    fileUrl={doc.url}
+                    fileName={doc.name}
+                    defaultEmail={license.owner_email}
+                    defaultMessage={`Segue o documento: ${doc.name}`}
+                    size="sm"
+                    variant="outline"
+                  />
                   <Button
                     variant="ghost"
                     size="icon"

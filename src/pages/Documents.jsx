@@ -24,6 +24,7 @@ import { format, parseISO } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import VersionHistory from '../components/documents/VersionHistory';
+import DocumentSendButton from '@/components/shared/DocumentSendButton';
 import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 const documentTypes = ['CAR', 'CCIR'];
@@ -232,6 +233,16 @@ export default function Documents() {
           >
             <History className="w-4 h-4" />
           </Button>
+          {doc.file_url && (
+            <DocumentSendButton
+              fileUrl={doc.file_url}
+              fileName={doc.document_name || doc.document_type}
+              defaultEmail={doc.owner_email}
+              defaultMessage={`Segue o documento: ${doc.document_name || doc.document_type}`}
+              size="sm"
+              variant="outline"
+            />
+          )}
           <Button
             variant="ghost"
             size="icon"

@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { FileText, Plus, Trash2, ExternalLink } from 'lucide-react';
 import R2FileUpload from '@/components/storage/SupabaseFileUpload';
 import R2FileLink from '@/components/storage/SupabaseFileLink';
+import DocumentSendButton from '@/components/shared/DocumentSendButton';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -146,6 +147,14 @@ export default function PRADDocuments({ prad, userEmail, onUpdate }) {
                   </div>
                   <div className="flex gap-1 ml-2">
                     <R2FileLink filePath={doc.url} label="Abrir" asLink={true} />
+                    <DocumentSendButton
+                      fileUrl={doc.url}
+                      fileName={doc.name}
+                      defaultEmail={userEmail}
+                      defaultMessage={`Segue o documento: ${doc.name}`}
+                      size="sm"
+                      variant="outline"
+                    />
                     <Button
                       size="sm"
                       variant="destructive"

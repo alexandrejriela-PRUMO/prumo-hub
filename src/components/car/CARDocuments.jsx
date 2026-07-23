@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { FileText, Plus, Trash2, Upload } from 'lucide-react';
 import R2FileUpload from '@/components/storage/SupabaseFileUpload';
 import R2FileLink from '@/components/storage/SupabaseFileLink';
+import DocumentSendButton from '@/components/shared/DocumentSendButton';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { base44 } from '@/api/base44Client';
@@ -132,6 +133,14 @@ export default function CARDocuments({ carRecord, onUpdate, canEdit }) {
                   <Badge className={`text-xs ${typeColors[doc.type] || 'bg-gray-100 text-gray-600'}`}>{doc.type}</Badge>
                   <R2FileLink filePath={doc.url} label="Visualizar" mode="view" asLink={true} />
                   <R2FileLink filePath={doc.url} label="Baixar" mode="download" asLink={true} />
+                  <DocumentSendButton
+                    fileUrl={doc.url}
+                    fileName={doc.name}
+                    defaultEmail={carRecord?.owner_email}
+                    defaultMessage={`Segue o documento: ${doc.name}`}
+                    size="sm"
+                    variant="outline"
+                  />
                   {canEdit && (
                     <button onClick={(e) => { e.stopPropagation(); handleDelete(idx); }} className="p-1 hover:bg-red-50 rounded text-red-400 hover:text-red-600 transition-colors">
                       <Trash2 className="w-3.5 h-3.5" />

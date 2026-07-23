@@ -32,6 +32,7 @@ import {
   ChevronLeft
 } from 'lucide-react';
 import SupabaseFileUpload from '../components/storage/SupabaseFileUpload';
+import DocumentSendButton from '@/components/shared/DocumentSendButton';
 import { format, parseISO } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
@@ -632,9 +633,19 @@ function GeoreferencingDetails({ geo, onFileUpload, user, onUpdate }) {
                           <p className="text-xs text-gray-500">{format(parseISO(doc.upload_date), 'dd/MM/yyyy HH:mm')}</p>
                         </div>
                       </div>
-                      <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:text-emerald-700">
-                        <Download className="w-5 h-5" />
-                      </a>
+                      <div className="flex items-center gap-3">
+                        <DocumentSendButton
+                          fileUrl={doc.url}
+                          fileName={doc.name}
+                          defaultEmail={localGeo.owner_email}
+                          defaultMessage={`Segue o documento: ${doc.name}`}
+                          size="sm"
+                          variant="outline"
+                        />
+                        <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:text-emerald-700">
+                          <Download className="w-5 h-5" />
+                        </a>
+                      </div>
                     </div>
                   ))}
                 </div>

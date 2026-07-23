@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Clock, Plus, User, FileText, Calendar, Edit2, History, AlertCircle, Building } from 'lucide-react';
 import SupabaseFileUpload from '@/components/storage/SupabaseFileUpload';
 import SupabaseFileLink from '@/components/storage/SupabaseFileLink';
+import DocumentSendButton from '@/components/shared/DocumentSendButton';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { base44 } from '@/api/base44Client';
@@ -434,6 +435,14 @@ export default function ProcessHistory({ process, onAddUpdate, onEditUpdate }) {
                           <FileText className="w-4 h-4 text-emerald-600" />
                           <span className="text-sm text-emerald-700">{update.file_name || 'Documento anexo'}</span>
                           <SupabaseFileLink filePath={update.file_url} label="Baixar" asLink={true} />
+                          <DocumentSendButton
+                            fileUrl={update.file_url}
+                            fileName={update.file_name || 'Documento anexo'}
+                            defaultEmail={process.client_email}
+                            defaultMessage={`Segue o documento: ${update.file_name || 'anexo do processo'}`}
+                            size="sm"
+                            variant="outline"
+                          />
                         </div>
                       )}
 

@@ -160,6 +160,8 @@ export default function LicenseDocuments({ license, onUpdate }) {
                     fileName={doc.name}
                     defaultEmail={license.owner_email}
                     defaultMessage={`Segue o documento: ${doc.name}`}
+                    docType="license"
+                    docId={license.id}
                     size="sm"
                     variant="outline"
                   />

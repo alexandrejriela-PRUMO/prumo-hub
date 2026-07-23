@@ -639,6 +639,8 @@ function GeoreferencingDetails({ geo, onFileUpload, user, onUpdate }) {
                           fileName={doc.name}
                           defaultEmail={localGeo.owner_email}
                           defaultMessage={`Segue o documento: ${doc.name}`}
+                          docType="georeferencing"
+                          docId={localGeo.id}
                           size="sm"
                           variant="outline"
                         />

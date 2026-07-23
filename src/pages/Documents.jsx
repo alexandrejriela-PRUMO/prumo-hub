@@ -239,6 +239,7 @@ export default function Documents() {
               fileName={doc.document_name || doc.document_type}
               defaultEmail={doc.owner_email}
               defaultMessage={`Segue o documento: ${doc.document_name || doc.document_type}`}
+              docId={doc.id}
               size="sm"
               variant="outline"
             />

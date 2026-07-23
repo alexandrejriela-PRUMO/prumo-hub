@@ -440,6 +440,8 @@ export default function ProcessHistory({ process, onAddUpdate, onEditUpdate }) {
                             fileName={update.file_name || 'Documento anexo'}
                             defaultEmail={process.client_email}
                             defaultMessage={`Segue o documento: ${update.file_name || 'anexo do processo'}`}
+                            docType="process"
+                            docId={process.id}
                             size="sm"
                             variant="outline"
                           />

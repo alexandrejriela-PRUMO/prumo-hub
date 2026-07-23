@@ -67,6 +67,8 @@ Deno.serve(async (req) => {
       const errText = await waResponse.text();
       throw new Error(`Falha ao acionar webhook WhatsApp: ${waResponse.status} ${errText}`);
     }
+    const waJson = await waResponse.json().catch(() => null);
+    const zapiMessageId = waJson?.messageId || null;
 
     await base44.entities.Budget.update(budget_id, {
       status: 'Enviado',
@@ -79,9 +81,11 @@ Deno.serve(async (req) => {
       doc_number: budget.budget_number || '',
       consultor_email: consultorEmail,
       client_name: budget.client_name || '',
+      channel: 'whatsapp',
       to_phone: phone,
       message: sendMessage,
       file_name: sendFileName,
+      zapi_message_id: zapiMessageId,
       sent_at: new Date().toISOString(),
       status: 'sent',
     });
@@ -96,6 +100,7 @@ Deno.serve(async (req) => {
         doc_number: budget?.budget_number || '',
         consultor_email: consultorEmail,
         client_name: budget?.client_name || '',
+        channel: 'whatsapp',
         to_phone: phone,
         message: sendMessage || '',
         file_name: sendFileName || '',

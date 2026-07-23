@@ -138,6 +138,8 @@ export default function CARDocuments({ carRecord, onUpdate, canEdit }) {
                     fileName={doc.name}
                     defaultEmail={carRecord?.owner_email}
                     defaultMessage={`Segue o documento: ${doc.name}`}
+                    docType="car"
+                    docId={carRecord?.id}
                     size="sm"
                     variant="outline"
                   />

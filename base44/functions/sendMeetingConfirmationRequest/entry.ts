@@ -14,6 +14,15 @@ const APP_BASE_URL = 'https://hub.prumo.site';
  * Recebe: { crm_id, token }
  * Retorna: { success, sent_whatsapp, sent_email }
  */
+// ─── Log de envio (não deve derrubar a resposta principal em caso de falha) ─────────
+async function logSend(base44, data) {
+  try {
+    await base44.asServiceRole.entities.WhatsAppSendLog.create(data);
+  } catch (e) {
+    console.error('[sendMeetingConfirmationRequest] Erro ao gravar WhatsAppSendLog:', e.message);
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -49,20 +58,39 @@ Deno.serve(async (req) => {
 
     let sentWhatsapp = false;
     let sentEmail = false;
+    const logBase = {
+      doc_type: 'meeting_confirmation',
+      doc_id: crm_id,
+      consultor_email: crm.consultor_email,
+      client_name: crm.client_name || '',
+      message,
+      sent_at: new Date().toISOString(),
+    };
 
     if (['whatsapp', 'both'].includes(interaction.confirmation_channel) && crm.client_phone) {
+      const digits = crm.client_phone.replace(/\D/g, '');
+      const phoneWithCountry = digits.startsWith('55') ? digits : `55${digits}`;
       try {
-        const digits = crm.client_phone.replace(/\D/g, '');
-        const phoneWithCountry = digits.startsWith('55') ? digits : `55${digits}`;
         const waRes = await fetch(N8N_WHATSAPP_WEBHOOK, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ phone: phoneWithCountry, message }),
         });
-        sentWhatsapp = waRes.ok;
-        if (!waRes.ok) console.error('[MeetingConfirm] Falha no WhatsApp:', await waRes.text());
+        if (!waRes.ok) {
+          const errText = await waRes.text();
+          throw new Error(`Falha no WhatsApp: ${waRes.status} ${errText}`);
+        }
+        const waJson = await waRes.json().catch(() => null);
+        sentWhatsapp = true;
+        await logSend(base44, {
+          ...logBase, channel: 'whatsapp', to_phone: phoneWithCountry,
+          zapi_message_id: waJson?.messageId || null, status: 'sent',
+        });
       } catch (e) {
         console.error('[MeetingConfirm] Erro ao enviar WhatsApp:', e.message);
+        await logSend(base44, {
+          ...logBase, channel: 'whatsapp', to_phone: phoneWithCountry, status: 'error', error_message: e.message,
+        });
       }
     }
 
@@ -79,8 +107,12 @@ Deno.serve(async (req) => {
             `<p>Equipe PRUMO Hub</p>`,
         });
         sentEmail = true;
+        await logSend(base44, { ...logBase, channel: 'email', to_email: crm.client_email, status: 'sent' });
       } catch (e) {
         console.error('[MeetingConfirm] Erro ao enviar email:', e.message);
+        await logSend(base44, {
+          ...logBase, channel: 'email', to_email: crm.client_email, status: 'error', error_message: e.message,
+        });
       }
     }
 

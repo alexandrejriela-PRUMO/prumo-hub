@@ -59,6 +59,8 @@ Deno.serve(async (req) => {
       const errText = await waResponse.text();
       throw new Error(`Falha ao acionar webhook WhatsApp: ${waResponse.status} ${errText}`);
     }
+    const waJson = await waResponse.json().catch(() => null);
+    const zapiMessageId = waJson?.messageId || null;
 
     // Nota: ClientContract não possui campo sent_at/status de envio (o status é sobre
     // o ciclo de vida do contrato: Proposta, Ativo, etc). Não atualizamos nada aqui,
@@ -70,9 +72,11 @@ Deno.serve(async (req) => {
       doc_number: contract.contract_number || '',
       consultor_email: contract.consultor_email,
       client_name: contract.client_name || '',
+      channel: 'whatsapp',
       to_phone: phone,
       message: sendMessage,
       file_name: sendFileName,
+      zapi_message_id: zapiMessageId,
       sent_at: new Date().toISOString(),
       status: 'sent',
     });
@@ -87,6 +91,7 @@ Deno.serve(async (req) => {
         doc_number: contract?.contract_number || '',
         consultor_email: contract?.consultor_email || '',
         client_name: contract?.client_name || '',
+        channel: 'whatsapp',
         to_phone: phone,
         message: sendMessage || '',
         file_name: sendFileName || '',

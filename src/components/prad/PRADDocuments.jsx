@@ -152,6 +152,8 @@ export default function PRADDocuments({ prad, userEmail, onUpdate }) {
                       fileName={doc.name}
                       defaultEmail={userEmail}
                       defaultMessage={`Segue o documento: ${doc.name}`}
+                      docType="prad"
+                      docId={prad.id}
                       size="sm"
                       variant="outline"
                     />

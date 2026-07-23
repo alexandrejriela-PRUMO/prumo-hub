@@ -23,10 +23,15 @@ import SendWhatsAppDialog from '@/components/shared/SendWhatsAppDialog';
  * - defaultPhone / defaultEmail: pré-preenchimento (ex: telefone/email do cliente
  *   dono da propriedade, se disponível no contexto de quem renderiza o botão)
  * - defaultMessage: mensagem sugerida (editável)
+ * - docType: tipo do documento para o WhatsAppSendLog — 'document' (default),
+ *   'license', 'car', 'process', 'prad' ou 'georeferencing'
+ * - docId: id do registro relacionado (licença, CAR, processo, PRAD, georreferenciamento),
+ *   se disponível no contexto de quem renderiza o botão
  * - size / variant: repassados ao Button, para se adequar ao layout de cada tela
  */
 export default function DocumentSendButton({
   fileUrl, fileName, defaultPhone = '', defaultEmail = '', defaultMessage = '',
+  docType = 'document', docId,
   size = 'sm', variant = 'outline',
 }) {
   const [showWhatsApp, setShowWhatsApp] = useState(false);
@@ -48,6 +53,7 @@ export default function DocumentSendButton({
     try {
       await base44.functions.invoke('sendGenericDocument', {
         channel: 'whatsapp', phone, file_url: fileUrl, file_name: fileName, message,
+        doc_type: docType, doc_id: docId,
       });
       toast.success('Documento enviado por WhatsApp!');
       setShowWhatsApp(false);
@@ -64,7 +70,7 @@ export default function DocumentSendButton({
     try {
       await base44.functions.invoke('sendGenericDocument', {
         channel: 'email', email: email.trim(), file_url: fileUrl, file_name: fileName,
-        message: emailMessage,
+        message: emailMessage, doc_type: docType, doc_id: docId,
       });
       toast.success('Documento enviado por email!');
       setShowEmail(false);

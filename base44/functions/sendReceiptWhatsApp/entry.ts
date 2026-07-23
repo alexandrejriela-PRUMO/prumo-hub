@@ -349,6 +349,8 @@ Deno.serve(async (req) => {
       const errText = await waResponse.text();
       throw new Error(`Falha ao acionar webhook WhatsApp: ${waResponse.status} ${errText}`);
     }
+    const waJson = await waResponse.json().catch(() => null);
+    const zapiMessageId = waJson?.messageId || null;
 
     // 5) Atualizar status do recibo
     await base44.asServiceRole.entities.Receipt.update(receipt_id, {
@@ -362,9 +364,11 @@ Deno.serve(async (req) => {
       doc_number: receipt.receipt_number || '',
       consultor_email: consultorEmail,
       client_name: receipt.client_name || '',
+      channel: 'whatsapp',
       to_phone: phone,
       message: sendMessage,
       file_name: fileName,
+      zapi_message_id: zapiMessageId,
       sent_at: new Date().toISOString(),
       status: 'sent',
     });
@@ -379,6 +383,7 @@ Deno.serve(async (req) => {
         doc_number: receipt?.receipt_number || '',
         consultor_email: consultorEmail,
         client_name: receipt?.client_name || '',
+        channel: 'whatsapp',
         to_phone: phone,
         message: sendMessage || '',
         file_name: fileName || '',

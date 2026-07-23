@@ -4,16 +4,20 @@
   "properties": {
     "doc_type": {
       "type": "string",
-      "enum": ["receipt", "budget", "contract"],
-      "description": "Tipo de documento enviado"
+      "enum": [
+        "receipt", "budget", "contract",
+        "document", "license", "car", "process", "prad", "georeferencing",
+        "meeting_confirmation"
+      ],
+      "description": "Tipo de documento/evento enviado"
     },
     "doc_id": {
       "type": "string",
-      "description": "ID do recibo, orçamento ou contrato"
+      "description": "ID do registro relacionado (recibo, orçamento, contrato, documento, etc.)"
     },
     "doc_number": {
       "type": "string",
-      "description": "Número/identificador do documento (ex: número do recibo ou orçamento)"
+      "description": "Número/identificador do documento, se aplicável"
     },
     "consultor_email": {
       "type": "string",
@@ -23,35 +27,59 @@
       "type": "string",
       "description": "Nome do cliente destinatário"
     },
+    "channel": {
+      "type": "string",
+      "enum": ["whatsapp", "email"],
+      "default": "whatsapp",
+      "description": "Canal usado para o envio"
+    },
     "to_phone": {
       "type": "string",
-      "description": "Telefone (WhatsApp) do destinatário"
+      "description": "Telefone (WhatsApp) do destinatário, se o canal for whatsapp"
+    },
+    "to_email": {
+      "type": "string",
+      "description": "Email do destinatário, se o canal for email"
     },
     "message": {
       "type": "string",
-      "description": "Mensagem enviada junto com o documento"
+      "description": "Mensagem enviada"
     },
     "file_name": {
       "type": "string",
-      "description": "Nome do arquivo PDF enviado"
+      "description": "Nome do arquivo enviado, se houver"
+    },
+    "zapi_message_id": {
+      "type": "string",
+      "description": "ID da mensagem retornado pela Z-API (messageId), usado para casar com o webhook de status (entregue/lido)"
     },
     "sent_at": {
       "type": "string",
       "format": "date-time",
       "description": "Data/hora do envio"
     },
+    "delivered_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data/hora em que a Z-API confirmou entrega ao WhatsApp do destinatário"
+    },
+    "read_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data/hora em que a Z-API confirmou leitura pelo destinatário"
+    },
     "status": {
       "type": "string",
-      "enum": ["sent", "error"],
+      "enum": ["sent", "delivered", "read", "error"],
       "default": "sent",
-      "description": "Status do envio"
+      "description": "Status mais recente do envio"
     },
     "error_message": {
       "type": "string",
       "description": "Mensagem de erro, se houver (status = error)"
     }
   },
-  "required": ["doc_type", "doc_id", "consultor_email", "to_phone"],
+  "required": ["doc_type", "doc_id", "consultor_email", "channel"],
   "rls": {
     "create": {
       "data.consultor_email": "{{user.email}}"

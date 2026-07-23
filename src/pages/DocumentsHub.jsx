@@ -592,6 +592,7 @@ export default function DocumentsHub() {
                                 fileName={doc.document_name || doc.document_type}
                                 defaultEmail={effectiveProperties.find(p => p.id === selectedPropertyId)?.owner_email}
                                 defaultMessage={`Segue o documento: ${doc.document_name || doc.document_type}`}
+                                docId={doc.id}
                                 size="sm"
                                 variant="outline"
                               />

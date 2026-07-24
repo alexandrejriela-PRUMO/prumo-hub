@@ -168,6 +168,33 @@
     "client_contact": {
       "type": "string",
       "description": "Contato do cliente (telefone ou email)"
+    },
+    "manual_regularity_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Ativa a reavalia\u00e7\u00e3o manual de regularidade, sobrescrevendo o c\u00e1lculo autom\u00e1tico do term\u00f4metro"
+    },
+    "manual_regularity_status": {
+      "type": "string",
+      "enum": [
+        "conforme",
+        "attention",
+        "critical"
+      ],
+      "description": "Status manual definido pelo consultor ap\u00f3s an\u00e1lise t\u00e9cnica individual"
+    },
+    "manual_regularity_notes": {
+      "type": "string",
+      "description": "Notas t\u00e9cnicas da reavalia\u00e7\u00e3o manual"
+    },
+    "manual_regularity_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data da reavalia\u00e7\u00e3o manual"
+    },
+    "manual_regularity_by": {
+      "type": "string",
+      "description": "Email de quem realizou a reavalia\u00e7\u00e3o manual"
     }
   },
   "required": [

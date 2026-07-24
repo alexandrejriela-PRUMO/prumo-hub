@@ -6,14 +6,18 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, TrendingUp, Building2, BarChart3, Eye, Sparkles, X, FileCheck, FileText, Scale, MapPin } from 'lucide-react';
+import { AlertTriangle, TrendingUp, Building2, BarChart3, Eye, Sparkles, X, FileCheck, FileText, Scale, MapPin, ShieldCheck } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import RuteAIChat from './RuteAIChat';
 import RegularityGauge from './RegularityGauge';
+import ManualRegularityDialog from './ManualRegularityDialog';
 
 export default function ConsultorOverview({ user, properties, isLoading }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [ruteChatOpen, setRuteChatOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
+  const [manualDialogProperty, setManualDialogProperty] = useState(null);
 
   const propertyIds = properties.map(p => p.id);
 
@@ -89,6 +93,11 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
   // Calcula regularidade usando a mesma lógica do termômetro
   const calcRegularity = (propertyId) => {
     const property = properties.find(p => p.id === propertyId);
+    if (property?.manual_regularity_enabled) {
+      if (property.manual_regularity_status === 'conforme') return 100;
+      if (property.manual_regularity_status === 'attention') return 55;
+      return 20;
+    }
     let score = 0;
 
     // Licenças (35 pts)
@@ -149,6 +158,12 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
 
   // Categoriza propriedades por status
   const getPropertyStatus = (propertyId) => {
+    const property = properties.find(p => p.id === propertyId);
+    if (property?.manual_regularity_enabled) {
+      if (property.manual_regularity_status === 'conforme') return 'normal';
+      if (property.manual_regularity_status === 'attention') return 'attention';
+      return 'critical';
+    }
     const regularity = calcRegularity(propertyId);
     const criticalAlerts = countAlertsByProperty(propertyId, 'Crítica');
     const highAlerts = countAlertsByProperty(propertyId, 'Alta');
@@ -385,6 +400,12 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
                         <Badge className={`${config.badge} text-[10px] px-2 py-0.5`}>
                           {status === 'critical' ? 'Crítica' : status === 'attention' ? 'Atenção' : 'Normal'}
                         </Badge>
+                        {property.manual_regularity_enabled && (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/40 rounded-full px-1.5 py-0.5">
+                            <ShieldCheck className="w-2.5 h-2.5" />
+                            Reavaliado
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -402,22 +423,46 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
                       })}
                     </div>
 
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/20 group-hover:border-emerald-300 dark:group-hover:border-emerald-700 transition-colors"
-                      onClick={() => navigate(`${createPageUrl('Home')}?property_id=${property.id}`)}
-                    >
-                      <Eye className="w-3.5 h-3.5 mr-1.5" />
-                      Ver Dashboard
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/20 group-hover:border-emerald-300 dark:group-hover:border-emerald-700 transition-colors"
+                        onClick={() => navigate(`${createPageUrl('Home')}?property_id=${property.id}`)}
+                      >
+                        <Eye className="w-3.5 h-3.5 mr-1.5" />
+                        Ver Dashboard
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={`flex-shrink-0 transition-colors ${
+                          property.manual_regularity_enabled
+                            ? 'border-emerald-400 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40'
+                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'
+                        }`}
+                        onClick={() => setManualDialogProperty(property)}
+                        title="Reavaliação manual de regularidade"
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               );
             })}
           </div>
         )}
-      </div>
-    </div>
-  );
-}
+        </div>
+
+        {/* Manual Regularity Dialog */}
+        <ManualRegularityDialog
+        property={manualDialogProperty}
+        user={user}
+        isOpen={!!manualDialogProperty}
+        onClose={() => setManualDialogProperty(null)}
+        onSaved={() => queryClient.invalidateQueries()}
+        />
+        </div>
+        );
+        }

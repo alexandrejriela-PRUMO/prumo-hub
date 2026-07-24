@@ -75,15 +75,15 @@ export default function ManualRegularityDialog({ property, user, isOpen, onClose
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md flex flex-col max-h-[90vh] overflow-hidden">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-emerald-600" />
             Reavaliação Manual de Regularidade
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 overflow-y-auto flex-1 pr-1 -mr-1">
           {/* Info da propriedade */}
           <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
             <p className="font-semibold text-sm text-gray-900 dark:text-white">{property?.property_name}</p>
@@ -145,22 +145,22 @@ export default function ManualRegularityDialog({ property, user, isOpen, onClose
           </p>
         </div>
 
-        <DialogFooter className="flex gap-2 sm:gap-2">
+        <DialogFooter className="flex-shrink-0 gap-2 pt-2 border-t border-gray-100 dark:border-slate-700/50">
           {isCurrentlyManual && (
             <Button
               variant="outline"
               onClick={handleDisable}
               disabled={saving}
-              className="text-amber-600 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+              className="w-full sm:w-auto text-amber-600 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30"
             >
               <RotateCcw className="w-4 h-4 mr-1.5" />
               Reativar Automático
             </Button>
           )}
-          <Button variant="outline" onClick={onClose} disabled={saving}>
+          <Button variant="outline" onClick={onClose} disabled={saving} className="w-full sm:w-auto">
             Cancelar
           </Button>
-          <Button onClick={handleSave} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
+          <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700">
             {saving ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <ShieldCheck className="w-4 h-4 mr-1.5" />}
             Aplicar Reavaliação
           </Button>

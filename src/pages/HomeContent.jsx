@@ -151,6 +151,7 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
   const effectiveProcesses = skipIndividualQueries ? (metricsData?.processes || []) : processes;
   const effectiveAlerts = skipIndividualQueries ? (metricsData?.alerts || []) : environmentalAlerts;
   const effectivePrads = skipIndividualQueries ? (metricsData?.prads || []) : prads;
+  const effectiveGeoreferencing = skipIndividualQueries ? (metricsData?.georeferencing || []) : georeferencing;
 
   // Dados de requerimentos para o painel do produtor
   const openRequests = requests.filter(r => r.status === 'Aberto' || r.status === 'Em Análise');
@@ -484,7 +485,7 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
               licenses={filteredData.licenses}
               documents={filteredData.documents}
               processes={filteredData.processes}
-              georeferencing={georeferencing}
+              georeferencing={effectiveGeoreferencing}
               prads={effectivePrads}
               carManagements={carManagements}
             />

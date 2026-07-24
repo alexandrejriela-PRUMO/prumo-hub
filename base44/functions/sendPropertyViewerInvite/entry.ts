@@ -1,79 +1,79 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-Deno.serve(async (req) => {
-  if (req.method !== 'POST') {
-    return Response.json({ error: 'Método não suportado' }, { status: 405 });
-  }
+const EVENT_LABELS = {
+  licenca_vencendo: '📄 Licenças vencendo',
+  condicionante_vencendo: '📋 Condicionantes de licença',
+  documento_vencendo: '📁 Documentos com validade',
+  novo_alerta_ambiental: '⚠️ Alertas ambientais',
+  atualizacao_processo: '⚖️ Processos administrativos',
+  atualizacao_prad: '🌱 PRAD',
+  geo_irregular: '📍 Georreferenciamento irregular'
+};
 
+Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-
-    if (!user) {
-      return Response.json({ error: 'Não autenticado' }, { status: 401 });
-    }
-
     const body = await req.json();
-    const { property_name, viewer_email, viewer_name, property_id } = body;
+    const {
+      property_name,
+      viewer_email,
+      viewer_name,
+      viewer_whatsapp,
+      consultor_name,
+      notification_events,
+      property_id
+    } = body;
 
     if (!viewer_email || !property_name || !property_id) {
       return Response.json({ error: 'Dados incompletos' }, { status: 400 });
     }
 
-    // Enviar email para o visualizador
-    const subject = `Você foi adicionado como visualizador de ${property_name} na PRUMO Hub`;
+    const eventsList = (notification_events || [])
+      .map((key) => EVENT_LABELS[key])
+      .filter(Boolean);
+
+    const eventsHtml = eventsList.length
+      ? `<p><strong>O que você vai receber automaticamente:</strong></p><ul>${eventsList.map(e => `<li>${e}</li>`).join('')}</ul>`
+      : '';
+
+    const subject = `Você tem acesso ao PRUMO Hub — ${property_name}`;
     const htmlBody = `
-      <!DOCTYPE html>
-      <html lang="pt-BR">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background-color: #1B4332; color: white; padding: 20px; text-align: center; border-radius: 8px; }
-          .content { padding: 20px; background-color: #f9f9f9; margin-top: 20px; border-radius: 8px; }
-          .button { display: inline-block; background-color: #40916C; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin-top: 20px; }
-          .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #666; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>Bem-vindo à PRUMO Hub</h1>
-          </div>
-          <div class="content">
-            <p>Olá ${viewer_name || 'usuário'},</p>
-            <p>Você foi adicionado como <strong>visualizador</strong> da propriedade <strong>"${property_name}"</strong> na PRUMO Hub.</p>
-            <p>Como visualizador, você terá acesso a:</p>
-            <ul>
-              <li>Documentos da propriedade</li>
-              <li>Licenças e processos</li>
-              <li>Alertas ambientais</li>
-              <li>Mapa interativo</li>
-            </ul>
-            <p>Acesse a plataforma para visualizar todos os detalhes:</p>
-            <a href="https://prumo.base44.app/" class="button">Acessar PRUMO Hub</a>
-            <p style="margin-top: 20px; font-size: 12px;">Se tiver dúvidas, entre em contato com o consultor responsável.</p>
-          </div>
-          <div class="footer">
-            <p>&copy; 2026 PRUMO Hub. Todos os direitos reservados.</p>
-          </div>
-        </div>
-      </body>
-      </html>
+      <p>Olá ${viewer_name || 'usuário'},</p>
+      <p>${consultor_name || 'Seu consultor'} cadastrou você como visualizador da propriedade <strong>${property_name}</strong> no PRUMO Hub, plataforma de gestão rural e ambiental.</p>
+      ${eventsHtml}
+      <p>Esses alertas chegam por email e WhatsApp de forma automática, conforme configurado pelo seu consultor.</p>
+      <p><strong>Você também tem acesso ao portal:</strong> <a href="https://hub.prumo.site">https://hub.prumo.site</a> para visualizar a propriedade, acompanhar status das licenças e fazer download de documentos disponibilizados pelo consultor.</p>
+      <p>Qualquer dúvida, entre em contato com ${consultor_name || 'seu consultor'}.</p>
+      <p>Equipe PRUMO Hub</p>
     `;
 
-    await base44.integrations.Core.SendEmail({
+    await base44.asServiceRole.integrations.Core.SendEmail({
+      from_name: 'PRUMO Hub',
       to: viewer_email,
-      subject: subject,
-      body: htmlBody,
-      from_name: 'PRUMO Hub'
+      subject,
+      body: htmlBody
     });
+    console.log(`[ViewerInvite] Email enviado → ${viewer_email}`);
 
-    return Response.json({ success: true, message: 'Email enviado com sucesso' });
+    if (viewer_whatsapp) {
+      try {
+        await fetch('https://prumohub.app.n8n.cloud/webhook/prumo-whatsapp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: viewer_whatsapp,
+            message: `Olá ${viewer_name || 'usuário'}! Você foi cadastrado como visualizador da propriedade ${property_name} no PRUMO Hub. Você receberá alertas automáticos por aqui. Acesse o portal: https://hub.prumo.site`
+          })
+        });
+        console.log(`[ViewerInvite] WhatsApp enviado → ${viewer_whatsapp}`);
+      } catch (e) {
+        console.error('[ViewerInvite] Erro ao enviar WhatsApp para', viewer_whatsapp, ':', e.message);
+      }
+    }
+
+    return Response.json({ success: true, message: 'Convite enviado com sucesso' });
   } catch (error) {
-    console.error('Erro ao enviar email:', error);
+    console.error('[ViewerInvite] Erro:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });

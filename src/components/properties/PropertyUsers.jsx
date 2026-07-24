@@ -31,6 +31,7 @@ export default function PropertyUsers({ property, currentUser, onSave, onCancel 
   const [newUser, setNewUser] = useState({
     email: '',
     name: '',
+    whatsapp_phone: '',
     role: isConsultor ? 'Visualizador' : 'Proprietário',
     notification_settings: { ...DEFAULT_VIEWER_NOTIFS }
   });
@@ -68,7 +69,7 @@ export default function PropertyUsers({ property, currentUser, onSave, onCancel 
       // Não bloqueia a adição, apenas registra o erro
     }
 
-    setNewUser({ email: '', name: '', role: 'Visualizador' });
+    setNewUser({ email: '', name: '', whatsapp_phone: '', role: 'Visualizador', notification_settings: { ...DEFAULT_VIEWER_NOTIFS } });
   };
 
   const removeUser = (email) => {
@@ -152,6 +153,16 @@ export default function PropertyUsers({ property, currentUser, onSave, onCancel 
                      onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
                      placeholder="Nome do usuário"
                    />
+                 </div>
+                 <div className="space-y-2">
+                   <Label>WhatsApp (opcional)</Label>
+                   <Input
+                     type="tel"
+                     value={newUser.whatsapp_phone}
+                     onChange={(e) => setNewUser({ ...newUser, whatsapp_phone: e.target.value.replace(/\D/g, '') })}
+                     placeholder="5554999990000"
+                   />
+                   <p className="text-xs text-gray-500">Formato: 55 + DDD + numero. Usado para alertas automaticos.</p>
                  </div>
                </div>
                <div className="space-y-1 border rounded-lg p-2 bg-gray-50 mb-3"><p className="text-xs font-medium text-gray-600">Notificacoes:</p><div className="flex flex-wrap gap-2">{VIEWER_NOTIF_EVENTS.map(ev=>(<label key={ev.key} className="flex items-center gap-1 text-xs"><input type="checkbox" checked={!!newUser.notification_settings?.[ev.key]} onChange={()=>setNewUser({...newUser,notification_settings:{...newUser.notification_settings,[ev.key]:!newUser.notification_settings?.[ev.key]}})}/>{ev.label}</label>))}</div></div><div className="flex gap-3">

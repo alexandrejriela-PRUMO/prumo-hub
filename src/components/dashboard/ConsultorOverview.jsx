@@ -4,7 +4,7 @@ import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, TrendingUp, Building2, BarChart3, Sparkles, X } from 'lucide-react';
+import { AlertTriangle, TrendingUp, Building2, BarChart3, Sparkles, X, ShieldCheck } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import RuteAIChat from './RuteAIChat';
 import GrowthRingCard from './GrowthRingCard';
@@ -174,10 +174,13 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
 
   const criticalCount = propertiesWithClients.filter(p => getPropertyStatus(p.id) === 'critical').length;
   const attentionCount = propertiesWithClients.filter(p => getPropertyStatus(p.id) === 'attention').length;
+  const conformeCount = propertiesWithClients.filter(p => p.manual_regularity_enabled && p.manual_regularity_status === 'conforme').length;
   const avgRegularity = Math.round(propertiesWithClients.reduce((acc, p) => acc + calcRegularity(p.id), 0) / (propertiesWithClients.length || 1));
 
   const filteredProperties = filterStatus === 'all'
     ? propertiesWithClients
+    : filterStatus === 'conforme'
+    ? propertiesWithClients.filter(p => p.manual_regularity_enabled && p.manual_regularity_status === 'conforme')
     : propertiesWithClients.filter(p => getPropertyStatus(p.id) === filterStatus);
 
   if (isLoading || (properties.length > 0 && metricsLoading && !metricsData)) {
@@ -186,6 +189,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
 
   const filterLabels = {
     all: 'Todas',
+    conforme: 'Em Conformidade',
     critical: 'Críticas',
     attention: 'Em Atenção',
     normal: 'Normais',
@@ -229,7 +233,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
       />
 
       {/* Summary Cards - Clickable Filters */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         {/* Total */}
         <button
           onClick={() => setFilterStatus('all')}
@@ -244,6 +248,22 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
           </div>
           <p className={`text-2xl sm:text-3xl font-bold ${filterStatus === 'all' ? 'text-white' : 'text-gray-900 dark:text-white'}`}><AnimatedCounter value={propertiesWithClients.length} /></p>
           <p className={`text-[10px] sm:text-xs font-medium mt-0.5 ${filterStatus === 'all' ? 'text-emerald-100' : 'text-gray-500 dark:text-gray-400'}`}>Total de Propriedades</p>
+        </button>
+
+        {/* Em Conformidade */}
+        <button
+          onClick={() => setFilterStatus(filterStatus === 'conforme' ? 'all' : 'conforme')}
+          className={`relative overflow-hidden rounded-2xl p-4 sm:p-5 text-left transition-all duration-300 ${
+            filterStatus === 'conforme'
+              ? 'bg-gradient-to-br from-teal-500 to-emerald-500 text-white shadow-xl shadow-teal-500/30 ring-2 ring-teal-400 scale-[1.02]'
+              : 'bg-teal-50 dark:bg-teal-950/30 border border-teal-100 dark:border-teal-900/50 hover:border-teal-300 dark:hover:border-teal-700 hover:shadow-lg'
+          }`}
+        >
+          <div className={`p-2 rounded-xl mb-2 inline-flex ${filterStatus === 'conforme' ? 'bg-white/20' : 'bg-teal-100 dark:bg-teal-900/40'}`}>
+            <ShieldCheck className={`w-4 h-4 sm:w-5 sm:h-5 ${filterStatus === 'conforme' ? 'text-white' : 'text-teal-600 dark:text-teal-400'}`} />
+          </div>
+          <p className={`text-2xl sm:text-3xl font-bold ${filterStatus === 'conforme' ? 'text-white' : 'text-teal-700 dark:text-teal-400'}`}><AnimatedCounter value={conformeCount} /></p>
+          <p className={`text-[10px] sm:text-xs font-medium mt-0.5 ${filterStatus === 'conforme' ? 'text-teal-100' : 'text-teal-700 dark:text-teal-400'}`}>Em Conformidade</p>
         </button>
 
         {/* Critical */}

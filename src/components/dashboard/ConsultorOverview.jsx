@@ -38,12 +38,19 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
     queryKey: ['documents-overview', user?.email],
     queryFn: async () => {
       const results = await Promise.all(
-        propertyIds.map(pid => Promise.all([
-          base44.entities.Document.filter({ property_id: pid }),
-          base44.entities.UnifiedDocument.filter({ entity_id: pid })
-        ]))
+        propertyIds.map(pid => {
+          const prop = properties.find(p => p.id === pid);
+          const ownerEmail = prop?.owner_email;
+          return Promise.all([
+            base44.entities.Document.filter({ property_id: pid }),
+            base44.entities.UnifiedDocument.filter({ entity_id: pid }),
+            ...(ownerEmail ? [base44.entities.Document.filter({ owner_email: ownerEmail })] : []),
+          ]);
+        })
       );
-      return results.flat(2);
+      const all = results.flat(2);
+      const seen = new Set();
+      return all.filter(d => { if (seen.has(d.id)) return false; seen.add(d.id); return true; });
     },
     enabled: properties.length > 0,
   });
@@ -63,9 +70,18 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
     queryKey: ['processes-overview', user?.email],
     queryFn: async () => {
       const results = await Promise.all(
-        propertyIds.map(pid => base44.entities.Process.filter({ property_id: pid }))
+        propertyIds.map(pid => {
+          const prop = properties.find(p => p.id === pid);
+          const clientEmail = prop?.owner_email;
+          return Promise.all([
+            base44.entities.Process.filter({ property_id: pid }),
+            ...(clientEmail ? [base44.entities.Process.filter({ client_email: clientEmail })] : []),
+          ]);
+        })
       );
-      return results.flat();
+      const all = results.flat(2);
+      const seen = new Set();
+      return all.filter(p => { if (seen.has(p.id)) return false; seen.add(p.id); return true; });
     },
     enabled: properties.length > 0,
   });
@@ -93,7 +109,8 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
     }
 
     // Documentos (25 pts)
-    const propDocs = allDocuments.filter(d => d.property_id === propertyId || d.entity_id === propertyId);
+    const prop = properties.find(p => p.id === propertyId);
+    const propDocs = allDocuments.filter(d => d.property_id === propertyId || d.entity_id === propertyId || (prop?.owner_email && d.owner_email === prop.owner_email));
     const hasCAR = propDocs.some(d => d.document_type === 'CAR');
     const hasCCIR = propDocs.some(d => d.document_type === 'CCIR');
     const hasGeoDoc = propDocs.some(d => d.document_type === 'Georreferenciamento');
@@ -109,7 +126,8 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
     else if (property?.coordinates) score += 15;
 
     // Processos (10 pts)
-    const propProcesses = allProcesses.filter(p => p.property_id === propertyId);
+    const propForProc = properties.find(p => p.id === propertyId);
+    const propProcesses = allProcesses.filter(p => p.property_id === propertyId || (propForProc?.owner_email && p.client_email === propForProc.owner_email));
     const activeProcesses = propProcesses.filter(p => p.status === 'Em Andamento');
     if (activeProcesses.length === 0) score += 10;
     else score += 4;
@@ -312,24 +330,27 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
               const regularity = calcRegularity(property.id);
               const totalAlerts = countAlertsByProperty(property.id);
               const propLicenses = licenses.filter(l => l.property_id === property.id).length;
-              const propDocs = allDocuments.filter(d => d.property_id === property.id || d.entity_id === property.id).length;
-              const propProcesses = allProcesses.filter(p => p.property_id === property.id).length;
+              const propDocs = allDocuments.filter(d => d.property_id === property.id || d.entity_id === property.id || (property.owner_email && d.owner_email === property.owner_email)).length;
+              const propProcesses = allProcesses.filter(p => p.property_id === property.id || (property.owner_email && p.client_email === property.owner_email)).length;
 
               const statusConfig = {
                 critical: {
-                  color: 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/50',
-                  badge: 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300',
+                  color: 'bg-gradient-to-br from-red-50 via-rose-50 to-red-100 dark:from-red-950/40 dark:via-rose-950/30 dark:to-red-900/20 border-red-200/60 dark:border-red-800/40',
+                  badge: 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-md shadow-red-500/30',
                   accent: 'text-red-600 dark:text-red-400',
+                  glow: 'from-red-400/20 to-rose-500/10',
                 },
                 attention: {
-                  color: 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50',
-                  badge: 'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300',
+                  color: 'bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 dark:from-amber-950/40 dark:via-orange-950/30 dark:to-amber-900/20 border-amber-200/60 dark:border-amber-800/40',
+                  badge: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/30',
                   accent: 'text-amber-600 dark:text-amber-400',
+                  glow: 'from-amber-400/20 to-orange-500/10',
                 },
                 normal: {
-                  color: 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/50',
-                  badge: 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300',
+                  color: 'bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-emerald-900/20 border-emerald-200/60 dark:border-emerald-800/40',
+                  badge: 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/30',
                   accent: 'text-emerald-600 dark:text-emerald-400',
+                  glow: 'from-emerald-400/20 to-teal-500/10',
                 }
               };
 
@@ -343,8 +364,9 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
               ];
 
               return (
-                <div key={property.id} className={`${config.color} border-2 rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:scale-[1.01] cursor-pointer group`}>
-                  <div className="p-4 sm:p-5">
+                <div key={property.id} className={`relative ${config.color} border-2 rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:scale-[1.01] cursor-pointer group`}>
+                  <div className={`absolute -top-8 -right-8 w-32 h-32 bg-gradient-to-br ${config.glow} rounded-full blur-2xl opacity-60 group-hover:opacity-100 transition-opacity duration-500`} />
+                  <div className="relative p-4 sm:p-5">
                     {/* Header: info + gauge */}
                     <div className="flex items-start justify-between gap-3 mb-4">
                       <div className="flex-1 min-w-0">
@@ -371,7 +393,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
                       {miniStats.map((stat) => {
                         const Icon = stat.icon;
                         return (
-                          <div key={stat.label} className="bg-white/60 dark:bg-slate-800/50 rounded-lg p-1.5 sm:p-2 text-center transition-all hover:bg-white dark:hover:bg-slate-800">
+                          <div key={stat.label} className="bg-white/70 dark:bg-slate-800/60 backdrop-blur-sm rounded-xl p-1.5 sm:p-2 text-center transition-all hover:bg-white dark:hover:bg-slate-800 hover:scale-105 border border-white/40 dark:border-slate-700/40">
                             <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 mx-auto mb-0.5 ${stat.color}`} />
                             <p className="text-sm sm:text-base font-bold text-gray-900 dark:text-white leading-none">{stat.value}</p>
                             <p className="text-[9px] sm:text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 leading-none">{stat.label}</p>

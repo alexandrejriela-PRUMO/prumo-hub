@@ -22,93 +22,23 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
 
   const propertyIds = properties.map(p => p.id);
 
-  const { data: licenses = [] } = useQuery({
-    queryKey: ['licenses', user?.email, propertyIds.join(',')],
+  // Busca todas as métricas via backend function (bypass RLS para equipe_consultor)
+  const { data: metricsData } = useQuery({
+    queryKey: ['consultor-dashboard-metrics', user?.email],
     queryFn: async () => {
-      const results = await Promise.all(
-        propertyIds.map(pid => base44.entities.License.filter({ property_id: pid }))
-      );
-      return results.flat();
+      const res = await base44.functions.invoke('listConsultorDashboardMetrics', {});
+      return res?.data || {};
     },
     enabled: !!user?.email && properties.length > 0,
     staleTime: 0,
   });
 
-  const idsKey = propertyIds.join(',');
-
-  const { data: alerts = [] } = useQuery({
-    queryKey: ['alerts-overview', user?.email, idsKey],
-    queryFn: async () => {
-      const results = await Promise.all(
-        propertyIds.map(pid => base44.entities.EnvironmentalAlert.filter({ property_id: pid }))
-      );
-      return results.flat();
-    },
-    enabled: properties.length > 0,
-  });
-
-  const { data: allDocuments = [] } = useQuery({
-    queryKey: ['documents-overview', user?.email, idsKey],
-    queryFn: async () => {
-      const results = await Promise.all(
-        propertyIds.map(pid => {
-          const prop = properties.find(p => p.id === pid);
-          const ownerEmail = prop?.owner_email;
-          return Promise.all([
-            base44.entities.Document.filter({ property_id: pid }),
-            base44.entities.UnifiedDocument.filter({ entity_id: pid }),
-            ...(ownerEmail ? [base44.entities.Document.filter({ owner_email: ownerEmail })] : []),
-          ]);
-        })
-      );
-      const all = results.flat(2);
-      const seen = new Set();
-      return all.filter(d => { if (seen.has(d.id)) return false; seen.add(d.id); return true; });
-    },
-    enabled: properties.length > 0,
-  });
-
-  const { data: allGeo = [] } = useQuery({
-    queryKey: ['geo-overview', user?.email, idsKey],
-    queryFn: async () => {
-      const results = await Promise.all(
-        propertyIds.map(pid => base44.entities.Georeferencing.filter({ property_id: pid }))
-      );
-      return results.flat();
-    },
-    enabled: properties.length > 0,
-  });
-
-  const { data: allProcesses = [] } = useQuery({
-    queryKey: ['processes-overview', user?.email, idsKey],
-    queryFn: async () => {
-      const results = await Promise.all(
-        propertyIds.map(pid => {
-          const prop = properties.find(p => p.id === pid);
-          const clientEmail = prop?.owner_email;
-          return Promise.all([
-            base44.entities.Process.filter({ property_id: pid }),
-            ...(clientEmail ? [base44.entities.Process.filter({ client_email: clientEmail })] : []),
-          ]);
-        })
-      );
-      const all = results.flat(2);
-      const seen = new Set();
-      return all.filter(p => { if (seen.has(p.id)) return false; seen.add(p.id); return true; });
-    },
-    enabled: properties.length > 0,
-  });
-
-  const { data: allPrads = [] } = useQuery({
-    queryKey: ['prads-overview', user?.email, idsKey],
-    queryFn: async () => {
-      const results = await Promise.all(
-        propertyIds.map(pid => base44.entities.PRAD.filter({ property_id: pid }))
-      );
-      return results.flat();
-    },
-    enabled: properties.length > 0,
-  });
+  const licenses = metricsData?.licenses || [];
+  const alerts = metricsData?.alerts || [];
+  const allDocuments = metricsData?.documents || [];
+  const allGeo = metricsData?.georeferencing || [];
+  const allProcesses = metricsData?.processes || [];
+  const allPrads = metricsData?.prads || [];
 
   // Calcula regularidade usando a mesma lógica do termômetro
   const calcRegularity = (propertyId) => {
@@ -176,27 +106,26 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
     return alerts.filter(a => a.property_id === propertyId && (severity ? a.severity === severity : true)).length;
   };
 
-  // Busca direta dos 5 itens de uma propriedade específica — bypass do cache
+  // Atualiza as métricas de uma propriedade — invalida o cache para re-buscar via backend function
   const handleRefreshProperty = async (propertyId) => {
     setRefreshingId(propertyId);
     try {
+      // Re-busca dados via backend function (bypass RLS para equipe_consultor)
+      const res = await base44.functions.invoke('listConsultorDashboardMetrics', {});
+      const data = res?.data || {};
+
+      const lic = (data.licenses || []).filter(l => l.property_id === propertyId);
+      const alt = (data.alerts || []).filter(a => a.property_id === propertyId);
       const prop = properties.find(p => p.id === propertyId);
       const ownerEmail = prop?.owner_email;
-      const [lic, alt, docs1, docs2, docs3, procs1, procs2, prads] = await Promise.all([
-        base44.entities.License.filter({ property_id: propertyId }),
-        base44.entities.EnvironmentalAlert.filter({ property_id: propertyId }),
-        base44.entities.Document.filter({ property_id: propertyId }),
-        base44.entities.UnifiedDocument.filter({ entity_id: propertyId }),
-        ownerEmail ? base44.entities.Document.filter({ owner_email: ownerEmail }) : Promise.resolve([]),
-        base44.entities.Process.filter({ property_id: propertyId }),
-        ownerEmail ? base44.entities.Process.filter({ client_email: ownerEmail }) : Promise.resolve([]),
-        base44.entities.PRAD.filter({ property_id: propertyId }),
-      ]);
-
-      const seenDocs = new Set();
-      const allDocs = [...docs1, ...docs2, ...docs3].filter(d => { if (seenDocs.has(d.id)) return false; seenDocs.add(d.id); return true; });
-      const seenProcs = new Set();
-      const allProcs = [...procs1, ...procs2].filter(p => { if (seenProcs.has(p.id)) return false; seenProcs.add(p.id); return true; });
+      const allDocs = (data.documents || []).filter(d =>
+        d.property_id === propertyId || d.entity_id === propertyId ||
+        (ownerEmail && d.owner_email === ownerEmail)
+      );
+      const allProcs = (data.processes || []).filter(p =>
+        p.property_id === propertyId || (ownerEmail && p.client_email === ownerEmail)
+      );
+      const prads = (data.prads || []).filter(p => p.property_id === propertyId);
 
       const licensesValid = lic.filter(l => l.status === 'Vigente' && (!l.expiry_date || new Date(l.expiry_date) > new Date())).length;
       const totalAlerts = alt.filter(a => a.status === 'Aberto' || a.status === 'Em Análise').length;
@@ -213,6 +142,9 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
           prads: prads.length,
         },
       }));
+
+      // Atualiza o cache do React Query
+      queryClient.setQueryData(['consultor-dashboard-metrics', user?.email], data);
     } catch (err) {
       console.error('[ConsultorOverview] Erro ao atualizar métricas:', err);
     } finally {

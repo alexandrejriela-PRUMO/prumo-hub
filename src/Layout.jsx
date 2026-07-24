@@ -661,14 +661,15 @@ export default function Layout({ children, currentPageName }) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 h-full w-[80vw] max-w-xs bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 z-50 transition-all duration-300 ease-out shadow-2xl",
+          "fixed top-0 left-0 h-full w-[80vw] max-w-xs z-50 transition-all duration-300 ease-out shadow-2xl",
           "lg:w-72 lg:translate-x-0 lg:shadow-xl",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
+        style={{ background: 'linear-gradient(180deg, #0F1E16 0%, #14281E 40%, #1A3326 100%)' }}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="p-6 border-b border-emerald-800/50">
+          <div className="p-6 border-b border-white/10">
             <div className="flex flex-col items-center gap-3 w-full">
               {(() => {
                 const ut = userMeta?.user_type || user?.user_type;
@@ -711,7 +712,7 @@ export default function Layout({ children, currentPageName }) {
               })()}
               <button
                onClick={() => setSidebarOpen(false)}
-               className="lg:hidden absolute right-6 top-6 p-2 rounded-xl hover:bg-emerald-800/50 transition-colors"
+               className="lg:hidden absolute right-6 top-6 p-2 rounded-xl hover:bg-white/10 transition-colors"
               >
                <X className="w-5 h-5 text-emerald-400" />
               </button>
@@ -745,21 +746,21 @@ export default function Layout({ children, currentPageName }) {
                         className={cn(
                           "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group border",
                           isGroupActive
-                            ? "bg-emerald-700/60 text-white border-emerald-600/60 shadow-sm"
-                            : "text-emerald-100 hover:bg-emerald-800/60 hover:text-white border-emerald-800/40 hover:border-emerald-600/40"
+                            ? "bg-white/10 text-white border-white/10"
+                            : "text-emerald-100/70 hover:bg-white/5 hover:text-white border-transparent"
                         )}
                       >
                         <div className={cn(
-                          "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0",
-                          isGroupActive ? "bg-amber-500/20" : "bg-emerald-800/60 group-hover:bg-emerald-700/60"
+                          "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors",
+                          isGroupActive ? "bg-amber-400/20" : "bg-white/5 group-hover:bg-white/10"
                         )}>
-                          <Icon className={cn("w-4 h-4", isGroupActive ? "text-amber-400" : "text-emerald-400 group-hover:text-amber-400")} />
+                          <Icon className={cn("w-4 h-4 transition-colors", isGroupActive ? "text-amber-400" : "text-emerald-400/60 group-hover:text-amber-400")} />
                         </div>
                         <span className="font-semibold text-xs uppercase tracking-wider">{item.name}</span>
-                        <ChevronDown className={cn("w-3.5 h-3.5 ml-auto transition-transform text-emerald-400", isExpanded && "rotate-180")} />
+                        <ChevronDown className={cn("w-3.5 h-3.5 ml-auto transition-transform text-emerald-400/50", isExpanded && "rotate-180")} />
                       </button>
                       {isExpanded && (
-                        <div className="mt-1 ml-3 pl-3 border-l-2 border-emerald-700/50 space-y-0.5 py-1">
+                        <div className="mt-1 ml-3 pl-3 border-l border-white/10 space-y-0.5 py-1">
                           {item.children.filter(child => {
                             const ut2 = userMeta?.user_type || user?.user_type;
                             if (!['equipe', 'equipe_consultor', 'equipe_produtor'].includes(ut2)) return true;
@@ -777,13 +778,13 @@ export default function Layout({ children, currentPageName }) {
                                 className={cn(
                                   "flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-200 group",
                                   isActive
-                                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                                    : "text-emerald-300 hover:bg-emerald-800/40 hover:text-white border border-transparent"
+                                    ? "bg-white/10 text-white"
+                                    : "text-emerald-100/50 hover:bg-white/5 hover:text-white"
                                 )}
                               >
-                                <ChildIcon className={cn("w-3.5 h-3.5 flex-shrink-0", isActive ? "text-amber-400" : "text-emerald-500 group-hover:text-emerald-300")} />
+                                <ChildIcon className={cn("w-3.5 h-3.5 flex-shrink-0 transition-colors", isActive ? "text-amber-400" : "text-emerald-400/50 group-hover:text-emerald-200")} />
                                 <span className={cn("text-xs leading-tight", isActive ? "font-semibold" : "font-normal")}>{child.name}</span>
-                                {child.badge && <span className="ml-auto text-[9px] font-bold bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded px-1.5 py-0.5 leading-none">{child.badge}</span>}
+                                {child.badge && <span className="ml-auto text-[9px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/20 rounded px-1.5 py-0.5 leading-none">{child.badge}</span>}
                                 {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />}
                               </Link>
                             );
@@ -802,20 +803,21 @@ export default function Layout({ children, currentPageName }) {
                     to={createPageUrl(item.page)}
                     onClick={() => setSidebarOpen(false)}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group border",
+                      "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group border relative overflow-hidden",
                       isActive
-                        ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30 border-amber-400/30"
-                        : "text-emerald-200 hover:bg-emerald-800/50 hover:text-white border-transparent hover:border-emerald-700/40"
+                        ? "bg-white/10 text-white border-white/10"
+                        : "text-emerald-100/70 hover:bg-white/5 hover:text-white border-transparent"
                     )}
                   >
+                    {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-full bg-amber-400" />}
                     <div className={cn(
-                      "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0",
-                      isActive ? "bg-white/20" : "bg-emerald-800/60 group-hover:bg-emerald-700/60"
+                      "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors",
+                      isActive ? "bg-amber-400/20" : "bg-white/5 group-hover:bg-white/10"
                     )}>
-                      <Icon className={cn("w-4 h-4", isActive ? "text-white" : "text-emerald-400 group-hover:text-amber-400")} />
+                      <Icon className={cn("w-4 h-4 transition-colors", isActive ? "text-amber-400" : "text-emerald-400/60 group-hover:text-amber-400")} />
                     </div>
                     <span className="font-medium text-sm">{item.name}</span>
-                    {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white flex-shrink-0" />}
+                    {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />}
                   </Link>
                 );
             })}

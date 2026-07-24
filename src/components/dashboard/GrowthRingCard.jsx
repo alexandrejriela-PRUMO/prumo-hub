@@ -48,7 +48,6 @@ export default function GrowthRingCard({
     { label: 'Documentos', value: documents, color: COLORS.documents },
   ];
 
-  const ownerName = property.client_name || property.owner_names || property.property_name;
   const locationText = property.city || property.state
     ? `${property.city || '—'}/${property.state || '—'}`
     : '—/—';
@@ -90,8 +89,25 @@ export default function GrowthRingCard({
           </div>
         </div>
 
-        {/* Owner name */}
-        <h3 className="text-lg sm:text-xl font-bold text-white mb-5 truncate">{ownerName}</h3>
+        {/* Property name + client + type */}
+        <div className="mb-5">
+          <h3 className="text-lg sm:text-xl font-bold text-white truncate leading-tight">
+            {property.property_name || 'Propriedade'}
+          </h3>
+          <div className="flex items-center gap-2 mt-1">
+            {(property.client_name || property.owner_names) && (
+              <p className="text-sm truncate min-w-0" style={{ color: '#A5B3AA' }}>
+                {property.client_name || property.owner_names}
+              </p>
+            )}
+            <span
+              className="text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0"
+              style={{ background: 'rgba(255,255,255,0.08)', color: '#A5B3AA' }}
+            >
+              {property.property_type === 'urbano' ? '🏙️ Urbano' : '🌾 Rural'}
+            </span>
+          </div>
+        </div>
 
         {/* Ring + Data list */}
         <div className="flex items-center gap-5 sm:gap-6">

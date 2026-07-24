@@ -76,29 +76,16 @@ Deno.serve(async (req) => {
 
     // Todas as entidades vinculadas às propriedades, buscadas por property_id
     // (vínculo confiável, independente de qual email foi gravado em owner_email/client_email)
-    const propertyQueries = propertyIds.flatMap(pid => [
-      base44.asServiceRole.entities.License.filter({ property_id: pid }),
-      base44.asServiceRole.entities.Document.filter({ property_id: pid }),
-      base44.asServiceRole.entities.Process.filter({ property_id: pid }),
-      base44.asServiceRole.entities.PRAD.filter({ property_id: pid }),
-      base44.asServiceRole.entities.EnvironmentalAlert.filter({ property_id: pid }),
-      base44.asServiceRole.entities.Georeferencing.filter({ property_id: pid }),
-      base44.asServiceRole.entities.UnifiedDocument.filter({ entity_id: pid }),
+    // Uma lista de promises por tipo de entidade (não intercalada) para não embaralhar os resultados.
+    const [licenseResults, docResults, procResults, pradResults, alertResults, geoResults, unifiedDocResults] = await Promise.all([
+      Promise.all(propertyIds.map(pid => base44.asServiceRole.entities.License.filter({ property_id: pid }))),
+      Promise.all(propertyIds.map(pid => base44.asServiceRole.entities.Document.filter({ property_id: pid }))),
+      Promise.all(propertyIds.map(pid => base44.asServiceRole.entities.Process.filter({ property_id: pid }))),
+      Promise.all(propertyIds.map(pid => base44.asServiceRole.entities.PRAD.filter({ property_id: pid }))),
+      Promise.all(propertyIds.map(pid => base44.asServiceRole.entities.EnvironmentalAlert.filter({ property_id: pid }))),
+      Promise.all(propertyIds.map(pid => base44.asServiceRole.entities.Georeferencing.filter({ property_id: pid }))),
+      Promise.all(propertyIds.map(pid => base44.asServiceRole.entities.UnifiedDocument.filter({ entity_id: pid }))),
     ]);
-
-    const results = await Promise.all(propertyQueries);
-
-    // Dividir resultados de volta nas categorias (7 queries por propriedade, na mesma ordem acima)
-    const n = propertyIds.length;
-    let idx = 0;
-
-    const licenseResults = results.slice(idx, idx + n); idx += n;
-    const docResults = results.slice(idx, idx + n); idx += n;
-    const procResults = results.slice(idx, idx + n); idx += n;
-    const pradResults = results.slice(idx, idx + n); idx += n;
-    const alertResults = results.slice(idx, idx + n); idx += n;
-    const geoResults = results.slice(idx, idx + n); idx += n;
-    const unifiedDocResults = results.slice(idx, idx + n); idx += n;
 
     // Achatar e deduplicar por ID
     const dedup = (resultsArr) => {

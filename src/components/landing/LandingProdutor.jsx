@@ -289,7 +289,7 @@ function PlanCheckoutButtons() {
 
 export default function LandingProdutor({ onLogin, standalone = false }) {
   return (
-    <div className="pt-16">
+    <div className="pt-header-landing">
       {/* HERO */}
       <section className="py-12 sm:py-20 bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-900 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">

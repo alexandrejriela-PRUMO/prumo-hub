@@ -12,8 +12,8 @@ export default function LandingShell({ children, accent = 'emerald' }) {
 
   return (
     <div className="min-h-screen bg-white font-sans">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-b border-gray-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-b border-gray-100 shadow-sm safe-top">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between" style={{minHeight: '4rem'}}>
           <a href="/landing" className={`flex-shrink-0 text-sm font-bold ${accentClass.text} hover:text-gray-900 transition-colors px-2 py-1`}>
             Início
           </a>

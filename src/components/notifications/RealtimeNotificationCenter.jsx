@@ -203,7 +203,7 @@ export default function RealtimeNotificationCenter({ user, isOpen, onClose, noti
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-end" onClick={onClose}>
       <div
-        className="w-full max-w-sm h-screen bg-white shadow-2xl flex flex-col border-l border-gray-100 pointer-events-auto"
+        className="w-full max-w-sm h-screen bg-white shadow-2xl flex flex-col border-l border-gray-100 pointer-events-auto safe-top"
         onClick={e => e.stopPropagation()}
       >
         {/* ── Header ── */}

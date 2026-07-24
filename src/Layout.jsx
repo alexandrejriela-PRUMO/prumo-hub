@@ -493,7 +493,7 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <ThemeProvider>
-    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-white to-emerald-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-white to-emerald-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950/30">
       <style>{`
         :root {
           --color-primary: #1B4332;
@@ -515,16 +515,16 @@ export default function Layout({ children, currentPageName }) {
       `}</style>
 
       {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-20 bg-white/80 backdrop-blur-xl border-b border-emerald-100 z-50 flex items-center justify-between px-4">
+      <div className="lg:hidden fixed top-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-emerald-100 dark:border-slate-700 z-50 flex items-center justify-between px-4 safe-top" style={{minHeight: '5rem'}}>
         <button
         onClick={() => setSidebarOpen(true)}
         className="relative p-2 rounded-xl hover:bg-emerald-50 transition-colors"
         >
         {!isRootPage ? (
-          <ChevronLeft className="w-6 h-6 text-emerald-900" onClick={(e) => { e.stopPropagation(); window.history.back(); }} />
+          <ChevronLeft className="w-6 h-6 text-emerald-900 dark:text-emerald-100" onClick={(e) => { e.stopPropagation(); window.history.back(); }} />
         ) : (
           <>
-            <Menu className="w-6 h-6 text-emerald-900" />
+            <Menu className="w-6 h-6 text-emerald-900 dark:text-emerald-100" />
             <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
             <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full" />
           </>
@@ -540,7 +540,7 @@ export default function Layout({ children, currentPageName }) {
             onClick={() => setNotificationOpen(true)}
             className="relative p-2 rounded-xl hover:bg-emerald-50 transition-colors"
           >
-            <Bell className="w-6 h-6 text-emerald-900" />
+            <Bell className="w-6 h-6 text-emerald-900 dark:text-emerald-100" />
             {(unreadCount || 0) > 0 && (
               <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs">
                 {unreadCount > 9 ? '9+' : unreadCount}
@@ -554,29 +554,29 @@ export default function Layout({ children, currentPageName }) {
                   {user.full_name?.charAt(0) || user.email?.charAt(0)?.toUpperCase()}
                 </div>
               </button>
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-emerald-100 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                <div className="px-4 py-3 border-b border-emerald-100">
-                  <p className="text-sm font-medium text-emerald-900 truncate">{user.full_name || 'Cliente'}</p>
-                  <p className="text-xs text-emerald-600 truncate">{user.email}</p>
+              <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-emerald-100 dark:border-slate-700 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div className="px-4 py-3 border-b border-emerald-100 dark:border-slate-700">
+                  <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100 truncate">{user.full_name || 'Cliente'}</p>
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400 truncate">{user.email}</p>
                 </div>
-                <Link to={createPageUrl('Support')} className="flex items-center gap-3 px-4 py-2 hover:bg-emerald-50 transition-colors text-sm text-emerald-900">
+                <Link to={createPageUrl('Support')} className="flex items-center gap-3 px-4 py-2 hover:bg-emerald-50 dark:hover:bg-slate-700 transition-colors text-sm text-emerald-900 dark:text-emerald-100">
                   <Headphones className="w-4 h-4" />
                   Suporte
                 </Link>
-                <Link to={createPageUrl('Invoices')} className="flex items-center gap-3 px-4 py-2 hover:bg-emerald-50 transition-colors text-sm text-emerald-900">
+                <Link to={createPageUrl('Invoices')} className="flex items-center gap-3 px-4 py-2 hover:bg-emerald-50 dark:hover:bg-slate-700 transition-colors text-sm text-emerald-900 dark:text-emerald-100">
                     <CreditCard className="w-4 h-4" />
                     Assinatura
                   </Link>
                   <button
                     onClick={() => setDeleteConfirmOpen(true)}
-                    className="w-full flex items-center gap-3 px-4 py-2 hover:bg-red-50 transition-colors text-sm text-red-600"
+                    className="w-full flex items-center gap-3 px-4 py-2 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors text-sm text-red-600 dark:text-red-400"
                   >
                     <Trash2 className="w-4 h-4" />
                     Deletar Conta
                   </button>
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-4 py-2 hover:bg-emerald-50 transition-colors text-sm text-emerald-900"
+                    className="w-full flex items-center gap-3 px-4 py-2 hover:bg-emerald-50 dark:hover:bg-slate-700 transition-colors text-sm text-emerald-900 dark:text-emerald-100"
                   >
                     <LogOut className="w-4 h-4" />
                     Sair
@@ -829,7 +829,7 @@ export default function Layout({ children, currentPageName }) {
       <BottomTabBar currentPageName={currentPageName} userType={userMeta?.user_type || user?.user_type} />
 
       {/* Main Content */}
-      <main className="lg:ml-72 pt-20 lg:pt-16 min-h-screen bg-gradient-to-br from-stone-50 via-white to-emerald-50/20">
+      <main className="lg:ml-72 pt-header-mobile min-h-screen bg-gradient-to-br from-stone-50 via-white to-emerald-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950/20">
         <PullToRefresh onRefresh={handleRefresh}>
           <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
             <ErrorBoundary>

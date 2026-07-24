@@ -30,8 +30,8 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white font-sans">
       {/* NAV */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-b border-emerald-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-b border-emerald-100 shadow-sm safe-top">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between" style={{minHeight: '4rem'}}>
           <button onClick={handleEnterConsultor} className="flex-shrink-0 text-sm font-semibold text-amber-700 hover:text-amber-900 transition-colors px-2 py-1">
             Início
           </button>
@@ -63,7 +63,7 @@ export default function LandingPage() {
       </nav>
 
       {/* HERO — INTRODUÇÃO DO CONSULTOR */}
-      <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden px-4 pt-20 lg:pt-16" style={{background: 'linear-gradient(135deg, #0a1628 0%, #0d2b1f 40%, #1a3a2a 70%, #0f1f2e 100%)'}}>
+      <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden px-4 pt-header-mobile" style={{background: 'linear-gradient(135deg, #0a1628 0%, #0d2b1f 40%, #1a3a2a 70%, #0f1f2e 100%)'}}>
         <ParticleBackground />
         {/* Animated background elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -91,7 +91,7 @@ export default function LandingPage() {
               <span className="sm:hidden">Consultores</span>
             </div>
             <h1 className="text-2xl sm:text-6xl font-black text-white leading-snug mb-2 sm:mb-3 px-2">
-               Gestão Ambiental<br className="hidden sm:block" />
+               Gestão Ambiental{' '}<br className="hidden sm:block" />
                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-400">
                  Inteligente.
                </span>

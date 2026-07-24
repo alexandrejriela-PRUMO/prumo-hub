@@ -1,19 +1,18 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, TrendingUp, Building2, BarChart3, Eye, Leaf } from 'lucide-react';
+import { AlertTriangle, TrendingUp, Building2, BarChart3, Eye, Sparkles, X } from 'lucide-react';
 import RuteAIChat from './RuteAIChat';
 
 export default function ConsultorOverview({ user, properties, isLoading }) {
   const navigate = useNavigate();
   const [ruteChatOpen, setRuteChatOpen] = useState(false);
-
+  const [filterStatus, setFilterStatus] = useState('all');
 
   const propertyIds = properties.map(p => p.id);
 
@@ -147,169 +146,245 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
   const attentionCount = propertiesWithClients.filter(p => getPropertyStatus(p.id) === 'attention').length;
   const avgRegularity = Math.round(propertiesWithClients.reduce((acc, p) => acc + calcRegularity(p.id), 0) / (propertiesWithClients.length || 1));
 
+  const filteredProperties = filterStatus === 'all'
+    ? propertiesWithClients
+    : propertiesWithClients.filter(p => getPropertyStatus(p.id) === filterStatus);
+
   if (isLoading) {
     return <div className="space-y-6"><Skeleton className="h-64 rounded-xl" /></div>;
   }
 
+  const filterLabels = {
+    all: 'Todas',
+    critical: 'Críticas',
+    attention: 'Em Atenção',
+    normal: 'Normais',
+  };
+
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
+    <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Olá, {user?.full_name?.split(' ')[0]}! 👋</h1>
-          <p className="text-gray-500 mt-1">Resumo da carteira de clientes</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+            Olá, {user?.full_name?.split(' ')[0]}! 👋
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm sm:text-base">
+            Resumo da carteira de clientes
+          </p>
         </div>
         <button
           onClick={() => setRuteChatOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg hover:shadow-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-300 group hover:scale-105"
+          className="flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg hover:shadow-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-300 group hover:scale-105 flex-shrink-0"
           title="Consultar com IA Rute"
         >
-          <svg width="24" height="24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="group-hover:scale-110 transition-transform">
+          <svg width="22" height="22" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="group-hover:scale-110 transition-transform flex-shrink-0">
             <circle cx="50" cy="50" r="45" fill="white" opacity="0.2" stroke="white" strokeWidth="2"/>
             <path d="M50 20C35 20 25 30 25 50C25 70 50 85 50 85C50 85 75 70 75 50C75 30 65 20 50 20Z" fill="white"/>
             <circle cx="50" cy="50" r="8" fill="#10b981"/>
           </svg>
-          <span className="text-sm font-semibold hidden sm:inline">IA Rute</span>
+          <div className="text-left">
+            <span className="text-sm font-semibold block leading-tight">IA Rute</span>
+            <span className="text-[10px] text-emerald-100 leading-tight block">Assistente Virtual</span>
+          </div>
         </button>
       </div>
 
-      {/* Rute AI Chat Modal - Consultor */}
-      <RuteAIChat 
-        user={user} 
+      {/* Rute AI Chat Modal */}
+      <RuteAIChat
+        user={user}
         property={propertiesWithClients[0]}
-        isOpen={ruteChatOpen} 
+        isOpen={ruteChatOpen}
         onClose={() => setRuteChatOpen(false)}
       />
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total de Propriedades e Empreendimentos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-end justify-between">
-              <div className="text-3xl font-bold">{propertiesWithClients.length}</div>
-              <Building2 className="w-8 h-8 text-emerald-600 opacity-20" />
-            </div>
-          </CardContent>
-        </Card>
+      {/* Summary Cards - Clickable Filters */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* Total */}
+        <button
+          onClick={() => setFilterStatus('all')}
+          className={`relative overflow-hidden rounded-2xl p-4 sm:p-5 text-left transition-all duration-300 ${
+            filterStatus === 'all'
+              ? 'bg-gradient-to-br from-emerald-600 to-emerald-700 text-white shadow-xl shadow-emerald-500/30 ring-2 ring-emerald-400 scale-[1.02]'
+              : 'bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-600 hover:shadow-lg'
+          }`}
+        >
+          <div className={`p-2 rounded-xl mb-2 inline-flex ${filterStatus === 'all' ? 'bg-white/20' : 'bg-emerald-50 dark:bg-emerald-900/30'}`}>
+            <Building2 className={`w-4 h-4 sm:w-5 sm:h-5 ${filterStatus === 'all' ? 'text-white' : 'text-emerald-600 dark:text-emerald-400'}`} />
+          </div>
+          <p className={`text-2xl sm:text-3xl font-bold ${filterStatus === 'all' ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{propertiesWithClients.length}</p>
+          <p className={`text-[10px] sm:text-xs font-medium mt-0.5 ${filterStatus === 'all' ? 'text-emerald-100' : 'text-gray-500 dark:text-gray-400'}`}>Total de Propriedades</p>
+        </button>
 
-        <Card className="border-red-200 bg-red-50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-red-700">Alerta Crítico</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-end justify-between">
-              <div className="text-3xl font-bold text-red-700">{criticalCount}</div>
-              <AlertTriangle className="w-8 h-8 text-red-600 opacity-20" />
-            </div>
-          </CardContent>
-        </Card>
+        {/* Critical */}
+        <button
+          onClick={() => setFilterStatus(filterStatus === 'critical' ? 'all' : 'critical')}
+          className={`relative overflow-hidden rounded-2xl p-4 sm:p-5 text-left transition-all duration-300 ${
+            filterStatus === 'critical'
+              ? 'bg-gradient-to-br from-red-500 to-red-600 text-white shadow-xl shadow-red-500/30 ring-2 ring-red-400 scale-[1.02]'
+              : 'bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/50 hover:border-red-300 dark:hover:border-red-800 hover:shadow-lg'
+          }`}
+        >
+          <div className={`p-2 rounded-xl mb-2 inline-flex ${filterStatus === 'critical' ? 'bg-white/20' : 'bg-red-100 dark:bg-red-900/40'}`}>
+            <AlertTriangle className={`w-4 h-4 sm:w-5 sm:h-5 ${filterStatus === 'critical' ? 'text-white' : 'text-red-600 dark:text-red-400'}`} />
+          </div>
+          <p className={`text-2xl sm:text-3xl font-bold ${filterStatus === 'critical' ? 'text-white' : 'text-red-700 dark:text-red-400'}`}>{criticalCount}</p>
+          <p className={`text-[10px] sm:text-xs font-medium mt-0.5 ${filterStatus === 'critical' ? 'text-red-100' : 'text-red-700 dark:text-red-400'}`}>Alerta Crítico</p>
+        </button>
 
-        <Card className="border-yellow-200 bg-yellow-50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-yellow-700">Em Atenção</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-end justify-between">
-              <div className="text-3xl font-bold text-yellow-700">{attentionCount}</div>
-              <TrendingUp className="w-8 h-8 text-yellow-600 opacity-20" />
-            </div>
-          </CardContent>
-        </Card>
+        {/* Attention */}
+        <button
+          onClick={() => setFilterStatus(filterStatus === 'attention' ? 'all' : 'attention')}
+          className={`relative overflow-hidden rounded-2xl p-4 sm:p-5 text-left transition-all duration-300 ${
+            filterStatus === 'attention'
+              ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-xl shadow-amber-500/30 ring-2 ring-amber-400 scale-[1.02]'
+              : 'bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/50 hover:border-amber-300 dark:hover:border-amber-800 hover:shadow-lg'
+          }`}
+        >
+          <div className={`p-2 rounded-xl mb-2 inline-flex ${filterStatus === 'attention' ? 'bg-white/20' : 'bg-amber-100 dark:bg-amber-900/40'}`}>
+            <TrendingUp className={`w-4 h-4 sm:w-5 sm:h-5 ${filterStatus === 'attention' ? 'text-white' : 'text-amber-600 dark:text-amber-400'}`} />
+          </div>
+          <p className={`text-2xl sm:text-3xl font-bold ${filterStatus === 'attention' ? 'text-white' : 'text-amber-700 dark:text-amber-400'}`}>{attentionCount}</p>
+          <p className={`text-[10px] sm:text-xs font-medium mt-0.5 ${filterStatus === 'attention' ? 'text-amber-100' : 'text-amber-700 dark:text-amber-400'}`}>Em Atenção</p>
+        </button>
 
-        <Card className="border-emerald-200 bg-emerald-50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-emerald-700">Regularidade Média</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-end justify-between">
-              <div className="text-3xl font-bold text-emerald-700">{avgRegularity}%</div>
-              <BarChart3 className="w-8 h-8 text-emerald-600 opacity-20" />
-            </div>
-          </CardContent>
-        </Card>
+        {/* Regularity - info card */}
+        <div className="relative overflow-hidden rounded-2xl p-4 sm:p-5 bg-gradient-to-br from-slate-800 to-slate-900 text-white border border-slate-700">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl" />
+          <div className="p-2 rounded-xl mb-2 inline-flex bg-white/10">
+            <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
+          </div>
+          <p className="text-2xl sm:text-3xl font-bold text-white">{avgRegularity}%</p>
+          <p className="text-[10px] sm:text-xs font-medium mt-0.5 text-slate-400">Regularidade Média</p>
+        </div>
       </div>
+
+      {/* Active Filter Banner */}
+      {filterStatus !== 'all' && (
+        <div className="flex items-center justify-between bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+            <span className="text-sm text-emerald-800 dark:text-emerald-300 font-medium">
+              Filtrando: <strong>{filterLabels[filterStatus]}</strong> ({filteredProperties.length} {filteredProperties.length === 1 ? 'propriedade' : 'propriedades'})
+            </span>
+          </div>
+          <button
+            onClick={() => setFilterStatus('all')}
+            className="flex items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 transition-colors flex-shrink-0"
+          >
+            <X className="w-3.5 h-3.5" />
+            Limpar
+          </button>
+        </div>
+      )}
 
       {/* Properties Grid */}
       <div>
-        <h2 className="text-2xl font-bold mb-4">Propriedades e Empreendimentos</h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {propertiesWithClients.map((property) => {
-            const status = getPropertyStatus(property.id);
-            const regularity = calcRegularity(property.id);
-            const totalAlerts = countAlertsByProperty(property.id);
-            
-            const statusConfig = {
-              critical: { color: 'bg-red-50 border-red-200', badge: 'bg-red-100 text-red-800', icon: 'text-red-600' },
-              attention: { color: 'bg-yellow-50 border-yellow-200', badge: 'bg-yellow-100 text-yellow-800', icon: 'text-yellow-600' },
-              normal: { color: 'bg-emerald-50 border-emerald-200', badge: 'bg-emerald-100 text-emerald-800', icon: 'text-emerald-600' }
-            };
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">Propriedades e Empreendimentos</h2>
+          {filterStatus === 'all' && (
+            <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{filteredProperties.length} {filteredProperties.length === 1 ? 'item' : 'itens'}</span>
+          )}
+        </div>
 
-            const config = statusConfig[status];
+        {filteredProperties.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="w-16 h-16 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+              <Building2 className="w-8 h-8 text-gray-300 dark:text-gray-600" />
+            </div>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">
+              {filterStatus !== 'all' ? `Nenhuma propriedade com status "${filterLabels[filterStatus]}"` : 'Nenhuma propriedade cadastrada'}
+            </p>
+            {filterStatus !== 'all' && (
+              <button
+                onClick={() => setFilterStatus('all')}
+                className="mt-3 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:underline"
+              >
+                Ver todas as propriedades
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {filteredProperties.map((property) => {
+              const status = getPropertyStatus(property.id);
+              const regularity = calcRegularity(property.id);
+              const totalAlerts = countAlertsByProperty(property.id);
 
-            return (
-              <Card key={property.id} className={`${config.color} border-2`}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg">{property.property_name}</CardTitle>
-                      <p className="text-sm text-gray-600 mt-1">{property.city}/{property.state}</p>
-                      {property.client_name && <p className="text-xs text-gray-500 mt-1">Cliente: {property.client_name}</p>}
-                    </div>
-                    <Badge className={config.badge}>
-                      {status === 'critical' ? 'Crítica' : status === 'attention' ? 'Atenção' : 'Normal'}
-                    </Badge>
-                  </div>
-                </CardHeader>
+              const statusConfig = {
+                critical: {
+                  color: 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/50',
+                  badge: 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300',
+                  bar: 'bg-red-600',
+                },
+                attention: {
+                  color: 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50',
+                  badge: 'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300',
+                  bar: 'bg-amber-600',
+                },
+                normal: {
+                  color: 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/50',
+                  badge: 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300',
+                  bar: 'bg-emerald-600',
+                }
+              };
 
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Regularidade</span>
-                      <span className="font-semibold">{regularity}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className={`h-2 rounded-full transition-all ${
-                          regularity >= 70 ? 'bg-emerald-600' : regularity >= 40 ? 'bg-yellow-600' : 'bg-red-600'
-                        }`}
-                        style={{ width: `${regularity}%` }}
-                      />
-                    </div>
-                  </div>
+              const config = statusConfig[status];
 
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="bg-white/50 rounded p-2">
-                      <p className="text-gray-600">Alertas Ativos</p>
-                      <p className="text-xl font-semibold">{totalAlerts}</p>
+              return (
+                <div key={property.id} className={`${config.color} border-2 rounded-2xl overflow-hidden transition-all hover:shadow-lg`}>
+                  <div className="p-5">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">{property.property_name}</h3>
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-0.5">{property.city}/{property.state}</p>
+                        {property.client_name && <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">Cliente: {property.client_name}</p>}
+                      </div>
+                      <Badge className={`${config.badge} flex-shrink-0 ml-2`}>
+                        {status === 'critical' ? 'Crítica' : status === 'attention' ? 'Atenção' : 'Normal'}
+                      </Badge>
                     </div>
-                    <div className="bg-white/50 rounded p-2">
-                      <p className="text-gray-600">Tipo</p>
-                      <p className="text-sm font-semibold">{property.property_type === 'urbano' ? 'Urbano' : 'Rural'}</p>
-                    </div>
-                  </div>
 
-                  <div className="flex gap-2 pt-2">
+                    <div className="space-y-2 mb-4">
+                      <div className="flex justify-between text-xs sm:text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Regularidade</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">{regularity}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+                        <div
+                          className={`h-2 rounded-full transition-all ${config.bar}`}
+                          style={{ width: `${regularity}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-sm mb-4">
+                      <div className="bg-white/50 dark:bg-slate-800/50 rounded-lg p-2">
+                        <p className="text-xs text-gray-600 dark:text-gray-400">Alertas Ativos</p>
+                        <p className="text-lg font-semibold text-gray-900 dark:text-white">{totalAlerts}</p>
+                      </div>
+                      <div className="bg-white/50 dark:bg-slate-800/50 rounded-lg p-2">
+                        <p className="text-xs text-gray-600 dark:text-gray-400">Tipo</p>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{property.property_type === 'urbano' ? 'Urbano' : 'Rural'}</p>
+                      </div>
+                    </div>
+
                     <Button
                       variant="outline"
                       size="sm"
                       className="w-full"
                       onClick={() => navigate(`${createPageUrl('Home')}?property_id=${property.id}`)}
                     >
-                      <Eye className="w-3 h-3 mr-1" />
-                      Dashboard
+                      <Eye className="w-3.5 h-3.5 mr-1.5" />
+                      Ver Dashboard
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
-
-
     </div>
   );
 }

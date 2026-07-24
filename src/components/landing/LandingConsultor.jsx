@@ -316,7 +316,7 @@ function PlanCheckoutButtons() {
 
 export default function LandingConsultor({ onLogin, standalone = false }) {
   return (
-    <div className="pt-16">
+    <div className="pt-header-landing">
       <section className="py-12 sm:py-20 bg-gradient-to-br from-amber-950 via-amber-900 to-orange-900 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-10 left-10 w-96 h-96 bg-amber-400 rounded-full blur-3xl" />

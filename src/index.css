@@ -96,3 +96,14 @@ html, body {
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .safe-top { padding-top: env(safe-area-inset-top, 0px); }
+  .pt-header-mobile { padding-top: calc(5rem + env(safe-area-inset-top, 0px)); }
+  .pt-header-landing { padding-top: calc(4rem + env(safe-area-inset-top, 0px)); }
+}
+
+@media (min-width: 1024px) {
+  .pt-header-mobile { padding-top: 4rem; }
+  .pt-header-landing { padding-top: 4rem; }
+}

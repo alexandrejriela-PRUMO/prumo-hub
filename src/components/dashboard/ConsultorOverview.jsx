@@ -17,6 +17,8 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
   const [ruteChatOpen, setRuteChatOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
   const [manualDialogProperty, setManualDialogProperty] = useState(null);
+  const [refreshOverrides, setRefreshOverrides] = useState({});
+  const [refreshingId, setRefreshingId] = useState(null);
 
   const propertyIds = properties.map(p => p.id);
 
@@ -172,6 +174,50 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
   // Conta alertas por propriedade
   const countAlertsByProperty = (propertyId, severity) => {
     return alerts.filter(a => a.property_id === propertyId && (severity ? a.severity === severity : true)).length;
+  };
+
+  // Busca direta dos 5 itens de uma propriedade específica — bypass do cache
+  const handleRefreshProperty = async (propertyId) => {
+    setRefreshingId(propertyId);
+    try {
+      const prop = properties.find(p => p.id === propertyId);
+      const ownerEmail = prop?.owner_email;
+      const [lic, alt, docs1, docs2, docs3, procs1, procs2, prads] = await Promise.all([
+        base44.entities.License.filter({ property_id: propertyId }),
+        base44.entities.EnvironmentalAlert.filter({ property_id: propertyId }),
+        base44.entities.Document.filter({ property_id: propertyId }),
+        base44.entities.UnifiedDocument.filter({ entity_id: propertyId }),
+        ownerEmail ? base44.entities.Document.filter({ owner_email: ownerEmail }) : Promise.resolve([]),
+        base44.entities.Process.filter({ property_id: propertyId }),
+        ownerEmail ? base44.entities.Process.filter({ client_email: ownerEmail }) : Promise.resolve([]),
+        base44.entities.PRAD.filter({ property_id: propertyId }),
+      ]);
+
+      const seenDocs = new Set();
+      const allDocs = [...docs1, ...docs2, ...docs3].filter(d => { if (seenDocs.has(d.id)) return false; seenDocs.add(d.id); return true; });
+      const seenProcs = new Set();
+      const allProcs = [...procs1, ...procs2].filter(p => { if (seenProcs.has(p.id)) return false; seenProcs.add(p.id); return true; });
+
+      const licensesValid = lic.filter(l => l.status === 'Vigente' && (!l.expiry_date || new Date(l.expiry_date) > new Date())).length;
+      const totalAlerts = alt.filter(a => a.status === 'Aberto' || a.status === 'Em Análise').length;
+      const openProcesses = allProcs.filter(p => p.status === 'Em Andamento').length;
+
+      setRefreshOverrides(prev => ({
+        ...prev,
+        [propertyId]: {
+          alerts: totalAlerts,
+          processes: openProcesses,
+          licensesValid,
+          licensesTotal: lic.length,
+          documents: allDocs.length,
+          prads: prads.length,
+        },
+      }));
+    } catch (err) {
+      console.error('[ConsultorOverview] Erro ao atualizar métricas:', err);
+    } finally {
+      setRefreshingId(null);
+    }
   };
 
   // Categoriza propriedades por status
@@ -361,13 +407,14 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
             {filteredProperties.map((property) => {
               const status = getPropertyStatus(property.id);
               const regularity = calcRegularity(property.id);
-              const totalAlerts = countAlertsByProperty(property.id);
+              const ov = refreshOverrides[property.id];
+              const totalAlerts = ov ? ov.alerts : countAlertsByProperty(property.id);
               const propLicensesArr = licenses.filter(l => l.property_id === property.id);
-              const licensesValid = propLicensesArr.filter(l => l.status === 'Vigente' && (!l.expiry_date || new Date(l.expiry_date) > new Date())).length;
-              const propDocs = allDocuments.filter(d => d.property_id === property.id || d.entity_id === property.id || (property.owner_email && d.owner_email === property.owner_email)).length;
-              const propProcessesArr = allProcesses.filter(p => p.property_id === property.id || (property.owner_email && p.client_email === property.owner_email));
-              const openProcesses = propProcessesArr.filter(p => p.status === 'Em Andamento').length;
-              const propPradsCount = allPrads.filter(p => p.property_id === property.id).length;
+              const licensesValid = ov ? ov.licensesValid : propLicensesArr.filter(l => l.status === 'Vigente' && (!l.expiry_date || new Date(l.expiry_date) > new Date())).length;
+              const licensesTotal = ov ? ov.licensesTotal : propLicensesArr.length;
+              const propDocs = ov ? ov.documents : allDocuments.filter(d => d.property_id === property.id || d.entity_id === property.id || (property.owner_email && d.owner_email === property.owner_email)).length;
+              const openProcesses = ov ? ov.processes : allProcesses.filter(p => p.property_id === property.id || (property.owner_email && p.client_email === property.owner_email)).filter(p => p.status === 'Em Andamento').length;
+              const propPradsCount = ov ? ov.prads : allPrads.filter(p => p.property_id === property.id).length;
 
               return (
                 <GrowthRingCard
@@ -378,11 +425,12 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
                   alerts={totalAlerts}
                   processes={openProcesses}
                   licensesValid={licensesValid}
-                  licensesTotal={propLicensesArr.length}
+                  licensesTotal={licensesTotal}
                   documents={propDocs}
                   prads={propPradsCount}
                   onClick={() => navigate(`${createPageUrl('Home')}?property_id=${property.id}`)}
                   onManualReview={() => setManualDialogProperty(property)}
+                  onRefresh={handleRefreshProperty}
                 />
               );
             })}

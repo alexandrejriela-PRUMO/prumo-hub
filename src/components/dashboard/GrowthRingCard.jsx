@@ -1,5 +1,5 @@
-import React from 'react';
-import { MapPin, ShieldCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { MapPin, ShieldCheck, RefreshCw } from 'lucide-react';
 
 const COLORS = {
   alerts: '#AF6659',
@@ -27,7 +27,16 @@ export default function GrowthRingCard({
   prads,
   onClick,
   onManualReview,
+  onRefresh,
 }) {
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async (e) => {
+    e.stopPropagation();
+    if (!onRefresh || refreshing) return;
+    setRefreshing(true);
+    try { await onRefresh(property.id); } finally { setRefreshing(false); }
+  };
   const statusCfg = STATUS_CONFIG[status] || STATUS_CONFIG.normal;
 
   // SVG ring — 4 equal segments (80° each) with 10° gaps
@@ -75,6 +84,14 @@ export default function GrowthRingCard({
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="inline-flex items-center justify-center w-6 h-6 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50"
+              title="Atualizar métricas"
+            >
+              <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
             {property.manual_regularity_enabled && (
               <span
                 className="inline-flex items-center gap-1 text-[9px] font-semibold rounded-full px-2 py-0.5"

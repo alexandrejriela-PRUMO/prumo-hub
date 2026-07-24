@@ -29,16 +29,24 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
       return results.flat();
     },
     enabled: !!user?.email && properties.length > 0,
+    staleTime: 0,
   });
 
+  const idsKey = propertyIds.join(',');
+
   const { data: alerts = [] } = useQuery({
-    queryKey: ['alerts', user?.email],
-    queryFn: () => base44.entities.EnvironmentalAlert.filter({ property_id: { $in: propertyIds } }),
+    queryKey: ['alerts-overview', user?.email, idsKey],
+    queryFn: async () => {
+      const results = await Promise.all(
+        propertyIds.map(pid => base44.entities.EnvironmentalAlert.filter({ property_id: pid }))
+      );
+      return results.flat();
+    },
     enabled: properties.length > 0,
   });
 
   const { data: allDocuments = [] } = useQuery({
-    queryKey: ['documents-overview', user?.email],
+    queryKey: ['documents-overview', user?.email, idsKey],
     queryFn: async () => {
       const results = await Promise.all(
         propertyIds.map(pid => {
@@ -59,7 +67,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
   });
 
   const { data: allGeo = [] } = useQuery({
-    queryKey: ['geo-overview', user?.email],
+    queryKey: ['geo-overview', user?.email, idsKey],
     queryFn: async () => {
       const results = await Promise.all(
         propertyIds.map(pid => base44.entities.Georeferencing.filter({ property_id: pid }))
@@ -70,7 +78,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
   });
 
   const { data: allProcesses = [] } = useQuery({
-    queryKey: ['processes-overview', user?.email],
+    queryKey: ['processes-overview', user?.email, idsKey],
     queryFn: async () => {
       const results = await Promise.all(
         propertyIds.map(pid => {
@@ -90,7 +98,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
   });
 
   const { data: allPrads = [] } = useQuery({
-    queryKey: ['prads-overview', user?.email],
+    queryKey: ['prads-overview', user?.email, idsKey],
     queryFn: async () => {
       const results = await Promise.all(
         propertyIds.map(pid => base44.entities.PRAD.filter({ property_id: pid }))

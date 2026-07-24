@@ -64,6 +64,17 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
   // Estas queries individuais são desnecessárias e bloqueadas por RLS para membros de equipe
   const skipIndividualQueries = isConsultor || (isEquipe && !isEquipeProdutor);
 
+  // Fallback para consultor/equipe: as queries individuais acima são desabilitadas
+  // (bloqueadas por RLS), então buscamos os mesmos dados via backend function com service role.
+  const { data: metricsData, isLoading: loadingMetrics } = useQuery({
+    queryKey: ['dashboard-metrics', effectiveEmail],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('listConsultorDashboardMetrics', {});
+      return res.data;
+    },
+    enabled: !!effectiveEmail && !effectiveLoading && skipIndividualQueries,
+  });
+
   const { data: licenses = [], isLoading: loadingLicenses } = useQuery({
     queryKey: ['licenses', effectiveEmail],
     queryFn: () => base44.entities.License.filter({ owner_email: effectiveEmail }),
@@ -127,10 +138,19 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
     initialData: []
   });
 
-  // Na visão de consultor, isLoading depende apenas de effectiveLoading e loadingProperties
+  // Na visão de consultor, isLoading depende apenas de effectiveLoading, loadingProperties e loadingMetrics
   const isLoading = skipIndividualQueries
-    ? (effectiveLoading || loadingProperties)
+    ? (effectiveLoading || loadingProperties || (loadingMetrics && !metricsData))
     : (effectiveLoading || loadingProperties || loadingLicenses || loadingInvoices || loadingDocuments || loadingProcesses || loadingAlerts);
+
+  // Fallback: quando as queries individuais são puladas (consultor/equipe_consultor),
+  // usa os dados de metricsData (mesma origem que o ConsultorOverview usa para os cards).
+  const effectiveProperties = properties.length > 0 ? properties : (metricsData?.properties || []);
+  const effectiveLicenses = skipIndividualQueries ? (metricsData?.licenses || []) : licenses;
+  const effectiveDocuments = skipIndividualQueries ? (metricsData?.documents || []) : documents;
+  const effectiveProcesses = skipIndividualQueries ? (metricsData?.processes || []) : processes;
+  const effectiveAlerts = skipIndividualQueries ? (metricsData?.alerts || []) : environmentalAlerts;
+  const effectivePrads = skipIndividualQueries ? (metricsData?.prads || []) : prads;
 
   // Dados de requerimentos para o painel do produtor
   const openRequests = requests.filter(r => r.status === 'Aberto' || r.status === 'Em Análise');
@@ -140,31 +160,31 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
 
   // Auto-select first property when properties load
   useEffect(() => {
-    if (properties.length > 0 && !selectedPropertyId) {
-      setSelectedPropertyId(properties[0].id);
+    if (effectiveProperties.length > 0 && !selectedPropertyId) {
+      setSelectedPropertyId(effectiveProperties[0].id);
     }
-  }, [properties, selectedPropertyId]);
+  }, [effectiveProperties, selectedPropertyId]);
 
   // Se vem com property_id da URL, usa esse; senão, auto-seleciona o primeiro
   useEffect(() => {
     if (propertyIdFromUrl) {
       setSelectedPropertyId(propertyIdFromUrl);
-    } else if (properties.length > 0 && !selectedPropertyId) {
-      setSelectedPropertyId(properties[0].id);
+    } else if (effectiveProperties.length > 0 && !selectedPropertyId) {
+      setSelectedPropertyId(effectiveProperties[0].id);
     }
-  }, [properties, propertyIdFromUrl, selectedPropertyId]);
+  }, [effectiveProperties, propertyIdFromUrl, selectedPropertyId]);
 
-  const selectedProperty = properties.find((p) => p.id === selectedPropertyId) || properties[0];
+  const selectedProperty = effectiveProperties.find((p) => p.id === selectedPropertyId) || effectiveProperties[0];
   // Equipe de produtor NÃO deve ver a visão de consultor — deve ver o dashboard do produtor
   const isConsultorView = isConsultor || (isEquipe && !isEquipeProdutor);
   const isDashboardView = !!propertyIdFromUrl; // Se tem property_id na URL, é o dashboard detalhado
   
   // Apply filters
   const filteredData = useMemo(() => {
-    let filteredLicenses = (licenses || []).filter(l => l?.property_id === selectedPropertyId);
-    let filteredDocuments = (documents || []).filter(d => d?.property_id === selectedPropertyId);
-    let filteredAlerts = (environmentalAlerts || []).filter(a => a?.property_id === selectedPropertyId);
-    let filteredProcesses = (processes || []).filter(p => p?.property_id === selectedPropertyId);
+    let filteredLicenses = (effectiveLicenses || []).filter(l => l?.property_id === selectedPropertyId);
+    let filteredDocuments = (effectiveDocuments || []).filter(d => d?.property_id === selectedPropertyId);
+    let filteredAlerts = (effectiveAlerts || []).filter(a => a?.property_id === selectedPropertyId);
+    let filteredProcesses = (effectiveProcesses || []).filter(p => p?.property_id === selectedPropertyId);
 
     // Date filter
     if (filters.period !== 'all') {
@@ -217,7 +237,7 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
       alerts: filteredAlerts,
       processes: filteredProcesses
     };
-  }, [licenses, documents, environmentalAlerts, processes, selectedPropertyId, filters]);
+  }, [effectiveLicenses, effectiveDocuments, effectiveAlerts, effectiveProcesses, selectedPropertyId, filters]);
 
   const handleResetFilters = () => {
     setFilters({
@@ -245,7 +265,7 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
 
   // Se é consultor/equipe E está na view de overview (sem property_id), mostra painel de consultoria
   if (isConsultorView && !isDashboardView) {
-    return <ConsultorOverview user={user} properties={properties} isLoading={isLoading} />;
+    return <ConsultorOverview user={user} properties={effectiveProperties} isLoading={isLoading} />;
   }
 
   return (
@@ -275,7 +295,7 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
        </div>
 
       {/* Property Selector */}
-      {properties.length > 1 && (
+      {effectiveProperties.length > 1 && (
       <div className="flex flex-col gap-3 p-3 sm:p-5 bg-gradient-to-r from-white to-emerald-50/40 rounded-xl border border-emerald-100/60 shadow-sm hover:shadow-md transition-all duration-300 hover:border-emerald-200">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="p-2 bg-emerald-100/60 rounded-lg flex-shrink-0">
@@ -290,7 +310,7 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
               <SelectValue placeholder="Selecione uma propriedade" />
             </SelectTrigger>
             <SelectContent>
-              {properties.map((prop) =>
+              {effectiveProperties.map((prop) =>
             <SelectItem key={prop.id} value={prop.id}>
                   <span className="font-medium truncate">{prop.property_name}</span> <span className="text-gray-500 text-xs">({prop.city}/{prop.state})</span>
                 </SelectItem>
@@ -444,7 +464,7 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
           {isLoading ? (
             <ShimmerSkeleton className="h-80 rounded-xl" />
           ) : (
-            <LicenseAlerts licenses={licenses} />
+            <LicenseAlerts licenses={effectiveLicenses} />
           )}
 
           {/* Processos e Alertas de Infrações */}
@@ -465,7 +485,7 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
               documents={filteredData.documents}
               processes={filteredData.processes}
               georeferencing={georeferencing}
-              prads={prads}
+              prads={effectivePrads}
               carManagements={carManagements}
             />
           )}
@@ -533,7 +553,7 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
             documents={filteredData.documents}
             processes={filteredData.processes}
             alerts={filteredData.alerts}
-            prads={prads}
+            prads={effectivePrads}
           />
         </div>
       )}

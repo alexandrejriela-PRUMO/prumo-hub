@@ -1,12 +1,19 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 
+// Cache em nível de módulo — persiste entre remontagens do Layout (navegação)
+// para evitar que o menu suma brevemente enquanto as permissões recarregam
+let _cachedPermissions = null;
+let _cachedPermissionsEmail = null;
+
 /**
  * Hook para obter permissões efetivas do usuário da equipe
  * Valida permissões armazenadas na entity TeamMember
  */
 export function useEffectiveUserPermissions(user) {
-  const [permissions, setPermissions] = useState(null);
+  const [permissions, setPermissions] = useState(
+    user?.email === _cachedPermissionsEmail ? _cachedPermissions : null
+  );
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -34,9 +41,14 @@ export function useEffectiveUserPermissions(user) {
         }
 
         if (teamMembers && teamMembers.length > 0) {
-          setPermissions(teamMembers[0].permissions || {});
+          const perms = teamMembers[0].permissions || {};
+          setPermissions(perms);
+          _cachedPermissions = perms;
+          _cachedPermissionsEmail = user?.email;
         } else {
           setPermissions({});
+          _cachedPermissions = {};
+          _cachedPermissionsEmail = user?.email;
         }
       } catch (error) {
         console.error('[Permissions] Erro ao carregar permissões:', error);

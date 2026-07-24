@@ -62,6 +62,9 @@ export default function PropertyUsers({ property, currentUser, onSave, onCancel 
         property_name: property?.property_name || 'Propriedade',
         viewer_email: newUser.email,
         viewer_name: newUser.name,
+        viewer_whatsapp: newUser.whatsapp_phone || undefined,
+        consultor_name: currentUser?.full_name,
+        notification_events: Object.keys(newUser.notification_settings || {}).filter(k => newUser.notification_settings[k]),
         property_id: property?.id
       });
     } catch (err) {

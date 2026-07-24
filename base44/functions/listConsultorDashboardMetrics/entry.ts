@@ -121,6 +121,7 @@ Deno.serve(async (req) => {
     };
 
     return Response.json({
+      properties,
       licenses: dedup(licenseResults),
       alerts: dedup(alertResults),
       documents: dedup([...docResults, ...unifiedDocResults]),

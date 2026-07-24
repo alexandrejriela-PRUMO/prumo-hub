@@ -20,18 +20,23 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
   const [refreshOverrides, setRefreshOverrides] = useState({});
   const [refreshingId, setRefreshingId] = useState(null);
 
-  const propertyIds = properties.map(p => p.id);
-
   // Busca todas as métricas via backend function (bypass RLS para equipe_consultor)
+  // A função também retorna as propriedades, usadas como fallback quando o RLS
+  // bloqueia a listagem para membros de equipe.
   const { data: metricsData, isLoading: metricsLoading } = useQuery({
     queryKey: ['consultor-dashboard-metrics', user?.email],
     queryFn: async () => {
       const res = await base44.functions.invoke('listConsultorDashboardMetrics', {});
       return res?.data || {};
     },
-    enabled: !!user?.email && properties.length > 0,
+    enabled: !!user?.email,
     staleTime: 0,
   });
+
+  // Se o RLS bloqueou as propriedades do parent (membros de equipe), usa as
+  // propriedades retornadas pela backend function.
+  const effectiveProperties = properties.length > 0 ? properties : (metricsData?.properties || []);
+  const propertyIds = effectiveProperties.map(p => p.id);
 
   const licenses = metricsData?.licenses || [];
   const alerts = metricsData?.alerts || [];
@@ -42,7 +47,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
 
   // Calcula regularidade usando a mesma lógica do termômetro
   const calcRegularity = (propertyId) => {
-    const property = properties.find(p => p.id === propertyId);
+    const property = effectiveProperties.find(p => p.id === propertyId);
     if (property?.manual_regularity_enabled) {
       if (property.manual_regularity_status === 'conforme') return 100;
       if (property.manual_regularity_status === 'attention') return 55;
@@ -68,7 +73,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
     }
 
     // Documentos (25 pts)
-    const prop = properties.find(p => p.id === propertyId);
+    const prop = effectiveProperties.find(p => p.id === propertyId);
     const propDocs = allDocuments.filter(d => d.property_id === propertyId || d.entity_id === propertyId || (prop?.owner_email && d.owner_email === prop.owner_email));
     const hasCAR = propDocs.some(d => d.document_type === 'CAR');
     const hasCCIR = propDocs.some(d => d.document_type === 'CCIR');
@@ -85,7 +90,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
     else if (property?.coordinates) score += 15;
 
     // Processos (10 pts)
-    const propForProc = properties.find(p => p.id === propertyId);
+    const propForProc = effectiveProperties.find(p => p.id === propertyId);
     const propProcesses = allProcesses.filter(p => p.property_id === propertyId || (propForProc?.owner_email && p.client_email === propForProc.owner_email));
     const activeProcesses = propProcesses.filter(p => p.status === 'Em Andamento');
     if (activeProcesses.length === 0) score += 10;
@@ -116,7 +121,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
 
       const lic = (data.licenses || []).filter(l => l.property_id === propertyId);
       const alt = (data.alerts || []).filter(a => a.property_id === propertyId);
-      const prop = properties.find(p => p.id === propertyId);
+      const prop = effectiveProperties.find(p => p.id === propertyId);
       const ownerEmail = prop?.owner_email;
       const allDocs = (data.documents || []).filter(d =>
         d.property_id === propertyId || d.entity_id === propertyId ||
@@ -154,7 +159,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
 
   // Categoriza propriedades por status
   const getPropertyStatus = (propertyId) => {
-    const property = properties.find(p => p.id === propertyId);
+    const property = effectiveProperties.find(p => p.id === propertyId);
     if (property?.manual_regularity_enabled) {
       if (property.manual_regularity_status === 'conforme') return 'normal';
       if (property.manual_regularity_status === 'attention') return 'attention';
@@ -170,7 +175,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
   };
 
   // Filter out client-only records without properties
-  const propertiesWithClients = properties.filter(p => p && !p.is_client_only);
+  const propertiesWithClients = effectiveProperties.filter(p => p && !p.is_client_only);
 
   const criticalCount = propertiesWithClients.filter(p => getPropertyStatus(p.id) === 'critical').length;
   const attentionCount = propertiesWithClients.filter(p => getPropertyStatus(p.id) === 'attention').length;
@@ -183,7 +188,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
     ? propertiesWithClients.filter(p => p.manual_regularity_enabled && p.manual_regularity_status === 'conforme')
     : propertiesWithClients.filter(p => getPropertyStatus(p.id) === filterStatus);
 
-  if (isLoading || (properties.length > 0 && metricsLoading && !metricsData)) {
+  if (isLoading || (metricsLoading && !metricsData)) {
     return <div className="space-y-6"><Skeleton className="h-64 rounded-xl" /></div>;
   }
 

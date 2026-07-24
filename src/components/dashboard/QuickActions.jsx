@@ -41,13 +41,17 @@ const actions = [
   },
 ];
 
-export default function QuickActions({ userType }) {
+export default function QuickActions({ userType, propertyId }) {
+  const buildUrl = (page) => {
+    const base = createPageUrl(page);
+    return propertyId ? `${base}?property_id=${propertyId}` : base;
+  };
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
       {actions.map((action, index) => (
         <Link 
           key={index} 
-          to={createPageUrl(action.page)}
+          to={buildUrl(action.page)}
           className="transform transition-all duration-300 hover:-translate-y-2"
         >
           <Card className="group hover:shadow-2xl hover:shadow-emerald-500/15 transition-all duration-300 border-emerald-100 hover:border-emerald-300 h-full bg-gradient-to-br from-white to-emerald-50/30 hover:from-emerald-50/50 hover:to-emerald-50/50">

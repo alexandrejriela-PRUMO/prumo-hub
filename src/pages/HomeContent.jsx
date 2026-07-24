@@ -297,7 +297,7 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
       }
 
       {/* Quick Actions */}
-      <QuickActions userType={user?.user_type} />
+      <QuickActions userType={user?.user_type} propertyId={selectedPropertyId} />
 
       {/* Consultoria e Requerimentos - Para Produtores */}
       {!isConsultorView && (

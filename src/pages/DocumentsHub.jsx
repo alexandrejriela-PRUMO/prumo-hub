@@ -123,14 +123,19 @@ export default function DocumentsHub() {
 
   const effectiveProperties = isClientConsultor ? clientConsultorProperties : properties;
 
+  // Lê property_id da URL (vindo do dashboard específico ou PropertyCentral)
+  const propertyIdFromUrl = new URLSearchParams(window.location.search).get('property_id');
+
   useEffect(() => {
-    if (effectiveProperties.length > 0 && !selectedPropertyId && !isConsultorFamily) {
+    if (propertyIdFromUrl) {
+      setSelectedPropertyId(propertyIdFromUrl);
+    } else if (effectiveProperties.length > 0 && !selectedPropertyId && !isConsultorFamily) {
       setSelectedPropertyId(effectiveProperties[0].id);
     }
-    if (isClientConsultor && clientConsultorProperties.length > 0 && !selectedPropertyId) {
+    if (isClientConsultor && clientConsultorProperties.length > 0 && !selectedPropertyId && !propertyIdFromUrl) {
       setSelectedPropertyId(clientConsultorProperties[0].id);
     }
-  }, [effectiveProperties, selectedPropertyId, isConsultorFamily, isClientConsultor]);
+  }, [effectiveProperties, selectedPropertyId, isConsultorFamily, isClientConsultor, propertyIdFromUrl]);
 
   const useBackendDoc = isConsultorFamily && !isEquipeProdutor;
   const createMutation = useMutation({

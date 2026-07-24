@@ -439,6 +439,14 @@ export default function Processes() {
 
   const queryClient = useQueryClient();
 
+  // Lê property_id da URL (vindo do dashboard específico ou PropertyCentral)
+  const propertyIdFromUrl = new URLSearchParams(window.location.search).get('property_id');
+  useEffect(() => {
+    if (propertyIdFromUrl && !consultorPropertyId) {
+      setConsultorPropertyId(propertyIdFromUrl);
+    }
+  }, [propertyIdFromUrl, consultorPropertyId]);
+
   useEffect(() => {
     const loadUser = async () => {
       try {

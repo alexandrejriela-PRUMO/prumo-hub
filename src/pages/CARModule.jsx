@@ -151,6 +151,18 @@ export default function CARModule() {
 
   const [produtorPropertyId, setProdutorPropertyId] = useState(null);
 
+  // Lê property_id da URL (vindo do dashboard específico ou PropertyCentral)
+  const propertyIdFromUrl = new URLSearchParams(window.location.search).get('property_id');
+  useEffect(() => {
+    if (propertyIdFromUrl) {
+      if (isConsultor && !consultorPropertyId) {
+        setConsultorPropertyId(propertyIdFromUrl);
+      } else if (!isConsultor && !produtorPropertyId) {
+        setProdutorPropertyId(propertyIdFromUrl);
+      }
+    }
+  }, [propertyIdFromUrl, isConsultor, consultorPropertyId, produtorPropertyId]);
+
   // Para produtor: usa o seletor se tiver mais de 1 propriedade, senão usa a primeira
   const effectivePropertyId = isConsultor
     ? consultorPropertyId

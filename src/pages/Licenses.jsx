@@ -220,12 +220,22 @@ export default function Licenses() {
     ? clientConsultorProperties
     : isConsultor ? properties : ownerProperties;
 
+  // Lê property_id da URL (vindo do dashboard específico ou PropertyCentral)
+  const propertyIdFromUrl = new URLSearchParams(window.location.search).get('property_id');
+
+  // Pré-seleciona a propriedade vinda da URL para o seletor de consultor
+  useEffect(() => {
+    if (propertyIdFromUrl && !consultorPropertyId) {
+      setConsultorPropertyId(propertyIdFromUrl);
+    }
+  }, [propertyIdFromUrl, consultorPropertyId]);
+
   // Garante que property_id seja preenchido quando properties são carregadas
   useEffect(() => {
     if (allProperties.length > 0 && !formData.property_id) {
-      setFormData(prev => ({ ...prev, property_id: allProperties[0].id }));
+      setFormData(prev => ({ ...prev, property_id: propertyIdFromUrl || allProperties[0].id }));
     }
-  }, [allProperties]);
+  }, [allProperties, propertyIdFromUrl]);
 
   // Todas as licenças do consultor (buscadas via backend para bypass de RLS para equipe)
   const { data: allConsultorLicenses = [], isLoading: allLicensesLoading } = useQuery({

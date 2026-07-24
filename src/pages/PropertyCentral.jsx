@@ -42,12 +42,17 @@ export default function PropertyCentral() {
     enabled: !!effectiveEmail && !effectiveLoading,
   });
 
+  // Read property_id from URL (vindo do dashboard específico) ou usa a primeira
+  const propertyIdFromUrl = searchParams.get('property_id');
+
   // Set first property as default
   useEffect(() => {
-    if (properties.length > 0 && !selectedPropertyId) {
+    if (propertyIdFromUrl) {
+      setSelectedPropertyId(propertyIdFromUrl);
+    } else if (properties.length > 0 && !selectedPropertyId) {
       setSelectedPropertyId(properties[0].id);
     }
-  }, [properties, selectedPropertyId]);
+  }, [properties, selectedPropertyId, propertyIdFromUrl]);
 
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
 
@@ -145,7 +150,7 @@ export default function PropertyCentral() {
           return (
             <Link
               key={module.page}
-              to={`${createPageUrl(module.page)}?return_from=PropertyCentral`}
+              to={`${createPageUrl(module.page)}?return_from=PropertyCentral${selectedPropertyId ? `&property_id=${selectedPropertyId}` : ''}`}
               className={`${module.color} p-6 rounded-xl border transition-all hover:shadow-md group`}
             >
               <div className="flex items-start justify-between">

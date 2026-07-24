@@ -9,6 +9,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import RuteAIChat from './RuteAIChat';
 import GrowthRingCard from './GrowthRingCard';
 import ManualRegularityDialog from './ManualRegularityDialog';
+import AnimatedCounter from '@/components/ui/AnimatedCounter';
 
 export default function ConsultorOverview({ user, properties, isLoading }) {
   const navigate = useNavigate();
@@ -84,6 +85,17 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
       const all = results.flat(2);
       const seen = new Set();
       return all.filter(p => { if (seen.has(p.id)) return false; seen.add(p.id); return true; });
+    },
+    enabled: properties.length > 0,
+  });
+
+  const { data: allPrads = [] } = useQuery({
+    queryKey: ['prads-overview', user?.email],
+    queryFn: async () => {
+      const results = await Promise.all(
+        propertyIds.map(pid => base44.entities.PRAD.filter({ property_id: pid }))
+      );
+      return results.flat();
     },
     enabled: properties.length > 0,
   });
@@ -244,7 +256,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
           <div className={`p-2 rounded-xl mb-2 inline-flex ${filterStatus === 'all' ? 'bg-white/20' : 'bg-emerald-50 dark:bg-emerald-900/30'}`}>
             <Building2 className={`w-4 h-4 sm:w-5 sm:h-5 ${filterStatus === 'all' ? 'text-white' : 'text-emerald-600 dark:text-emerald-400'}`} />
           </div>
-          <p className={`text-2xl sm:text-3xl font-bold ${filterStatus === 'all' ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{propertiesWithClients.length}</p>
+          <p className={`text-2xl sm:text-3xl font-bold ${filterStatus === 'all' ? 'text-white' : 'text-gray-900 dark:text-white'}`}><AnimatedCounter value={propertiesWithClients.length} /></p>
           <p className={`text-[10px] sm:text-xs font-medium mt-0.5 ${filterStatus === 'all' ? 'text-emerald-100' : 'text-gray-500 dark:text-gray-400'}`}>Total de Propriedades</p>
         </button>
 
@@ -260,7 +272,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
           <div className={`p-2 rounded-xl mb-2 inline-flex ${filterStatus === 'critical' ? 'bg-white/20' : 'bg-red-100 dark:bg-red-900/40'}`}>
             <AlertTriangle className={`w-4 h-4 sm:w-5 sm:h-5 ${filterStatus === 'critical' ? 'text-white' : 'text-red-600 dark:text-red-400'}`} />
           </div>
-          <p className={`text-2xl sm:text-3xl font-bold ${filterStatus === 'critical' ? 'text-white' : 'text-red-700 dark:text-red-400'}`}>{criticalCount}</p>
+          <p className={`text-2xl sm:text-3xl font-bold ${filterStatus === 'critical' ? 'text-white' : 'text-red-700 dark:text-red-400'}`}><AnimatedCounter value={criticalCount} /></p>
           <p className={`text-[10px] sm:text-xs font-medium mt-0.5 ${filterStatus === 'critical' ? 'text-red-100' : 'text-red-700 dark:text-red-400'}`}>Alerta Crítico</p>
         </button>
 
@@ -276,7 +288,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
           <div className={`p-2 rounded-xl mb-2 inline-flex ${filterStatus === 'attention' ? 'bg-white/20' : 'bg-amber-100 dark:bg-amber-900/40'}`}>
             <TrendingUp className={`w-4 h-4 sm:w-5 sm:h-5 ${filterStatus === 'attention' ? 'text-white' : 'text-amber-600 dark:text-amber-400'}`} />
           </div>
-          <p className={`text-2xl sm:text-3xl font-bold ${filterStatus === 'attention' ? 'text-white' : 'text-amber-700 dark:text-amber-400'}`}>{attentionCount}</p>
+          <p className={`text-2xl sm:text-3xl font-bold ${filterStatus === 'attention' ? 'text-white' : 'text-amber-700 dark:text-amber-400'}`}><AnimatedCounter value={attentionCount} /></p>
           <p className={`text-[10px] sm:text-xs font-medium mt-0.5 ${filterStatus === 'attention' ? 'text-amber-100' : 'text-amber-700 dark:text-amber-400'}`}>Em Atenção</p>
         </button>
 
@@ -286,7 +298,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
           <div className="p-2 rounded-xl mb-2 inline-flex bg-white/10">
             <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
           </div>
-          <p className="text-2xl sm:text-3xl font-bold text-white">{avgRegularity}%</p>
+          <p className="text-2xl sm:text-3xl font-bold text-white"><AnimatedCounter value={avgRegularity} suffix="%" /></p>
           <p className="text-[10px] sm:text-xs font-medium mt-0.5 text-slate-400">Regularidade Média</p>
         </div>
       </div>
@@ -347,6 +359,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
               const propDocs = allDocuments.filter(d => d.property_id === property.id || d.entity_id === property.id || (property.owner_email && d.owner_email === property.owner_email)).length;
               const propProcessesArr = allProcesses.filter(p => p.property_id === property.id || (property.owner_email && p.client_email === property.owner_email));
               const openProcesses = propProcessesArr.filter(p => p.status === 'Em Andamento').length;
+              const propPradsCount = allPrads.filter(p => p.property_id === property.id).length;
 
               return (
                 <GrowthRingCard
@@ -359,6 +372,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
                   licensesValid={licensesValid}
                   licensesTotal={propLicensesArr.length}
                   documents={propDocs}
+                  prads={propPradsCount}
                   onClick={() => navigate(`${createPageUrl('Home')}?property_id=${property.id}`)}
                   onManualReview={() => setManualDialogProperty(property)}
                 />

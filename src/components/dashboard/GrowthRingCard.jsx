@@ -7,6 +7,7 @@ const COLORS = {
   processes: '#C9A353',
   licenses: '#47845D',
   documents: '#6C7A72',
+  prads: '#6B7FAE',
 };
 
 const STATUS_CONFIG = {
@@ -24,6 +25,7 @@ export default function GrowthRingCard({
   licensesValid,
   licensesTotal,
   documents,
+  prads,
   onClick,
   onManualReview,
 }) {
@@ -32,21 +34,23 @@ export default function GrowthRingCard({
   // SVG ring — 4 equal segments (80° each) with 10° gaps
   const r = 36;
   const C = 2 * Math.PI * r;
-  const segmentArc = C * (80 / 360);
-  const segmentOffset = C / 4;
+  const segmentArc = C * (64 / 360);
+  const segmentOffset = C / 5;
 
   const segments = [
     { color: COLORS.licenses, dashoffset: 0 },
     { color: COLORS.documents, dashoffset: -segmentOffset },
     { color: COLORS.alerts, dashoffset: -2 * segmentOffset },
     { color: COLORS.processes, dashoffset: -3 * segmentOffset },
+    { color: COLORS.prads, dashoffset: -4 * segmentOffset },
   ];
 
   const dataItems = [
     { label: 'Alertas ativos', value: alerts, color: COLORS.alerts },
     { label: 'Processos abertos', value: processes, color: COLORS.processes },
-    { label: 'Licenças em dia', value: `${licensesValid}/${licensesTotal}`, color: COLORS.licenses },
+    { label: 'Licenças em dia', value: licensesValid, total: licensesTotal, color: COLORS.licenses },
     { label: 'Documentos', value: documents, color: COLORS.documents },
+    { label: 'PRADs', value: prads, color: COLORS.prads },
   ];
 
   const locationText = property.city || property.state
@@ -153,7 +157,10 @@ export default function GrowthRingCard({
                   <span className="w-2 h-2 rounded-full flex-shrink-0 transition-transform duration-300 group-hover/item:scale-[1.6]" style={{ background: item.color }} />
                   <span className="text-xs truncate" style={{ color: '#A5B3AA' }}>{item.label}</span>
                 </div>
-                <span className="text-sm font-bold text-white flex-shrink-0">{item.value}</span>
+                <span className="text-sm font-bold text-white flex-shrink-0">
+                  <AnimatedCounter value={item.value} />
+                  {item.total != null && <span className="text-gray-400">/{item.total}</span>}
+                </span>
               </div>
             ))}
           </div>

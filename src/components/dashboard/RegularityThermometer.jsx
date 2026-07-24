@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, CheckCircle2, AlertCircle, TrendingUp, FileCheck, FileText, MapPin, Scale, Leaf, TreePine, ShieldAlert } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -260,7 +261,7 @@ export default function RegularityThermometer({ property, licenses = [], documen
   };
 
   return (
-    <Card className="border-2 shadow-lg">
+    <Card className="border-2 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
@@ -291,13 +292,18 @@ export default function RegularityThermometer({ property, licenses = [], documen
             <span>Regular (80–100%)</span>
           </div>
           <div className="relative h-4 rounded-full overflow-hidden" style={{ background: 'linear-gradient(to right, #ef4444 0%, #eab308 50%, #22c55e 100%)' }}>
-            <div
-              className="absolute top-0 right-0 h-full bg-white/30 rounded-full transition-all duration-700"
-              style={{ width: `${100 - score.percentage}%` }}
+            <motion.div
+              className="absolute top-0 right-0 h-full bg-white/30 rounded-full"
+              initial={{ width: '100%' }}
+              animate={{ width: `${100 - score.percentage}%` }}
+              transition={{ duration: 0.9, ease: 'easeOut' }}
             />
-            <div
-              className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-md border-2 transition-all duration-700"
-              style={{ left: `calc(${score.percentage}% - 8px)`, borderColor: status.bar }}
+            <motion.div
+              className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-md border-2"
+              initial={{ left: '-8px' }}
+              animate={{ left: `calc(${score.percentage}% - 8px)` }}
+              transition={{ duration: 0.9, ease: 'easeOut' }}
+              style={{ borderColor: status.bar }}
             />
           </div>
         </div>
@@ -321,9 +327,9 @@ export default function RegularityThermometer({ property, licenses = [], documen
               : null;
 
             return (
-              <div key={idx} className={`px-3 py-2.5 rounded-lg border ${ds.bg} ${ds.border}`}>
+              <div key={idx} className={`group/detail px-3 py-2.5 rounded-lg border ${ds.bg} ${ds.border} transition-all duration-200 hover:shadow-md`}>
                 <div className="flex items-center gap-2.5">
-                  <Icon className={`w-4 h-4 flex-shrink-0 ${ds.icon}`} />
+                  <Icon className={`w-4 h-4 flex-shrink-0 ${ds.icon} transition-transform duration-300 group-hover/detail:rotate-12`} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-semibold text-xs text-gray-900">{detail.category}</span>

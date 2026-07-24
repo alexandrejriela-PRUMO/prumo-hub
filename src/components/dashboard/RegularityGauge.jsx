@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 
 /**
  * Gauge circular interativo e futurista para exibir regularidade.
@@ -21,7 +22,7 @@ export default function RegularityGauge({ value = 0, size = 72, label = 'Regular
   const gradientId = `gauge-grad-${value}-${size}`;
 
   return (
-    <div className="relative flex flex-col items-center justify-center group" style={{ width: size, height: size }}>
+    <div className="relative flex flex-col items-center justify-center group transition-all duration-300 hover:-translate-y-0.5" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90 transform transition-transform group-hover:scale-105 duration-300">
         <defs>
           <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
@@ -44,7 +45,8 @@ export default function RegularityGauge({ value = 0, size = 72, label = 'Regular
           fill="none"
           stroke="currentColor"
           strokeWidth={stroke}
-          className="text-gray-200 dark:text-slate-700"
+          strokeDasharray="3 5"
+          className="text-gray-200 dark:text-slate-700 spin-on-hover"
         />
         {/* Progress */}
         <circle
@@ -65,12 +67,15 @@ export default function RegularityGauge({ value = 0, size = 72, label = 'Regular
       </svg>
       {/* Center text */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span
+        <motion.span
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.4, type: 'spring', stiffness: 200 }}
           className="font-bold text-sm leading-none"
           style={{ color: colorSet.from }}
         >
           {value}%
-        </span>
+        </motion.span>
       </div>
     </div>
   );

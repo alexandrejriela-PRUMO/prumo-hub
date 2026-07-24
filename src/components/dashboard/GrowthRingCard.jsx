@@ -55,7 +55,7 @@ export default function GrowthRingCard({
   return (
     <div
       onClick={onClick}
-      className="relative rounded-3xl overflow-hidden cursor-pointer group transition-all duration-300 hover:scale-[1.01] hover:shadow-2xl"
+      className="relative rounded-3xl overflow-hidden cursor-pointer group transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
       style={{ background: 'linear-gradient(135deg, #14281E 0%, #1A3326 100%)' }}
     >
       {/* Subtle glow on hover */}
@@ -113,27 +113,30 @@ export default function GrowthRingCard({
         <div className="flex items-center gap-5 sm:gap-6">
           {/* Segmented Ring */}
           <div className="relative flex-shrink-0">
-            <svg width="100" height="100" viewBox="0 0 100 100" className="flex-shrink-0">
-              {/* Background track */}
-              <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="7" />
-              {/* Segments */}
-              <g transform="rotate(-90 50 50)">
-                {segments.map((seg, i) => (
-                  <circle
-                    key={i}
-                    cx="50"
-                    cy="50"
-                    r={r}
-                    fill="none"
-                    stroke={seg.color}
-                    strokeWidth="7"
-                    strokeLinecap="round"
-                    strokeDasharray={`${segmentArc} ${C}`}
-                    strokeDashoffset={seg.dashoffset}
-                  />
-                ))}
-              </g>
-            </svg>
+            <svg width="100" height="100" viewBox="0 0 100 100" className="flex-shrink-0 transition-transform duration-500 group-hover:scale-110" style={{ transformOrigin: 'center' }}>
+               {/* Background track */}
+               <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="7" />
+               {/* Segments */}
+               <g transform="rotate(-90 50 50)">
+                 {segments.map((seg, i) => (
+                   <circle
+                     key={i}
+                     cx="50"
+                     cy="50"
+                     r={r}
+                     fill="none"
+                     stroke={seg.color}
+                     strokeWidth="7"
+                     strokeLinecap="round"
+                     style={{
+                       strokeDasharray: `${segmentArc} ${C}`,
+                       strokeDashoffset: seg.dashoffset,
+                       animation: `draw-arc 1s ease-out ${0.15 * i}s both`,
+                     }}
+                   />
+                 ))}
+               </g>
+             </svg>
             {/* Center text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <span className="text-xl font-bold text-white leading-none">{regularity}%</span>
@@ -144,9 +147,9 @@ export default function GrowthRingCard({
           {/* Data list */}
           <div className="flex-1 space-y-2.5 min-w-0">
             {dataItems.map((item) => (
-              <div key={item.label} className="flex items-center justify-between gap-2">
+              <div key={item.label} className="group/item flex items-center justify-between gap-2 rounded-lg px-2 py-0.5 -mx-2 transition-colors duration-200 hover:bg-white/5">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: item.color }} />
+                  <span className="w-2 h-2 rounded-full flex-shrink-0 transition-transform duration-300 group-hover/item:scale-[1.6]" style={{ background: item.color }} />
                   <span className="text-xs truncate" style={{ color: '#A5B3AA' }}>{item.label}</span>
                 </div>
                 <span className="text-sm font-bold text-white flex-shrink-0">{item.value}</span>

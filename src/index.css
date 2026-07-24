@@ -107,3 +107,30 @@ html, body {
   .pt-header-mobile { padding-top: 4rem; }
   .pt-header-landing { padding-top: 4rem; }
 }
+
+/* Dashboard card animations */
+@keyframes draw-arc {
+  from { stroke-dasharray: 0 1000; }
+}
+@keyframes bar-fill {
+  from { width: 100%; }
+}
+@keyframes marker-slide {
+  from { left: -8px; }
+}
+@keyframes chip-pop {
+  from { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.12); }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.spin-on-hover {
+  transform-origin: center;
+  transform-box: fill-box;
+}
+.group:hover .spin-on-hover {
+  animation: spin-slow 15s linear infinite;
+}

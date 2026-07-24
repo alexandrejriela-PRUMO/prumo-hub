@@ -60,31 +60,35 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
     initialData: []
   });
 
+  // Consultor/equipe view: ConsultorOverview busca seus próprios dados via backend function
+  // Estas queries individuais são desnecessárias e bloqueadas por RLS para membros de equipe
+  const skipIndividualQueries = isConsultor || (isEquipe && !isEquipeProdutor);
+
   const { data: licenses = [], isLoading: loadingLicenses } = useQuery({
     queryKey: ['licenses', effectiveEmail],
     queryFn: () => base44.entities.License.filter({ owner_email: effectiveEmail }),
-    enabled: !!effectiveEmail && !effectiveLoading,
+    enabled: !!effectiveEmail && !effectiveLoading && !skipIndividualQueries,
     initialData: []
   });
 
   const { data: invoices = [], isLoading: loadingInvoices } = useQuery({
     queryKey: ['invoices', user?.email],
     queryFn: () => base44.entities.Invoice.filter({ client_email: user.email }),
-    enabled: !!user?.email,
+    enabled: !!user?.email && !skipIndividualQueries,
     initialData: []
   });
 
   const { data: documents = [], isLoading: loadingDocuments } = useQuery({
     queryKey: ['documents', effectiveEmail],
     queryFn: () => base44.entities.Document.filter({ owner_email: effectiveEmail }),
-    enabled: !!effectiveEmail && !effectiveLoading,
+    enabled: !!effectiveEmail && !effectiveLoading && !skipIndividualQueries,
     initialData: []
   });
 
   const { data: processes = [], isLoading: loadingProcesses } = useQuery({
     queryKey: ['processes', effectiveEmail],
     queryFn: () => base44.entities.Process.filter({ client_email: effectiveEmail }),
-    enabled: !!effectiveEmail && !effectiveLoading,
+    enabled: !!effectiveEmail && !effectiveLoading && !skipIndividualQueries,
     initialData: []
   });
 
@@ -119,11 +123,14 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
   const { data: environmentalAlerts = [], isLoading: loadingAlerts } = useQuery({
     queryKey: ['environmental-alerts', effectiveEmail],
     queryFn: () => base44.entities.EnvironmentalAlert.filter({ responsible_email: effectiveEmail }),
-    enabled: !!effectiveEmail && !effectiveLoading,
+    enabled: !!effectiveEmail && !effectiveLoading && !skipIndividualQueries,
     initialData: []
   });
 
-  const isLoading = effectiveLoading || loadingProperties || loadingLicenses || loadingInvoices || loadingDocuments || loadingProcesses || loadingAlerts;
+  // Na visão de consultor, isLoading depende apenas de effectiveLoading e loadingProperties
+  const isLoading = skipIndividualQueries
+    ? (effectiveLoading || loadingProperties)
+    : (effectiveLoading || loadingProperties || loadingLicenses || loadingInvoices || loadingDocuments || loadingProcesses || loadingAlerts);
 
   // Dados de requerimentos para o painel do produtor
   const openRequests = requests.filter(r => r.status === 'Aberto' || r.status === 'Em Análise');

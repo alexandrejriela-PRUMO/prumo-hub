@@ -23,7 +23,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
   const propertyIds = properties.map(p => p.id);
 
   // Busca todas as métricas via backend function (bypass RLS para equipe_consultor)
-  const { data: metricsData } = useQuery({
+  const { data: metricsData, isLoading: metricsLoading } = useQuery({
     queryKey: ['consultor-dashboard-metrics', user?.email],
     queryFn: async () => {
       const res = await base44.functions.invoke('listConsultorDashboardMetrics', {});
@@ -180,7 +180,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
     ? propertiesWithClients
     : propertiesWithClients.filter(p => getPropertyStatus(p.id) === filterStatus);
 
-  if (isLoading) {
+  if (isLoading || (properties.length > 0 && metricsLoading && !metricsData)) {
     return <div className="space-y-6"><Skeleton className="h-64 rounded-xl" /></div>;
   }
 

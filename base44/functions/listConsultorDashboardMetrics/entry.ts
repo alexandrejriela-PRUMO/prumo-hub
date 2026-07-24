@@ -11,6 +11,9 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
  *
  * A função resolve o email efetivo do consultor (próprio ou do principal via
  * TeamMember) e busca os registros via service role (bypass RLS).
+ *
+ * Otimização: busca por owner_email (poucos) em vez de property_id (muitos)
+ * sempre que possível, reduzindo drasticamente o número de queries paralelas.
  */
 Deno.serve(async (req) => {
   try {
@@ -68,57 +71,48 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Buscar métricas por property_id (e também por owner_email para documentos/processos)
-    const licensePromises = propertyIds.map(pid =>
-      base44.asServiceRole.entities.License.filter({ property_id: pid })
-    );
-    const alertPromises = propertyIds.map(pid =>
-      base44.asServiceRole.entities.EnvironmentalAlert.filter({ property_id: pid })
-    );
-    const docPromises = propertyIds.map(pid =>
-      base44.asServiceRole.entities.Document.filter({ property_id: pid })
-    );
-    const unifiedDocPromises = propertyIds.map(pid =>
-      base44.asServiceRole.entities.UnifiedDocument.filter({ entity_id: pid })
-    );
-    const procPromises = propertyIds.map(pid =>
-      base44.asServiceRole.entities.Process.filter({ property_id: pid })
-    );
-    const pradPromises = propertyIds.map(pid =>
-      base44.asServiceRole.entities.PRAD.filter({ property_id: pid })
-    );
-    const geoPromises = propertyIds.map(pid =>
-      base44.asServiceRole.entities.Georeferencing.filter({ property_id: pid })
-    );
+    // Coletar owner_emails únicos (para busca por email — muito menos queries)
+    const ownerEmails = [...new Set(
+      properties.map(p => p.owner_email).filter(Boolean)
+    )];
 
-    // Buscar também documentos/processos por owner_email (para registros sem property_id)
-    const ownerEmails = properties.map(p => p.owner_email).filter(Boolean);
-    const docByOwnerPromises = ownerEmails.map(email =>
-      base44.asServiceRole.entities.Document.filter({ owner_email: email })
-    );
-    const procByOwnerPromises = ownerEmails.map(email =>
-      base44.asServiceRole.entities.Process.filter({ client_email: email })
-    );
-
-    const [
-      licenseResults, alertResults, docResults, unifiedDocResults,
-      procResults, pradResults, geoResults, docByOwnerResults, procByOwnerResults
-    ] = await Promise.all([
-      Promise.all(licensePromises),
-      Promise.all(alertPromises),
-      Promise.all(docPromises),
-      Promise.all(unifiedDocPromises),
-      Promise.all(procPromises),
-      Promise.all(pradPromises),
-      Promise.all(geoPromises),
-      Promise.all(docByOwnerPromises),
-      Promise.all(procByOwnerPromises),
+    // Buscar entidades que têm owner_email/client_email por email (otimizado)
+    // e entidades que só têm property_id por property_id
+    const emailQueries = ownerEmails.flatMap(email => [
+      base44.asServiceRole.entities.License.filter({ owner_email: email }),
+      base44.asServiceRole.entities.Document.filter({ owner_email: email }),
+      base44.asServiceRole.entities.Process.filter({ client_email: email }),
+      base44.asServiceRole.entities.PRAD.filter({ owner_email: email }),
     ]);
 
+    // EnvironmentalAlert e Georeferencing só têm property_id
+    const propertyQueries = propertyIds.flatMap(pid => [
+      base44.asServiceRole.entities.EnvironmentalAlert.filter({ property_id: pid }),
+      base44.asServiceRole.entities.Georeferencing.filter({ property_id: pid }),
+      base44.asServiceRole.entities.UnifiedDocument.filter({ entity_id: pid }),
+    ]);
+
+    const allQueries = [...emailQueries, ...propertyQueries];
+    const results = await Promise.all(allQueries);
+
+    // Dividir resultados de volta nas categorias
+    const nEmails = ownerEmails.length;
+    let idx = 0;
+
+    const licenseResults = results.slice(idx, idx + nEmails); idx += nEmails;
+    const docResults = results.slice(idx, idx + nEmails); idx += nEmails;
+    const procResults = results.slice(idx, idx + nEmails); idx += nEmails;
+    const pradResults = results.slice(idx, idx + nEmails); idx += nEmails;
+
+    const alertResults = results.slice(idx, idx + propertyIds.length); idx += propertyIds.length;
+    const geoResults = results.slice(idx, idx + propertyIds.length); idx += propertyIds.length;
+    const unifiedDocResults = results.slice(idx, idx + propertyIds.length); idx += propertyIds.length;
+
     // Achatar e deduplicar por ID
-    const dedup = (results, seen = new Set()) => {
+    const dedup = (resultsArr) => {
+      const seen = new Set();
       const out = [];
-      for (const list of results) {
+      for (const list of resultsArr) {
         for (const item of (list || [])) {
           if (!seen.has(item.id)) { seen.add(item.id); out.push(item); }
         }
@@ -129,8 +123,8 @@ Deno.serve(async (req) => {
     return Response.json({
       licenses: dedup(licenseResults),
       alerts: dedup(alertResults),
-      documents: dedup([...docResults, ...unifiedDocResults, ...docByOwnerResults]),
-      processes: dedup([...procResults, ...procByOwnerResults]),
+      documents: dedup([...docResults, ...unifiedDocResults]),
+      processes: dedup(procResults),
       prads: dedup(pradResults),
       georeferencing: dedup(geoResults),
       consultorEmail,

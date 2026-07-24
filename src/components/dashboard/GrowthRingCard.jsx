@@ -1,5 +1,4 @@
 import React from 'react';
-import AnimatedCounter from '@/components/ui/AnimatedCounter';
 import { MapPin, ShieldCheck } from 'lucide-react';
 
 const COLORS = {
@@ -144,7 +143,7 @@ export default function GrowthRingCard({
              </svg>
             {/* Center text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <AnimatedCounter value={regularity} suffix="%" className="text-xl font-bold text-white leading-none" />
+              <span className="text-xl font-bold text-white leading-none">{regularity}%</span>
               <span className="text-[9px] mt-0.5" style={{ color: '#A5B3AA' }}>regular.</span>
             </div>
           </div>
@@ -158,7 +157,7 @@ export default function GrowthRingCard({
                   <span className="text-xs truncate" style={{ color: '#A5B3AA' }}>{item.label}</span>
                 </div>
                 <span className="text-sm font-bold text-white flex-shrink-0">
-                  <AnimatedCounter value={item.value} />
+                  {item.value}
                   {item.total != null && <span className="text-gray-400">/{item.total}</span>}
                 </span>
               </div>

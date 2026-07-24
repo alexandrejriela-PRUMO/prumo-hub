@@ -3,13 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, TrendingUp, Building2, BarChart3, Eye, Sparkles, X, FileCheck, FileText, Scale, MapPin, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, TrendingUp, Building2, BarChart3, Sparkles, X } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import RuteAIChat from './RuteAIChat';
-import RegularityGauge from './RegularityGauge';
+import GrowthRingCard from './GrowthRingCard';
 import ManualRegularityDialog from './ManualRegularityDialog';
 
 export default function ConsultorOverview({ user, properties, isLoading }) {
@@ -344,111 +342,26 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
               const status = getPropertyStatus(property.id);
               const regularity = calcRegularity(property.id);
               const totalAlerts = countAlertsByProperty(property.id);
-              const propLicenses = licenses.filter(l => l.property_id === property.id).length;
+              const propLicensesArr = licenses.filter(l => l.property_id === property.id);
+              const licensesValid = propLicensesArr.filter(l => l.status === 'Vigente' && (!l.expiry_date || new Date(l.expiry_date) > new Date())).length;
               const propDocs = allDocuments.filter(d => d.property_id === property.id || d.entity_id === property.id || (property.owner_email && d.owner_email === property.owner_email)).length;
-              const propProcesses = allProcesses.filter(p => p.property_id === property.id || (property.owner_email && p.client_email === property.owner_email)).length;
-
-              const statusConfig = {
-                critical: {
-                  color: 'bg-gradient-to-br from-red-50 via-rose-50 to-red-100 dark:from-red-950/40 dark:via-rose-950/30 dark:to-red-900/20 border-red-200/60 dark:border-red-800/40',
-                  badge: 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-md shadow-red-500/30',
-                  accent: 'text-red-600 dark:text-red-400',
-                  glow: 'from-red-400/20 to-rose-500/10',
-                },
-                attention: {
-                  color: 'bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 dark:from-amber-950/40 dark:via-orange-950/30 dark:to-amber-900/20 border-amber-200/60 dark:border-amber-800/40',
-                  badge: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/30',
-                  accent: 'text-amber-600 dark:text-amber-400',
-                  glow: 'from-amber-400/20 to-orange-500/10',
-                },
-                normal: {
-                  color: 'bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-emerald-900/20 border-emerald-200/60 dark:border-emerald-800/40',
-                  badge: 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/30',
-                  accent: 'text-emerald-600 dark:text-emerald-400',
-                  glow: 'from-emerald-400/20 to-teal-500/10',
-                }
-              };
-
-              const config = statusConfig[status];
-
-              const miniStats = [
-                { icon: FileCheck, label: 'Licenças', value: propLicenses, color: 'text-blue-600 dark:text-blue-400' },
-                { icon: FileText, label: 'Docs', value: propDocs, color: 'text-violet-600 dark:text-violet-400' },
-                { icon: Scale, label: 'Processos', value: propProcesses, color: 'text-amber-600 dark:text-amber-400' },
-                { icon: AlertTriangle, label: 'Alertas', value: totalAlerts, color: totalAlerts > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400' },
-              ];
+              const propProcessesArr = allProcesses.filter(p => p.property_id === property.id || (property.owner_email && p.client_email === property.owner_email));
+              const openProcesses = propProcessesArr.filter(p => p.status === 'Em Andamento').length;
 
               return (
-                <div key={property.id} className={`relative ${config.color} border-2 rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:scale-[1.01] cursor-pointer group`}>
-                  <div className={`absolute -top-8 -right-8 w-32 h-32 bg-gradient-to-br ${config.glow} rounded-full blur-2xl opacity-60 group-hover:opacity-100 transition-opacity duration-500`} />
-                  <div className="relative p-4 sm:p-5">
-                    {/* Header: info + gauge */}
-                    <div className="flex items-start justify-between gap-3 mb-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <MapPin className={`w-3.5 h-3.5 flex-shrink-0 ${config.accent}`} />
-                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{property.city}/{property.state}</p>
-                        </div>
-                        <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">{property.property_name}</h3>
-                        {property.client_name && <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5 truncate">👤 {property.client_name}</p>}
-                        <span className="inline-block mt-1 text-[10px] font-medium text-gray-400 dark:text-gray-500">
-                          {property.property_type === 'urbano' ? '🏢 Urbano' : '🌱 Rural'}
-                        </span>
-                      </div>
-                      <div className="flex flex-col items-center gap-1 flex-shrink-0">
-                        <RegularityGauge value={regularity} size={68} />
-                        <Badge className={`${config.badge} text-[10px] px-2 py-0.5`}>
-                          {status === 'critical' ? 'Crítica' : status === 'attention' ? 'Atenção' : 'Normal'}
-                        </Badge>
-                        {property.manual_regularity_enabled && (
-                          <span className="inline-flex items-center gap-1 text-[9px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/40 rounded-full px-1.5 py-0.5">
-                            <ShieldCheck className="w-2.5 h-2.5" />
-                            Reavaliado
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Mini stats grid */}
-                    <div className="grid grid-cols-4 gap-1.5 sm:gap-2 mb-4">
-                      {miniStats.map((stat) => {
-                        const Icon = stat.icon;
-                        return (
-                          <div key={stat.label} className="bg-white/70 dark:bg-slate-800/60 backdrop-blur-sm rounded-xl p-1.5 sm:p-2 text-center transition-all hover:bg-white dark:hover:bg-slate-800 hover:scale-105 border border-white/40 dark:border-slate-700/40">
-                            <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 mx-auto mb-0.5 ${stat.color}`} />
-                            <p className="text-sm sm:text-base font-bold text-gray-900 dark:text-white leading-none">{stat.value}</p>
-                            <p className="text-[9px] sm:text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 leading-none">{stat.label}</p>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/20 group-hover:border-emerald-300 dark:group-hover:border-emerald-700 transition-colors"
-                        onClick={() => navigate(`${createPageUrl('Home')}?property_id=${property.id}`)}
-                      >
-                        <Eye className="w-3.5 h-3.5 mr-1.5" />
-                        Ver Dashboard
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className={`flex-shrink-0 transition-colors ${
-                          property.manual_regularity_enabled
-                            ? 'border-emerald-400 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40'
-                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800'
-                        }`}
-                        onClick={() => setManualDialogProperty(property)}
-                        title="Reavaliação manual de regularidade"
-                      >
-                        <ShieldCheck className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+                <GrowthRingCard
+                  key={property.id}
+                  property={property}
+                  status={status}
+                  regularity={regularity}
+                  alerts={totalAlerts}
+                  processes={openProcesses}
+                  licensesValid={licensesValid}
+                  licensesTotal={propLicensesArr.length}
+                  documents={propDocs}
+                  onClick={() => navigate(`${createPageUrl('Home')}?property_id=${property.id}`)}
+                  onManualReview={() => setManualDialogProperty(property)}
+                />
               );
             })}
           </div>

@@ -1,17 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle, TrendingUp, Building2, BarChart3, Sparkles, X } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import RuteAIChat from './RuteAIChat';
 import GrowthRingCard from './GrowthRingCard';
 import ManualRegularityDialog from './ManualRegularityDialog';
-
-const fetchRecords = (entity_name, field_name, email_field) =>
-  base44.functions.invoke('listConsultorPropertyRecords', { entity_name, field_name, email_field })
-    .then(r => r.data?.records || []);
+import AnimatedCounter from '@/components/ui/AnimatedCounter';
 
 export default function ConsultorOverview({ user, properties, isLoading }) {
   const navigate = useNavigate();
@@ -20,49 +18,94 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
   const [filterStatus, setFilterStatus] = useState('all');
   const [manualDialogProperty, setManualDialogProperty] = useState(null);
 
-  const enabled = !!user?.email;
+  const propertyIds = properties.map(p => p.id);
 
   const { data: licenses = [] } = useQuery({
-    queryKey: ['licenses-overview', user?.email],
-    queryFn: () => fetchRecords('License', 'property_id'),
-    enabled,
+    queryKey: ['licenses', user?.email, propertyIds.join(',')],
+    queryFn: async () => {
+      const results = await Promise.all(
+        propertyIds.map(pid => base44.entities.License.filter({ property_id: pid }))
+      );
+      return results.flat();
+    },
+    enabled: !!user?.email && properties.length > 0,
+    staleTime: 0,
   });
 
+  const idsKey = propertyIds.join(',');
+
   const { data: alerts = [] } = useQuery({
-    queryKey: ['alerts-overview', user?.email],
-    queryFn: () => fetchRecords('EnvironmentalAlert', 'property_id'),
-    enabled,
+    queryKey: ['alerts-overview', user?.email, idsKey],
+    queryFn: async () => {
+      const results = await Promise.all(
+        propertyIds.map(pid => base44.entities.EnvironmentalAlert.filter({ property_id: pid }))
+      );
+      return results.flat();
+    },
+    enabled: properties.length > 0,
   });
 
   const { data: allDocuments = [] } = useQuery({
-    queryKey: ['documents-overview', user?.email],
+    queryKey: ['documents-overview', user?.email, idsKey],
     queryFn: async () => {
-      const [docs, unified] = await Promise.all([
-        fetchRecords('Document', 'property_id', 'owner_email'),
-        fetchRecords('UnifiedDocument', 'entity_id'),
-      ]);
+      const results = await Promise.all(
+        propertyIds.map(pid => {
+          const prop = properties.find(p => p.id === pid);
+          const ownerEmail = prop?.owner_email;
+          return Promise.all([
+            base44.entities.Document.filter({ property_id: pid }),
+            base44.entities.UnifiedDocument.filter({ entity_id: pid }),
+            ...(ownerEmail ? [base44.entities.Document.filter({ owner_email: ownerEmail })] : []),
+          ]);
+        })
+      );
+      const all = results.flat(2);
       const seen = new Set();
-      return [...docs, ...unified].filter(d => { if (seen.has(d.id)) return false; seen.add(d.id); return true; });
+      return all.filter(d => { if (seen.has(d.id)) return false; seen.add(d.id); return true; });
     },
-    enabled,
+    enabled: properties.length > 0,
   });
 
   const { data: allGeo = [] } = useQuery({
-    queryKey: ['geo-overview', user?.email],
-    queryFn: () => fetchRecords('Georeferencing', 'property_id'),
-    enabled,
+    queryKey: ['geo-overview', user?.email, idsKey],
+    queryFn: async () => {
+      const results = await Promise.all(
+        propertyIds.map(pid => base44.entities.Georeferencing.filter({ property_id: pid }))
+      );
+      return results.flat();
+    },
+    enabled: properties.length > 0,
   });
 
   const { data: allProcesses = [] } = useQuery({
-    queryKey: ['processes-overview', user?.email],
-    queryFn: () => fetchRecords('Process', 'property_id', 'client_email'),
-    enabled,
+    queryKey: ['processes-overview', user?.email, idsKey],
+    queryFn: async () => {
+      const results = await Promise.all(
+        propertyIds.map(pid => {
+          const prop = properties.find(p => p.id === pid);
+          const clientEmail = prop?.owner_email;
+          return Promise.all([
+            base44.entities.Process.filter({ property_id: pid }),
+            ...(clientEmail ? [base44.entities.Process.filter({ client_email: clientEmail })] : []),
+          ]);
+        })
+      );
+      const all = results.flat(2);
+      const seen = new Set();
+      return all.filter(p => { if (seen.has(p.id)) return false; seen.add(p.id); return true; });
+    },
+    enabled: properties.length > 0,
   });
 
   const { data: allPrads = [] } = useQuery({
-    queryKey: ['prads-overview', user?.email],
-    queryFn: () => fetchRecords('PRAD', 'property_id'),
-    enabled,
+    queryKey: ['prads-overview', user?.email, idsKey],
+    queryFn: async () => {
+      const results = await Promise.all(
+        propertyIds.map(pid => base44.entities.PRAD.filter({ property_id: pid }))
+      );
+      return results.flat();
+    },
+    enabled: properties.length > 0,
   });
 
   // Calcula regularidade usando a mesma lógica do termômetro
@@ -149,33 +192,15 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
   };
 
   // Filter out client-only records without properties
-  const propertiesWithClients = useMemo(() => properties.filter(p => p && !p.is_client_only), [properties]);
+  const propertiesWithClients = properties.filter(p => p && !p.is_client_only);
 
-  // Memoize per-property computed metrics to avoid recalculating on every render
-  const propertyMetrics = useMemo(() => {
-    return propertiesWithClients.map(property => {
-      const status = getPropertyStatus(property.id);
-      const regularity = calcRegularity(property.id);
-      const totalAlerts = countAlertsByProperty(property.id);
-      const propLicensesArr = licenses.filter(l => l.property_id === property.id);
-      const licensesValid = propLicensesArr.filter(l => l.status === 'Vigente' && (!l.expiry_date || new Date(l.expiry_date) > new Date())).length;
-      const propDocs = allDocuments.filter(d => d.property_id === property.id || d.entity_id === property.id || (property.owner_email && d.owner_email === property.owner_email)).length;
-      const propProcessesArr = allProcesses.filter(p => p.property_id === property.id || (property.owner_email && p.client_email === property.owner_email));
-      const openProcesses = propProcessesArr.filter(p => p.status === 'Em Andamento').length;
-      const propPradsCount = allPrads.filter(p => p.property_id === property.id).length;
-      return { property, status, regularity, totalAlerts, licensesValid, licensesTotal: propLicensesArr.length, propDocs, openProcesses, propPradsCount };
-    });
-  }, [propertiesWithClients, licenses, alerts, allDocuments, allProcesses, allPrads, allGeo]);
-
-  const criticalCount = propertyMetrics.filter(m => m.status === 'critical').length;
-  const attentionCount = propertyMetrics.filter(m => m.status === 'attention').length;
-  const avgRegularity = propertyMetrics.length > 0
-    ? Math.round(propertyMetrics.reduce((acc, m) => acc + m.regularity, 0) / propertyMetrics.length)
-    : 0;
+  const criticalCount = propertiesWithClients.filter(p => getPropertyStatus(p.id) === 'critical').length;
+  const attentionCount = propertiesWithClients.filter(p => getPropertyStatus(p.id) === 'attention').length;
+  const avgRegularity = Math.round(propertiesWithClients.reduce((acc, p) => acc + calcRegularity(p.id), 0) / (propertiesWithClients.length || 1));
 
   const filteredProperties = filterStatus === 'all'
-    ? propertyMetrics
-    : propertyMetrics.filter(m => m.status === filterStatus);
+    ? propertiesWithClients
+    : propertiesWithClients.filter(p => getPropertyStatus(p.id) === filterStatus);
 
   if (isLoading) {
     return <div className="space-y-6"><Skeleton className="h-64 rounded-xl" /></div>;
@@ -239,7 +264,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
           <div className={`p-2 rounded-xl mb-2 inline-flex ${filterStatus === 'all' ? 'bg-white/20' : 'bg-emerald-50 dark:bg-emerald-900/30'}`}>
             <Building2 className={`w-4 h-4 sm:w-5 sm:h-5 ${filterStatus === 'all' ? 'text-white' : 'text-emerald-600 dark:text-emerald-400'}`} />
           </div>
-          <p className={`text-2xl sm:text-3xl font-bold ${filterStatus === 'all' ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{propertiesWithClients.length}</p>
+          <p className={`text-2xl sm:text-3xl font-bold ${filterStatus === 'all' ? 'text-white' : 'text-gray-900 dark:text-white'}`}><AnimatedCounter value={propertiesWithClients.length} /></p>
           <p className={`text-[10px] sm:text-xs font-medium mt-0.5 ${filterStatus === 'all' ? 'text-emerald-100' : 'text-gray-500 dark:text-gray-400'}`}>Total de Propriedades</p>
         </button>
 
@@ -255,7 +280,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
           <div className={`p-2 rounded-xl mb-2 inline-flex ${filterStatus === 'critical' ? 'bg-white/20' : 'bg-red-100 dark:bg-red-900/40'}`}>
             <AlertTriangle className={`w-4 h-4 sm:w-5 sm:h-5 ${filterStatus === 'critical' ? 'text-white' : 'text-red-600 dark:text-red-400'}`} />
           </div>
-          <p className={`text-2xl sm:text-3xl font-bold ${filterStatus === 'critical' ? 'text-white' : 'text-red-700 dark:text-red-400'}`}>{criticalCount}</p>
+          <p className={`text-2xl sm:text-3xl font-bold ${filterStatus === 'critical' ? 'text-white' : 'text-red-700 dark:text-red-400'}`}><AnimatedCounter value={criticalCount} /></p>
           <p className={`text-[10px] sm:text-xs font-medium mt-0.5 ${filterStatus === 'critical' ? 'text-red-100' : 'text-red-700 dark:text-red-400'}`}>Alerta Crítico</p>
         </button>
 
@@ -271,7 +296,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
           <div className={`p-2 rounded-xl mb-2 inline-flex ${filterStatus === 'attention' ? 'bg-white/20' : 'bg-amber-100 dark:bg-amber-900/40'}`}>
             <TrendingUp className={`w-4 h-4 sm:w-5 sm:h-5 ${filterStatus === 'attention' ? 'text-white' : 'text-amber-600 dark:text-amber-400'}`} />
           </div>
-          <p className={`text-2xl sm:text-3xl font-bold ${filterStatus === 'attention' ? 'text-white' : 'text-amber-700 dark:text-amber-400'}`}>{attentionCount}</p>
+          <p className={`text-2xl sm:text-3xl font-bold ${filterStatus === 'attention' ? 'text-white' : 'text-amber-700 dark:text-amber-400'}`}><AnimatedCounter value={attentionCount} /></p>
           <p className={`text-[10px] sm:text-xs font-medium mt-0.5 ${filterStatus === 'attention' ? 'text-amber-100' : 'text-amber-700 dark:text-amber-400'}`}>Em Atenção</p>
         </button>
 
@@ -281,7 +306,7 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
           <div className="p-2 rounded-xl mb-2 inline-flex bg-white/10">
             <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
           </div>
-          <p className="text-2xl sm:text-3xl font-bold text-white">{avgRegularity}%</p>
+          <p className="text-2xl sm:text-3xl font-bold text-white"><AnimatedCounter value={avgRegularity} suffix="%" /></p>
           <p className="text-[10px] sm:text-xs font-medium mt-0.5 text-slate-400">Regularidade Média</p>
         </div>
       </div>
@@ -333,34 +358,46 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {filteredProperties.map((m) => (
-              <GrowthRingCard
-                key={m.property.id}
-                property={m.property}
-                status={m.status}
-                regularity={m.regularity}
-                alerts={m.totalAlerts}
-                processes={m.openProcesses}
-                licensesValid={m.licensesValid}
-                licensesTotal={m.licensesTotal}
-                documents={m.propDocs}
-                prads={m.propPradsCount}
-                onClick={() => navigate(`${createPageUrl('Home')}?property_id=${m.property.id}`)}
-                onManualReview={() => setManualDialogProperty(m.property)}
-              />
-            ))}
+            {filteredProperties.map((property) => {
+              const status = getPropertyStatus(property.id);
+              const regularity = calcRegularity(property.id);
+              const totalAlerts = countAlertsByProperty(property.id);
+              const propLicensesArr = licenses.filter(l => l.property_id === property.id);
+              const licensesValid = propLicensesArr.filter(l => l.status === 'Vigente' && (!l.expiry_date || new Date(l.expiry_date) > new Date())).length;
+              const propDocs = allDocuments.filter(d => d.property_id === property.id || d.entity_id === property.id || (property.owner_email && d.owner_email === property.owner_email)).length;
+              const propProcessesArr = allProcesses.filter(p => p.property_id === property.id || (property.owner_email && p.client_email === property.owner_email));
+              const openProcesses = propProcessesArr.filter(p => p.status === 'Em Andamento').length;
+              const propPradsCount = allPrads.filter(p => p.property_id === property.id).length;
+
+              return (
+                <GrowthRingCard
+                  key={property.id}
+                  property={property}
+                  status={status}
+                  regularity={regularity}
+                  alerts={totalAlerts}
+                  processes={openProcesses}
+                  licensesValid={licensesValid}
+                  licensesTotal={propLicensesArr.length}
+                  documents={propDocs}
+                  prads={propPradsCount}
+                  onClick={() => navigate(`${createPageUrl('Home')}?property_id=${property.id}`)}
+                  onManualReview={() => setManualDialogProperty(property)}
+                />
+              );
+            })}
           </div>
         )}
-      </div>
+        </div>
 
-      {/* Manual Regularity Dialog */}
-      <ManualRegularityDialog
+        {/* Manual Regularity Dialog */}
+        <ManualRegularityDialog
         property={manualDialogProperty}
         user={user}
         isOpen={!!manualDialogProperty}
         onClose={() => setManualDialogProperty(null)}
         onSaved={() => queryClient.invalidateQueries()}
-      />
-    </div>
-  );
-}
+        />
+        </div>
+        );
+        }

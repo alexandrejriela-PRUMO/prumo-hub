@@ -75,7 +75,7 @@ export default function ManualRegularityDialog({ property, user, isOpen, onClose
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md flex flex-col max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-md flex flex-col max-h-[85dvh] overflow-hidden">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-emerald-600" />
@@ -83,7 +83,7 @@ export default function ManualRegularityDialog({ property, user, isOpen, onClose
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 overflow-y-auto flex-1 pr-1 -mr-1">
+        <div className="space-y-4 overflow-y-auto flex-1 min-h-0 pr-1 -mr-1">
           {/* Info da propriedade */}
           <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
             <p className="font-semibold text-sm text-gray-900 dark:text-white">{property?.property_name}</p>

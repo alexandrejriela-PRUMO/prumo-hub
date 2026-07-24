@@ -1,35 +1,31 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-export default function AnimatedCounter({ value = 0, duration = 1.2, className, suffix = '' }) {
+export default function AnimatedCounter({ value = 0, duration = 0.8, className, suffix = '' }) {
   const [display, setDisplay] = useState(0);
-  const ref = useRef(null);
-  const started = useRef(false);
+  const rafRef = useRef(null);
+  const fromRef = useRef(0);
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+    const target = Number(value) || 0;
+    const startVal = fromRef.current;
+    if (startVal === target) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !started.current) {
-          started.current = true;
-          const target = Number(value) || 0;
-          let startTs = null;
-          const step = (ts) => {
-            if (!startTs) startTs = ts;
-            const progress = Math.min((ts - startTs) / (duration * 1000), 1);
-            const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-            setDisplay(Math.round(target * eased));
-            if (progress < 1) requestAnimationFrame(step);
-          };
-          requestAnimationFrame(step);
-        }
-      },
-      { threshold: 0.1 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+
+    let startTs = null;
+    const step = (ts) => {
+      if (!startTs) startTs = ts;
+      const progress = Math.min((ts - startTs) / (duration * 1000), 1);
+      const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      const current = Math.round(startVal + (target - startVal) * eased);
+      setDisplay(current);
+      fromRef.current = current;
+      if (progress < 1) rafRef.current = requestAnimationFrame(step);
+    };
+    rafRef.current = requestAnimationFrame(step);
+
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, [value, duration]);
 
-  return <span ref={ref} className={className}>{display}{suffix}</span>;
+  return <span className={className}>{display}{suffix}</span>;
 }

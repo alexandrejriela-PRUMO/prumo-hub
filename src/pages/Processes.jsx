@@ -26,16 +26,16 @@ import { useEffectiveUser } from '../hooks/useEffectiveUser';
 
 // ── Configurações de status e tipo (fora do componente) ──────────────────────
 const statusConfig = {
-  'Em Andamento': { icon: Clock, color: 'bg-blue-100 text-blue-700 border-blue-200' },
-  'Suspenso': { icon: Pause, color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
-  'Arquivado': { icon: Archive, color: 'bg-gray-100 text-gray-700 border-gray-200' },
-  'Finalizado': { icon: CheckCircle, color: 'bg-green-100 text-green-700 border-green-200' }
+  'Em Andamento': { icon: Clock, color: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800' },
+  'Suspenso': { icon: Pause, color: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-950/60 dark:text-yellow-300 dark:border-yellow-800' },
+  'Arquivado': { icon: Archive, color: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600' },
+  'Finalizado': { icon: CheckCircle, color: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-950/60 dark:text-green-300 dark:border-green-800' }
 };
 
 const typeConfig = {
-  'Administrativo': { color: 'bg-purple-100 text-purple-700 border-purple-200' },
-  'Civil': { color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
-  'Criminal': { color: 'bg-red-100 text-red-700 border-red-200' }
+  'Administrativo': { color: 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800' },
+  'Civil': { color: 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800' },
+  'Criminal': { color: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-950/60 dark:text-red-300 dark:border-red-800' }
 };
 
 // ── ProcessCard — componente próprio fora do pai ─────────────────────────────
@@ -43,7 +43,7 @@ function ProcessCard({ process, canCreateProcess, onEdit, onDelete, onShowHistor
   const StatusIcon = statusConfig[process.status]?.icon || AlertCircle;
 
   return (
-    <Card className="border-emerald-100 hover:shadow-lg transition-shadow">
+    <Card className="border-emerald-100 dark:border-slate-700 dark:bg-slate-800 hover:shadow-lg transition-shadow">
       <CardHeader className="p-3 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div className="space-y-2 flex-1 min-w-0">
@@ -57,7 +57,7 @@ function ProcessCard({ process, canCreateProcess, onEdit, onDelete, onShowHistor
                 <span className="sm:hidden">{process.status.substring(0, 6)}</span>
               </Badge>
             </div>
-            <CardTitle className="text-base sm:text-lg text-gray-900 break-all">
+            <CardTitle className="text-base sm:text-lg text-gray-900 dark:text-white break-all">
               {process.process_number}
             </CardTitle>
           </div>
@@ -96,28 +96,28 @@ function ProcessCard({ process, canCreateProcess, onEdit, onDelete, onShowHistor
       <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
         <div className="space-y-2 sm:space-y-3">
           <div>
-            <p className="text-xs sm:text-sm font-medium text-gray-700 mb-0.5 sm:mb-1">Matéria</p>
-            <p className="text-gray-900 text-sm">{process.subject}</p>
+            <p className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-0.5 sm:mb-1">Matéria</p>
+            <p className="text-gray-900 dark:text-white text-sm">{process.subject}</p>
           </div>
 
           {process.location && (
             <div className="flex items-start gap-2">
-              <MapPin className="w-4 h-4 text-emerald-600 mt-0.5" />
+              <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5" />
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-700">Localização</p>
-                <p className="text-sm text-gray-600">{process.location}</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Localização</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{process.location}</p>
               </div>
             </div>
           )}
 
           {process.fine_value && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <DollarSign className="w-4 h-4 text-red-600" />
+            <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-lg">
+              <DollarSign className="w-4 h-4 text-red-600 dark:text-red-400" />
               <div>
-                <p className="text-sm font-medium text-red-700">
+                <p className="text-sm font-medium text-red-700 dark:text-red-300">
                   {process.process_type === 'Civil' ? 'Valor da Indenização Ambiental' : 'Valor da Multa Arbitrada'}
                 </p>
-                <p className="text-lg font-bold text-red-800">
+                <p className="text-lg font-bold text-red-800 dark:text-red-200">
                   {Number(process.fine_value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </p>
               </div>
@@ -126,20 +126,20 @@ function ProcessCard({ process, canCreateProcess, onEdit, onDelete, onShowHistor
 
           {process.parties && (
             <div className="flex items-start gap-2">
-              <Users className="w-4 h-4 text-gray-500 mt-0.5" />
+              <Users className="w-4 h-4 text-gray-500 dark:text-gray-400 mt-0.5" />
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-700">Partes</p>
-                <p className="text-sm text-gray-600">{process.parties}</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Partes</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{process.parties}</p>
               </div>
             </div>
           )}
 
           {process.filing_date && (
             <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-gray-500" />
+              <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
               <div>
-                <p className="text-sm font-medium text-gray-700">Data de Propositura</p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Data de Propositura</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   {format(parseISO(process.filing_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                 </p>
               </div>
@@ -147,17 +147,17 @@ function ProcessCard({ process, canCreateProcess, onEdit, onDelete, onShowHistor
           )}
 
           {process.updates && process.updates.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <p className="text-sm font-semibold text-gray-700 mb-2">
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 Andamentos Recentes ({process.updates.length})
               </p>
               <div className="space-y-2">
                 {process.updates.slice(-3).reverse().map((update, idx) => (
-                  <div key={idx} className="bg-gray-50 rounded-lg p-3">
-                    <p className="text-xs text-gray-500 mb-1">
+                  <div key={idx} className="bg-gray-50 dark:bg-slate-900/50 rounded-lg p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
                       {update.date && format(parseISO(update.date), "dd/MM/yyyy", { locale: ptBR })}
                     </p>
-                    <p className="text-sm text-gray-700">{update.description}</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">{update.description}</p>
                   </div>
                 ))}
               </div>
@@ -669,8 +669,8 @@ export default function Processes() {
       )}
 
       {!isConsultorFamily && properties.length > 1 && (
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-white rounded-xl border border-emerald-100 shadow-sm">
-          <span className="text-gray-700 font-medium text-sm sm:text-base sm:whitespace-nowrap">Propriedade:</span>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-white dark:bg-slate-800 rounded-xl border border-emerald-100 dark:border-slate-700 shadow-sm">
+          <span className="text-gray-700 dark:text-gray-200 font-medium text-sm sm:text-base sm:whitespace-nowrap">Propriedade:</span>
           <Select value={formData.property_id} onValueChange={(v) => setFormData({ ...formData, property_id: v })}>
             <SelectTrigger className="w-full sm:w-96 bg-emerald-50 border-emerald-200">
               <SelectValue placeholder="Selecione" />
@@ -728,11 +728,11 @@ export default function Processes() {
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
         <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2 sm:gap-3 flex-wrap">
-            <Scale className="w-6 sm:w-8 h-6 sm:h-8 text-emerald-600 flex-shrink-0" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 sm:gap-3 flex-wrap">
+            <Scale className="w-6 sm:w-8 h-6 sm:h-8 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
             <span>Tríplice Resp. Ambiental</span>
           </h1>
-          <p className="text-gray-600 mt-1 text-sm sm:text-base">
+          <p className="text-gray-600 dark:text-gray-400 mt-1 text-sm sm:text-base">
             Acompanhamento de processos administrativos, civis e criminais
           </p>
         </div>
@@ -774,11 +774,11 @@ export default function Processes() {
       </div>
 
       {isConsultorFamily && !consultorPropertyId ? (
-        <Card className="border-dashed border-2 border-amber-200">
+        <Card className="border-dashed border-2 border-amber-200 dark:border-amber-800 dark:bg-slate-800">
           <CardContent className="py-16 text-center">
-            <Scale className="w-16 h-16 mx-auto text-amber-300 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-700">Selecione uma propriedade</h3>
-            <p className="text-gray-500 mt-2">Escolha a propriedade acima para visualizar os processos</p>
+            <Scale className="w-16 h-16 mx-auto text-amber-300 dark:text-amber-600 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200">Selecione uma propriedade</h3>
+            <p className="text-gray-500 dark:text-gray-400 mt-2">Escolha a propriedade acima para visualizar os processos</p>
           </CardContent>
         </Card>
       ) : null}
@@ -805,12 +805,12 @@ export default function Processes() {
         {['Administrativo', 'Civil', 'Criminal'].map((type) => (
           <TabsContent key={type} value={type}>
             {isLoading ? (
-              <div className="text-center py-12 text-gray-500">Carregando...</div>
+              <div className="text-center py-12 text-gray-500 dark:text-gray-400">Carregando...</div>
             ) : filteredProcesses(type).length === 0 ? (
-              <Card className="border-emerald-100">
+              <Card className="border-emerald-100 dark:border-slate-700 dark:bg-slate-800">
                 <CardContent className="text-center py-12">
-                  <Scale className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                  <p className="text-gray-600">
+                  <Scale className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-gray-600" />
+                  <p className="text-gray-600 dark:text-gray-400">
                     Nenhum processo {type.toLowerCase()} cadastrado
                   </p>
                 </CardContent>

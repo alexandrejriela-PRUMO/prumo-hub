@@ -12,8 +12,11 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
  * A função resolve o email efetivo do consultor (próprio ou do principal via
  * TeamMember) e busca os registros via service role (bypass RLS).
  *
- * Otimização: busca por owner_email (poucos) em vez de property_id (muitos)
- * sempre que possível, reduzindo drasticamente o número de queries paralelas.
+ * IMPORTANTE: busca todas as entidades por property_id (não por owner_email/
+ * client_email). O campo owner_email de License/Document/Process/PRAD nem
+ * sempre reflete o email do produtor — em registros criados pelo próprio
+ * consultor em nome do cliente, esse campo fica com o email do consultor.
+ * property_id é o único vínculo confiável em todos os casos.
  */
 Deno.serve(async (req) => {
   try {
@@ -71,42 +74,31 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Coletar owner_emails únicos (para busca por email — muito menos queries)
-    const ownerEmails = [...new Set(
-      properties.map(p => p.owner_email).filter(Boolean)
-    )];
-
-    // Buscar entidades que têm owner_email/client_email por email (otimizado)
-    // e entidades que só têm property_id por property_id
-    const emailQueries = ownerEmails.flatMap(email => [
-      base44.asServiceRole.entities.License.filter({ owner_email: email }),
-      base44.asServiceRole.entities.Document.filter({ owner_email: email }),
-      base44.asServiceRole.entities.Process.filter({ client_email: email }),
-      base44.asServiceRole.entities.PRAD.filter({ owner_email: email }),
-    ]);
-
-    // EnvironmentalAlert e Georeferencing só têm property_id
+    // Todas as entidades vinculadas às propriedades, buscadas por property_id
+    // (vínculo confiável, independente de qual email foi gravado em owner_email/client_email)
     const propertyQueries = propertyIds.flatMap(pid => [
+      base44.asServiceRole.entities.License.filter({ property_id: pid }),
+      base44.asServiceRole.entities.Document.filter({ property_id: pid }),
+      base44.asServiceRole.entities.Process.filter({ property_id: pid }),
+      base44.asServiceRole.entities.PRAD.filter({ property_id: pid }),
       base44.asServiceRole.entities.EnvironmentalAlert.filter({ property_id: pid }),
       base44.asServiceRole.entities.Georeferencing.filter({ property_id: pid }),
       base44.asServiceRole.entities.UnifiedDocument.filter({ entity_id: pid }),
     ]);
 
-    const allQueries = [...emailQueries, ...propertyQueries];
-    const results = await Promise.all(allQueries);
+    const results = await Promise.all(propertyQueries);
 
-    // Dividir resultados de volta nas categorias
-    const nEmails = ownerEmails.length;
+    // Dividir resultados de volta nas categorias (7 queries por propriedade, na mesma ordem acima)
+    const n = propertyIds.length;
     let idx = 0;
 
-    const licenseResults = results.slice(idx, idx + nEmails); idx += nEmails;
-    const docResults = results.slice(idx, idx + nEmails); idx += nEmails;
-    const procResults = results.slice(idx, idx + nEmails); idx += nEmails;
-    const pradResults = results.slice(idx, idx + nEmails); idx += nEmails;
-
-    const alertResults = results.slice(idx, idx + propertyIds.length); idx += propertyIds.length;
-    const geoResults = results.slice(idx, idx + propertyIds.length); idx += propertyIds.length;
-    const unifiedDocResults = results.slice(idx, idx + propertyIds.length); idx += propertyIds.length;
+    const licenseResults = results.slice(idx, idx + n); idx += n;
+    const docResults = results.slice(idx, idx + n); idx += n;
+    const procResults = results.slice(idx, idx + n); idx += n;
+    const pradResults = results.slice(idx, idx + n); idx += n;
+    const alertResults = results.slice(idx, idx + n); idx += n;
+    const geoResults = results.slice(idx, idx + n); idx += n;
+    const unifiedDocResults = results.slice(idx, idx + n); idx += n;
 
     // Achatar e deduplicar por ID
     const dedup = (resultsArr) => {

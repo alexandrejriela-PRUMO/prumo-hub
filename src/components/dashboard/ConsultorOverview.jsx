@@ -6,8 +6,9 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, TrendingUp, Building2, BarChart3, Eye, Sparkles, X } from 'lucide-react';
+import { AlertTriangle, TrendingUp, Building2, BarChart3, Eye, Sparkles, X, FileCheck, FileText, Scale, MapPin } from 'lucide-react';
 import RuteAIChat from './RuteAIChat';
+import RegularityGauge from './RegularityGauge';
 
 export default function ConsultorOverview({ user, properties, isLoading }) {
   const navigate = useNavigate();
@@ -310,69 +311,79 @@ export default function ConsultorOverview({ user, properties, isLoading }) {
               const status = getPropertyStatus(property.id);
               const regularity = calcRegularity(property.id);
               const totalAlerts = countAlertsByProperty(property.id);
+              const propLicenses = licenses.filter(l => l.property_id === property.id).length;
+              const propDocs = allDocuments.filter(d => d.property_id === property.id || d.entity_id === property.id).length;
+              const propProcesses = allProcesses.filter(p => p.property_id === property.id).length;
 
               const statusConfig = {
                 critical: {
                   color: 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/50',
                   badge: 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300',
-                  bar: 'bg-red-600',
+                  accent: 'text-red-600 dark:text-red-400',
                 },
                 attention: {
                   color: 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50',
                   badge: 'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300',
-                  bar: 'bg-amber-600',
+                  accent: 'text-amber-600 dark:text-amber-400',
                 },
                 normal: {
                   color: 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/50',
                   badge: 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300',
-                  bar: 'bg-emerald-600',
+                  accent: 'text-emerald-600 dark:text-emerald-400',
                 }
               };
 
               const config = statusConfig[status];
 
+              const miniStats = [
+                { icon: FileCheck, label: 'Licenças', value: propLicenses, color: 'text-blue-600 dark:text-blue-400' },
+                { icon: FileText, label: 'Docs', value: propDocs, color: 'text-violet-600 dark:text-violet-400' },
+                { icon: Scale, label: 'Processos', value: propProcesses, color: 'text-amber-600 dark:text-amber-400' },
+                { icon: AlertTriangle, label: 'Alertas', value: totalAlerts, color: totalAlerts > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400' },
+              ];
+
               return (
-                <div key={property.id} className={`${config.color} border-2 rounded-2xl overflow-hidden transition-all hover:shadow-lg`}>
-                  <div className="p-5">
-                    <div className="flex items-start justify-between mb-3">
+                <div key={property.id} className={`${config.color} border-2 rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:scale-[1.01] cursor-pointer group`}>
+                  <div className="p-4 sm:p-5">
+                    {/* Header: info + gauge */}
+                    <div className="flex items-start justify-between gap-3 mb-4">
                       <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <MapPin className={`w-3.5 h-3.5 flex-shrink-0 ${config.accent}`} />
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{property.city}/{property.state}</p>
+                        </div>
                         <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">{property.property_name}</h3>
-                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-0.5">{property.city}/{property.state}</p>
-                        {property.client_name && <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">Cliente: {property.client_name}</p>}
+                        {property.client_name && <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5 truncate">👤 {property.client_name}</p>}
+                        <span className="inline-block mt-1 text-[10px] font-medium text-gray-400 dark:text-gray-500">
+                          {property.property_type === 'urbano' ? '🏢 Urbano' : '🌱 Rural'}
+                        </span>
                       </div>
-                      <Badge className={`${config.badge} flex-shrink-0 ml-2`}>
-                        {status === 'critical' ? 'Crítica' : status === 'attention' ? 'Atenção' : 'Normal'}
-                      </Badge>
-                    </div>
-
-                    <div className="space-y-2 mb-4">
-                      <div className="flex justify-between text-xs sm:text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">Regularidade</span>
-                        <span className="font-semibold text-gray-900 dark:text-white">{regularity}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
-                        <div
-                          className={`h-2 rounded-full transition-all ${config.bar}`}
-                          style={{ width: `${regularity}%` }}
-                        />
+                      <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                        <RegularityGauge value={regularity} size={68} />
+                        <Badge className={`${config.badge} text-[10px] px-2 py-0.5`}>
+                          {status === 'critical' ? 'Crítica' : status === 'attention' ? 'Atenção' : 'Normal'}
+                        </Badge>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-sm mb-4">
-                      <div className="bg-white/50 dark:bg-slate-800/50 rounded-lg p-2">
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Alertas Ativos</p>
-                        <p className="text-lg font-semibold text-gray-900 dark:text-white">{totalAlerts}</p>
-                      </div>
-                      <div className="bg-white/50 dark:bg-slate-800/50 rounded-lg p-2">
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Tipo</p>
-                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{property.property_type === 'urbano' ? 'Urbano' : 'Rural'}</p>
-                      </div>
+                    {/* Mini stats grid */}
+                    <div className="grid grid-cols-4 gap-1.5 sm:gap-2 mb-4">
+                      {miniStats.map((stat) => {
+                        const Icon = stat.icon;
+                        return (
+                          <div key={stat.label} className="bg-white/60 dark:bg-slate-800/50 rounded-lg p-1.5 sm:p-2 text-center transition-all hover:bg-white dark:hover:bg-slate-800">
+                            <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 mx-auto mb-0.5 ${stat.color}`} />
+                            <p className="text-sm sm:text-base font-bold text-gray-900 dark:text-white leading-none">{stat.value}</p>
+                            <p className="text-[9px] sm:text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 leading-none">{stat.label}</p>
+                          </div>
+                        );
+                      })}
                     </div>
 
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full"
+                      className="w-full group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/20 group-hover:border-emerald-300 dark:group-hover:border-emerald-700 transition-colors"
                       onClick={() => navigate(`${createPageUrl('Home')}?property_id=${property.id}`)}
                     >
                       <Eye className="w-3.5 h-3.5 mr-1.5" />

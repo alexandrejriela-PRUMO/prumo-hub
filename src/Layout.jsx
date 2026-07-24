@@ -318,10 +318,15 @@ const navItems = [
   { name: 'Modo Campo', page: 'CampMode', icon: Smartphone },
 ];
 
+// Cache em nível de módulo — persiste entre remontagens do Layout (navegação)
+// para evitar flicker de user_type (consultor ↔ produtor)
+let _cachedUser = null;
+let _cachedUserMeta = null;
+
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(_cachedUser);
   const [expandedMenus, setExpandedMenus] = useState({});
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -334,8 +339,8 @@ export default function Layout({ children, currentPageName }) {
   const { unreadCount = 0, notifications = [], markAsRead, markAllAsRead, deleteNotification } = useRealtimeNotifications(userEmail);
   const { hasPermission, canAccessModule } = useEffectiveUserPermissions(safeUser);
 
-  const [userMeta, setUserMeta] = useState(null);
-  const [metaLoading, setMetaLoading] = useState(true);
+  const [userMeta, setUserMeta] = useState(_cachedUserMeta);
+  const [metaLoading, setMetaLoading] = useState(!_cachedUserMeta);
 
   // Load user + meta via getEffectiveUser (fonte da verdade, usa asServiceRole)
   useEffect(() => {
@@ -344,6 +349,7 @@ export default function Layout({ children, currentPageName }) {
         const u = await base44.auth.me();
         if (!u) return;
         setUser(u);
+        _cachedUser = u;
 
         // getEffectiveUser retorna user_type já correto (equipe_consultor / equipe_produtor)
         // e sincroniza no User/UserMetadata se necessário
@@ -351,17 +357,23 @@ export default function Layout({ children, currentPageName }) {
         const effectiveData = res?.data;
         if (effectiveData && !effectiveData.error) {
           // Montar userMeta sintético com o user_type correto
-          setUserMeta({
+          const meta = {
             user_type: effectiveData.user_type,
             plano: effectiveData.consultor_plan || u.plano || 'enterprise',
-          });
-          // Se o user_type mudou, atualizar o estado do user local
+          };
+          setUserMeta(meta);
+          _cachedUserMeta = meta;
+          // Se o user_type mudou, atualizar o estado do user local + cache
           if (effectiveData.user_type !== u.user_type) {
-            setUser(prev => ({ ...prev, user_type: effectiveData.user_type }));
+            const updatedUser = { ...u, user_type: effectiveData.user_type };
+            setUser(updatedUser);
+            _cachedUser = updatedUser;
           }
         } else {
           // Fallback: usar dados do próprio user
-          setUserMeta({ user_type: u.user_type, plano: u.plano || 'enterprise' });
+          const meta = { user_type: u.user_type, plano: u.plano || 'enterprise' };
+          setUserMeta(meta);
+          _cachedUserMeta = meta;
         }
       } catch (err) {
         console.warn('[Layout] getEffectiveUser falhou, usando fallback local:', err?.message);
@@ -370,11 +382,14 @@ export default function Layout({ children, currentPageName }) {
           const u = await base44.auth.me();
           if (u) {
             const metas = await base44.entities.UserMetadata.filter({ user_email: u.email }, '-created_date', 1);
+            let meta;
             if (metas?.length > 0) {
-              setUserMeta({ user_type: metas[0].user_type || u.user_type, plano: metas[0].plano || u.plano || 'enterprise' });
+              meta = { user_type: metas[0].user_type || u.user_type, plano: metas[0].plano || u.plano || 'enterprise' };
             } else {
-              setUserMeta({ user_type: u.user_type, plano: u.plano || 'enterprise' });
+              meta = { user_type: u.user_type, plano: u.plano || 'enterprise' };
             }
+            setUserMeta(meta);
+            _cachedUserMeta = meta;
           }
         } catch {
           // último fallback

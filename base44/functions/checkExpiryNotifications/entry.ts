@@ -288,10 +288,10 @@ Deno.serve(async (req) => {
     };
 
     // ─── Monta lista de destinatários únicos sem repetição ───────────────
-    const buildRecipients = (ownerEmail, consultorEmail, viewers) => {
+    const buildRecipients = (ownerEmail, consultorEmail, viewers, teamEmails = []) => {
       const seen = new Set();
       const list = [];
-      for (const email of [ownerEmail, consultorEmail, ...viewers]) {
+      for (const email of [ownerEmail, consultorEmail, ...viewers, ...teamEmails]) {
         if (email && !seen.has(email)) { seen.add(email); list.push(email); }
       }
       return list;
@@ -323,7 +323,8 @@ Deno.serve(async (req) => {
         );
       } else {
         const viewers = await getPropertyViewers(lic.property_id, 'licenca_vencendo');
-        const recipients = buildRecipients(lic.owner_email, consultorEmail, viewers);
+        const teamEmails = await getTeamEmails(consultorEmail);
+        const recipients = buildRecipients(lic.owner_email, consultorEmail, viewers, teamEmails);
 
         for (const email of recipients) {
           const prefs = await getNotifPrefs(email, 'licenca_vencendo', [1, 7, 15, 30]);
@@ -351,24 +352,6 @@ Deno.serve(async (req) => {
             );
           }
         }
-
-        // Equipe do consultor (enterprise)
-        if (consultorEmail) {
-          const consultorData = await getUserData(consultorEmail);
-          if ((consultorData?.plan || '').toLowerCase() === 'enterprise') {
-            const teamEmails = await getTeamEmails(consultorEmail);
-            for (const m of teamEmails) {
-              if (recipients.includes(m)) continue;
-              const prefs = await getNotifPrefs(m, 'licenca_vencendo', [1, 7, 15, 30]);
-              if (!prefs.days.includes(days)) continue;
-              await createNotif(m,
-                `Licença vencendo em ${days} dia${days > 1 ? 's' : ''}`,
-                `Licença ${licLabel} vence em ${days} dia${days > 1 ? 's' : ''}${licCtx.text}.`,
-                'licenca_vencendo', days <= 7 ? 'error' : 'warning', '/Licenses'
-              );
-            }
-          }
-        }
       }
     }
 
@@ -379,7 +362,8 @@ Deno.serve(async (req) => {
       const propertyName = await getPropertyName(lic.property_id);
       const ownerName = await getUserNameExpiry(lic.owner_email);
       const viewers = await getPropertyViewers(lic.property_id, 'condicionante_vencendo');
-      const recipients = buildRecipients(lic.owner_email, consultorEmail, viewers);
+      const teamEmails = await getTeamEmails(consultorEmail);
+      const recipients = buildRecipients(lic.owner_email, consultorEmail, viewers, teamEmails);
       const licLabel = `${lic.license_type}${lic.license_number ? ` nº ${lic.license_number}` : ''}`;
       const licCtx = buildCtx(lic, [['license_type','Tipo'],['license_number','Número'],['elaboration_stage','Fase'],['issue_date','Emissão','date'],['expiry_date','Validade','date']], { clientName: ownerName, propertyName });
 
@@ -426,7 +410,8 @@ Deno.serve(async (req) => {
       const propertyName = await getPropertyName(propId);
       const ownerName = await getUserNameExpiry(doc.owner_email);
       const viewers = await getPropertyViewers(propId, 'documento_vencendo');
-      const recipients = buildRecipients(doc.owner_email, consultorEmail, viewers);
+      const teamEmails = await getTeamEmails(consultorEmail);
+      const recipients = buildRecipients(doc.owner_email, consultorEmail, viewers, teamEmails);
       const docName = doc.document_name || doc.document_type || 'Documento';
       const docCtx = buildCtx(doc, [['document_type','Tipo'],['document_name','Nome'],['expiry_date','Validade','date']], { clientName: ownerName, propertyName });
 

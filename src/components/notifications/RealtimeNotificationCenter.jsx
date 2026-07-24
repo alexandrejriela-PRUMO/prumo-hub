@@ -201,9 +201,9 @@ export default function RealtimeNotificationCenter({ user, isOpen, onClose, noti
   const activeCategory = CATEGORIES.find(c => c.key === categoryFilter);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-end" onClick={onClose}>
+    <div className="fixed inset-0 z-[60] flex items-start justify-end bg-black/40 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="w-full max-w-sm h-screen bg-white shadow-2xl flex flex-col border-l border-gray-100 pointer-events-auto safe-top"
+        className="w-[88vw] max-w-sm h-screen h-[100dvh] bg-white shadow-2xl flex flex-col border-l border-gray-100 pointer-events-auto safe-top"
         onClick={e => e.stopPropagation()}
       >
         {/* ── Header ── */}
@@ -226,8 +226,8 @@ export default function RealtimeNotificationCenter({ user, isOpen, onClose, noti
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { navigate(createPageUrl('NotificationSettings')); onClose(); }}>
               <Settings className="w-4 h-4 text-gray-400" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
-              <X className="w-4 h-4" />
+            <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0" onClick={onClose}>
+              <X className="w-5 h-5" />
             </Button>
           </div>
         </div>

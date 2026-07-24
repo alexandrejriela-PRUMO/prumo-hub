@@ -1,4 +1,5 @@
 import React from 'react';
+import AnimatedCounter from '@/components/ui/AnimatedCounter';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
   FileCheck, 
@@ -99,7 +100,7 @@ export default function DashboardMetrics({ licenses, documents, processes, alert
                 <div className="flex-1">
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{metric.title}</p>
                   <div className="flex items-baseline gap-2 mt-3">
-                    <h3 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">{metric.value}</h3>
+                    <h3 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent"><AnimatedCounter value={metric.value} /></h3>
                     {metric.total && (
                       <span className="text-sm text-gray-400 font-medium">/ {metric.total}</span>
                     )}

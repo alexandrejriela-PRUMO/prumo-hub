@@ -1,4 +1,5 @@
 import React from 'react';
+import AnimatedCounter from '@/components/ui/AnimatedCounter';
 import { MapPin, ShieldCheck } from 'lucide-react';
 
 const COLORS = {
@@ -139,7 +140,7 @@ export default function GrowthRingCard({
              </svg>
             {/* Center text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-xl font-bold text-white leading-none">{regularity}%</span>
+              <AnimatedCounter value={regularity} suffix="%" className="text-xl font-bold text-white leading-none" />
               <span className="text-[9px] mt-0.5" style={{ color: '#A5B3AA' }}>regular.</span>
             </div>
           </div>
@@ -164,7 +165,7 @@ export default function GrowthRingCard({
             onClick={(e) => { e.stopPropagation(); onManualReview(); }}
             className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-full transition-colors ${
               property.manual_regularity_enabled
-                ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+                ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 pulse-soft'
                 : 'text-gray-400 hover:text-white hover:bg-white/10'
             }`}
             title="Reavaliação manual de regularidade"

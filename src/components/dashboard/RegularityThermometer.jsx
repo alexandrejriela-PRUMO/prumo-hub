@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
+import AnimatedCounter from '@/components/ui/AnimatedCounter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, CheckCircle2, AlertCircle, TrendingUp, FileCheck, FileText, MapPin, Scale, Leaf, TreePine, ShieldAlert } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -279,7 +280,7 @@ export default function RegularityThermometer({ property, licenses = [], documen
         {/* Pontuação Principal */}
         <div className="text-center py-6 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl border-2 border-emerald-200">
           <div className="text-6xl font-bold text-emerald-900 mb-2">
-            {score.percentage}%
+            <AnimatedCounter value={score.percentage} suffix="%" />
           </div>
           <p className="text-emerald-700 font-medium">Nível de Conformidade</p>
         </div>

@@ -56,7 +56,7 @@ export default function QuickActions({ userType, propertyId }) {
         >
           <Card className="group hover:shadow-2xl hover:shadow-emerald-500/15 transition-all duration-300 border-emerald-100 hover:border-emerald-300 h-full bg-gradient-to-br from-white to-emerald-50/30 hover:from-emerald-50/50 hover:to-emerald-50/50">
             <CardContent className="p-5 lg:p-6">
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center mb-4 shadow-lg group-hover:scale-125 group-hover:shadow-xl transition-all duration-300`}>
+              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center mb-4 shadow-lg icon-bounce-hover group-hover:shadow-xl transition-shadow duration-300`}>
                 <action.icon className="w-6 h-6 text-white" />
               </div>
               <h3 className="font-semibold text-gray-900 group-hover:text-emerald-700 transition-colors text-sm lg:text-base">{action.title}</h3>

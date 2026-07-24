@@ -24,6 +24,9 @@ import { subDays, isAfter, isBefore } from 'date-fns';
 import { createPageUrl } from '@/utils';
 import ConsultorOverview from '../components/dashboard/ConsultorOverview';
 import PullToRefresh from '../components/mobile/PullToRefresh';
+import StaggerItem from '@/components/ui/StaggerItem';
+import ShimmerSkeleton from '@/components/ui/ShimmerSkeleton';
+import AnimatedCounter from '@/components/ui/AnimatedCounter';
 
 // Component que recebe hooks já resolvidos via props
 export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipeProdutor, isConsultor, effectiveLoading }) {
@@ -291,13 +294,17 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
       )}
 
       {/* Property Card */}
-      {isLoading ?
-       <Skeleton className="h-64 rounded-2xl" /> :
-       <PropertyCard property={selectedProperty} carManagements={carManagements} />
-      }
+      <StaggerItem index={1}>
+        {isLoading ?
+         <ShimmerSkeleton className="h-64 rounded-2xl" /> :
+         <PropertyCard property={selectedProperty} carManagements={carManagements} />
+        }
+      </StaggerItem>
 
       {/* Quick Actions */}
-      <QuickActions userType={user?.user_type} propertyId={selectedPropertyId} />
+      <StaggerItem index={2}>
+        <QuickActions userType={user?.user_type} propertyId={selectedPropertyId} />
+      </StaggerItem>
 
       {/* Consultoria e Requerimentos - Para Produtores */}
       {!isConsultorView && (
@@ -376,15 +383,15 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
                   ) : (
                     <div className="grid grid-cols-3 gap-3 mb-5">
                       <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-center">
-                        <p className="text-2xl font-extrabold text-blue-700">{openRequests.length}</p>
+                        <p className="text-2xl font-extrabold text-blue-700"><AnimatedCounter value={openRequests.length} /></p>
                         <p className="text-xs text-blue-600 font-medium mt-0.5">Em Aberto</p>
                       </div>
                       <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
-                        <p className="text-2xl font-extrabold text-emerald-700">{respondedRequests.length}</p>
+                        <p className="text-2xl font-extrabold text-emerald-700"><AnimatedCounter value={respondedRequests.length} /></p>
                         <p className="text-xs text-emerald-600 font-medium mt-0.5">Respondidos</p>
                       </div>
                       <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-center">
-                        <p className="text-2xl font-extrabold text-gray-700">{totalRequests}</p>
+                        <p className="text-2xl font-extrabold text-gray-700"><AnimatedCounter value={totalRequests} /></p>
                         <p className="text-xs text-gray-500 font-medium mt-0.5">Total</p>
                       </div>
                     </div>
@@ -413,6 +420,7 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
       )}
 
       {/* Tabs for Overview and Analytics */}
+      <StaggerItem index={4}>
       <Tabs defaultValue="overview" className="space-y-6 mt-8">
         <TabsList className="grid w-full grid-cols-2 bg-gradient-to-r from-emerald-50 to-emerald-50 border border-emerald-100 rounded-lg p-1">
           <TabsTrigger value="overview" className="rounded-md transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-emerald-700 text-xs sm:text-sm">Visão Geral</TabsTrigger>
@@ -424,10 +432,10 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
         </TabsList>
 
         {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-8">
+        <TabsContent value="overview" className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
           {/* Licenças Ambientais */}
           {isLoading ? (
-            <Skeleton className="h-80 rounded-xl" />
+            <ShimmerSkeleton className="h-80 rounded-xl" />
           ) : (
             <LicenseAlerts licenses={licenses} />
           )}
@@ -460,7 +468,7 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
         </TabsContent>
 
         {/* Analytics Tab */}
-        <TabsContent value="analytics" className="space-y-8">
+        <TabsContent value="analytics" className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
           {/* Advanced Filters */}
           {!isLoading && (
             <DashboardFilters 
@@ -473,10 +481,10 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
           {/* Dashboard Metrics */}
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Skeleton className="h-32 rounded-xl" />
-              <Skeleton className="h-32 rounded-xl" />
-              <Skeleton className="h-32 rounded-xl" />
-              <Skeleton className="h-32 rounded-xl" />
+              <ShimmerSkeleton className="h-32 rounded-xl" />
+              <ShimmerSkeleton className="h-32 rounded-xl" />
+              <ShimmerSkeleton className="h-32 rounded-xl" />
+              <ShimmerSkeleton className="h-32 rounded-xl" />
             </div>
           ) : (
             <DashboardMetrics
@@ -490,8 +498,8 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
           {/* Dashboard Charts */}
           {isLoading ? (
             <div className="grid lg:grid-cols-2 gap-6">
-              <Skeleton className="h-80 rounded-xl" />
-              <Skeleton className="h-80 rounded-xl" />
+              <ShimmerSkeleton className="h-80 rounded-xl" />
+              <ShimmerSkeleton className="h-80 rounded-xl" />
             </div>
           ) : (
             <DashboardCharts
@@ -502,6 +510,7 @@ export default function HomeContent({ user, effectiveEmail, isEquipe, isEquipePr
           )}
         </TabsContent>
       </Tabs>
+      </StaggerItem>
 
       {/* Full Export Section */}
       {!isLoading && (
